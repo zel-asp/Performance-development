@@ -1,0 +1,504 @@
+// State
+            let currentXP = 1480;
+            let totalGoals = 8;
+            let completedGoals = 6;
+            let activePersonaKey = 'employee';
+
+            // Chart instances
+            let chartPerfTrendInstance = null;
+            let chartSentimentDoughnutInstance = null;
+            let chartCompetencyRadarInstance = null;
+            let chartLmsComplianceInstance = null;
+            let chartHourlySentimentInstance = null;
+
+            // Modal Controls
+            function openModal(id) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.remove('hidden');
+                    el.classList.add('flex');
+                    if (id === 'modal-recognition' && typeof initKudosRosterModal === 'function') {
+                        initKudosRosterModal();
+                    }
+                }
+            }
+
+            function closeModal(id) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.add('hidden');
+                    el.classList.remove('flex');
+                }
+            }
+
+            // Toasts
+            function showToast(message, type = 'info') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                const bgColor = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-slate-900';
+                const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-triangle-exclamation' : 'fa-info-circle';
+
+                toast.className = `toast px-4 py-3 rounded-2xl text-white text-xs font-semibold shadow-xl flex items-center space-x-2.5 ${bgColor}`;
+                toast.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
+
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+
+            // Mobile Sidebar Controller with Smooth Animation
+            let isMobileSidebarOpen = false;
+
+            // Dedicated Mobile Drawer Controller (Mobile Only)
+            let isMobileDrawerOpen = false;
+
+            function toggleMobileSidebar(forceState) {
+                const wrapper = document.getElementById('mobile-drawer-wrapper');
+                const backdrop = document.getElementById('mobile-drawer-backdrop');
+                const panel = document.getElementById('mobile-drawer-panel');
+                const hamburgerIcon = document.getElementById('hamburger-icon');
+
+                if (!wrapper || !backdrop || !panel) return;
+
+                if (typeof forceState === 'boolean') {
+                    isMobileDrawerOpen = forceState;
+                } else {
+                    isMobileDrawerOpen = !isMobileDrawerOpen;
+                }
+
+                if (isMobileDrawerOpen) {
+                    wrapper.classList.remove('pointer-events-none');
+                    backdrop.classList.remove('opacity-0', 'pointer-events-none');
+                    backdrop.classList.add('opacity-100', 'pointer-events-auto');
+                    panel.classList.remove('-translate-x-full');
+                    panel.classList.add('translate-x-0');
+                    if (hamburgerIcon) {
+                        hamburgerIcon.classList.remove('fa-bars-staggered');
+                        hamburgerIcon.classList.add('fa-xmark');
+                    }
+                    document.body.classList.add('overflow-hidden', 'lg:overflow-auto');
+                } else {
+                    wrapper.classList.add('pointer-events-none');
+                    backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+                    backdrop.classList.add('opacity-0', 'pointer-events-none');
+                    panel.classList.remove('translate-x-0');
+                    panel.classList.add('-translate-x-full');
+                    if (hamburgerIcon) {
+                        hamburgerIcon.classList.remove('fa-xmark');
+                        hamburgerIcon.classList.add('fa-bars-staggered');
+                    }
+                    document.body.classList.remove('overflow-hidden');
+                }
+            }
+
+            // Window resize handler to cleanly reset mobile drawer if scaled up to desktop
+            window.addEventListener('resize', () => {
+                if (window.innerWidth >= 1024 && isMobileDrawerOpen) {
+                    toggleMobileSidebar(false);
+                }
+            });
+
+            // Master Pillar Switcher
+            function switchPillar(pillarKey) {
+                // Auto close mobile sidebar on navigation selection
+                if (window.innerWidth < 1024) {
+                    toggleMobileSidebar(false);
+                }
+
+                // Panels
+                document.querySelectorAll('.pillar-panel').forEach(panel => panel.classList.remove('active'));
+                const targetPanel = document.getElementById('panel-' + pillarKey);
+                if (targetPanel) targetPanel.classList.add('active');
+
+                // Sidebar
+                document.querySelectorAll('#sidebar-nav .nav-item').forEach(item => {
+                    item.classList.remove('active');
+                    if (item.getAttribute('data-pillar') === pillarKey) {
+                        item.classList.add('active');
+                    }
+                });
+
+                // Mobile Nav
+                document.querySelectorAll('#mobile-nav .mobile-nav-btn').forEach(btn => {
+                    btn.classList.remove('active', 'text-primary', 'font-bold');
+                    btn.classList.add('text-slate-400');
+                    if (btn.getAttribute('data-pillar') === pillarKey) {
+                        btn.classList.add('active', 'text-primary', 'font-bold');
+                        btn.classList.remove('text-slate-400');
+                    }
+                });
+
+                // Resize charts if visible
+                setTimeout(() => {
+                    if (pillarKey === 'dashboard') {
+                        if (chartPerfTrendInstance) chartPerfTrendInstance.resize();
+                        if (chartSentimentDoughnutInstance) chartSentimentDoughnutInstance.resize();
+                        if (chartSystemDeptProgressInstance) chartSystemDeptProgressInstance.resize();
+                    } else if (pillarKey === 'pillar-comp') {
+                        if (chartCompetencyRadarInstance) chartCompetencyRadarInstance.resize();
+                    } else if (pillarKey === 'pillar-lms') {
+                        if (chartLmsComplianceInstance) chartLmsComplianceInstance.resize();
+                        if (typeof renderLmsBooks === 'function') renderLmsBooks();
+                        if (typeof renderTnaEnrollments === 'function') renderTnaEnrollments();
+                    } else if (pillarKey === 'pillar-social') {
+                        if (chartHourlySentimentInstance) chartHourlySentimentInstance.resize();
+                    }
+                }, 80);
+            }
+
+            // Sub-Tab Switcher inside Pillar
+            function switchSubTab(pillarPrefix, subKey) {
+                document.querySelectorAll(`.sub-panel-${pillarPrefix}`).forEach(p => p.classList.remove('active'));
+                const targetSub = document.getElementById(`sub-${pillarPrefix}-${subKey}`);
+                if (targetSub) targetSub.classList.add('active');
+
+                document.querySelectorAll(`.subnav-${pillarPrefix}`).forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.getAttribute('data-sub') === subKey) {
+                        btn.classList.add('active');
+                    }
+                });
+
+                if (pillarPrefix === 'lms' && subKey === 'tna') {
+                    if (typeof renderTnaEnrollments === 'function') renderTnaEnrollments();
+                } else if (pillarPrefix === 'lms' && subKey === 'modules') {
+                    if (typeof renderLmsBooks === 'function') renderLmsBooks();
+                }
+
+                setTimeout(() => {
+                    if (subKey === 'system' && chartSystemDeptProgressInstance) chartSystemDeptProgressInstance.resize();
+                    if (subKey === 'pulse' && chartPerfTrendInstance) chartPerfTrendInstance.resize();
+                    if (subKey === 'pulse' && chartSentimentDoughnutInstance) chartSentimentDoughnutInstance.resize();
+                    if (subKey === 'radar' && chartCompetencyRadarInstance) chartCompetencyRadarInstance.resize();
+                    if (subKey === 'compliance' && chartLmsComplianceInstance) chartLmsComplianceInstance.resize();
+                    if (subKey === 'climate' && chartHourlySentimentInstance) chartHourlySentimentInstance.resize();
+                }, 80);
+            }
+
+            // Auth and Persona
+            const personaData = {
+                employee: {
+                    name: 'Maria Santos',
+                    initials: 'MS',
+                    roleLabel: 'Maria Santos (Host / Employee)',
+                    badge: 'Emp',
+                    dept: 'Front Desk Host',
+                    greeting: 'Good morning, Maria Santos 👋',
+                    title: 'Viewing as: Front Desk Host (Employee / Individual Contributor)',
+                    desc: 'You can draft performance objectives, log daily shift accomplishments & evidence, submit self-assessments, and take LMS quizzes.',
+                    tag: 'Individual Contributor',
+                    icon: 'fas fa-user',
+                    bannerClass: 'bg-blue-50/80 border-blue-200 text-blue-950',
+                    badgeClass: 'bg-blue-100 text-blue-800'
+                },
+                manager: {
+                    name: 'Chef Marco',
+                    initials: 'CM',
+                    roleLabel: 'Chef Marco (Supervisor)',
+                    badge: 'Mgr',
+                    dept: 'Culinary & F&B Lead',
+                    greeting: 'Good morning, Chef Marco 👨‍🍳',
+                    title: 'Viewing as: F&B & Culinary Supervisor (Operational Leader)',
+                    desc: 'You can review and endorse subordinate goals, write coaching notes, evaluate team appraisals, and assign 70-20-10 IDPs.',
+                    tag: 'Supervisor / Manager',
+                    icon: 'fas fa-user-tie',
+                    bannerClass: 'bg-amber-50/80 border-amber-200 text-amber-950',
+                    badgeClass: 'bg-amber-100 text-amber-800'
+                },
+                hr: {
+                    name: 'Elena Vance',
+                    initials: 'EV',
+                    roleLabel: 'Elena Vance (HR Director)',
+                    badge: 'HR',
+                    dept: 'HR Director',
+                    greeting: 'Welcome back, Elena Vance 📊',
+                    title: 'Viewing as: HR Director (Full Organizational Governance)',
+                    desc: 'You have full oversight over competency frameworks, bell-curve calibration normalization, LMS compliance, and 9-box succession.',
+                    tag: 'HR Administrator',
+                    icon: 'fas fa-shield-halved',
+                    bannerClass: 'bg-purple-50/80 border-purple-200 text-purple-950',
+                    badgeClass: 'bg-purple-100 text-purple-800'
+                },
+                executive: {
+                    name: 'Robert Sterling',
+                    initials: 'RS',
+                    roleLabel: 'Robert Sterling (GM / Exec)',
+                    badge: 'Exec',
+                    dept: 'General Manager',
+                    greeting: 'Executive Briefing, General Manager Sterling 🏨',
+                    title: 'Viewing as: General Manager (Executive Strategic View)',
+                    desc: 'Strategic overview of property-wide Hospitality Index, guest NPS analytics, leadership bench depth, and training ROI.',
+                    tag: 'General Manager',
+                    icon: 'fas fa-chess-king',
+                    bannerClass: 'bg-slate-100 border-slate-300 text-slate-950',
+                    badgeClass: 'bg-slate-200 text-slate-800'
+                }
+            };
+
+            function switchRole(roleKey) {
+                activePersonaKey = roleKey;
+                const persona = personaData[roleKey] || personaData.employee;
+
+                document.querySelectorAll('.sidebar-user-name').forEach(el => el.textContent = persona.name);
+                document.querySelectorAll('.sidebar-user-dept').forEach(el => el.textContent = persona.dept);
+                document.querySelectorAll('.role-badge-tag').forEach(el => el.textContent = persona.badge);
+                document.querySelectorAll('.user-avatar-circle').forEach(el => el.textContent = persona.initials);
+                const heroGreet = document.getElementById('hero-greeting-text');
+                if (heroGreet) heroGreet.textContent = persona.greeting;
+                const roleSelect = document.getElementById('role-switcher-select');
+                if (roleSelect) roleSelect.value = roleKey;
+
+                // Update Dynamic Role Context Banner
+                const contextBanner = document.getElementById('role-context-banner');
+                const contextTitle = document.getElementById('role-context-title');
+                const contextDesc = document.getElementById('role-context-desc');
+                const contextTag = document.getElementById('role-context-tag');
+                const contextIcon = document.getElementById('role-context-icon');
+
+                if (contextTitle) contextTitle.textContent = persona.title;
+                if (contextDesc) contextDesc.textContent = persona.desc;
+                if (contextTag) {
+                    contextTag.textContent = persona.tag;
+                    contextTag.className = `px-2.5 py-1 rounded-full text-[10px] font-bold ${persona.badgeClass}`;
+                }
+                if (contextIcon) {
+                    contextIcon.innerHTML = `<i class="${persona.icon}"></i>`;
+                }
+                if (contextBanner) {
+                    contextBanner.className = `p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs transition ${persona.bannerClass}`;
+                }
+
+                showToast(`Active persona: ${persona.name} (${persona.tag})`, 'info');
+            }
+
+            // HR Central Roster Management Helpers
+            const departmentRosters = {
+                front_office: [
+                    { id: 'maria_santos', name: 'Maria Santos', role: 'Front Desk Host', rating: '4.55' },
+                    { id: 'carlos_gomez', name: 'Carlos Gomez', role: 'Concierge Host', rating: '4.20' },
+                    { id: 'ana_tanaka', name: 'Ana Tanaka', role: 'Night Auditor', rating: '4.80' },
+                    { id: 'lucas_vargas', name: 'Lucas Vargas', role: 'Junior Host', rating: '3.90' }
+                ],
+                fb_service: [
+                    { id: 'pierre_dubois', name: 'Pierre Dubois', role: 'Master Sommelier', rating: '4.90' },
+                    { id: 'jean_luc', name: 'Jean-Luc Moreau', role: 'Head Waiter', rating: '4.40' },
+                    { id: 'chloe_dupont', name: 'Chloe Dupont', role: 'Bistro Hostess', rating: '4.15' }
+                ],
+                culinary: [
+                    { id: 'marco_rossi', name: 'Marco Rossi', role: 'Executive Sous Chef', rating: '4.85' },
+                    { id: 'antonio_silva', name: 'Antonio Silva', role: 'Chef de Partie', rating: '4.30' },
+                    { id: 'kenji_sato', name: 'Kenji Sato', role: 'Pastry Chef', rating: '4.70' }
+                ],
+                housekeeping: [
+                    { id: 'rosa_flores', name: 'Rosa Flores', role: 'Floor Supervisor', rating: '4.65' },
+                    { id: 'fatima_al', name: 'Fatima Al-Mansoor', role: 'Suite Attendant', rating: '4.50' }
+                ],
+                banquet: [
+                    { id: 'david_kim', name: 'David Kim', role: 'Banquet Captain', rating: '4.45' },
+                    { id: 'sarah_jenkins', name: 'Sarah Jenkins', role: 'Event Coordinator', rating: '4.60' }
+                ]
+            };
+
+            function filterDepartmentStaff(deptKey) {
+                const staffSelect = document.getElementById('hr-staff-select');
+                if (!staffSelect) return;
+                const staffList = departmentRosters[deptKey] || departmentRosters.front_office;
+
+                staffSelect.innerHTML = staffList.map(s =>
+                    `<option value="${s.id}">${s.name} (${s.role} · Q3: ${s.rating})</option>`
+                ).join('');
+
+                showToast(`Loaded ${staffList.length} staff records for ${deptKey.replace('_', ' ').toUpperCase()}`, 'info');
+            }
+
+            function selectEmployeeRecord(staffId) {
+                showToast(`Active record: ${staffId.replace('_', ' ').toUpperCase()}`, 'success');
+            }
+
+            function fastLoginAs(roleKey) {
+                switchRole(roleKey);
+                document.getElementById('auth-screen').classList.add('hidden');
+                showToast(`Welcome ${personaData[roleKey].name}!`, 'success');
+                initAllCharts();
+            }
+
+            function handleLoginSubmit(e) {
+                e.preventDefault();
+                document.getElementById('auth-screen').classList.add('hidden');
+                showToast('Welcome to Pulse Hospitality Hub!', 'success');
+                initAllCharts();
+            }
+
+            function logOutToAuth() {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                showToast('Signed out of session', 'info');
+            }
+
+            // Form Templates
+            function fillGoalTemplate(type) {
+                const titleInput = document.getElementById('goal-title-input');
+                const catInput = document.getElementById('goal-cat-input');
+                const kpiInput = document.getElementById('goal-kpi-input');
+                const weightInput = document.getElementById('goal-weight-input');
+                const evidenceInput = document.getElementById('goal-evidence-input');
+                const adviceEl = document.getElementById('gemini-goal-advice');
+
+                if (type === 'vip_nps') {
+                    titleInput.value = "Elevate VIP Guest Check-in Experience & NPS Loyalty Index";
+                    catInput.value = "Front Office & Guest Experience";
+                    kpiInput.value = "Net Promoter Score (NPS) >= +92 Score";
+                    weightInput.value = "High Priority (35% Weight - Core Role Objective)";
+                    evidenceInput.value = "Monthly Medallia guest ratings and Opera PMS check-in speed logs.";
+                    adviceEl.innerHTML = "✦ Excellent SMART alignment: Directly covers <strong>Guest Relations & Escalation</strong> competency for Senior Host promotion.";
+                } else if (type === 'upsell_wine') {
+                    titleInput.value = "Fine Dining Upselling & Sommelier Wine Pairing Recommendations";
+                    catInput.value = "Food & Beverage Service";
+                    kpiInput.value = "+18% Beverage Revenue / Cover (Avg Check Lift)";
+                    weightInput.value = "Medium Priority (20% Weight - Standard Operational Goal)";
+                    evidenceInput.value = "Micros POS beverage report printouts.";
+                    adviceEl.innerHTML = "✦ High Revenue Impact: Directly targets the <strong>Revenue Optimization</strong> competency standard.";
+                } else if (type === 'haccp_audit') {
+                    titleInput.value = "HACCP Food Safety, Cold-Chain Logging & Zero Non-Conformance";
+                    catInput.value = "Culinary & Kitchen Brigade";
+                    kpiInput.value = "100% Audit Pass Score (Zero Violations)";
+                    weightInput.value = "High Priority (35% Weight - Core Role Objective)";
+                    evidenceInput.value = "Daily digital temperature walk-in logs.";
+                    adviceEl.innerHTML = "✦ Critical Compliance Goal: Essential for maintaining hotel 5-star hygiene license.";
+                } else if (type === 'room_turnaround') {
+                    titleInput.value = "Express Suite Turnover & 5-Star Deep Clean Sanitization";
+                    catInput.value = "Housekeeping & Facilities";
+                    kpiInput.value = "Turnaround < 22 mins / suite";
+                    weightInput.value = "Medium Priority (20% Weight - Standard Operational Goal)";
+                    evidenceInput.value = "Housekeeping PMS floor logs.";
+                    adviceEl.innerHTML = "✦ Operational Efficiency: Directly prevents late check-in friction.";
+                }
+
+                showToast('Loaded pre-filled goal template!', 'success');
+            }
+
+            function setKPIValue(kpiStr) {
+                document.getElementById('goal-kpi-input').value = kpiStr;
+                showToast(`KPI set: "${kpiStr}"`, 'info');
+            }
+
+            function setRoughNote(noteStr) {
+                document.getElementById('ai-rough-notes').value = noteStr;
+                showToast('Scenario loaded! Click Generate below.', 'info');
+            }
+
+            // Handlers
+            function handleGoalSubmit(e) {
+                e.preventDefault();
+                const title = document.getElementById('goal-title-input').value;
+                const cat = document.getElementById('goal-cat-input').value;
+                const date = document.getElementById('goal-date-input').value;
+                const kpi = document.getElementById('goal-kpi-input').value;
+
+                const tbody = document.getElementById('goals-table-body');
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition bg-emerald-50/20';
+                tr.innerHTML = `
+                <td class="px-5 py-4 font-semibold text-slate-900">
+                    ${title}
+                    <p class="text-[11px] text-slate-400 font-normal">Newly submitted</p>
+                </td>
+                <td class="px-5 py-4 font-medium">${kpi}</td>
+                <td class="px-5 py-4">${cat}</td>
+                <td class="px-5 py-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-16 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-primary h-1.5 rounded-full" style="width: 15%"></div>
+                        </div>
+                        <span class="font-bold">15%</span>
+                    </div>
+                </td>
+                <td class="px-5 py-4 text-slate-500">${date}</td>
+                <td class="px-5 py-4">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Pending Approval</span>
+                </td>
+                <td class="px-5 py-4 text-right">
+                    <button onclick="openGoalReview('${title}')" class="text-primary hover:text-primary-dark font-semibold">Review</button>
+                </td>
+            `;
+                tbody.insertBefore(tr, tbody.firstChild);
+
+                totalGoals++;
+                document.getElementById('kpi-goals-ratio').textContent = `${completedGoals} of ${totalGoals} Done`;
+
+                closeModal('modal-create-goal');
+                showToast(`Goal "${title}" submitted to supervisor!`, 'success');
+            }
+
+            function openGoalReview(title) {
+                document.getElementById('review-goal-title').textContent = title;
+                openModal('modal-approve-goal');
+            }
+
+            function approveGoalOfficial() {
+                closeModal('modal-approve-goal');
+                showToast('Goal officially approved by supervisor!', 'success');
+            }
+
+            function requestGoalRevision() {
+                closeModal('modal-approve-goal');
+                showToast('Revision request sent to employee with notes.', 'info');
+            }
+
+            function generateAIFeedback() {
+                const rough = document.getElementById('ai-rough-notes').value;
+                if (rough.trim()) {
+                    document.getElementById('ai-generated-text').textContent = `"${rough.trim()} — (SBI Model applied): Observed during dinner service. High guest engagement maintained. Recommending continued focus on team delegation."`;
+                }
+                document.getElementById('ai-output-box').classList.remove('hidden');
+                showToast('Gemini structured SBI coaching generated!', 'success');
+            }
+
+            function copyAndApplyFeedback() {
+                closeModal('modal-ai-feedback');
+                showToast('Coaching feedback posted to employee wall!', 'success');
+            }
+
+            function submitSelfAssessment() {
+                closeModal('modal-self-assessment');
+                showToast('Self-assessment ratings submitted for calibration!', 'success');
+            }
+
+            function addGapToIDP(skillName, recommendedModule) {
+                const container = document.getElementById('idp-tasks-container');
+                const task = document.createElement('div');
+                task.className = 'p-4 rounded-2xl border border-primary/30 bg-primary/5 space-y-2 text-xs';
+                task.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span class="font-bold text-slate-900">Goal: Close Gap in ${skillName}</span>
+                    <span class="text-primary font-bold">New (0%)</span>
+                </div>
+                <p class="text-slate-600">Assigned Module: <strong>${recommendedModule}</strong> · Mentorship scheduled</p>
+                <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-primary h-1.5 rounded-full" style="width: 10%"></div>
+                </div>
+            `;
+                container.insertBefore(task, container.firstChild);
+                showToast(`Skill "${skillName}" added to IDP!`, 'success');
+                switchPillar('pillar-comp');
+                switchSubTab('comp', 'idp');
+            }
+
+            function launchInteractiveQuiz(moduleName) {
+                document.getElementById('quiz-modal-title').textContent = `Quiz: ${moduleName}`;
+                openModal('modal-lms-quiz');
+            }
+
+            function submitQuizSuccess() {
+                closeModal('modal-lms-quiz');
+                awardXP(100);
+                showToast('Congratulations! Scored 100% on the quiz! +100 XP awarded!', 'success');
+            }
+
+            // =========================================================================
+            // LEARNING MANAGEMENT SYSTEM (LMS) - DIGITAL 3D BOOK & SOP LIBRARY
+            // =========================================================================
+            let currentReadingBookId = null;
+            let lmsActiveDeptFilter = 'all';
