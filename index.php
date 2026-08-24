@@ -22,11 +22,12 @@
         <!-- Sonner Toast (vanilla) CSS -->
         <link href="https://cdn.jsdelivr.net/npm/vanilla-sonner@latest/dist/vanilla-sonner.min.css" rel="stylesheet" />
 
-        <!-- Sonner Toast Controller & Global Shim with Max 3 FIFO Queue -->
+        <!-- Sonner Toast Controller & Global Shim with Max 3 FIFO Queue & 3s Auto-Dismiss -->
         <script>
             window._toastQueue = [];
             window._activeToastIds = [];
             const MAX_VISIBLE_TOASTS = 3;
+            const TOAST_DURATION = 2000;
 
             window.showToast = function(msg, type = 'info') {
                 if (window.toast) {
@@ -36,14 +37,19 @@
                             window.toast.dismiss(oldestId);
                         }
                     }
+                    const options = { duration: TOAST_DURATION };
                     let id;
-                    if (type === 'success') id = window.toast.success(msg);
-                    else if (type === 'error') id = window.toast.error(msg);
-                    else if (type === 'warning') id = window.toast.warning(msg);
-                    else id = window.toast.info(msg);
+                    if (type === 'success') id = window.toast.success(msg, options);
+                    else if (type === 'error') id = window.toast.error(msg, options);
+                    else if (type === 'warning') id = window.toast.warning(msg, options);
+                    else id = window.toast.info(msg, options);
 
                     if (id !== undefined) {
                         window._activeToastIds.push(id);
+                        setTimeout(() => {
+                            const idx = window._activeToastIds.indexOf(id);
+                            if (idx > -1) window._activeToastIds.splice(idx, 1);
+                        }, TOAST_DURATION);
                     }
                 } else {
                     window._toastQueue.push({ msg, type });
@@ -137,8 +143,8 @@
     </head>
 
     <body class="bg-[#FAF8F7] text-[#211A1A] antialiased h-screen flex flex-col overflow-hidden">
-        <!-- Sonner Toaster Container with Dismiss/Close (X) Button (Max 3) -->
-        <ol id="sonner-toast-container" position="top-right" max-toasts="3" rich-colors="true" close-button="true" theme="light"></ol>
+        <!-- Sonner Toaster Container with Dismiss/Close (X) Button (Max 3, 3s Duration) -->
+        <ol id="sonner-toast-container" position="top-right" max-toasts="3" duration="2000" rich-colors="true" close-button="true" theme="light"></ol>
 
         <!-- 1. Authentication & Role Demo Screen -->
         <?php include_once 'view/auth.php'; ?>
