@@ -3,41 +3,48 @@
 
                             <!-- Top Sub-Navigation Pills (All 7 Lifecycle Stages) -->
                             <div
-                                class="raindrop-track flex items-center justify-between gap-2 p-1.5 overflow-x-auto custom-scrollbar">
+                                class="subnav-track flex items-center justify-between gap-2 p-1.5 overflow-x-auto custom-scrollbar">
                                 <div class="flex items-center space-x-1.5 flex-nowrap">
                                     <button onclick="switchSubTab('perf', 'plan')"
                                         class="subnav-pill subnav-perf active whitespace-nowrap" data-sub="plan">
-                                        <i class="fas fa-bullseye mr-1 text-primary"></i> 1. Planning
+                                        <i class="fas fa-bullseye mr-1.5 text-primary"></i>
+                                        <span>1. Planning</span>
                                     </button>
                                     <button onclick="switchSubTab('perf', 'approve')"
                                         class="subnav-pill subnav-perf whitespace-nowrap" data-sub="approve">
-                                        <i class="fas fa-signature mr-1 text-amber-600"></i> 2. Approval
+                                        <i class="fas fa-signature mr-1.5 text-gold-dark"></i>
+                                        <span>2. Approval</span>
                                     </button>
                                     <button onclick="switchSubTab('perf', 'monitor')"
                                         class="subnav-pill subnav-perf whitespace-nowrap" data-sub="monitor">
-                                        <i class="fas fa-stream mr-1 text-blue-600"></i> 3. Monitoring
+                                        <i class="fas fa-stream mr-1.5 text-dusty-dark"></i>
+                                        <span>3. Monitoring</span>
                                     </button>
                                     <button onclick="switchSubTab('perf', 'eval')"
                                         class="subnav-pill subnav-perf whitespace-nowrap" data-sub="eval">
-                                        <i class="fas fa-star-half-stroke mr-1 text-purple-600"></i> 4. Evaluation
+                                        <i class="fas fa-star-half-stroke mr-1.5 text-primary"></i>
+                                        <span>4. Evaluation</span>
                                     </button>
                                     <button onclick="switchSubTab('perf', 'review')"
                                         class="subnav-pill subnav-perf whitespace-nowrap" data-sub="review">
-                                        <i class="fas fa-scale-balanced mr-1 text-indigo-600"></i> 5. Review &
-                                        Calibration
+                                        <i class="fas fa-scale-balanced mr-1.5 text-dusty-dark"></i>
+                                        <span>5. Review &amp; Calibration</span>
                                     </button>
                                     <button onclick="switchSubTab('perf', 'idp')"
                                         class="subnav-pill subnav-perf whitespace-nowrap" data-sub="idp">
-                                        <i class="fas fa-route mr-1 text-emerald-600"></i> 6. Development Plan
+                                        <i class="fas fa-route mr-1.5 text-sage-dark"></i>
+                                        <span>6. Development Plan</span>
                                     </button>
                                     <button onclick="switchSubTab('perf', 'cycle')"
                                         class="subnav-pill subnav-perf whitespace-nowrap" data-sub="cycle">
-                                        <i class="fas fa-rotate mr-1 text-teal-600"></i> 7. Next Cycle
+                                        <i class="fas fa-rotate mr-1.5 text-sage-dark"></i>
+                                        <span>7. Next Cycle</span>
                                     </button>
                                 </div>
                                 <button onclick="openModal('modal-create-goal')"
-                                    class="btn-raindrop btn-raindrop-primary px-4 py-1.5 text-xs font-bold whitespace-nowrap ml-2 flex-shrink-0">
-                                    + Set Objective
+                                    class="btn-primary px-3.5 py-1.5 text-xs font-bold whitespace-nowrap ml-2 flex-shrink-0">
+                                    <i class="fas fa-plus mr-1"></i>
+                                    <span>Set Objective</span>
                                 </button>
                             </div>
 
@@ -150,40 +157,33 @@
 
                                 <!-- Planning Overview Hero -->
                                 <div
-                                    class="card-clean p-6 bg-slate-900 border border-slate-800 text-white rounded-3xl space-y-4">
+                                    class="card-hero p-6 bg-white space-y-4">
                                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                         <div>
-                                            <span
-                                                class="text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-primary-200 px-3 py-1 rounded-full border border-slate-700">Phase
-                                                1: Performance Planning</span>
-                                            <h3 class="font-heading font-bold text-lg text-white mt-1.5">Joint Objective
-                                                Setting & Target Definition</h3>
-                                            <p class="text-xs text-slate-300 mt-0.5">Employee and supervisor collaborate
-                                                to define high-impact hospitality KPIs and expected deliverables for Q3.
-                                            </p>
+                                            <span class="badge-primary">Phase 1: Performance Planning</span>
+                                            <h3 class="font-heading font-bold text-lg text-slate-900 mt-1.5">Joint Objective Setting &amp; Target Definition</h3>
+                                            <p class="text-xs text-slate-500 mt-0.5">Employee and supervisor collaborate to define high-impact hospitality KPIs and expected deliverables for Q3.</p>
                                         </div>
                                         <button onclick="openModal('modal-create-goal')"
-                                            class="btn-raindrop btn-raindrop-primary px-5 py-2.5 text-xs font-bold flex items-center space-x-2 self-start sm:self-auto shadow-sm">
+                                            class="btn-primary px-4 py-2.5 text-xs font-bold flex items-center space-x-2 self-start sm:self-auto">
                                             <i class="fas fa-plus text-xs"></i>
                                             <span>Define New Objective</span>
                                         </button>
                                     </div>
 
                                     <div
-                                        class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs border-t border-white/10">
-                                        <div class="bg-white/5 p-3 rounded-2xl border border-white/10">
-                                            <p class="text-slate-400 text-[10px]">Agreed Objectives</p>
-                                            <p class="text-lg font-bold text-white font-heading">3 Active Targets</p>
+                                        class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs border-t border-[#E8DEDC]">
+                                        <div class="bg-[#FAF8F7] p-3 rounded-2xl border border-[#E8DEDC]">
+                                            <p class="text-slate-500 text-[10px]">Agreed Objectives</p>
+                                            <p class="text-lg font-bold text-slate-900 font-heading">3 Active Targets</p>
                                         </div>
-                                        <div class="bg-white/5 p-3 rounded-2xl border border-white/10">
-                                            <p class="text-slate-400 text-[10px]">Total Weight Allocation</p>
-                                            <p class="text-lg font-bold text-emerald-400 font-heading">100% Calibrated
-                                            </p>
+                                        <div class="bg-[#FAF8F7] p-3 rounded-2xl border border-[#E8DEDC]">
+                                            <p class="text-slate-500 text-[10px]">Total Weight Allocation</p>
+                                            <p class="text-lg font-bold text-sage-dark font-heading">100% Calibrated</p>
                                         </div>
-                                        <div class="bg-white/5 p-3 rounded-2xl border border-white/10">
-                                            <p class="text-slate-400 text-[10px]">Target Alignment</p>
-                                            <p class="text-lg font-bold text-primary-light font-heading">5-Star
-                                                Standards</p>
+                                        <div class="bg-[#FAF8F7] p-3 rounded-2xl border border-[#E8DEDC]">
+                                            <p class="text-slate-500 text-[10px]">Target Alignment</p>
+                                            <p class="text-lg font-bold text-primary font-heading">5-Star Standards</p>
                                         </div>
                                     </div>
                                 </div>
@@ -433,12 +433,12 @@
                                         </div>
                                         <div class="flex items-center space-x-2">
                                             <button onclick="openModal('modal-ai-feedback')"
-                                                class="btn-raindrop btn-raindrop-primary px-4 py-2 text-white text-xs font-bold shadow-xs flex items-center space-x-1.5">
+                                                class="btn-primary px-3.5 py-2 text-xs font-bold flex items-center space-x-1.5">
                                                 <i class="fas fa-wand-magic-sparkles text-[11px]"></i>
                                                 <span>AI Refiner</span>
                                             </button>
                                             <button onclick="logAchievementPrompt()"
-                                                class="btn-raindrop btn-raindrop-secondary px-4 py-2 text-slate-700 text-xs font-bold">
+                                                class="btn-secondary px-3.5 py-2 text-xs font-semibold">
                                                 + Log Milestone
                                             </button>
                                         </div>
@@ -656,12 +656,12 @@
                                         </div>
                                         <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
                                             <button onclick="openRemedialBooksModal('maria')"
-                                                class="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition btn-raindrop">
+                                                class="px-3.5 py-2 bg-gold hover:bg-gold-dark text-white rounded-xl text-xs font-semibold shadow-xs flex items-center space-x-1.5 transition">
                                                 <i class="fas fa-book-medical"></i>
                                                 <span>Prescribe LMS Books (&lt; 3.0)</span>
                                             </button>
                                             <button onclick="openModal('modal-ai-feedback')"
-                                                class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-emerald-700 btn-raindrop flex items-center space-x-1.5">
+                                                class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5">
                                                 <i class="fas fa-plus"></i>
                                                 <span>Add IDP Action</span>
                                             </button>
@@ -848,31 +848,23 @@
 
                                     <!-- Progress to Next Cycle Card -->
                                     <div
-                                        class="p-6 bg-slate-900 border border-slate-800 text-white rounded-3xl space-y-4">
+                                        class="card-hero p-6 bg-white space-y-4">
                                         <div class="flex items-center justify-between">
                                             <div>
-                                                <span class="text-xs font-bold text-teal-300">Continuous Growth
-                                                    Metric</span>
-                                                <h4 class="font-heading font-bold text-xl text-white mt-0.5">Development
-                                                    to Performance Transfer</h4>
+                                                <span class="badge-sage">Continuous Growth Metric</span>
+                                                <h4 class="font-heading font-bold text-xl text-slate-900 mt-1">Development to Performance Transfer</h4>
                                             </div>
-                                            <span class="text-2xl font-bold text-teal-400 font-heading">+14.2%
-                                                Lift</span>
+                                            <span class="text-2xl font-bold text-sage-dark font-heading">+14.2% Lift</span>
                                         </div>
-                                        <p class="text-xs text-slate-300 leading-relaxed">By undertaking the 70-20-10
-                                            IDP activities, Maria achieved a 14.2% performance lift in guest check-in
-                                            speed and unlocked the <strong>Front Office Lead</strong> competency badge.
-                                            These achievements will form the elevated baseline for the <strong>2026 Q4
-                                                Cycle</strong>.</p>
+                                        <p class="text-xs text-slate-600 leading-relaxed">By undertaking the 70-20-10 IDP activities, Maria achieved a 14.2% performance lift in guest check-in speed and unlocked the <strong>Front Office Lead</strong> competency badge. These achievements will form the elevated baseline for the <strong>2026 Q4 Cycle</strong>.</p>
 
                                         <div
-                                            class="pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                            <span class="text-xs text-slate-400"><i
-                                                    class="fas fa-check text-teal-400 mr-1.5"></i> All 7 lifecycle
-                                                phases completed for 2026 Q3</span>
+                                            class="pt-3 border-t border-[#E8DEDC] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <span class="text-xs text-slate-500"><i
+                                                    class="fas fa-check text-sage-dark mr-1.5"></i> All 7 lifecycle phases completed for 2026 Q3</span>
                                             <button
                                                 onclick="switchSubTab('perf', 'plan'); showToast('Loaded next performance planning cycle (Q4)!', 'success');"
-                                                class="btn-raindrop px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs transition flex items-center space-x-2">
+                                                class="btn-primary px-5 py-2.5 text-xs font-bold transition flex items-center space-x-2">
                                                 <span>Initiate Next Performance Cycle (Q4)</span>
                                                 <i class="fas fa-arrow-right text-[10px]"></i>
                                             </button>

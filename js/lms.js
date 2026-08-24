@@ -2,7 +2,7 @@ const lmsTrainingBooks = [
                 {
                     id: 'book_front_office',
                     title: 'Front Desk Standards & VIP Protocols Codex',
-                    subtitle: 'Grand Horizon Hospitality Standard Operating Procedure',
+                    subtitle: 'Oxford Suites, Makati Hospitality Standard Operating Procedure',
                     dept: 'front_office',
                     deptName: 'Front Office',
                     category: 'SOP Manual',
@@ -140,12 +140,8 @@ const lmsTrainingBooks = [
                     time: '20 min read',
                     xp: 100,
                     author: 'Rosa Flores · Floor Supervisor',
-                    gradient: 'from-[#581C87] via-[#6B21A8] to-[#3B0764]',
-                    spineColor: 'rgba(168, 85, 247, 0.4)',
-                    foilColor: 'border-purple-300/40 text-purple-100',
                     icon: 'fa-bed',
                     badge: 'Housekeeping Standard',
-                    badgeBg: 'bg-purple-300 text-purple-950',
                     desc: 'Master the 45-degree hospital fold bed making, aromatherapy pillow placement, bathroom marble buffing, and turndown treats styling.',
                     tip: 'Never leave fingerprints on polished brass handles or bathroom mirrors. Use microfiber glass towels for final inspection.',
                     chapters: [
@@ -172,12 +168,8 @@ const lmsTrainingBooks = [
                     time: '15 min read',
                     xp: 120,
                     author: 'Carlos Gomez & Security Operations',
-                    gradient: 'from-[#1E293B] via-[#334155] to-[#0F172A]',
-                    spineColor: 'rgba(239, 68, 68, 0.4)',
-                    foilColor: 'border-red-400/40 text-red-100',
                     icon: 'fa-shield-halved',
                     badge: 'Emergency Protocol',
-                    badgeBg: 'bg-red-500 text-white',
                     desc: 'Standardized LAST method (Listen, Apologize, Solve, Thank) for handling upset guests, emergency medical dispatch, and fire alarm evacuation routes.',
                     tip: 'Always lower your vocal tone by 10% and slow speech pacing when de-escalating an agitated guest.',
                     chapters: [
@@ -212,65 +204,47 @@ const lmsTrainingBooks = [
 
                 let booksHtml = filtered.map(book => {
                     return `
-                        <!-- 3D Realistic Book Card -->
-                        <div class="book-card flex flex-col h-full group select-none">
-                            
-                            <!-- Book Cover Art -->
-                            <div class="book-cover bg-gradient-to-br ${book.gradient} text-white p-5 sm:p-6 flex flex-col justify-between h-[340px] relative">
-                                
-                                <!-- Left Book Spine & Stitching Shadow -->
-                                <div class="book-spine" style="background: linear-gradient(90deg, rgba(0,0,0,0.5) 0%, ${book.spineColor} 40%, rgba(0,0,0,0.45) 100%);"></div>
-                                
-                                <!-- Right Stacked Pages Edge Texture -->
-                                <div class="book-pages-edge"></div>
-
-                                <!-- Top Protruding Bookmark Ribbon -->
-                                <div class="book-ribbon flex items-end justify-center pb-1">
-                                    <span class="text-[9px] font-black text-amber-950">+${book.xp}</span>
-                                </div>
-
-                                <!-- Top Header & Foil Crest -->
-                                <div class="pl-2 relative z-10">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${book.badgeBg} shadow-2xs">
-                                            ${book.badge}
-                                        </span>
+                        <!-- Minimalist Clean Book Card -->
+                        <div class="card-clean p-5 flex flex-col justify-between h-full group bg-white border border-[#E8DEDC] hover:border-[#D8CECB] transition">
+                            <div class="space-y-3">
+                                <!-- Top Badges & Icon -->
+                                <div class="flex items-center justify-between">
+                                    <div class="w-9 h-9 rounded-xl bg-[#FAF8F7] text-primary border border-[#E8DEDC] flex items-center justify-center text-sm font-bold shadow-2xs">
+                                        <i class="fas ${book.icon}"></i>
                                     </div>
-                                    <p class="text-[10px] uppercase tracking-widest text-slate-300 font-bold mt-2">${book.deptName} · ${book.category}</p>
-                                </div>
-
-                                <!-- Center Title & Embossed Border -->
-                                <div class="pl-2 py-3 relative z-10">
-                                    <div class="p-3.5 rounded-xl border ${book.foilColor} bg-white/5 backdrop-blur-xs shadow-inner space-y-1.5">
-                                        <div class="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-xs mb-1">
-                                            <i class="fas ${book.icon}"></i>
-                                        </div>
-                                        <h4 class="font-heading font-extrabold text-sm sm:text-base leading-snug tracking-tight text-white drop-shadow-xs">${book.title}</h4>
-                                        <p class="text-[10px] text-slate-200 line-clamp-2 leading-relaxed opacity-90">${book.subtitle || book.desc}</p>
+                                    <div class="flex items-center space-x-1.5">
+                                        <span class="badge-secondary">${book.deptName}</span>
+                                        <span class="badge-gold">+${book.xp} XP</span>
                                     </div>
                                 </div>
+                                
+                                <!-- Content -->
+                                <div>
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${book.category}</span>
+                                    <h4 class="font-heading font-bold text-sm sm:text-base text-slate-900 mt-0.5 leading-snug group-hover:text-primary transition">${book.title}</h4>
+                                    <p class="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">${book.desc}</p>
+                                </div>
 
-                                <!-- Bottom Metadata & Author -->
-                                <div class="pl-2 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-300 relative z-10">
-                                    <span class="font-medium truncate max-w-[130px]"><i class="fas fa-feather-pointed mr-1 text-amber-400"></i> ${book.author}</span>
-                                    <span class="font-bold text-white bg-white/10 px-2 py-0.5 rounded-md flex-shrink-0">${book.pages}</span>
+                                <!-- Metadata Row -->
+                                <div class="pt-2.5 border-t border-[#E8DEDC] flex items-center justify-between text-[11px] text-slate-400">
+                                    <span class="truncate max-w-[140px]"><i class="fas fa-feather-pointed mr-1 text-slate-400"></i> ${book.author}</span>
+                                    <span class="font-medium text-slate-600">${book.pages}</span>
                                 </div>
                             </div>
 
-                            <!-- Action Pedestal Beneath Book -->
-                            <div class="pt-3 pb-1 px-1 flex items-center justify-between gap-2 mt-auto">
+                            <!-- Actions -->
+                            <div class="pt-3.5 flex items-center justify-between gap-2 border-t border-[#E8DEDC] mt-3.5">
                                 <button onclick="openBookReader('${book.id}')"
-                                    class="flex-1 py-2 px-3 bg-white hover:bg-slate-50 border border-slate-200 hover:border-amber-400 text-slate-800 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 shadow-2xs hover:shadow-xs group/btn">
-                                    <i class="fas fa-book-open text-amber-600 group-hover/btn:scale-110 transition"></i>
+                                    class="flex-1 py-2 px-3 btn-primary text-xs font-bold flex items-center justify-center space-x-1.5">
+                                    <i class="fas fa-book-open text-xs"></i>
                                     <span>Read Handbook</span>
                                 </button>
                                 <button onclick="launchInteractiveQuiz('${book.title.replace(/'/g, "\\'")}')"
-                                    class="py-2 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold transition flex items-center space-x-1 shadow-2xs hover:shadow-xs flex-shrink-0">
-                                    <i class="fas fa-graduation-cap text-emerald-600"></i>
-                                    <span>Quiz (+${book.xp} XP)</span>
+                                    class="py-2 px-3 btn-secondary text-xs font-semibold flex items-center space-x-1 flex-shrink-0">
+                                    <i class="fas fa-graduation-cap text-gold-dark text-xs"></i>
+                                    <span>Quiz</span>
                                 </button>
                             </div>
-
                         </div>
                     `;
                 }).join('');
@@ -278,15 +252,15 @@ const lmsTrainingBooks = [
                 // Add Upload New Document / Book Card Slot on Shelf
                 const uploadCardSlot = `
                     <div onclick="openModal('modal-lms-upload')"
-                        class="border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50/50 hover:bg-emerald-50/40 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition group h-[340px] shadow-2xs hover:shadow-md">
-                        <div class="w-14 h-14 rounded-2xl bg-white border border-slate-200 group-hover:border-emerald-300 flex items-center justify-center text-emerald-600 text-2xl shadow-xs group-hover:scale-110 transition mb-3">
+                        class="border-2 border-dashed border-[#E8DEDC] hover:border-primary bg-[#FAF8F7] hover:bg-primary-50/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition group min-h-[260px]">
+                        <div class="w-12 h-12 rounded-xl bg-white border border-[#E8DEDC] group-hover:border-primary-100 flex items-center justify-center text-primary text-xl shadow-2xs group-hover:scale-105 transition mb-2.5">
                             <i class="fas fa-file-circle-plus"></i>
                         </div>
-                        <h4 class="font-heading font-bold text-sm text-slate-900 group-hover:text-emerald-800 transition">Upload New Handbook / Doc</h4>
-                        <p class="text-xs text-slate-500 max-w-[200px] mt-1.5 leading-relaxed">Publish PDF standard operating procedures, video masterclasses, or guidelines to associate library</p>
-                        <span class="mt-4 px-3 py-1.5 rounded-full bg-emerald-600 text-white font-bold text-[11px] shadow-2xs group-hover:bg-emerald-700 transition flex items-center space-x-1.5">
+                        <h4 class="font-heading font-bold text-sm text-slate-900 group-hover:text-primary transition">Upload Handbook / SOP</h4>
+                        <p class="text-xs text-slate-500 max-w-[200px] mt-1 leading-relaxed">Publish PDF standard operating procedures or guides</p>
+                        <span class="mt-3.5 px-3 py-1.5 rounded-full btn-primary text-[11px] font-bold transition flex items-center space-x-1.5">
                             <i class="fas fa-arrow-up-from-bracket text-xs"></i>
-                            <span>Upload & Publish Document</span>
+                            <span>Upload Document</span>
                         </span>
                     </div>
                 `;
@@ -299,9 +273,9 @@ const lmsTrainingBooks = [
                 document.querySelectorAll('.lms-dept-filter-chip').forEach(chip => {
                     const chipDept = chip.getAttribute('data-dept');
                     if (chipDept === lmsActiveDeptFilter) {
-                        chip.className = 'lms-dept-filter-chip active px-3 py-1 rounded-full font-bold bg-amber-500 text-white shadow-2xs transition text-[11px] whitespace-nowrap';
+                        chip.className = 'lms-dept-filter-chip active px-3 py-1 rounded-full font-bold bg-primary text-white transition text-[11px] whitespace-nowrap';
                     } else {
-                        chip.className = 'lms-dept-filter-chip px-3 py-1 rounded-full font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition text-[11px] whitespace-nowrap';
+                        chip.className = 'lms-dept-filter-chip px-3 py-1 rounded-full font-semibold bg-[#FAF8F7] text-slate-600 border border-[#E8DEDC] hover:bg-slate-100 transition text-[11px] whitespace-nowrap';
                     }
                 });
                 renderLmsBooks();
@@ -398,16 +372,6 @@ const lmsTrainingBooks = [
                     all: 'Property-Wide'
                 };
 
-                const gradients = [
-                    'from-[#1E3A8A] via-[#1D4ED8] to-[#0F172A]',
-                    'from-[#065F46] via-[#047857] to-[#022C22]',
-                    'from-[#7F1418] via-[#9E1B20] to-[#450A0C]',
-                    'from-[#581C87] via-[#6B21A8] to-[#3B0764]',
-                    'from-[#92400E] via-[#B45309] to-[#451A03]'
-                ];
-
-                const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
-
                 const newBook = {
                     id: 'book_' + Date.now(),
                     title: title,
@@ -419,12 +383,8 @@ const lmsTrainingBooks = [
                     time: '15 min read',
                     xp: xp,
                     author: 'Elena Vance (HR Content Management)',
-                    gradient: randomGradient,
-                    spineColor: 'rgba(255, 255, 255, 0.25)',
-                    foilColor: 'border-amber-300/40 text-amber-100',
                     icon: 'fa-book-open-reader',
                     badge: 'Newly Uploaded SOP',
-                    badgeBg: 'bg-emerald-400 text-emerald-950',
                     desc: desc,
                     tip: 'Review all mandatory steps carefully before taking the verification knowledge quiz.',
                     chapters: [
@@ -433,7 +393,7 @@ const lmsTrainingBooks = [
                         'Chapter 3: Practical Checklist & Digital Sign-off'
                     ],
                     sopSteps: [
-                        { step: '1. Preparation & Setup', text: 'Ensure all equipment, workstations, and digital systems are calibrated according to Grand Horizon specifications.' },
+                        { step: '1. Preparation & Setup', text: 'Ensure all equipment, workstations, and digital systems are calibrated according to Oxford Suites, Makati specifications.' },
                         { step: '2. Standard Procedure Execution', text: desc },
                         { step: '3. Compliance Audit Sign-off', text: 'Document completion in shift register and inform department supervisor.' }
                     ]
@@ -442,7 +402,6 @@ const lmsTrainingBooks = [
                 lmsTrainingBooks.unshift(newBook);
                 renderLmsBooks();
                 closeModal('modal-lms-upload');
-                // Document upload is for content publishing only - no XP bonus granted
                 showToast(`Handbook "${title}" successfully published to associate training library!`, 'success');
 
                 // Reset form
@@ -802,26 +761,26 @@ const lmsTrainingBooks = [
                     const isRecommended = book.id === emp.recommendedBookId;
 
                     return `
-                        <div class="p-3.5 rounded-2xl border ${isRecommended ? 'border-amber-300 bg-amber-50/40 shadow-xs ring-1 ring-amber-300/60' : 'border-slate-200 bg-slate-50 hover:bg-white'} flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition">
+                        <div class="p-3.5 rounded-2xl border ${isRecommended ? 'border-primary/40 bg-primary-50/30 shadow-xs' : 'border-[#E8DEDC] bg-white hover:bg-[#FAF8F7]'} flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition">
                             <div class="flex items-start space-x-3">
-                                <div class="w-10 h-12 rounded-lg bg-gradient-to-br ${book.gradient} flex items-center justify-center text-amber-300 text-sm shadow-xs flex-shrink-0 border border-white/20">
+                                <div class="w-9 h-9 rounded-xl bg-[#FAF8F7] text-primary border border-[#E8DEDC] flex items-center justify-center text-sm shadow-2xs flex-shrink-0">
                                     <i class="fas ${book.icon}"></i>
                                 </div>
                                 <div class="space-y-0.5">
                                     <div class="flex items-center space-x-2">
                                         <p class="font-bold text-slate-900 text-xs">${book.title}</p>
-                                        ${isRecommended ? '<span class="text-[9px] font-extrabold uppercase bg-red-600 text-white px-2 py-0.5 rounded-full shadow-2xs animate-pulse">Targeted Gap Match</span>' : ''}
+                                        ${isRecommended ? '<span class="badge-terracotta text-[9px] uppercase tracking-wider font-extrabold">Gap Match</span>' : ''}
                                     </div>
                                     <p class="text-[11px] text-slate-500">${book.deptName} · ${book.category} · <span class="font-medium text-slate-700">${book.pages}</span></p>
                                 </div>
                             </div>
                             <div class="flex items-center space-x-2 self-end sm:self-auto flex-shrink-0">
                                 <button onclick="openBookReader('${book.id}')"
-                                    class="px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">
+                                    class="px-3 py-1.5 btn-secondary text-xs font-semibold">
                                     Preview
                                 </button>
                                 <button onclick="assignBookToIdp('${book.id}')"
-                                    class="px-3.5 py-1.5 ${isRecommended ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'} rounded-xl text-xs font-bold shadow-xs transition btn-raindrop flex items-center space-x-1">
+                                    class="px-3.5 py-1.5 btn-primary text-xs font-bold transition flex items-center space-x-1">
                                     <i class="fas fa-plus mr-1"></i>
                                     <span>Assign to IDP</span>
                                 </button>

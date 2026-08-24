@@ -4,7 +4,8 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Pulse · Hotel & Restaurant Performance and Development System</title>
+        <title>Oxford Suites, Makati · Performance and Development Hub</title>
+        <link rel="icon" type="image/png" href="public/images/removed-bg-logo.png">
         <!-- Google Fonts: Inter & Outfit -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,21 +27,60 @@
                         colors: {
                             primary: {
                                 DEFAULT: '#9E1B20',
-                                dark: '#7F1418',
-                                light: '#B92B30',
-                                50: '#FEF2F2',
-                                100: '#FEE2E2',
-                                200: '#FECACA',
+                                dark: '#7A1519',
+                                light: '#B9363B',
+                                50: '#FFF5F5',
+                                100: '#FDE8E8',
+                                200: '#F9CACA',
                                 500: '#9E1B20',
-                                600: '#7F1418',
+                                600: '#7A1519',
                                 700: '#631013',
                             },
+                            sage: {
+                                DEFAULT: '#7A9A7E',
+                                dark: '#607C64',
+                                light: '#A8C0AA',
+                                50: '#F4F7F4',
+                                100: '#E5EDE6',
+                                200: '#C9DBCB',
+                                500: '#7A9A7E',
+                                600: '#607C64',
+                            },
+                            gold: {
+                                DEFAULT: '#C89B3C',
+                                dark: '#A57C28',
+                                light: '#F5EBD2',
+                                50: '#FDFBF7',
+                                100: '#F7EED9',
+                                200: '#EEDBB3',
+                                500: '#C89B3C',
+                            },
+                            dusty: {
+                                DEFAULT: '#6B8FA3',
+                                dark: '#527387',
+                                light: '#E8F0F4',
+                                50: '#F4F8FA',
+                                100: '#E1ECF2',
+                                200: '#C3D9E4',
+                                500: '#6B8FA3',
+                            },
+                            terracotta: {
+                                DEFAULT: '#C47762',
+                                dark: '#A85D49',
+                                light: '#F8EAE5',
+                                50: '#FCF5F3',
+                                100: '#F7E4DE',
+                                200: '#ECC8BE',
+                                500: '#C47762',
+                            },
                             brand: {
-                                slate: '#0F172A',
+                                canvas: '#FAF8F7',
                                 surface: '#FFFFFF',
-                                bg: '#F8FAFC',
-                                muted: '#64748B',
-                                border: '#E2E8F0'
+                                border: '#E8DEDC',
+                                borderLight: '#F1E9E7',
+                                textMain: '#211A1A',
+                                textMuted: '#6F6261',
+                                textSubtle: '#9C8F8D',
                             }
                         },
                         fontFamily: {
@@ -52,11 +92,11 @@
             }
         </script>
 
-        <!-- External Stylesheet from css/ -->
-        <link rel="stylesheet" href="css/styles.css">
+        <!-- Compiled Tailwind CSS -->
+        <link rel="stylesheet" href="dist/output.css">
     </head>
 
-    <body class="bg-brand-bg text-slate-800 antialiased h-screen flex flex-col overflow-hidden">
+    <body class="bg-[#FAF8F7] text-[#211A1A] antialiased h-screen flex flex-col overflow-hidden">
 
         <!-- Toast Notifications Hub -->
         <div id="toast-container"></div>
