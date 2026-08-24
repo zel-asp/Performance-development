@@ -1407,4 +1407,426 @@
     </div>
 </div>
 
+<!-- ======================================================== -->
+        <!-- MODAL: CREATE TRAINING PROGRAM (STAGE 2)                  -->
+        <!-- ======================================================== -->
+        <div id="modal-create-training-program" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-xl w-full overflow-hidden max-h-[92vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-100">
+                <div class="p-5 border-b border-[#E8DEDC] flex items-center justify-between bg-[#FAF8F7]">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center">
+                            <i class="fas fa-book-bookmark text-base"></i>
+                        </div>
+                        <div>
+                            <span class="badge-primary text-[10px]">Stage 2: Program Creation</span>
+                            <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">Create Training Program</h3>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('modal-create-training-program')" class="w-8 h-8 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition shadow-sm border border-[#E8DEDC]">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
 
+                <div class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Program Title *</label>
+                        <input id="prog-modal-title-input" type="text" placeholder="e.g. VIP Concierge Guest Luggage Logistics & Discretion" 
+                            class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Category *</label>
+                            <select id="prog-modal-category" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                <option value="Service Excellence">Service Excellence</option>
+                                <option value="Mandatory Compliance">Mandatory Compliance</option>
+                                <option value="Technical System">Technical System</option>
+                                <option value="Leadership & Strategy">Leadership &amp; Strategy</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Department *</label>
+                            <select id="prog-modal-dept" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                <option value="Front Office">Front Office</option>
+                                <option value="Food & Beverage">Food &amp; Beverage</option>
+                                <option value="Culinary & Kitchen">Culinary &amp; Kitchen</option>
+                                <option value="Housekeeping">Housekeeping</option>
+                                <option value="Engineering & Security">Engineering &amp; Security</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Target Competency *</label>
+                            <select id="prog-modal-comp" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                <option value="Frontline Conflict De-escalation">Frontline Conflict De-escalation</option>
+                                <option value="Guest Relations & VIP Protocol">Guest Relations &amp; VIP Protocol</option>
+                                <option value="Opera & PMS Reservation Systems">Opera &amp; PMS Reservation Systems</option>
+                                <option value="HACCP Safety & Sanitation">HACCP Safety &amp; Sanitation</option>
+                                <option value="Revenue & Wine Upsell">Revenue &amp; Wine Upsell</option>
+                                <option value="Shift Leadership & Delegation">Shift Leadership &amp; Delegation</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Duration &amp; Format</label>
+                            <input id="prog-modal-duration" type="text" value="3.5 Hours (Workshop & Roleplay)" 
+                                class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Program Syllabus / Overview</label>
+                        <textarea id="prog-modal-desc" rows="3" placeholder="Describe learning objectives, scenario roleplays, and expected competencies..." 
+                            class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
+                    </div>
+
+                    <div class="p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] flex items-center justify-between text-slate-600">
+                        <span class="font-bold"><i class="fas fa-medal text-gold-dark mr-1"></i> Passing Requirement:</span>
+                        <span class="font-bold text-primary">&ge; 80% on post-quiz · Awards +150 XP</span>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-end space-x-2">
+                    <button type="button" onclick="closeModal('modal-create-training-program')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
+                    <button type="button" onclick="saveNewTrainingProgram()" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5">
+                        <i class="fas fa-check"></i>
+                        <span>Publish Program</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- MODAL: SCHEDULE TRAINING SESSION (STAGE 3)                -->
+        <!-- ======================================================== -->
+        <div id="modal-schedule-training-session" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-xl w-full overflow-hidden max-h-[92vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-100">
+                <div class="p-5 border-b border-[#E8DEDC] flex items-center justify-between bg-[#FAF8F7]">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-2xl bg-dusty-500/10 text-dusty-dark border border-dusty-500/20 flex items-center justify-center">
+                            <i class="fas fa-calendar-days text-base"></i>
+                        </div>
+                        <div>
+                            <span class="badge-dusty text-[10px]">Stage 3: Schedule &amp; Trainer</span>
+                            <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">Schedule Training Session</h3>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('modal-schedule-training-session')" class="w-8 h-8 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition shadow-sm border border-[#E8DEDC]">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <div class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Select Training Program *</label>
+                        <select id="sched-modal-program-select" class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Assigned Trainer *</label>
+                            <input id="sched-modal-trainer" type="text" value="Elena Vance & FOM John Marco" 
+                                class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Training Venue / Location *</label>
+                            <input id="sched-modal-venue" type="text" value="Executive Boardroom & Front Desk Mockup" 
+                                class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Session Date *</label>
+                            <input id="sched-modal-date" type="text" value="Aug 30, 2026" 
+                                class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Session Time *</label>
+                            <input id="sched-modal-time" type="text" value="14:00 - 17:30 (3.5 hrs)" 
+                                class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Participant Registration Roster -->
+                    <div class="p-3 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2">
+                        <span class="block text-[11px] font-bold text-slate-700 uppercase">Enrolled Participants (Auto-populated from Need Gaps)</span>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-white border border-[#E8DEDC] text-slate-800 flex items-center space-x-1">
+                                <span>Maria Santos (Front Desk)</span>
+                                <i class="fas fa-check text-emerald-600 text-[10px] ml-1"></i>
+                            </span>
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-white border border-[#E8DEDC] text-slate-800 flex items-center space-x-1">
+                                <span>Carlos Gomez (Concierge)</span>
+                                <i class="fas fa-check text-emerald-600 text-[10px] ml-1"></i>
+                            </span>
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-white border border-[#E8DEDC] text-slate-800 flex items-center space-x-1">
+                                <span>Angela Reyes (Guest Relations)</span>
+                                <i class="fas fa-check text-emerald-600 text-[10px] ml-1"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-end space-x-2">
+                    <button type="button" onclick="closeModal('modal-schedule-training-session')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
+                    <button type="button" onclick="saveScheduledSession()" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Confirm &amp; Notify Roster</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- MODAL: POST-TRAINING EVALUATION & QUIZ (STAGE 5)          -->
+        <!-- ======================================================== -->
+        <div id="modal-training-evaluation" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-2xl w-full overflow-hidden max-h-[92vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-100">
+                <div class="p-5 border-b border-[#E8DEDC] flex items-center justify-between bg-[#FAF8F7]">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-2xl bg-terracotta-500/10 text-terracotta-dark border border-terracotta-500/20 flex items-center justify-center">
+                            <i class="fas fa-clipboard-question text-base"></i>
+                        </div>
+                        <div>
+                            <span class="badge-terracotta text-[10px]">Stage 5: Post-Training Evaluation</span>
+                            <h3 id="eval-modal-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Post-Training Knowledge &amp; Practical Assessment</h3>
+                            <p id="eval-modal-subtitle" class="text-slate-500 text-[11px]">Associate: Maria Santos · Passing Score: 80%</p>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('modal-training-evaluation')" class="w-8 h-8 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition shadow-sm border border-[#E8DEDC]">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <div class="p-6 overflow-y-auto custom-scrollbar space-y-6 text-xs">
+                    
+                    <!-- Part A: Knowledge Assessment Quiz -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-heading font-bold text-sm text-slate-900 flex items-center space-x-1.5">
+                                <span class="w-2 h-2 rounded-full bg-primary"></span>
+                                <span>Part A: Practical Knowledge Questions (4 Questions)</span>
+                            </h4>
+                            <span class="badge-sage text-[10px]">Passing &ge; 80%</span>
+                        </div>
+
+                        <!-- Dynamic Questions Container -->
+                        <div id="eval-modal-questions-container" class="space-y-3">
+                            <!-- Populated dynamically by js/training.js -->
+                        </div>
+                    </div>
+
+                    <!-- Part B: Kirkpatrick Level 1 Evaluation Feedback -->
+                    <div class="space-y-3 pt-4 border-t border-[#E8DEDC]">
+                        <h4 class="font-heading font-bold text-sm text-slate-900 flex items-center space-x-1.5">
+                            <span class="w-2 h-2 rounded-full bg-gold"></span>
+                            <span>Part B: Kirkpatrick Level 1 Participant Feedback</span>
+                        </h4>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] space-y-2">
+                                <span class="font-bold text-slate-800 block text-[11px]">Trainer Mastery &amp; Clarity:</span>
+                                <div id="star-trainer-rating" class="flex items-center space-x-1">
+                                    <button type="button" onclick="setKirkpatrickRating('trainer', 1)" class="text-amber-400 hover:scale-110 transition text-base"><i class="fas fa-star"></i></button>
+                                    <button type="button" onclick="setKirkpatrickRating('trainer', 2)" class="text-amber-400 hover:scale-110 transition text-base"><i class="fas fa-star"></i></button>
+                                    <button type="button" onclick="setKirkpatrickRating('trainer', 3)" class="text-amber-400 hover:scale-110 transition text-base"><i class="fas fa-star"></i></button>
+                                    <button type="button" onclick="setKirkpatrickRating('trainer', 4)" class="text-amber-400 hover:scale-110 transition text-base"><i class="fas fa-star"></i></button>
+                                    <button type="button" onclick="setKirkpatrickRating('trainer', 5)" class="text-amber-400 hover:scale-110 transition text-base"><i class="fas fa-star"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] space-y-2">
+                                <span class="font-bold text-slate-800 block text-[11px]">Practical Relevance to Role:</span>
+                                <div id="star-relevance-rating" class="flex items-center space-x-1">
+                                    <button type="button" onclick="setKirkpatrickRating('relevance', 1)" class="text-amber-400 hover:scale-110 transition text-base"><i class="fas fa-star"></i></button>
+                                    <button type="button" onclick="setKirkpatrickRating('relevance', 2)" class="text-amber-400 hover:scale-110 transition text-base"><i class="fas fa-star"></i></button>
+                                    <button type="button" onclick="setKirkpatrickRating('relevance', 3)" class="text-amber-400 hover:scale-110 transition text-base"><i class="fas fa-star"></i></button>
+                                    <button type="button" onclick="setKirkpatrickRating('relevance', 4)" class="text-amber-400 hover:scale-110 transition text-base"><i class="fas fa-star"></i></button>
+                                    <button type="button" onclick="setKirkpatrickRating('relevance', 5)" class="text-amber-400 hover:scale-110 transition text-base"><i class="fas fa-star"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Key Takeaway / Action Commitment</label>
+                            <input id="eval-modal-comments" type="text" value="Will implement the LAST de-escalation framework and proactive room upgrades." 
+                                class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="p-4 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-between">
+                    <span class="text-[11px] text-slate-500 font-medium">Submitting will calculate score &amp; trigger <strong>Stage 6 &amp; 7 Feedback</strong></span>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" onclick="closeModal('modal-training-evaluation')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
+                        <button type="button" onclick="submitTrainingEvaluation()" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-sm">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>Submit &amp; Sync Results</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- MODAL: DIGITAL TRAINING CERTIFICATE (STAGE 6)             -->
+        <!-- ======================================================== -->
+        <div id="modal-training-certificate" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-2xl w-full overflow-hidden max-h-[92vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-100">
+                <div class="p-4 border-b border-[#E8DEDC] flex items-center justify-between bg-[#FAF8F7]">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-certificate text-amber-500"></i>
+                        <h4 class="font-heading font-bold text-sm text-slate-900">Oxford Suites Hospitality Official Certificate</h4>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="printTrainingCertificate()" class="btn-secondary px-3 py-1 text-xs font-bold flex items-center space-x-1">
+                            <i class="fas fa-print"></i>
+                            <span>Print / PDF</span>
+                        </button>
+                        <button onclick="closeModal('modal-training-certificate')" class="w-7 h-7 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition border border-[#E8DEDC]">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Gold-Bordered Luxury Certificate Body -->
+                <div class="p-8 bg-[#FFFDF9] border-8 border-double border-amber-300/80 m-4 rounded-2xl relative shadow-inner overflow-hidden text-center space-y-4">
+                    <!-- Subtle Watermark Seal -->
+                    <div class="absolute -right-8 -bottom-8 opacity-5 pointer-events-none">
+                        <i class="fas fa-hotel text-[220px] text-amber-900"></i>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-center space-x-2 text-primary font-bold tracking-widest text-[11px] uppercase">
+                            <i class="fas fa-crown text-amber-500"></i>
+                            <span>Oxford Suites, Makati · Hospitality Excellence Center</span>
+                            <i class="fas fa-crown text-amber-500"></i>
+                        </div>
+                        <h2 class="font-heading font-extrabold text-2xl text-slate-900 tracking-wide uppercase pt-1">Certificate of Competency Mastery</h2>
+                        <p class="text-xs text-slate-500 italic">This is officially presented to acknowledge that</p>
+                    </div>
+
+                    <div class="py-2 border-b-2 border-amber-400/40 max-w-md mx-auto">
+                        <h3 id="cert-modal-associate-name" class="font-heading font-black text-2xl text-primary tracking-wide">Maria Santos</h3>
+                    </div>
+
+                    <div class="space-y-1 text-xs text-slate-600 max-w-lg mx-auto">
+                        <p>has successfully completed the intensive curriculum, practical simulation, and post-training examination for</p>
+                        <h4 id="cert-modal-program-title" class="font-bold text-sm text-slate-900 text-amber-900 pt-1 font-heading">Hospitality Crisis Diplomacy &amp; Guest De-escalation</h4>
+                        <p id="cert-modal-score" class="text-xs font-bold text-emerald-700">Score: 96% (Mastery Level Achieved)</p>
+                    </div>
+
+                    <!-- Signatures & Seal Section -->
+                    <div class="pt-6 grid grid-cols-3 gap-4 items-end text-[10px] text-slate-600">
+                        <div class="space-y-1 border-t border-slate-300 pt-1">
+                            <p id="cert-modal-trainer-name" class="font-bold text-slate-900">Elena Vance</p>
+                            <p class="text-slate-400">Certified Master Trainer</p>
+                        </div>
+
+                        <!-- Golden Foil Seal Badge -->
+                        <div class="flex flex-col items-center justify-center">
+                            <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-400 via-amber-200 to-amber-500 border-2 border-amber-600 shadow-md flex items-center justify-center text-amber-950">
+                                <i class="fas fa-medal text-xl"></i>
+                            </div>
+                            <span id="cert-modal-cert-id" class="text-[9px] font-mono text-slate-400 mt-1">OXF-CERT-2026-0889</span>
+                        </div>
+
+                        <div class="space-y-1 border-t border-slate-300 pt-1">
+                            <p class="font-bold text-slate-900">Robert Sterling</p>
+                            <p class="text-slate-400">General Manager</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 text-[10px] text-slate-400 flex items-center justify-between border-t border-amber-200/40">
+                        <span>Issued: <strong id="cert-modal-date">Aug 24, 2026</strong></span>
+                        <span class="text-emerald-700 font-bold"><i class="fas fa-check-circle mr-1"></i> Verified &amp; Synced with Competency Management</span>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-end">
+                    <button onclick="closeModal('modal-training-certificate')" class="btn-primary px-5 py-2 text-xs font-bold">Done</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 15. Modal: Official Printable Executive PDF Audit Preview -->
+        <div id="modal-report-print-preview" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-[#E8DEDC]">
+                
+                <!-- Modal Top Header -->
+                <div class="p-5 border-b border-[#E8DEDC] flex items-center justify-between bg-white flex-shrink-0">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary flex items-center justify-center text-lg font-bold border border-primary-100">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <div>
+                            <h3 id="print-report-modal-title" class="font-heading font-bold text-base text-slate-900">Official Executive Audit Deck</h3>
+                            <div class="flex items-center space-x-2 text-xs text-slate-500">
+                                <span id="print-report-modal-period">Audit Window: Q3 2026</span>
+                                <span>·</span>
+                                <span id="print-report-modal-dept">Department: Hotel-Wide</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="triggerNativeBrowserPrint()" class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-sm">
+                            <i class="fas fa-print"></i>
+                            <span>Print / Save PDF</span>
+                        </button>
+                        <button onclick="closeModal('modal-report-print-preview')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Printable Report Body -->
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6 bg-white text-xs">
+                    
+                    <!-- Branded Letterhead -->
+                    <div class="flex items-start justify-between border-b-2 border-primary/20 pb-4">
+                        <div class="flex items-center space-x-3">
+                            <img src="public/images/removed-bg-logo.png" alt="Oxford Suites Logo" class="h-12 w-auto object-contain">
+                            <div>
+                                <h2 class="font-heading font-bold text-lg text-slate-900 leading-tight">Oxford Suites, Makati</h2>
+                                <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Human Resources &amp; Hospitality Operational Governance</p>
+                            </div>
+                        </div>
+                        <div class="text-right text-[10px] text-slate-400">
+                            <p>Ref: <strong>OXF-AUDIT-2026-Q3</strong></p>
+                            <p>Date: <strong>Aug 24, 2026</strong></p>
+                            <span class="inline-block mt-1 badge-sage font-bold">Official Record</span>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Report Content -->
+                    <div id="print-report-modal-body" class="space-y-4">
+                        <!-- Rendered by js/reports.js -->
+                    </div>
+
+                    <!-- Formal Sign-Off Blocks -->
+                    <div class="pt-6 border-t border-[#E8DEDC] grid grid-cols-2 gap-8 text-[11px] text-slate-600">
+                        <div class="space-y-1">
+                            <p class="text-slate-400 text-[10px] uppercase font-bold">Prepared &amp; Audited By:</p>
+                            <p class="font-bold text-slate-900 text-xs">Elena Vance, CHRP</p>
+                            <p class="text-[10px] text-slate-500">Director of Human Resources &amp; Talent Development</p>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <p class="text-slate-400 text-[10px] uppercase font-bold">Endorsed &amp; Approved By:</p>
+                            <p class="font-bold text-slate-900 text-xs">Robert Sterling, CHA</p>
+                            <p class="text-[10px] text-slate-500">General Manager · Oxford Suites, Makati</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="p-4 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-between text-xs">
+                    <span class="text-slate-400 text-[10px]">Confidential — For Internal Governance and Regulatory Inspections Only</span>
+                    <button onclick="closeModal('modal-report-print-preview')" class="btn-secondary px-4 py-1.5 font-bold">Close Preview</button>
+                </div>
+            </div>
+        </div>
