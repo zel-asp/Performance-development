@@ -143,7 +143,11 @@
         <!-- External Modular JavaScript Scripts from js/ -->
         <script src="js/charts.js"></script>
         <script src="js/lms.js"></script>
+        <script src="js/training.js"></script>
+        <script src="js/succession.js"></script>
         <script src="js/kudos.js"></script>
+        <script src="js/notifications.js"></script>
+        <script src="js/reports.js"></script>
         <script src="js/app.js"></script>
     </body>
 </html>

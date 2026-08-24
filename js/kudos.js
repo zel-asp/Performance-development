@@ -1,218 +1,470 @@
+/**
+ * Oxford Suites, Makati - Social Recognition & Deterministic Gamification Ledger
+ * 
+ * Scope:
+ * 1. Peer-to-peer and supervisor-to-employee recognition posts (text + category)
+ * 2. Point/badge ledger — deterministic backend rules (not AI-generated)
+ * 3. Recognition feed visible to department/team with reaction cheering
+ * 4. Recognition data passed as qualitative input into Performance Management cycles
+ */
+
+// =========================================================================
+// 1. DETERMINISTIC RULES & CONSTANTS
+// =========================================================================
+
+const RECOGNITION_RULES = {
+    PEER_TO_PEER_POINTS: 50,      // Peer recognition: +50 XP
+    SUPERVISOR_POINTS: 100,       // Supervisor commendation: +100 XP
+    EXECUTIVE_GM_POINTS: 200,     // General Manager citation: +200 XP
+    CATEGORIES: {
+        guest_service: { label: 'Great Guest Service', icon: 'fa-bell-concierge', color: 'gold', badge: 'Guest Hero' },
+        collaboration: { label: 'Team Collaboration', icon: 'fa-hands-holding-circle', color: 'dusty', badge: 'Team Anchor' },
+        safety_haccp: { label: 'Safety & HACCP Standard', icon: 'fa-shield-halved', color: 'sage', badge: 'Safety Champion' },
+        crisis_recovery: { label: 'Crisis & Conflict Recovery', icon: 'fa-handshake-angle', color: 'terracotta', badge: 'Diplomacy Lead' },
+        operational_excellence: { label: 'Operational Excellence', icon: 'fa-star', color: 'primary', badge: 'Excellence Master' }
+    }
+};
+
+// =========================================================================
+// 2. STATE STORES
+// =========================================================================
+
 const kudosStaffRoster = [
-                { id: 'chef_marco', name: 'Chef Marco Rossi', role: 'Executive Sous Chef', dept: 'culinary', deptName: 'Culinary', rating: '4.85', initials: 'MR', bg: 'bg-amber-600' },
-                { id: 'elena_vance', name: 'Elena Vance', role: 'HR Director', dept: 'hr', deptName: 'HR & Admin', rating: '4.95', initials: 'EV', bg: 'bg-purple-700' },
-                { id: 'maria_santos', name: 'Maria Santos', role: 'Front Desk Host', dept: 'front_office', deptName: 'Front Office', rating: '4.55', initials: 'MS', bg: 'bg-blue-600' },
-                { id: 'carlos_gomez', name: 'Carlos Gomez', role: 'Concierge Host', dept: 'front_office', deptName: 'Front Office', rating: '4.20', initials: 'CG', bg: 'bg-slate-700' },
-                { id: 'ana_tanaka', name: 'Ana Tanaka', role: 'Night Auditor', dept: 'front_office', deptName: 'Front Office', rating: '4.80', initials: 'AT', bg: 'bg-teal-700' },
-                { id: 'lucas_vargas', name: 'Lucas Vargas', role: 'Junior Host', dept: 'front_office', deptName: 'Front Office', rating: '3.90', initials: 'LV', bg: 'bg-indigo-600' },
-                { id: 'pierre_dubois', name: 'Pierre Dubois', role: 'Master Sommelier', dept: 'fb_service', deptName: 'F&B Service', rating: '4.90', initials: 'PD', bg: 'bg-rose-700' },
-                { id: 'jean_luc', name: 'Jean-Luc Moreau', role: 'Head Waiter', dept: 'fb_service', deptName: 'F&B Service', rating: '4.40', initials: 'JM', bg: 'bg-cyan-700' },
-                { id: 'chloe_dupont', name: 'Chloe Dupont', role: 'Bistro Hostess', dept: 'fb_service', deptName: 'F&B Service', rating: '4.15', initials: 'CD', bg: 'bg-pink-700' },
-                { id: 'antonio_silva', name: 'Antonio Silva', role: 'Chef de Partie', dept: 'culinary', deptName: 'Culinary', rating: '4.30', initials: 'AS', bg: 'bg-orange-700' },
-                { id: 'kenji_sato', name: 'Kenji Sato', role: 'Pastry Chef', dept: 'culinary', deptName: 'Culinary', rating: '4.70', initials: 'KS', bg: 'bg-emerald-700' },
-                { id: 'rosa_flores', name: 'Rosa Flores', role: 'Floor Supervisor', dept: 'housekeeping', deptName: 'Housekeeping', rating: '4.65', initials: 'RF', bg: 'bg-teal-600' },
-                { id: 'fatima_al', name: 'Fatima Al-Mansoor', role: 'Suite Attendant', dept: 'housekeeping', deptName: 'Housekeeping', rating: '4.50', initials: 'FA', bg: 'bg-purple-600' },
-                { id: 'david_kim', name: 'David Kim', role: 'Banquet Captain', dept: 'banquet', deptName: 'Banquets', rating: '4.45', initials: 'DK', bg: 'bg-blue-700' },
-                { id: 'sarah_jenkins', name: 'Sarah Jenkins', role: 'Event Coordinator', dept: 'banquet', deptName: 'Banquets', rating: '4.60', initials: 'SJ', bg: 'bg-emerald-600' }
-            ];
+    { id: 'maria_santos', name: 'Maria Santos', role: 'Front Desk Host', dept: 'Front Office', deptName: 'Front Office', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80', rating: '4.80' },
+    { id: 'carlos_gomez', name: 'Carlos Gomez', role: 'Concierge Host', dept: 'Front Office', deptName: 'Front Office', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80', rating: '4.60' },
+    { id: 'chef_marco', name: 'Chef Marco Rossi', role: 'Executive Sous Chef', dept: 'Culinary', deptName: 'Culinary', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80', rating: '4.85' },
+    { id: 'pierre_dubois', name: 'Pierre Dubois', role: 'Master Sommelier', dept: 'F&B Service', deptName: 'F&B Service', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80', rating: '4.90' },
+    { id: 'david_lee', name: 'David Lee', role: 'F&B Server Lead', dept: 'F&B Service', deptName: 'F&B Service', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80', rating: '4.20' },
+    { id: 'rosa_flores', name: 'Rosa Flores', role: 'Floor Supervisor', dept: 'Housekeeping', deptName: 'Housekeeping', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80', rating: '4.65' },
+    { id: 'elena_vance', name: 'Elena Vance', role: 'HR Director', dept: 'HR & Admin', deptName: 'HR & Admin', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80', rating: '4.95' }
+];
 
-            let selectedKudosRecipients = new Set();
-            let kudosActiveDeptFilter = 'all';
+let socialFeedPostsState = [
+    {
+        id: 'post-101',
+        senderName: 'Elena Vance',
+        senderRole: 'HR Director & Trainer',
+        senderType: 'Supervisor', // 'Peer', 'Supervisor', 'Executive'
+        senderAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+        receiverName: 'Maria Santos',
+        receiverRole: 'Front Desk Host',
+        receiverDept: 'Front Office',
+        receiverAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        categoryKey: 'crisis_recovery',
+        categoryLabel: 'Crisis & Conflict Recovery',
+        pointsAwarded: 100, // Supervisor Commendation
+        timestamp: '2 hours ago',
+        date: 'Aug 24, 2026',
+        text: 'Exceptional de-escalation with the diplomat delegation arrival during peak check-in rush. Maria calmly arranged executive lounge hospitality and VIP suite keys without any friction.',
+        reactions: { clap: 14, heart: 9, star: 7, fire: 5 },
+        qualitativeInCycle: true
+    },
+    {
+        id: 'post-102',
+        senderName: 'Carlos Gomez',
+        senderRole: 'Concierge Lead',
+        senderType: 'Peer',
+        senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+        receiverName: 'Maria Santos',
+        receiverRole: 'Front Desk Host',
+        receiverDept: 'Front Office',
+        receiverAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        categoryKey: 'collaboration',
+        categoryLabel: 'Team Collaboration',
+        pointsAwarded: 50, // Peer Recognition
+        timestamp: 'Yesterday at 17:40',
+        date: 'Aug 23, 2026',
+        text: 'Huge thanks to Maria for stepping in during the concierge group luggage dispatch while two flights arrived simultaneously. Pure teamwork!',
+        reactions: { clap: 8, heart: 12, star: 3, fire: 2 },
+        qualitativeInCycle: true
+    },
+    {
+        id: 'post-103',
+        senderName: 'Chef Marco Rossi',
+        senderRole: 'Executive Sous Chef',
+        senderType: 'Supervisor',
+        senderAvatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
+        receiverName: 'Chef Marco S.',
+        receiverRole: 'Line Cook Lead',
+        receiverDept: 'Culinary',
+        receiverAvatar: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=150&auto=format&fit=crop&q=80',
+        categoryKey: 'safety_haccp',
+        categoryLabel: 'Safety & HACCP Standard',
+        pointsAwarded: 100,
+        timestamp: '2 days ago',
+        date: 'Aug 22, 2026',
+        text: 'Flawless 100% cold-chain probe log compliance and exemplary allergen segregation during banquet dinner service for 250 guests.',
+        reactions: { clap: 19, heart: 6, star: 8, fire: 11 },
+        qualitativeInCycle: true
+    },
+    {
+        id: 'post-104',
+        senderName: 'Maria Santos',
+        senderRole: 'Front Desk Host',
+        senderType: 'Peer',
+        senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        receiverName: 'David Lee',
+        receiverRole: 'F&B Server Lead',
+        receiverDept: 'F&B Service',
+        receiverAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+        categoryKey: 'guest_service',
+        categoryLabel: 'Great Guest Service',
+        pointsAwarded: 50,
+        timestamp: '3 days ago',
+        date: 'Aug 21, 2026',
+        text: 'David made our long-stay VIP guests feel so welcomed with customized tableside wine recommendations that they wrote a personal commendation card!',
+        reactions: { clap: 11, heart: 15, star: 6, fire: 3 },
+        qualitativeInCycle: true
+    }
+];
 
-            function initKudosRosterModal() {
-                const searchInput = document.getElementById('kudos-search-input');
-                if (searchInput) searchInput.value = '';
-                kudosActiveDeptFilter = 'all';
-                updateKudosDeptFilterPills();
-                renderKudosRoster();
-            }
+let pointsLedgerState = [
+    { id: 'TXN-8801', date: 'Aug 24, 2026', recipient: 'Maria Santos', sender: 'Elena Vance (Supervisor)', rule: 'SUPERVISOR_COMMENDATION', category: 'Crisis Recovery', xpChange: '+100 XP', balance: 1480 },
+    { id: 'TXN-8800', date: 'Aug 23, 2026', recipient: 'Maria Santos', sender: 'Carlos Gomez (Peer)', rule: 'PEER_TO_PEER_RECOGNITION', category: 'Team Collaboration', xpChange: '+50 XP', balance: 1380 },
+    { id: 'TXN-8799', date: 'Aug 22, 2026', recipient: 'Chef Marco S.', sender: 'Chef Marco Rossi (Supervisor)', rule: 'SUPERVISOR_COMMENDATION', category: 'Safety & HACCP', xpChange: '+100 XP', balance: 1150 },
+    { id: 'TXN-8798', date: 'Aug 21, 2026', recipient: 'David Lee', sender: 'Maria Santos (Peer)', rule: 'PEER_TO_PEER_RECOGNITION', category: 'Guest Service', xpChange: '+50 XP', balance: 950 }
+];
 
-            function setKudosDeptFilter(deptKey) {
-                kudosActiveDeptFilter = deptKey;
-                updateKudosDeptFilterPills();
-                renderKudosRoster();
-            }
+let milestoneBadgesState = [
+    { id: 'badge-1', name: 'Guest Hero', category: 'Guest Service', threshold: '10+ 5-Star Reviews', icon: 'fa-trophy', color: 'gold', awardedTo: 'Maria Santos', dateAwarded: 'Aug 2026', isUnlocked: true },
+    { id: 'badge-2', name: 'Safety Star', category: 'Safety & HACCP', threshold: '100% HACCP Audit Pass', icon: 'fa-shield-halved', color: 'sage', awardedTo: 'Chef Marco S.', dateAwarded: 'Aug 2026', isUnlocked: true },
+    { id: 'badge-3', name: 'Team Anchor', category: 'Collaboration', threshold: '5+ Peer Recognitions', icon: 'fa-hands-holding-circle', color: 'dusty', awardedTo: 'Carlos Gomez', dateAwarded: 'Jul 2026', isUnlocked: true },
+    { id: 'badge-4', name: 'Diplomacy Lead', category: 'Crisis Recovery', threshold: 'Mastery in De-escalation', icon: 'fa-handshake-angle', color: 'terracotta', awardedTo: 'Maria Santos', dateAwarded: 'Aug 2026', isUnlocked: true }
+];
 
-            function updateKudosDeptFilterPills() {
-                document.querySelectorAll('.kudos-dept-pill').forEach(pill => {
-                    const pillDept = pill.getAttribute('data-dept');
-                    if (pillDept === kudosActiveDeptFilter) {
-                        pill.className = 'kudos-dept-pill active px-3 py-1 rounded-full font-bold bg-amber-500 text-white shadow-2xs transition text-[11px]';
-                    } else {
-                        pill.className = 'kudos-dept-pill px-3 py-1 rounded-full font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition text-[11px]';
-                    }
-                });
-            }
+let socialActiveDeptFilter = 'all';
 
-            function filterKudosList() {
-                renderKudosRoster();
-            }
+// =========================================================================
+// 3. INITIALIZATION & RENDERING
+// =========================================================================
 
-            function toggleKudosRecipient(staffId) {
-                if (selectedKudosRecipients.has(staffId)) {
-                    selectedKudosRecipients.delete(staffId);
-                } else {
-                    selectedKudosRecipients.add(staffId);
-                }
-                renderKudosRoster();
-            }
+function initSocialRecognition() {
+    renderSocialFeed();
+    renderPointLedger();
+    renderMilestoneBadges();
+    renderQualitativePerformanceFeed();
+}
 
-            function toggleSelectAllKudos(selectAll) {
-                const query = (document.getElementById('kudos-search-input')?.value || '').toLowerCase().trim();
-                const filtered = kudosStaffRoster.filter(s => {
-                    const matchDept = (kudosActiveDeptFilter === 'all' || s.dept === kudosActiveDeptFilter);
-                    const matchText = !query || s.name.toLowerCase().includes(query) || s.role.toLowerCase().includes(query) || s.deptName.toLowerCase().includes(query);
-                    return matchDept && matchText;
-                });
+function setSocialDeptFilter(dept) {
+    socialActiveDeptFilter = dept;
+    document.querySelectorAll('.social-dept-chip').forEach(btn => {
+        if (btn.dataset.dept === dept) {
+            btn.classList.add('bg-primary', 'text-white');
+            btn.classList.remove('bg-[#FAF8F7]', 'text-slate-600');
+        } else {
+            btn.classList.remove('bg-primary', 'text-white');
+            btn.classList.add('bg-[#FAF8F7]', 'text-slate-600');
+        }
+    });
+    renderSocialFeed();
+}
 
-                if (selectAll) {
-                    filtered.forEach(s => selectedKudosRecipients.add(s.id));
-                } else {
-                    if (query || kudosActiveDeptFilter !== 'all') {
-                        filtered.forEach(s => selectedKudosRecipients.delete(s.id));
-                    } else {
-                        selectedKudosRecipients.clear();
-                    }
-                }
-                renderKudosRoster();
-            }
+// =========================================================================
+// 4. RECOGNITION FEED & PEER POSTS
+// =========================================================================
 
-            function renderKudosRoster() {
-                const container = document.getElementById('kudos-employee-roster');
-                if (!container) return;
+function renderSocialFeed() {
+    const container = document.getElementById('social-feed-container');
+    if (!container) return;
 
-                const query = (document.getElementById('kudos-search-input')?.value || '').toLowerCase().trim();
-                const filtered = kudosStaffRoster.filter(s => {
-                    const matchDept = (kudosActiveDeptFilter === 'all' || s.dept === kudosActiveDeptFilter);
-                    const matchText = !query || s.name.toLowerCase().includes(query) || s.role.toLowerCase().includes(query) || s.deptName.toLowerCase().includes(query);
-                    return matchDept && matchText;
-                });
+    let filteredPosts = socialFeedPostsState;
+    if (socialActiveDeptFilter !== 'all') {
+        filteredPosts = socialFeedPostsState.filter(p => p.receiverDept.toLowerCase().includes(socialActiveDeptFilter.toLowerCase()));
+    }
 
-                if (filtered.length === 0) {
-                    container.innerHTML = `
-                        <div class="py-6 text-center text-slate-400">
-                            <i class="fas fa-user-slash text-xl mb-1"></i>
-                            <p class="text-xs">No employees found matching criteria</p>
-                        </div>
-                    `;
-                    updateKudosUI();
-                    return;
-                }
+    if (filteredPosts.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs">No recognition posts found for this department yet. Be the first to send kudos!</div>`;
+        return;
+    }
 
-                container.innerHTML = filtered.map(s => {
-                    const isSelected = selectedKudosRecipients.has(s.id);
-                    const ratingNum = parseFloat(s.rating);
-                    let perfBadgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                    if (ratingNum < 4.3) {
-                        perfBadgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
-                    } else if (ratingNum < 4.6) {
-                        perfBadgeClass = 'bg-blue-50 text-blue-700 border-blue-200';
-                    }
+    container.innerHTML = filteredPosts.map(post => {
+        const catConfig = RECOGNITION_RULES.CATEGORIES[post.categoryKey] || { label: post.categoryLabel, color: 'primary', icon: 'fa-award' };
 
-                    return `
-                        <div onclick="toggleKudosRecipient('${s.id}')"
-                            class="flex items-center justify-between p-2.5 rounded-xl border transition cursor-pointer select-none ${isSelected
-                            ? 'bg-amber-50/80 border-amber-400 ring-1 ring-amber-400/50 shadow-2xs'
-                            : 'bg-white border-slate-200/80 hover:bg-slate-100/70'
-                        }">
-                            <div class="flex items-center space-x-3 min-w-0">
-                                <div class="w-5 h-5 rounded-md flex items-center justify-center border transition ${isSelected
-                            ? 'bg-amber-500 border-amber-600 text-white shadow-2xs'
-                            : 'bg-slate-100 border-slate-300 text-transparent'
-                        }">
-                                    <i class="fas fa-check text-[9px]"></i>
-                                </div>
-                                <div class="w-8 h-8 rounded-full ${s.bg} text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs border border-white">
-                                    ${s.initials}
-                                </div>
-                                <div class="min-w-0">
-                                    <p class="font-bold text-slate-900 text-xs truncate leading-tight">${s.name}</p>
-                                    <p class="text-[10px] text-slate-500 truncate">${s.role} · <span class="font-medium">${s.deptName}</span></p>
-                                </div>
+        return `
+            <div class="card-clean p-5 hover:shadow-md transition space-y-3.5 border border-[#E8DEDC] bg-white">
+                <!-- Header: Sender & Receiver Details -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E8DEDC] pb-3">
+                    <div class="flex items-center space-x-3">
+                        <img src="${post.senderAvatar}" alt="${post.senderName}" class="w-9 h-9 rounded-full object-cover border border-[#E8DEDC] shadow-sm">
+                        <div>
+                            <div class="flex items-center space-x-1.5">
+                                <span class="font-bold text-slate-900 text-xs">${post.senderName}</span>
+                                <span class="text-[10px] text-slate-400 font-medium">recognized</span>
+                                <span class="font-bold text-primary text-xs">${post.receiverName}</span>
                             </div>
-                            <div class="flex items-center space-x-1.5 flex-shrink-0">
-                                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${perfBadgeClass} flex items-center space-x-1 shadow-2xs">
-                                    <i class="fas fa-star text-[9px] text-amber-500"></i>
-                                    <span>${s.rating} Avg</span>
-                                </span>
-                            </div>
+                            <p class="text-[10px] text-slate-500">${post.senderRole} &rarr; <span class="font-semibold text-slate-700">${post.receiverRole}</span> (${post.receiverDept})</p>
                         </div>
-                    `;
-                }).join('');
+                    </div>
 
-                updateKudosUI();
-            }
+                    <div class="flex items-center space-x-2">
+                        <span class="badge-${catConfig.color} text-[10px]">
+                            <i class="fas ${catConfig.icon} mr-1"></i> ${post.categoryLabel}
+                        </span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-800 border border-amber-500/20">
+                            +${post.pointsAwarded} XP
+                        </span>
+                    </div>
+                </div>
 
-            function updateKudosUI() {
-                const count = selectedKudosRecipients.size;
-                const countEl = document.getElementById('kudos-selected-count');
-                if (countEl) countEl.textContent = count;
+                <!-- Recognition Text Quote -->
+                <p class="text-xs text-slate-700 leading-relaxed font-medium pl-3 border-l-2 border-primary/40 italic">
+                    "${post.text}"
+                </p>
 
-                const xpTotal = count * 50;
-                const previewEl = document.getElementById('kudos-awarded-preview');
-                if (previewEl) previewEl.textContent = `+${xpTotal} XP Total (${count} colleague${count === 1 ? '' : 's'})`;
+                <!-- Footer: Reactions & Performance Input Badge -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs text-slate-500">
+                    <div class="flex items-center space-x-1.5">
+                        <button onclick="reactToPost('${post.id}', 'clap')" class="px-2.5 py-1 rounded-xl bg-[#FAF8F7] hover:bg-slate-100 border border-[#E8DEDC] text-[11px] font-bold flex items-center space-x-1 transition">
+                            <span>👏</span>
+                            <span id="react-clap-${post.id}">${post.reactions.clap}</span>
+                        </button>
+                        <button onclick="reactToPost('${post.id}', 'heart')" class="px-2.5 py-1 rounded-xl bg-[#FAF8F7] hover:bg-slate-100 border border-[#E8DEDC] text-[11px] font-bold flex items-center space-x-1 transition">
+                            <span>❤️</span>
+                            <span id="react-heart-${post.id}">${post.reactions.heart}</span>
+                        </button>
+                        <button onclick="reactToPost('${post.id}', 'star')" class="px-2.5 py-1 rounded-xl bg-[#FAF8F7] hover:bg-slate-100 border border-[#E8DEDC] text-[11px] font-bold flex items-center space-x-1 transition">
+                            <span>⭐</span>
+                            <span id="react-star-${post.id}">${post.reactions.star}</span>
+                        </button>
+                        <button onclick="reactToPost('${post.id}', 'fire')" class="px-2.5 py-1 rounded-xl bg-[#FAF8F7] hover:bg-slate-100 border border-[#E8DEDC] text-[11px] font-bold flex items-center space-x-1 transition">
+                            <span>🔥</span>
+                            <span id="react-fire-${post.id}">${post.reactions.fire}</span>
+                        </button>
+                    </div>
 
-                const btnLabel = document.getElementById('kudos-submit-label');
-                if (btnLabel) {
-                    btnLabel.textContent = count > 0 ? `Send Kudos (${count}) & Award XP` : 'Send Kudos & Award XP';
-                }
-            }
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] text-slate-400">${post.timestamp}</span>
+                        <span class="text-[10px] font-semibold text-sage-dark flex items-center">
+                            <i class="fas fa-check-circle mr-1 text-emerald-600"></i> Passed to Appraisal Review
+                        </span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
-            function dispatchRecognition() {
-                if (selectedKudosRecipients.size === 0) {
-                    showToast('Please select at least one colleague to send kudos!', 'error');
-                    return;
-                }
+function reactToPost(postId, reactionType) {
+    const post = socialFeedPostsState.find(p => p.id === postId);
+    if (!post) return;
 
-                const names = Array.from(selectedKudosRecipients).map(id => {
-                    const found = kudosStaffRoster.find(s => s.id === id);
-                    return found ? found.name : id;
-                });
+    post.reactions[reactionType] = (post.reactions[reactionType] || 0) + 1;
+    const countEl = document.getElementById(`react-${reactionType}-${postId}`);
+    if (countEl) countEl.textContent = post.reactions[reactionType];
+    
+    showToast(`Reaction added to ${post.receiverName}'s recognition!`, 'success');
+}
 
-                const totalAwarded = selectedKudosRecipients.size * 50;
-                closeModal('modal-recognition');
-                awardXP(totalAwarded);
+// =========================================================================
+// 5. DETERMINISTIC POINT LEDGER & BADGES
+// =========================================================================
 
-                const count = selectedKudosRecipients.size;
-                if (count === 1) {
-                    showToast(`Kudos sent to ${names[0]}! (+50 XP granted)`, 'success');
-                } else {
-                    showToast(`Kudos sent to ${count} colleagues: ${names.slice(0, 2).join(', ')}${count > 2 ? ` and ${count - 2} more` : ''}! (+${totalAwarded} XP granted)`, 'success');
-                }
+function renderPointLedger() {
+    const tbody = document.getElementById('points-ledger-tbody');
+    if (!tbody) return;
 
-                // Reset selection
-                selectedKudosRecipients.clear();
-                const msgInput = document.getElementById('shoutout-message');
-                if (msgInput) msgInput.value = '';
-            }
+    tbody.innerHTML = pointsLedgerState.map(txn => `
+        <tr class="hover:bg-[#FAF8F7]/80 transition text-xs">
+            <td class="px-5 py-3 font-mono font-bold text-slate-700">${txn.id}</td>
+            <td class="px-5 py-3 text-slate-600">${txn.date}</td>
+            <td class="px-5 py-3 font-bold text-slate-900">${txn.recipient}</td>
+            <td class="px-5 py-3 text-slate-600">${txn.sender}</td>
+            <td class="px-5 py-3 font-semibold text-slate-700">${txn.category}</td>
+            <td class="px-5 py-3 font-bold text-emerald-700">${txn.xpChange}</td>
+            <td class="px-5 py-3 font-mono font-bold text-slate-900">${txn.balance} XP</td>
+        </tr>
+    `).join('');
+}
 
-            function awardXP(amount) {
-                currentXP += amount;
-                document.getElementById('kpi-xp-val').innerHTML = `${currentXP} <span class="text-xs font-normal text-slate-400">XP</span>`;
-                const fillPct = Math.min(100, Math.round((currentXP / 1600) * 100));
-                document.getElementById('kpi-xp-bar').style.width = fillPct + '%';
-            }
+function renderMilestoneBadges() {
+    const container = document.getElementById('milestone-badges-grid');
+    if (!container) return;
 
-            function submitSentimentRating(rating) {
-                closeModal('modal-sentiment-pulse');
-                let pos = 68.5, neu = 23.0, neg = 8.5;
-                if (rating === 'Positive') { pos = 71.2; neu = 21.0; neg = 7.8; }
-                else if (rating === 'Neutral') { pos = 66.0; neu = 25.5; neg = 8.5; }
-                else { pos = 63.0; neu = 22.0; neg = 15.0; }
+    container.innerHTML = milestoneBadgesState.map(b => `
+        <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2 text-center text-xs">
+            <div class="w-12 h-12 mx-auto rounded-2xl bg-${b.color}-500/10 text-${b.color}-600 border border-${b.color}-500/20 flex items-center justify-center text-xl shadow-xs">
+                <i class="fas ${b.icon}"></i>
+            </div>
+            <div>
+                <h4 class="font-heading font-bold text-sm text-slate-900">${b.name}</h4>
+                <p class="text-[10px] text-slate-400">${b.threshold}</p>
+            </div>
+            <div class="pt-1 border-t border-[#E8DEDC] flex justify-between items-center text-[10px]">
+                <span class="text-slate-500">Recipient:</span>
+                <span class="font-bold text-slate-800">${b.awardedTo}</span>
+            </div>
+        </div>
+    `).join('');
+}
 
-                if (chartSentimentDoughnutInstance) {
-                    chartSentimentDoughnutInstance.data.datasets[0].data = [pos, neu, neg];
-                    chartSentimentDoughnutInstance.update();
-                }
+// =========================================================================
+// 6. QUALITATIVE INPUT INTO PERFORMANCE MANAGEMENT CYCLE
+// =========================================================================
 
-                showToast(`Shift sentiment logged as "${rating}". Thank you!`, 'success');
-            }
+function renderQualitativePerformanceFeed() {
+    const container = document.getElementById('perf-qualitative-recognition-container');
+    if (!container) return;
 
-            function logAchievementPrompt() {
-                const desc = prompt("Enter accomplishment or guest compliment to log:");
-                if (desc) {
-                    showToast(`Accomplishment logged: "${desc}"`, 'success');
-                }
-            }
+    // Filter recognitions for active appraisal employee (Maria Santos)
+    const mariaPosts = socialFeedPostsState.filter(p => p.receiverName.includes('Maria Santos'));
 
-            // Charts Initialization
+    container.innerHTML = `
+        <div class="p-4 bg-amber-50/40 rounded-2xl border border-amber-200/80 space-y-3 text-xs">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                    <h4 class="font-heading font-bold text-xs text-slate-900 uppercase tracking-wider">Verified Social Recognition &amp; Peer Commendations (Q3 Input)</h4>
+                </div>
+                <span class="badge-gold text-[10px] font-bold">${mariaPosts.length} Commendations Recorded</span>
+            </div>
+            <p class="text-[11px] text-slate-600 leading-relaxed">
+                The following peer-to-peer quotes and supervisor recognitions are automatically aggregated as <strong>qualitative evidence</strong> for the manager's final rating calibration:
+            </p>
+            <div class="space-y-2">
+                ${mariaPosts.map(p => `
+                    <div class="p-3 bg-white rounded-xl border border-amber-100 space-y-1 shadow-2xs">
+                        <div class="flex items-center justify-between text-[10px]">
+                            <span class="font-bold text-slate-800"><i class="fas fa-user-check text-amber-600 mr-1"></i> ${p.senderName} (${p.senderRole}):</span>
+                            <span class="badge-${p.pointsAwarded >= 100 ? 'primary' : 'dusty'} text-[9px]">+${p.pointsAwarded} XP (${p.categoryLabel})</span>
+                        </div>
+                        <p class="text-slate-700 italic text-[11px]">"${p.text}"</p>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+// =========================================================================
+// 7. POST CREATION & SEND MODAL HANDLER
+// =========================================================================
+
+let selectedKudosRecipients = new Set();
+let kudosActiveDeptFilter = 'all';
+
+function initKudosRosterModal() {
+    selectedKudosRecipients.clear();
+    const msg = document.getElementById('shoutout-message');
+    if (msg) msg.value = '';
+    renderKudosRoster();
+}
+
+function setKudosDeptFilter(deptKey) {
+    kudosActiveDeptFilter = deptKey;
+    renderKudosRoster();
+}
+
+function toggleKudosRecipient(staffId) {
+    if (selectedKudosRecipients.has(staffId)) {
+        selectedKudosRecipients.delete(staffId);
+    } else {
+        selectedKudosRecipients.add(staffId);
+    }
+    renderKudosRoster();
+}
+
+function renderKudosRoster() {
+    const container = document.getElementById('kudos-employee-roster');
+    if (!container) return;
+
+    let filtered = kudosStaffRoster;
+    if (kudosActiveDeptFilter !== 'all') {
+        filtered = kudosStaffRoster.filter(s => s.dept.toLowerCase().includes(kudosActiveDeptFilter.toLowerCase()));
+    }
+
+    container.innerHTML = filtered.map(s => {
+        const isSelected = selectedKudosRecipients.has(s.id);
+
+        return `
+            <div onclick="toggleKudosRecipient('${s.id}')" 
+                class="flex items-center justify-between p-2.5 rounded-xl border transition cursor-pointer select-none ${isSelected ? 'bg-amber-50 border-amber-400 ring-1 ring-amber-400' : 'bg-white border-[#E8DEDC] hover:bg-slate-50'}">
+                <div class="flex items-center space-x-3">
+                    <img src="${s.avatar}" alt="${s.name}" class="w-8 h-8 rounded-full object-cover border border-[#E8DEDC]">
+                    <div>
+                        <span class="font-bold text-slate-900 block text-xs">${s.name}</span>
+                        <span class="text-[10px] text-slate-500">${s.role} · ${s.dept}</span>
+                    </div>
+                </div>
+                <div class="w-5 h-5 rounded-md flex items-center justify-center border ${isSelected ? 'bg-amber-500 border-amber-600 text-white' : 'border-slate-300 text-transparent'}">
+                    <i class="fas fa-check text-[9px]"></i>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const countEl = document.getElementById('kudos-selected-count');
+    if (countEl) countEl.textContent = selectedKudosRecipients.size;
+}
+
+function dispatchRecognition() {
+    if (selectedKudosRecipients.size === 0) {
+        showToast('Please select at least one colleague to recognize!', 'error');
+        return;
+    }
+
+    const message = document.getElementById('shoutout-message')?.value || 'Outstanding teamwork and hospitality excellence!';
+    const categoryKey = document.getElementById('kudos-category-select')?.value || 'guest_service';
+    const isSupervisor = document.getElementById('kudos-role-supervisor')?.checked || false;
+
+    const pointsPerPerson = isSupervisor ? RECOGNITION_RULES.SUPERVISOR_POINTS : RECOGNITION_RULES.PEER_TO_PEER_POINTS;
+    const catConfig = RECOGNITION_RULES.CATEGORIES[categoryKey] || RECOGNITION_RULES.CATEGORIES.guest_service;
+
+    const recipients = Array.from(selectedKudosRecipients).map(id => kudosStaffRoster.find(s => s.id === id)).filter(Boolean);
+
+    recipients.forEach(r => {
+        const newPost = {
+            id: `post-${Date.now()}-${Math.floor(Math.random()*100)}`,
+            senderName: isSupervisor ? 'Elena Vance' : 'Maria Santos',
+            senderRole: isSupervisor ? 'HR Director & Supervisor' : 'Front Desk Host',
+            senderType: isSupervisor ? 'Supervisor' : 'Peer',
+            senderAvatar: isSupervisor ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80' : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+            receiverName: r.name,
+            receiverRole: r.role,
+            receiverDept: r.dept,
+            receiverAvatar: r.avatar,
+            categoryKey: categoryKey,
+            categoryLabel: catConfig.label,
+            pointsAwarded: pointsPerPerson,
+            timestamp: 'Just now',
+            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            text: message,
+            reactions: { clap: 1, heart: 1, star: 1, fire: 0 },
+            qualitativeInCycle: true
+        };
+
+        socialFeedPostsState.unshift(newPost);
+
+        // Add ledger transaction
+        pointsLedgerState.unshift({
+            id: `TXN-${Math.floor(8800 + Math.random()*1000)}`,
+            date: newPost.date,
+            recipient: r.name,
+            sender: `${newPost.senderName} (${newPost.senderType})`,
+            rule: isSupervisor ? 'SUPERVISOR_COMMENDATION' : 'PEER_TO_PEER_RECOGNITION',
+            category: catConfig.label,
+            xpChange: `+${pointsPerPerson} XP`,
+            balance: 1480 + pointsPerPerson
+        });
+    });
+
+    closeModal('modal-recognition');
+    awardXP(pointsPerPerson * recipients.length);
+
+    renderSocialFeed();
+    renderPointLedger();
+    renderQualitativePerformanceFeed();
+
+    showToast(`Recognition dispatched to ${recipients.length} colleague(s)! (+${pointsPerPerson * recipients.length} XP total awarded)`, 'success');
+}
+
+function awardXP(amount) {
+    if (typeof currentXP !== 'undefined') {
+        currentXP += amount;
+        const xpEl = document.getElementById('user-xp-display');
+        if (xpEl) xpEl.textContent = `${currentXP} XP`;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initSocialRecognition();
+});

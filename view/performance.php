@@ -625,6 +625,11 @@
                                         </div>
                                     </div>
 
+                                    <!-- Qualitative Social Recognition Feedback Input -->
+                                    <div id="perf-qualitative-recognition-container">
+                                        <!-- Rendered by js/kudos.js -->
+                                    </div>
+
                                     <div
                                         class="p-4 bg-indigo-50/70 rounded-2xl border border-indigo-100 flex items-center justify-between text-xs text-indigo-900">
                                         <span>Evaluation results have been finalized. Proceed to create the Individual
