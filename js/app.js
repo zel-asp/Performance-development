@@ -4,12 +4,13 @@
             let completedGoals = 6;
             let activePersonaKey = 'employee';
 
-            // Chart instances
-            let chartPerfTrendInstance = null;
-            let chartSentimentDoughnutInstance = null;
-            let chartCompetencyRadarInstance = null;
-            let chartLmsComplianceInstance = null;
-            let chartHourlySentimentInstance = null;
+            // Global Chart instances (instantiated by charts.js)
+            var chartPerfTrendInstance = window.chartPerfTrendInstance || null;
+            var chartSentimentDoughnutInstance = window.chartSentimentDoughnutInstance || null;
+            var chartCompetencyRadarInstance = window.chartCompetencyRadarInstance || null;
+            var chartLmsComplianceInstance = window.chartLmsComplianceInstance || null;
+            var chartHourlySentimentInstance = window.chartHourlySentimentInstance || null;
+            var chartSystemDeptProgressInstance = window.chartSystemDeptProgressInstance || null;
 
             // Modal Controls
             function openModal(id) {
@@ -394,7 +395,7 @@
             function handleLoginSubmit(e) {
                 e.preventDefault();
                 document.getElementById('auth-screen').classList.add('hidden');
-                showToast('Welcome to Pulse Hospitality Hub!', 'success');
+                showToast('Welcome to Oxford Suites, Makati!', 'success');
                 initAllCharts();
             }
 

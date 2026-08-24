@@ -1,3 +1,11 @@
+// Global Chart Instances
+var chartPerfTrendInstance = null;
+var chartSentimentDoughnutInstance = null;
+var chartCompetencyRadarInstance = null;
+var chartLmsComplianceInstance = null;
+var chartHourlySentimentInstance = null;
+var chartSystemDeptProgressInstance = null;
+
 function initAllCharts() {
     // Chart 1: Line Chart (Performance Trend)
     const ctxPerf = document.getElementById('chart-performance-trend');
