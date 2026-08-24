@@ -142,6 +142,7 @@
 
         <!-- External Modular JavaScript Scripts from js/ -->
         <script src="js/charts.js"></script>
+        <script src="js/competencies.js"></script>
         <script src="js/lms.js"></script>
         <script src="js/kudos.js"></script>
         <script src="js/app.js"></script>

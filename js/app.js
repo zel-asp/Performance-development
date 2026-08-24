@@ -165,6 +165,19 @@
 
                 if (pillarPrefix === 'perf') {
                     updatePerfStepper(subKey);
+                } else if (pillarPrefix === 'comp') {
+                    if (subKey === 'profiles') {
+                        if (typeof renderRoleCompetencyFramework === 'function') renderRoleCompetencyFramework();
+                        if (typeof renderCompetencyMatrixTable === 'function') renderCompetencyMatrixTable();
+                    } else if (subKey === 'assessment') {
+                        if (typeof renderSelectedEmployeeRadarView === 'function') renderSelectedEmployeeRadarView();
+                        if (typeof renderSkillsGapAnalysis === 'function') renderSkillsGapAnalysis();
+                    } else if (subKey === 'development') {
+                        if (typeof renderIDPView === 'function') renderIDPView();
+                        if (typeof renderCertificationsRoster === 'function') renderCertificationsRoster();
+                        if (typeof renderPerformanceIntegrationSummary === 'function') renderPerformanceIntegrationSummary();
+                        if (typeof renderCompetencyAnalyticsDashboard === 'function') renderCompetencyAnalyticsDashboard();
+                    }
                 } else if (pillarPrefix === 'lms' && subKey === 'tna') {
                     if (typeof renderTnaEnrollments === 'function') renderTnaEnrollments();
                 } else if (pillarPrefix === 'lms' && subKey === 'modules') {
@@ -175,7 +188,7 @@
                     if (subKey === 'system' && chartSystemDeptProgressInstance) chartSystemDeptProgressInstance.resize();
                     if (subKey === 'pulse' && chartPerfTrendInstance) chartPerfTrendInstance.resize();
                     if (subKey === 'pulse' && chartSentimentDoughnutInstance) chartSentimentDoughnutInstance.resize();
-                    if (subKey === 'radar' && chartCompetencyRadarInstance) chartCompetencyRadarInstance.resize();
+                    if ((subKey === 'radar' || subKey === 'assessment') && chartCompetencyRadarInstance) chartCompetencyRadarInstance.resize();
                     if (subKey === 'compliance' && chartLmsComplianceInstance) chartLmsComplianceInstance.resize();
                     if (subKey === 'climate' && chartHourlySentimentInstance) chartHourlySentimentInstance.resize();
                 }, 80);
