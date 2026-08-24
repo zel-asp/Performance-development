@@ -24,21 +24,22 @@
                     extend: {
                         colors: {
                             primary: {
-                                DEFAULT: '#A61E22',
-                                dark: '#87171B',
-                                light: '#C43237',
-                                50: '#FDF2F2',
-                                100: '#FDE8E8',
-                                200: '#FBD5D5',
-                                500: '#A61E22',
-                                600: '#87171B',
-                                700: '#6C1215',
+                                DEFAULT: '#9E1B20',
+                                dark: '#7F1418',
+                                light: '#B92B30',
+                                50: '#FEF2F2',
+                                100: '#FEE2E2',
+                                200: '#FECACA',
+                                500: '#9E1B20',
+                                600: '#7F1418',
+                                700: '#631013',
                             },
                             brand: {
                                 slate: '#0F172A',
                                 surface: '#FFFFFF',
                                 bg: '#F8FAFC',
                                 muted: '#64748B',
+                                border: '#E2E8F0'
                             }
                         },
                         fontFamily: {
@@ -55,6 +56,21 @@
                 box-sizing: border-box;
             }
 
+            :root {
+                --primary: #9E1B20;
+                --primary-dark: #7F1418;
+                --primary-light: #B92B30;
+                --primary-50: #FEF2F2;
+                --primary-100: #FEE2E2;
+                --surface: #FFFFFF;
+                --bg-canvas: #F8FAFC;
+                --border-subtle: #E2E8F0;
+                --border-light: #EDF2F7;
+                --text-main: #0F172A;
+                --text-muted: #64748B;
+                --text-subtle: #94A3B8;
+            }
+
             body {
                 background-color: #F8FAFC;
                 color: #0F172A;
@@ -62,18 +78,18 @@
                 -webkit-font-smoothing: antialiased;
             }
 
-            /* Clean, subtle luxury shadows */
+            /* Minimalist Soft Clean Cards */
             .card-clean {
                 background: #FFFFFF;
                 border: 1px solid #E2E8F0;
-                border-radius: 1rem;
-                box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
+                border-radius: 1.25rem;
+                box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
                 transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             }
 
             .card-clean:hover {
                 border-color: #CBD5E1;
-                box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.05), 0 4px 6px -4px rgba(15, 23, 42, 0.02);
+                box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.05);
             }
 
             .custom-scrollbar::-webkit-scrollbar {
@@ -82,7 +98,7 @@
             }
 
             .custom-scrollbar::-webkit-scrollbar-track {
-                background: #F1F5F9;
+                background: #F8FAFC;
             }
 
             .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -90,17 +106,25 @@
                 border-radius: 9999px;
             }
 
-            /* Simplified Sidebar Navigation Item */
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: #94A3B8;
+            }
+
+            /* Raindrop Navigation & Sidebar Links */
             .nav-item {
-                transition: all 0.15s ease-in-out;
+                transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
                 color: #475569;
                 font-weight: 500;
+                border-radius: 9999px;
+                padding: 0.6rem 1rem;
+                margin: 2px 0;
             }
 
             .nav-item.active {
-                background-color: #A61E22;
+                background-color: #9E1B20;
                 color: #FFFFFF !important;
                 font-weight: 600;
+                box-shadow: 0 3px 10px -2px rgba(158, 27, 32, 0.3);
             }
 
             .nav-item.active i {
@@ -112,25 +136,107 @@
                 color: #0F172A;
             }
 
-            /* Sub-navigation Pills inside Modules */
-            .subnav-pill {
-                transition: all 0.15s ease;
-                color: #64748B;
-                font-weight: 500;
-                border-radius: 0.75rem;
-                padding: 0.5rem 1rem;
+            /* Raindrop Tabs & Subnav Track System */
+            .raindrop-track {
+                background: #F1F5F9;
+                border: 1px solid #E2E8F0;
+                border-radius: 9999px;
+                padding: 4px;
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
             }
 
-            .subnav-pill.active {
-                background-color: #FFFFFF;
-                color: #A61E22;
-                font-weight: 700;
-                box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+            .subnav-pill {
+                transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+                color: #64748B;
+                font-weight: 500;
+                border-radius: 9999px;
+                padding: 0.45rem 1.15rem;
+                font-size: 0.75rem;
+                border: 1px solid transparent;
+                display: inline-flex;
+                align-items: center;
+                cursor: pointer;
+                user-select: none;
             }
 
             .subnav-pill:hover:not(.active) {
                 color: #0F172A;
-                background-color: rgba(255, 255, 255, 0.5);
+                background-color: rgba(255, 255, 255, 0.65);
+            }
+
+            .subnav-pill.active {
+                background-color: #FFFFFF;
+                color: #9E1B20;
+                font-weight: 600;
+                border-color: #E2E8F0;
+                box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.08), 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+            }
+
+            /* Raindrop Button System */
+            .btn-raindrop,
+            .raindrop-btn {
+                border-radius: 9999px;
+                font-weight: 600;
+                transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.45rem;
+                cursor: pointer;
+                user-select: none;
+                box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.2), 0 1px 3px 0 rgba(15, 23, 42, 0.06);
+            }
+
+            .btn-raindrop:active,
+            .raindrop-btn:active {
+                transform: scale(0.97) translateY(1px);
+            }
+
+            .btn-raindrop-primary {
+                background-color: #9E1B20;
+                color: #FFFFFF;
+                border: 1px solid #8A151A;
+            }
+
+            .btn-raindrop-primary:hover {
+                background-color: #8A151A;
+                box-shadow: 0 4px 14px -2px rgba(158, 27, 32, 0.35);
+            }
+
+            .btn-raindrop-secondary {
+                background-color: #FFFFFF;
+                color: #334155;
+                border: 1px solid #E2E8F0;
+            }
+
+            .btn-raindrop-secondary:hover {
+                background-color: #F8FAFC;
+                color: #0F172A;
+                border-color: #CBD5E1;
+            }
+
+            .btn-raindrop-soft {
+                background-color: #FEF2F2;
+                color: #9E1B20;
+                border: 1px solid #FEE2E2;
+            }
+
+            .btn-raindrop-soft:hover {
+                background-color: #FEE2E2;
+                color: #7F1418;
+            }
+
+            .btn-raindrop-dark {
+                background-color: #0F172A;
+                color: #FFFFFF;
+                border: 1px solid #1E293B;
+            }
+
+            .btn-raindrop-dark:hover {
+                background-color: #1E293B;
+                box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.25);
             }
 
             /* Master Pillar Panels */
@@ -141,6 +247,35 @@
 
             .pillar-panel.active {
                 display: block;
+            }
+
+            /* Mobile Sidebar Drawer & Animation */
+            #mobile-sidebar-backdrop {
+                transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            #sidebar {
+                transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            @media (max-width: 1023px) {
+                #sidebar {
+                    position: fixed;
+                    top: 0;
+                    bottom: 0;
+                    left: 0;
+                    z-index: 50;
+                    width: 18rem;
+                    box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.2), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
+                }
+
+                #sidebar.mobile-closed {
+                    transform: translateX(-100%);
+                }
+
+                #sidebar.mobile-open {
+                    transform: translateX(0);
+                }
             }
 
             /* Sub-panels inside Pillar */
@@ -156,9 +291,8 @@
             @keyframes fadeIn {
                 from {
                     opacity: 0;
-                    transform: translateY(4px);
+                    transform: translateY(3px);
                 }
-
                 to {
                     opacity: 1;
                     transform: translateY(0);
@@ -178,40 +312,39 @@
 
             .toast {
                 animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                border-radius: 9999px;
             }
 
             @keyframes slideUp {
                 from {
-                    transform: translateY(20px);
+                    transform: translateY(16px);
                     opacity: 0;
                 }
-
                 to {
                     transform: translateY(0);
                     opacity: 1;
                 }
             }
 
-            /* Luxury Modal Pop & Backdrop */
+            /* Minimalist Modals */
             .modal-overlay {
-                background-color: rgba(15, 23, 42, 0.65);
+                background-color: rgba(15, 23, 42, 0.5);
                 backdrop-filter: blur(8px);
                 -webkit-backdrop-filter: blur(8px);
             }
 
             .modal-card {
                 background: #FFFFFF;
-                border-radius: 1.75rem;
-                box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(226, 232, 240, 0.9);
-                animation: modalPop 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                border-radius: 1.5rem;
+                box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(226, 232, 240, 0.8);
+                animation: modalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             }
 
             @keyframes modalPop {
                 from {
                     opacity: 0;
-                    transform: scale(0.95) translateY(10px);
+                    transform: scale(0.96) translateY(8px);
                 }
-
                 to {
                     opacity: 1;
                     transform: scale(1) translateY(0);
@@ -235,11 +368,11 @@
 
                 <!-- Left Branding Pane -->
                 <div
-                    class="bg-gradient-to-br from-slate-900 via-[#1E1B2E] to-primary-dark text-white p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden">
+                    class="bg-slate-900 text-white p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden border-r border-slate-800">
                     <div class="relative z-10 space-y-6">
                         <div class="flex items-center space-x-3">
                             <div
-                                class="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                                class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-lg shadow-sm">
                                 <i class="fas fa-hotel"></i>
                             </div>
                             <div>
@@ -355,7 +488,7 @@
                                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary focus:outline-none">
                         </div>
                         <button type="submit"
-                            class="w-full py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center space-x-2">
+                            class="w-full py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-full text-xs transition shadow-sm flex items-center justify-center space-x-2 btn-raindrop btn-raindrop-primary">
                             <span>Sign In to Workplace</span>
                             <i class="fas fa-arrow-right text-[10px]"></i>
                         </button>
@@ -373,15 +506,12 @@
         <div id="modal-create-goal" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-2xl w-full overflow-hidden max-h-[92vh] flex flex-col">
 
-                <!-- Top Gradient Accent Bar -->
-                <div class="h-1.5 w-full bg-gradient-to-r from-primary via-primary-light to-amber-500"></div>
-
                 <!-- Header -->
                 <div
                     class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
                     <div class="flex items-center space-x-3.5">
                         <div
-                            class="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 text-primary flex items-center justify-center text-lg shadow-xs border border-primary-100">
+                            class="w-11 h-11 rounded-full bg-primary-50 text-primary flex items-center justify-center text-lg shadow-2xs border border-primary-100">
                             <i class="fas fa-bullseye"></i>
                         </div>
                         <div>
@@ -406,7 +536,7 @@
 
                     <!-- Quick Template Selector Card -->
                     <div
-                        class="p-4 bg-gradient-to-br from-slate-50 to-slate-100/60 rounded-2xl border border-slate-200/80 space-y-2.5">
+                        class="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-2.5">
                         <div class="flex items-center justify-between text-xs font-bold text-slate-800">
                             <span class="flex items-center space-x-1.5">
                                 <i class="fas fa-sparkles text-primary"></i>
@@ -547,9 +677,9 @@
 
                         <!-- Gemini AI Alignment Box -->
                         <div
-                            class="p-3.5 bg-gradient-to-r from-blue-50/90 to-indigo-50/80 rounded-2xl border border-blue-100/90 flex items-start space-x-3">
+                            class="p-3.5 bg-blue-50/60 rounded-2xl border border-blue-100 flex items-start space-x-3">
                             <div
-                                class="w-7 h-7 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xs flex-shrink-0 shadow-xs">
+                                class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs flex-shrink-0 shadow-2xs">
                                 <i class="fas fa-sparkles"></i>
                             </div>
                             <div class="text-[11px] text-slate-800 leading-relaxed">
@@ -569,9 +699,9 @@
                             class="fas fa-lock text-slate-300 mr-1"></i> Auto-saved draft</span>
                     <div class="flex items-center space-x-2.5 ml-auto">
                         <button type="button" onclick="closeModal('modal-create-goal')"
-                            class="px-4 py-2.5 rounded-xl text-xs text-slate-600 hover:bg-slate-200/60 font-semibold transition">Cancel</button>
+                            class="px-4 py-2 rounded-full text-xs text-slate-600 hover:bg-slate-100 font-semibold transition btn-raindrop btn-raindrop-secondary">Cancel</button>
                         <button type="button" onclick="document.getElementById('form-create-goal').requestSubmit()"
-                            class="px-5 py-2.5 rounded-xl text-xs bg-primary hover:bg-primary-dark text-white font-bold shadow-md shadow-primary/20 transition flex items-center space-x-1.5">
+                            class="px-5 py-2.5 rounded-full text-xs bg-primary hover:bg-primary-dark text-white font-bold shadow-sm transition flex items-center space-x-1.5 btn-raindrop btn-raindrop-primary">
                             <span>Submit for Approval</span>
                             <i class="fas fa-arrow-right text-[10px]"></i>
                         </button>
@@ -585,18 +715,16 @@
         <div id="modal-approve-goal" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-lg w-full overflow-hidden flex flex-col">
 
-                <div class="h-1.5 w-full bg-gradient-to-r from-amber-500 via-amber-400 to-emerald-500"></div>
-
                 <div
                     class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
                     <div class="flex items-center space-x-3">
                         <div
-                            class="w-11 h-11 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center text-base font-bold border border-amber-100">
+                            class="w-11 h-11 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center text-base font-bold border border-amber-100">
                             <i class="fas fa-signature"></i>
                         </div>
                         <div>
                             <span
-                                class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Step
+                                class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full">Step
                                 2 · Supervisor Calibration</span>
                             <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">Endorse Objective & KPIs
                             </h3>
@@ -612,7 +740,7 @@
                     <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200/70 space-y-1.5">
                         <div class="flex justify-between font-bold text-slate-900 text-sm">
                             <span id="review-goal-title">VIP Guest Check-in Experience & NPS Lift</span>
-                            <span class="text-primary font-bold text-xs bg-primary/10 px-2 py-0.5 rounded-full">Q3
+                            <span class="text-primary font-bold text-xs bg-primary/10 px-2.5 py-0.5 rounded-full">Q3
                                 Priority</span>
                         </div>
                         <p class="text-slate-600">KPI Target: <strong>Net Promoter Score (NPS) &ge; +92 Score</strong>
@@ -633,10 +761,10 @@
                 <div
                     class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-end space-x-2.5">
                     <button onclick="requestGoalRevision()"
-                        class="px-4 py-2 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-100 transition">Request
+                        class="px-4 py-2 border border-slate-200 text-slate-700 rounded-full text-xs font-semibold hover:bg-slate-100 transition btn-raindrop btn-raindrop-secondary">Request
                         Revision</button>
                     <button onclick="approveGoalOfficial()"
-                        class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition">Approve
+                        class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-xs font-bold shadow-sm transition btn-raindrop">Approve
                         Goal</button>
                 </div>
             </div>
@@ -646,18 +774,16 @@
         <div id="modal-ai-feedback" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-lg w-full overflow-hidden flex flex-col">
 
-                <div class="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
-
                 <div
                     class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
                     <div class="flex items-center space-x-3">
                         <div
-                            class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg font-bold border border-indigo-100">
+                            class="w-11 h-11 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg font-bold border border-indigo-100">
                             <i class="fas fa-robot"></i>
                         </div>
                         <div>
                             <span
-                                class="text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full">Gemini
+                                class="text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-2.5 py-0.5 rounded-full">Gemini
                                 AI Copilot</span>
                             <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">SBI Feedback Refiner</h3>
                         </div>
@@ -671,18 +797,18 @@
                 <div class="p-6 space-y-4 text-xs bg-white">
                     <!-- 1-Click Observation Chips -->
                     <div
-                        class="p-3 bg-gradient-to-br from-indigo-50/70 to-purple-50/50 rounded-2xl border border-indigo-100 text-xs">
+                        class="p-3 bg-indigo-50/60 rounded-2xl border border-indigo-100 text-xs">
                         <p class="text-[11px] font-bold text-indigo-900 mb-1.5">Try a quick shift observation scenario:
                         </p>
                         <div class="flex flex-wrap gap-1.5">
                             <button type="button"
                                 onclick="setRoughNote('Peak dinner rush was hectic. Maria calmed down an angry VIP guest whose suite was delayed, but junior hosts were standing idle.')"
-                                class="px-2.5 py-1 rounded-xl bg-white border border-indigo-200 text-indigo-900 text-[10px] font-medium hover:bg-indigo-100 transition shadow-2xs">
+                                class="px-3 py-1 rounded-full bg-white border border-indigo-200 text-indigo-900 text-[10px] font-medium hover:bg-indigo-100 transition shadow-2xs btn-raindrop">
                                 ⚡ Rush Hour Composure
                             </button>
                             <button type="button"
                                 onclick="setRoughNote('Pierre recommended the reserve vintage to presidential suites and exceeded beverage targets by 20% tonight.')"
-                                class="px-2.5 py-1 rounded-xl bg-white border border-indigo-200 text-indigo-900 text-[10px] font-medium hover:bg-indigo-100 transition shadow-2xs">
+                                class="px-3 py-1 rounded-full bg-white border border-indigo-200 text-indigo-900 text-[10px] font-medium hover:bg-indigo-100 transition shadow-2xs btn-raindrop">
                                 🍷 Sommelier Upsell Win
                             </button>
                         </div>
@@ -696,7 +822,7 @@
                             placeholder="Type or click an observation scenario above..."></textarea>
 
                         <button onclick="generateAIFeedback()"
-                            class="w-full py-2.5 bg-gradient-to-r from-primary via-primary-light to-primary-dark text-white rounded-xl font-bold flex items-center justify-center space-x-2 shadow-md shadow-primary/20 hover:opacity-95 transition">
+                            class="w-full py-2.5 bg-primary hover:bg-primary-dark text-white rounded-full font-bold flex items-center justify-center space-x-2 shadow-sm transition btn-raindrop btn-raindrop-primary">
                             <i class="fas fa-wand-magic-sparkles"></i>
                             <span>Generate Structured SBI Coaching Model</span>
                         </button>
@@ -708,7 +834,7 @@
                         <div class="font-semibold text-primary flex items-center justify-between text-xs">
                             <span>✦ Refined Coaching Feedback</span>
                             <span
-                                class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">SBI
+                                class="text-[10px] bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold">SBI
                                 Model</span>
                         </div>
                         <p class="leading-relaxed text-slate-800 text-xs" id="ai-generated-text">"Maria, during the
@@ -717,7 +843,7 @@
                             seating turns (Impact)."</p>
                         <div class="flex justify-end pt-2 border-t border-slate-200/60">
                             <button onclick="copyAndApplyFeedback()"
-                                class="bg-primary hover:bg-primary-dark text-white px-4 py-1.5 rounded-xl font-semibold transition text-xs shadow-xs">Post
+                                class="bg-primary hover:bg-primary-dark text-white px-4 py-1.5 rounded-full font-semibold transition text-xs shadow-xs btn-raindrop btn-raindrop-primary">Post
                                 to Feedback Wall</button>
                         </div>
                     </div>
@@ -729,18 +855,16 @@
         <div id="modal-self-assessment" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-xl w-full overflow-hidden max-h-[90vh] flex flex-col">
 
-                <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-blue-500"></div>
-
                 <div
                     class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
                     <div class="flex items-center space-x-3">
                         <div
-                            class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-lg font-bold border border-emerald-100">
+                            class="w-11 h-11 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center text-lg font-bold border border-emerald-100">
                             <i class="fas fa-star-half-stroke"></i>
                         </div>
                         <div>
                             <span
-                                class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Steps
+                                class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">Steps
                                 4 & 5 · Formal Evaluation</span>
                             <h3 class="font-heading font-bold text-lg text-slate-900 mt-0.5">2026 Q3 Appraisal Review
                             </h3>
@@ -804,9 +928,9 @@
                 <div
                     class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex justify-end space-x-2.5 flex-shrink-0">
                     <button onclick="closeModal('modal-self-assessment')"
-                        class="px-4 py-2 text-xs text-slate-600 hover:bg-slate-200/60 rounded-xl font-semibold transition">Cancel</button>
+                        class="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-full font-semibold transition btn-raindrop btn-raindrop-secondary">Cancel</button>
                     <button onclick="submitSelfAssessment()"
-                        class="px-5 py-2 text-xs bg-primary text-white rounded-xl font-bold hover:bg-primary-dark shadow-md transition">Submit
+                        class="px-5 py-2 text-xs bg-primary text-white rounded-full font-bold hover:bg-primary-dark shadow-sm transition btn-raindrop btn-raindrop-primary">Submit
                         Evaluation</button>
                 </div>
             </div>
@@ -816,18 +940,16 @@
         <div id="modal-recognition" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-md w-full overflow-hidden flex flex-col">
 
-                <div class="h-1.5 w-full bg-gradient-to-r from-amber-500 to-rose-500"></div>
-
                 <div
                     class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
                     <div class="flex items-center space-x-3">
                         <div
-                            class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg font-bold border border-amber-200">
+                            class="w-11 h-11 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-lg font-bold border border-amber-200">
                             <i class="fas fa-trophy"></i>
                         </div>
                         <div>
                             <span
-                                class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">+50
+                                class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full">+50
                                 XP Award</span>
                             <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">Send Colleague Kudos</h3>
                         </div>
@@ -861,9 +983,9 @@
 
                 <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex justify-end space-x-2.5">
                     <button onclick="closeModal('modal-recognition')"
-                        class="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-xl font-semibold transition">Cancel</button>
+                        class="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-full font-semibold transition btn-raindrop btn-raindrop-secondary">Cancel</button>
                     <button onclick="dispatchRecognition()"
-                        class="px-5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl text-xs font-bold shadow-md hover:opacity-95 transition">Send
+                        class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-full text-xs font-bold shadow-sm transition btn-raindrop">Send
                         Kudos & Award XP</button>
                 </div>
             </div>
@@ -873,18 +995,16 @@
         <div id="modal-sentiment-pulse" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-md w-full overflow-hidden flex flex-col">
 
-                <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500"></div>
-
                 <div
                     class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
                     <div class="flex items-center space-x-3">
                         <div
-                            class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg font-bold border border-emerald-200">
+                            class="w-11 h-11 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg font-bold border border-emerald-200">
                             <i class="fas fa-heart-pulse"></i>
                         </div>
                         <div>
                             <span
-                                class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Anonymous
+                                class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">Anonymous
                                 Pulse</span>
                             <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">Shift Climate Check</h3>
                         </div>
@@ -926,18 +1046,16 @@
         <div id="modal-lms-quiz" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-lg w-full overflow-hidden flex flex-col">
 
-                <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 to-cyan-500"></div>
-
                 <div
                     class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
                     <div class="flex items-center space-x-3">
                         <div
-                            class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg font-bold border border-emerald-200">
+                            class="w-11 h-11 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg font-bold border border-emerald-200">
                             <i class="fas fa-graduation-cap"></i>
                         </div>
                         <div>
                             <span
-                                class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Knowledge
+                                class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">Knowledge
                                 Check · +100 XP</span>
                             <h3 id="quiz-modal-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">
                                 Hospitality Standard Quiz</h3>
@@ -994,18 +1112,16 @@
         <div id="modal-role-matrix" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-3xl w-full overflow-hidden max-h-[92vh] flex flex-col">
 
-                <div class="h-1.5 w-full bg-gradient-to-r from-primary via-indigo-500 to-amber-500"></div>
-
                 <div
                     class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
                     <div class="flex items-center space-x-3">
                         <div
-                            class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-800 flex items-center justify-center text-lg font-bold border border-slate-200">
+                            class="w-11 h-11 rounded-full bg-slate-100 text-slate-800 flex items-center justify-center text-lg font-bold border border-slate-200">
                             <i class="fas fa-users-gear"></i>
                         </div>
                         <div>
                             <span
-                                class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">Role-Based
+                                class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full">Role-Based
                                 Access Control (RBAC)</span>
                             <h3 class="font-heading font-bold text-lg text-slate-900 mt-0.5">Hospitality Role
                                 Responsibilities & Permissions</h3>
@@ -1146,15 +1262,19 @@
                 </div>
             </div>
         </div>
-        <div class="flex h-screen overflow-hidden" id="app">
+        <!-- Mobile Sidebar Backdrop Overlay -->
+        <div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar()"
+            class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 lg:hidden opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+        <div class="flex h-screen overflow-hidden relative" id="app">
 
             <!-- ===== STREAMLINED SIDEBAR (7 Clean Categories) ===== -->
             <aside id="sidebar"
-                class="hidden lg:flex lg:flex-col w-64 bg-white border-r border-slate-200/80 flex-shrink-0 h-full overflow-y-auto custom-scrollbar select-none">
+                class="mobile-closed flex flex-col w-64 bg-white border-r border-slate-200/80 flex-shrink-0 h-full overflow-y-auto custom-scrollbar select-none">
 
                 <!-- Brand Logo Header -->
                 <div
-                    class="flex items-center justify-between px-6 h-16 border-b border-slate-100 bg-white sticky top-0 z-10">
+                    class="flex items-center justify-between px-5 sm:px-6 h-16 border-b border-slate-100 bg-white sticky top-0 z-10">
                     <div class="flex items-center space-x-2.5">
                         <div
                             class="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-base shadow-sm">
@@ -1166,6 +1286,12 @@
                                 class="text-[10px] font-semibold text-primary uppercase tracking-wider ml-1 bg-primary/10 px-1.5 py-0.5 rounded">Hub</span>
                         </div>
                     </div>
+                    <!-- Mobile Close Button -->
+                    <button onclick="toggleMobileSidebar()" 
+                        class="lg:hidden p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                        title="Close Menu">
+                        <i class="fas fa-xmark text-base"></i>
+                    </button>
                 </div>
 
                 <!-- Active User Card -->
@@ -1278,30 +1404,29 @@
 
                 <!-- Clean Top Header Bar -->
                 <header
-                    class="h-16 bg-white border-b border-slate-200/80 px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-20">
+                    class="h-16 bg-white border-b border-slate-200/80 px-3 sm:px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-20">
 
-                    <!-- Left: Title & Active Cycle Pill -->
-                    <div class="flex items-center space-x-3">
-                        <button onclick="toggleMobileSidebar()"
-                            class="lg:hidden p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl">
-                            <i class="fas fa-bars text-lg"></i>
+                    <!-- Left: Hamburger Button, Title & Active Cycle Pill -->
+                    <div class="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+                        <button id="mobile-hamburger-btn" onclick="toggleMobileSidebar()"
+                            aria-label="Toggle navigation menu"
+                            class="lg:hidden flex items-center justify-center w-9 h-9 rounded-full bg-slate-100/90 hover:bg-slate-200 active:scale-95 text-slate-700 transition shadow-2xs border border-slate-200/70 flex-shrink-0">
+                            <i class="fas fa-bars-staggered text-sm transition-transform duration-200" id="hamburger-icon"></i>
                         </button>
-                        <div>
+                        <div class="min-w-0">
                             <div class="flex items-center space-x-2">
                                 <h1 id="page-header-title"
-                                    class="font-heading font-bold text-base sm:text-lg text-slate-900">Performance &
-                                    Development Hub</h1>
+                                    class="font-heading font-bold text-sm sm:text-base md:text-lg text-slate-900 truncate">Performance &amp; Development Hub</h1>
                                 <span
-                                    class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span> HRMS Subsystem ·
-                                    2026 Q3
+                                    class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 flex-shrink-0">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span> HRMS · 2026 Q3
                                 </span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Right: HR Quick Tools, Department/Staff Switcher, AI Copilot -->
-                    <div class="flex items-center space-x-2 md:space-x-3 text-xs">
+                    <div class="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3 text-xs flex-shrink-0">
 
                         <!-- HR Central Master Roster Selector -->
                         <div
@@ -1355,7 +1480,7 @@
 
                         <!-- Gemini AI Quick Trigger -->
                         <button onclick="openModal('modal-ai-feedback')" title="Open Gemini AI Feedback Copilot"
-                            class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-blue-800 rounded-xl font-bold hover:bg-blue-100 transition shadow-xs">
+                            class="hidden sm:flex items-center space-x-1.5 px-3.5 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-full font-bold hover:bg-indigo-100 transition text-xs shadow-2xs">
                             <i class="fas fa-sparkles text-indigo-600"></i>
                             <span>AI Copilot</span>
                         </button>
@@ -1370,9 +1495,9 @@
                     </div>
                 </header>
 
-                <!-- Scrollable Viewport -->
-                <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar">
-                    <div class="max-w-7xl mx-auto space-y-5">
+                <!-- Scrollable Viewport with Safe Bottom Spacing for Mobile Nav -->
+                <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-28 lg:pb-8 custom-scrollbar">
+                    <div class="max-w-7xl mx-auto space-y-5 pb-6 lg:pb-0">
 
                         <!-- Dynamic HR Governance Context & Department Scope Banner -->
                         <div id="role-context-banner"
@@ -1409,12 +1534,12 @@
 
                             <!-- 1. Focused "Today's Shift Action" Card -->
                             <div
-                                class="card-clean p-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
+                                class="card-clean p-6 bg-slate-900 border border-slate-800 text-white relative overflow-hidden rounded-3xl">
                                 <div
                                     class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                                     <div class="space-y-1.5">
                                         <div
-                                            class="inline-flex items-center space-x-2 px-2.5 py-0.5 rounded-full bg-white/10 text-primary-200 text-[11px] font-semibold border border-white/10">
+                                            class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-800/90 text-primary-200 text-[11px] font-semibold border border-slate-700/80">
                                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                                             <span>On Shift: 07:00 - 15:30 · Front Office</span>
                                         </div>
@@ -1424,14 +1549,14 @@
                                         <p class="text-xs text-slate-300">You have <strong>1 milestone review</strong>
                                             and <strong>1 LMS quiz</strong> scheduled for completion this week.</p>
                                     </div>
-                                    <div class="flex items-center gap-2 flex-wrap">
+                                    <div class="flex items-center gap-2.5 flex-wrap">
                                         <button onclick="openModal('modal-create-goal')"
-                                            class="px-4 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold shadow-lg transition flex items-center space-x-1.5">
-                                            <i class="fas fa-plus"></i>
+                                            class="btn-raindrop btn-raindrop-primary px-5 py-2.5 text-xs font-bold flex items-center space-x-2 shadow-sm">
+                                            <i class="fas fa-plus text-xs"></i>
                                             <span>Set New Goal</span>
                                         </button>
                                         <button onclick="openModal('modal-self-assessment')"
-                                            class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold transition border border-white/10">
+                                            class="btn-raindrop px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 text-xs font-semibold">
                                             <span>Quarterly Review</span>
                                         </button>
                                     </div>
@@ -1621,8 +1746,8 @@
 
                             <!-- Top Sub-Navigation Pills (All 7 Lifecycle Stages) -->
                             <div
-                                class="flex items-center justify-between gap-2 bg-slate-100/70 p-1.5 rounded-2xl overflow-x-auto custom-scrollbar">
-                                <div class="flex items-center space-x-1 flex-nowrap">
+                                class="raindrop-track flex items-center justify-between gap-2 p-1.5 overflow-x-auto custom-scrollbar">
+                                <div class="flex items-center space-x-1.5 flex-nowrap">
                                     <button onclick="switchSubTab('perf', 'plan')"
                                         class="subnav-pill subnav-perf active whitespace-nowrap" data-sub="plan">
                                         <i class="fas fa-bullseye mr-1 text-primary"></i> 1. Planning
@@ -1654,7 +1779,7 @@
                                     </button>
                                 </div>
                                 <button onclick="openModal('modal-create-goal')"
-                                    class="px-3.5 py-1.5 bg-primary text-white text-xs font-bold rounded-xl shadow-xs hover:bg-primary-dark whitespace-nowrap ml-2 flex-shrink-0">
+                                    class="btn-raindrop btn-raindrop-primary px-4 py-1.5 text-xs font-bold whitespace-nowrap ml-2 flex-shrink-0">
                                     + Set Objective
                                 </button>
                             </div>
@@ -1768,21 +1893,21 @@
 
                                 <!-- Planning Overview Hero -->
                                 <div
-                                    class="card-clean p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-3xl space-y-4">
+                                    class="card-clean p-6 bg-slate-900 border border-slate-800 text-white rounded-3xl space-y-4">
                                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                         <div>
                                             <span
-                                                class="text-[10px] font-bold uppercase tracking-wider bg-white/10 text-primary-light px-2.5 py-0.5 rounded-full">Phase
+                                                class="text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-primary-200 px-3 py-1 rounded-full border border-slate-700">Phase
                                                 1: Performance Planning</span>
-                                            <h3 class="font-heading font-bold text-lg text-white mt-1">Joint Objective
+                                            <h3 class="font-heading font-bold text-lg text-white mt-1.5">Joint Objective
                                                 Setting & Target Definition</h3>
                                             <p class="text-xs text-slate-300 mt-0.5">Employee and supervisor collaborate
                                                 to define high-impact hospitality KPIs and expected deliverables for Q3.
                                             </p>
                                         </div>
                                         <button onclick="openModal('modal-create-goal')"
-                                            class="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold shadow-md shadow-primary/30 flex items-center space-x-2 self-start sm:self-auto">
-                                            <i class="fas fa-plus"></i>
+                                            class="btn-raindrop btn-raindrop-primary px-5 py-2.5 text-xs font-bold flex items-center space-x-2 self-start sm:self-auto shadow-sm">
+                                            <i class="fas fa-plus text-xs"></i>
                                             <span>Define New Objective</span>
                                         </button>
                                     </div>
@@ -2051,11 +2176,12 @@
                                         </div>
                                         <div class="flex items-center space-x-2">
                                             <button onclick="openModal('modal-ai-feedback')"
-                                                class="px-3.5 py-1.5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl text-xs font-bold shadow-xs">
-                                                <i class="fas fa-wand-magic-sparkles mr-1"></i> AI Refiner
+                                                class="btn-raindrop btn-raindrop-primary px-4 py-2 text-white text-xs font-bold shadow-xs flex items-center space-x-1.5">
+                                                <i class="fas fa-wand-magic-sparkles text-[11px]"></i>
+                                                <span>AI Refiner</span>
                                             </button>
                                             <button onclick="logAchievementPrompt()"
-                                                class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+                                                class="btn-raindrop btn-raindrop-secondary px-4 py-2 text-slate-700 text-xs font-bold">
                                                 + Log Milestone
                                             </button>
                                         </div>
@@ -2409,7 +2535,7 @@
 
                                     <!-- Progress to Next Cycle Card -->
                                     <div
-                                        class="p-6 bg-gradient-to-br from-teal-900 via-slate-900 to-slate-900 text-white rounded-3xl space-y-4">
+                                        class="p-6 bg-slate-900 border border-slate-800 text-white rounded-3xl space-y-4">
                                         <div class="flex items-center justify-between">
                                             <div>
                                                 <span class="text-xs font-bold text-teal-300">Continuous Growth
@@ -2427,13 +2553,13 @@
                                                 Cycle</strong>.</p>
 
                                         <div
-                                            class="pt-2 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            class="pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                             <span class="text-xs text-slate-400"><i
                                                     class="fas fa-check text-teal-400 mr-1.5"></i> All 7 lifecycle
                                                 phases completed for 2026 Q3</span>
                                             <button
                                                 onclick="switchSubTab('perf', 'plan'); showToast('Loaded next performance planning cycle (Q4)!', 'success');"
-                                                class="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl text-xs font-bold shadow-md shadow-teal-500/20 transition flex items-center space-x-2">
+                                                class="btn-raindrop px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs transition flex items-center space-x-2">
                                                 <span>Initiate Next Performance Cycle (Q4)</span>
                                                 <i class="fas fa-arrow-right text-[10px]"></i>
                                             </button>
@@ -2477,7 +2603,7 @@
 
                             <!-- Top Subnav Pills -->
                             <div
-                                class="flex items-center space-x-1 bg-slate-100/70 p-1.5 rounded-2xl overflow-x-auto custom-scrollbar">
+                                class="raindrop-track flex items-center space-x-1.5 p-1.5 overflow-x-auto custom-scrollbar">
                                 <button onclick="switchSubTab('comp', 'radar')" class="subnav-pill subnav-comp active"
                                     data-sub="radar">
                                     <i class="fas fa-chart-radar mr-1.5"></i> Radar Profile
@@ -2653,7 +2779,7 @@
                         <div id="panel-pillar-lms" class="pillar-panel space-y-6">
 
                             <!-- Top Subnav Pills -->
-                            <div class="flex items-center space-x-1 bg-slate-100/70 p-1.5 rounded-2xl">
+                            <div class="raindrop-track flex items-center space-x-1.5 p-1.5 overflow-x-auto custom-scrollbar">
                                 <button onclick="switchSubTab('lms', 'tna')" class="subnav-pill subnav-lms active"
                                     data-sub="tna">
                                     <i class="fas fa-chart-pie-simple mr-1.5"></i> Needs Analysis (TNA)
@@ -2755,7 +2881,7 @@
                         <!-- ======================================================== -->
                         <div id="panel-pillar-training" class="pillar-panel space-y-6">
 
-                            <div class="flex items-center space-x-1 bg-slate-100/70 p-1.5 rounded-2xl">
+                            <div class="raindrop-track flex items-center space-x-1.5 p-1.5 overflow-x-auto custom-scrollbar">
                                 <button onclick="switchSubTab('training', 'schedules')"
                                     class="subnav-pill subnav-training active" data-sub="schedules">
                                     <i class="fas fa-calendar-days mr-1.5"></i> Schedules & Trainers
@@ -2884,11 +3010,11 @@
                                             Gomez</span>
                                     </div>
                                     <div
-                                        class="p-3.5 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary">
+                                        class="p-3.5 bg-red-50/70 rounded-2xl border border-red-200">
                                         <p class="font-bold text-primary">★ Star (Next Lead)</p>
                                         <p class="text-[11px] text-slate-600 mt-0.5">High Potential · High Perf</p>
                                         <span
-                                            class="inline-block mt-2 text-[10px] bg-primary text-white px-2 py-0.5 rounded-full font-bold">Maria
+                                            class="inline-block mt-2 text-[10px] bg-primary text-white px-2.5 py-0.5 rounded-full font-bold">Maria
                                             Santos</span>
                                     </div>
                                 </div>
@@ -2912,7 +3038,7 @@
                         <!-- ======================================================== -->
                         <div id="panel-pillar-social" class="pillar-panel space-y-6">
 
-                            <div class="flex items-center space-x-1 bg-slate-100/70 p-1.5 rounded-2xl">
+                            <div class="raindrop-track flex items-center space-x-1.5 p-1.5 overflow-x-auto custom-scrollbar">
                                 <button onclick="switchSubTab('social', 'kudos')"
                                     class="subnav-pill subnav-social active" data-sub="kudos">
                                     <i class="fas fa-trophy mr-1.5"></i> Kudos & Gamification XP
@@ -2934,7 +3060,7 @@
                                                 progress</p>
                                         </div>
                                         <button onclick="openModal('modal-recognition')"
-                                            class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs font-bold rounded-xl shadow-md">
+                                            class="btn-raindrop px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs">
                                             + Give Kudos (+50 XP)
                                         </button>
                                     </div>
@@ -3015,34 +3141,34 @@
         </div>
 
         <!-- ===== STREAMLINED MOBILE BOTTOM NAVIGATION ===== -->
-        <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200/90 flex justify-around py-2.5 z-30 shadow-lg"
+        <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/90 flex justify-around py-2 px-1 z-30 shadow-[0_-4px_16px_rgba(15,23,42,0.06)]"
             id="mobile-nav">
             <button onclick="switchPillar('dashboard')"
-                class="mobile-nav-btn active flex flex-col items-center text-[10px] text-primary font-bold"
+                class="mobile-nav-btn active flex flex-col items-center justify-center py-1 px-3 rounded-full text-[10px] text-primary font-bold transition active:scale-95"
                 data-pillar="dashboard">
                 <i class="fas fa-chart-pie text-base mb-0.5"></i>
                 <span>Home</span>
             </button>
             <button onclick="switchPillar('pillar-perf')"
-                class="mobile-nav-btn flex flex-col items-center text-[10px] text-slate-400 font-medium"
+                class="mobile-nav-btn flex flex-col items-center justify-center py-1 px-3 rounded-full text-[10px] text-slate-400 font-medium transition active:scale-95"
                 data-pillar="pillar-perf">
                 <i class="fas fa-bullseye text-base mb-0.5"></i>
                 <span>Perf</span>
             </button>
             <button onclick="switchPillar('pillar-comp')"
-                class="mobile-nav-btn flex flex-col items-center text-[10px] text-slate-400 font-medium"
+                class="mobile-nav-btn flex flex-col items-center justify-center py-1 px-3 rounded-full text-[10px] text-slate-400 font-medium transition active:scale-95"
                 data-pillar="pillar-comp">
                 <i class="fas fa-cubes text-base mb-0.5"></i>
                 <span>Comp</span>
             </button>
             <button onclick="switchPillar('pillar-lms')"
-                class="mobile-nav-btn flex flex-col items-center text-[10px] text-slate-400 font-medium"
+                class="mobile-nav-btn flex flex-col items-center justify-center py-1 px-3 rounded-full text-[10px] text-slate-400 font-medium transition active:scale-95"
                 data-pillar="pillar-lms">
                 <i class="fas fa-graduation-cap text-base mb-0.5"></i>
                 <span>LMS</span>
             </button>
             <button onclick="switchPillar('pillar-social')"
-                class="mobile-nav-btn flex flex-col items-center text-[10px] text-slate-400 font-medium"
+                class="mobile-nav-btn flex flex-col items-center justify-center py-1 px-3 rounded-full text-[10px] text-slate-400 font-medium transition active:scale-95"
                 data-pillar="pillar-social">
                 <i class="fas fa-trophy text-base mb-0.5"></i>
                 <span>Social</span>
@@ -3099,8 +3225,52 @@
                 }, 3000);
             }
 
+            // Mobile Sidebar Controller with Smooth Animation
+            let isMobileSidebarOpen = false;
+
+            function toggleMobileSidebar(forceState) {
+                const sidebar = document.getElementById('sidebar');
+                const backdrop = document.getElementById('mobile-sidebar-backdrop');
+                const hamburgerIcon = document.getElementById('hamburger-icon');
+
+                if (!sidebar || !backdrop) return;
+
+                if (typeof forceState === 'boolean') {
+                    isMobileSidebarOpen = forceState;
+                } else {
+                    isMobileSidebarOpen = !isMobileSidebarOpen;
+                }
+
+                if (isMobileSidebarOpen) {
+                    sidebar.classList.remove('mobile-closed');
+                    sidebar.classList.add('mobile-open');
+                    backdrop.classList.remove('opacity-0', 'pointer-events-none');
+                    backdrop.classList.add('opacity-100', 'pointer-events-auto');
+                    if (hamburgerIcon) {
+                        hamburgerIcon.classList.remove('fa-bars-staggered');
+                        hamburgerIcon.classList.add('fa-xmark');
+                    }
+                    document.body.classList.add('overflow-hidden');
+                } else {
+                    sidebar.classList.remove('mobile-open');
+                    sidebar.classList.add('mobile-closed');
+                    backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+                    backdrop.classList.add('opacity-0', 'pointer-events-none');
+                    if (hamburgerIcon) {
+                        hamburgerIcon.classList.remove('fa-xmark');
+                        hamburgerIcon.classList.add('fa-bars-staggered');
+                    }
+                    document.body.classList.remove('overflow-hidden');
+                }
+            }
+
             // Master Pillar Switcher
             function switchPillar(pillarKey) {
+                // Auto close mobile sidebar on navigation selection
+                if (window.innerWidth < 1024) {
+                    toggleMobileSidebar(false);
+                }
+
                 // Panels
                 document.querySelectorAll('.pillar-panel').forEach(panel => panel.classList.remove('active'));
                 const targetPanel = document.getElementById('panel-' + pillarKey);
