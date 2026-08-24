@@ -46,97 +46,97 @@
                                 <div class="min-w-[840px] flex items-center justify-between text-xs select-none">
 
                                     <div onclick="switchSubTab('perf', 'plan')"
-                                        class="flex items-center space-x-2 cursor-pointer group">
+                                        class="flex items-center space-x-2 cursor-pointer group perf-step-item" data-step-key="plan">
                                         <div
-                                            class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold shadow-xs group-hover:scale-110 transition">
+                                            class="perf-step-bubble w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold ring-4 ring-primary/20 shadow-xs group-hover:scale-110 transition">
                                             1</div>
                                         <div>
                                             <p
-                                                class="font-bold text-slate-800 text-[11px] group-hover:text-primary transition">
+                                                class="perf-step-title font-bold text-primary text-[11px] group-hover:text-primary transition">
                                                 1. Planning</p>
-                                            <p class="text-[9px] text-slate-400">Goals & KPIs</p>
+                                            <p class="perf-step-sub text-[9px] text-primary/70 font-medium">Goals & KPIs</p>
                                         </div>
                                     </div>
-                                    <div class="flex-1 h-0.5 bg-emerald-500 mx-2"></div>
+                                    <div class="perf-step-line flex-1 h-0.5 bg-slate-200 mx-2 transition-colors"></div>
 
                                     <div onclick="switchSubTab('perf', 'approve')"
-                                        class="flex items-center space-x-2 cursor-pointer group">
+                                        class="flex items-center space-x-2 cursor-pointer group perf-step-item" data-step-key="approve">
                                         <div
-                                            class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold shadow-xs group-hover:scale-110 transition">
+                                            class="perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-200 transition">
                                             2</div>
                                         <div>
                                             <p
-                                                class="font-bold text-slate-800 text-[11px] group-hover:text-primary transition">
+                                                class="perf-step-title font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">
                                                 2. Approval</p>
-                                            <p class="text-[9px] text-slate-400">Calibration</p>
+                                            <p class="perf-step-sub text-[9px] text-slate-400">Calibration</p>
                                         </div>
                                     </div>
-                                    <div class="flex-1 h-0.5 bg-primary mx-2"></div>
+                                    <div class="perf-step-line flex-1 h-0.5 bg-slate-200 mx-2 transition-colors"></div>
 
                                     <div onclick="switchSubTab('perf', 'monitor')"
-                                        class="flex items-center space-x-2 cursor-pointer group">
+                                        class="flex items-center space-x-2 cursor-pointer group perf-step-item" data-step-key="monitor">
                                         <div
-                                            class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold ring-4 ring-primary/20 shadow-xs group-hover:scale-110 transition">
+                                            class="perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-200 transition">
                                             3</div>
                                         <div>
-                                            <p class="font-bold text-primary text-[11px]">3. Monitoring</p>
-                                            <p class="text-[9px] text-primary/70">Continuous Log</p>
+                                            <p class="perf-step-title font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">3. Monitoring</p>
+                                            <p class="perf-step-sub text-[9px] text-slate-400">Continuous Log</p>
                                         </div>
                                     </div>
-                                    <div class="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+                                    <div class="perf-step-line flex-1 h-0.5 bg-slate-200 mx-2 transition-colors"></div>
 
                                     <div onclick="switchSubTab('perf', 'eval')"
-                                        class="flex items-center space-x-2 cursor-pointer group">
+                                        class="flex items-center space-x-2 cursor-pointer group perf-step-item" data-step-key="eval">
                                         <div
-                                            class="w-7 h-7 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-300 transition">
+                                            class="perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-200 transition">
                                             4</div>
                                         <div>
                                             <p
-                                                class="font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">
+                                                class="perf-step-title font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">
                                                 4. Evaluation</p>
-                                            <p class="text-[9px] text-slate-400">Self & Super</p>
+                                            <p class="perf-step-sub text-[9px] text-slate-400">Self & Super</p>
                                         </div>
                                     </div>
-                                    <div class="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+                                    <div class="perf-step-line flex-1 h-0.5 bg-slate-200 mx-2 transition-colors"></div>
 
                                     <div onclick="switchSubTab('perf', 'review')"
-                                        class="flex items-center space-x-2 cursor-pointer group">
+                                        class="flex items-center space-x-2 cursor-pointer group perf-step-item" data-step-key="review">
                                         <div
-                                            class="w-7 h-7 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-300 transition">
+                                            class="perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-200 transition">
                                             5</div>
                                         <div>
                                             <p
-                                                class="font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">
+                                                class="perf-step-title font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">
                                                 5. Review</p>
-                                            <p class="text-[9px] text-slate-400">1-on-1 & Calib</p>
+                                            <p class="perf-step-sub text-[9px] text-slate-400">1-on-1 & Calib</p>
                                         </div>
                                     </div>
-                                    <div class="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+                                    <div class="perf-step-line flex-1 h-0.5 bg-slate-200 mx-2 transition-colors"></div>
 
                                     <div onclick="switchSubTab('perf', 'idp')"
-                                        class="flex items-center space-x-2 cursor-pointer group">
+                                        class="flex items-center space-x-2 cursor-pointer group perf-step-item" data-step-key="idp">
                                         <div
-                                            class="w-7 h-7 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-300 transition">
+                                            class="perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-200 transition">
                                             6</div>
                                         <div>
                                             <p
-                                                class="font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">
+                                                class="perf-step-title font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">
                                                 6. IDP Plan</p>
-                                            <p class="text-[9px] text-slate-400">70-20-10</p>
+                                            <p class="perf-step-sub text-[9px] text-slate-400">70-20-10</p>
                                         </div>
                                     </div>
-                                    <div class="flex-1 h-0.5 bg-slate-200 mx-2"></div>
+                                    <div class="perf-step-line flex-1 h-0.5 bg-slate-200 mx-2 transition-colors"></div>
 
                                     <div onclick="switchSubTab('perf', 'cycle')"
-                                        class="flex items-center space-x-2 cursor-pointer group">
+                                        class="flex items-center space-x-2 cursor-pointer group perf-step-item" data-step-key="cycle">
                                         <div
-                                            class="w-7 h-7 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-300 transition">
+                                            class="perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-200 transition">
                                             7</div>
                                         <div>
                                             <p
-                                                class="font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">
+                                                class="perf-step-title font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">
                                                 7. Next Cycle</p>
-                                            <p class="text-[9px] text-slate-400">Roll Forward</p>
+                                            <p class="perf-step-sub text-[9px] text-slate-400">Roll Forward</p>
                                         </div>
                                     </div>
 
@@ -215,7 +215,7 @@
                                                     <th class="px-5 py-3 text-right">Status</th>
                                                 </tr>
                                             </thead>
-                                            <tbody class="divide-y divide-slate-100 text-slate-700">
+                                            <tbody id="goals-table-body" class="divide-y divide-slate-100 text-slate-700">
                                                 <tr class="hover:bg-slate-50/60 transition">
                                                     <td class="px-5 py-4 font-semibold text-slate-900">
                                                         VIP Guest Check-in Experience & NPS Lift
@@ -444,58 +444,50 @@
                                         </div>
                                     </div>
 
-                                    <div id="timeline-stream-container"
-                                        class="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 text-xs">
+                                    <div id="timeline-stream-container" class="space-y-3 text-xs">
 
-                                        <div class="relative">
-                                            <span
-                                                class="absolute -left-[27px] top-1 w-4 h-4 rounded-full bg-emerald-500 border-4 border-white"></span>
-                                            <div
-                                                class="bg-slate-50 p-4 rounded-2xl border border-slate-200/60 space-y-1">
+                                        <div class="flex items-start space-x-3.5 group">
+                                            <div class="flex flex-col items-center self-stretch">
+                                                <div class="w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100 mt-1 flex-shrink-0"></div>
+                                                <div class="w-0.5 flex-1 bg-slate-200 my-1 min-h-[36px]"></div>
+                                            </div>
+                                            <div class="flex-1 bg-slate-50 p-4 rounded-2xl border border-slate-200/60 space-y-1">
                                                 <div class="flex items-center justify-between">
-                                                    <span class="font-bold text-slate-900">Accomplishment Logged: 100%
-                                                        Medallia 5-Star Rating</span>
+                                                    <span class="font-bold text-slate-900">Accomplishment Logged: 100% Medallia 5-Star Rating</span>
                                                     <span class="text-slate-400">Aug 21 · 14:30</span>
                                                 </div>
-                                                <p class="text-slate-600">Presidential suite guest commendation logged
-                                                    for prompt champagne service and express check-in under 2 minutes.
-                                                </p>
-                                                <div
-                                                    class="pt-1 text-[11px] text-primary font-medium flex items-center space-x-1">
+                                                <p class="text-slate-600">Presidential suite guest commendation logged for prompt champagne service and express check-in under 2 minutes.</p>
+                                                <div class="pt-1 text-[11px] text-primary font-medium flex items-center space-x-1">
                                                     <i class="fas fa-paperclip"></i>
                                                     <span>Attached Evidence: Medallia_Guest_Card_#8842.pdf</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div class="relative">
-                                            <span
-                                                class="absolute -left-[27px] top-1 w-4 h-4 rounded-full bg-primary border-4 border-white"></span>
-                                            <div
-                                                class="bg-slate-50 p-4 rounded-2xl border border-slate-200/60 space-y-1">
+                                        <div class="flex items-start space-x-3.5 group">
+                                            <div class="flex flex-col items-center self-stretch">
+                                                <div class="w-3.5 h-3.5 rounded-full bg-primary ring-4 ring-primary-100 mt-1 flex-shrink-0"></div>
+                                                <div class="w-0.5 flex-1 bg-slate-200 my-1 min-h-[36px]"></div>
+                                            </div>
+                                            <div class="flex-1 bg-slate-50 p-4 rounded-2xl border border-slate-200/60 space-y-1">
                                                 <div class="flex items-center justify-between">
-                                                    <span class="font-bold text-slate-900">Coaching Session: Sommelier
-                                                        Upselling Review</span>
+                                                    <span class="font-bold text-slate-900">Coaching Session: Sommelier Upselling Review</span>
                                                     <span class="text-slate-400">Aug 18 · 09:15</span>
                                                 </div>
-                                                <p class="text-slate-600">Supervisor Marco reviewed guest table
-                                                    conversation tactics for vintage wines with Maria. Action item:
-                                                    Shadow sommelier Pierre on Friday rush.</p>
+                                                <p class="text-slate-600">Supervisor Marco reviewed guest table conversation tactics for vintage wines with Maria. Action item: Shadow sommelier Pierre on Friday rush.</p>
                                             </div>
                                         </div>
 
-                                        <div class="relative">
-                                            <span
-                                                class="absolute -left-[27px] top-1 w-4 h-4 rounded-full bg-amber-500 border-4 border-white"></span>
-                                            <div
-                                                class="bg-slate-50 p-4 rounded-2xl border border-slate-200/60 space-y-1">
+                                        <div class="flex items-start space-x-3.5 group">
+                                            <div class="flex flex-col items-center self-stretch">
+                                                <div class="w-3.5 h-3.5 rounded-full bg-amber-500 ring-4 ring-amber-100 mt-1 flex-shrink-0"></div>
+                                            </div>
+                                            <div class="flex-1 bg-slate-50 p-4 rounded-2xl border border-slate-200/60 space-y-1">
                                                 <div class="flex items-center justify-between">
-                                                    <span class="font-bold text-slate-900">Operational Challenge Logged:
-                                                        Micros POS Latency</span>
+                                                    <span class="font-bold text-slate-900">Operational Challenge Logged: Micros POS Latency</span>
                                                     <span class="text-slate-400">Aug 12 · 20:00</span>
                                                 </div>
-                                                <p class="text-slate-600">Network lag during Friday peak rush caused
-                                                    4-minute bill split delays. Escalated to IT engineering team.</p>
+                                                <p class="text-slate-600">Network lag during Friday peak rush caused 4-minute bill split delays. Escalated to IT engineering team.</p>
                                             </div>
                                         </div>
 
@@ -648,136 +640,184 @@
                             <!-- ======================================================== -->
                             <!-- STAGE 6 SUB-PANEL: DEVELOPMENT PLANNING (IDP)             -->
                             <!-- ======================================================== -->
-                            <div id="sub-perf-idp" class="sub-panel sub-panel-perf space-y-4">
+                            <div id="sub-perf-idp" class="sub-panel sub-panel-perf space-y-5">
                                 <div class="card-clean p-6 space-y-6">
+                                    <!-- Header -->
                                     <div
                                         class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                                         <div>
                                             <span
-                                                class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Phase
+                                                class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">Phase
                                                 6: Development Planning</span>
                                             <h3 class="font-heading font-bold text-lg text-slate-900 mt-1">70-20-10
                                                 Individual Development Plan (IDP)</h3>
-                                            <p class="text-xs text-slate-500">Based on evaluation results, employee
-                                                strengths and develo                                        <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                                            <p class="text-xs text-slate-500 mt-0.5">Based on appraisal results, employee
+                                                strengths and development gaps are mapped to tailored 70-20-10 learning actions.</p>
+                                        </div>
+                                        <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
                                             <button onclick="openRemedialBooksModal('maria')"
                                                 class="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition btn-raindrop">
                                                 <i class="fas fa-book-medical"></i>
-                                                <span>Prescribe LMS Books (&lt; 3.0 Rating)</span>
+                                                <span>Prescribe LMS Books (&lt; 3.0)</span>
                                             </button>
                                             <button onclick="openModal('modal-ai-feedback')"
-                                                class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-emerald-700 btn-raindrop">
-                                                + Add IDP Action
+                                                class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-emerald-700 btn-raindrop flex items-center space-x-1.5">
+                                                <i class="fas fa-plus"></i>
+                                                <span>Add IDP Action</span>
                                             </button>
                                         </div>
                                     </div>
 
                                     <!-- Strengths vs Gaps Breakdown with < 3.0 Alert Banner -->
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                                        <div
-                                            class="p-4 bg-emerald-50/40 rounded-2xl border border-emerald-100 space-y-2">
-                                            <span
-                                                class="font-bold text-emerald-900 uppercase text-[11px] flex items-center">
-                                                <i class="fas fa-award mr-1.5 text-emerald-600"></i> Identified
-                                                Strengths
-                                            </span>
-                                            <ul class="space-y-1 text-slate-700">
-                                                <li class="flex items-center space-x-2"><i
-                                                        class="fas fa-check text-emerald-600 text-[10px]"></i> <span>VIP
-                                                        Guest Greeting & 5-Star Protocol (Score: 4.8)</span></li>
-                                                <li class="flex items-center space-x-2"><i
-                                                        class="fas fa-check text-emerald-600 text-[10px]"></i>
-                                                    <span>Opera PMS Reservation Speed & Accuracy (Score: 4.5)</span>
+                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs">
+                                        <!-- Strengths Card -->
+                                        <div class="p-5 bg-emerald-50/40 rounded-2xl border border-emerald-100 space-y-3">
+                                            <div class="flex items-center justify-between border-b border-emerald-100 pb-2.5">
+                                                <span class="font-bold text-emerald-950 text-xs flex items-center">
+                                                    <i class="fas fa-award mr-2 text-emerald-600 text-sm"></i>
+                                                    Identified Strengths & Core Competencies
+                                                </span>
+                                                <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">3 Calibrated</span>
+                                            </div>
+                                            <ul class="space-y-2 text-slate-700">
+                                                <li class="p-2.5 bg-white/90 rounded-xl border border-emerald-100 flex items-center justify-between">
+                                                    <span class="flex items-center space-x-2">
+                                                        <i class="fas fa-circle-check text-emerald-600 text-xs"></i>
+                                                        <span class="font-medium text-slate-900">VIP Guest Greeting & 5-Star Protocol</span>
+                                                    </span>
+                                                    <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px]">4.8 / 5.0</span>
                                                 </li>
-                                                <li class="flex items-center space-x-2"><i
-                                                        class="fas fa-check text-emerald-600 text-[10px]"></i>
-                                                    <span>HACCP Cold-chain Safety Compliance (Score: 5.0)</span>
+                                                <li class="p-2.5 bg-white/90 rounded-xl border border-emerald-100 flex items-center justify-between">
+                                                    <span class="flex items-center space-x-2">
+                                                        <i class="fas fa-circle-check text-emerald-600 text-xs"></i>
+                                                        <span class="font-medium text-slate-900">Opera PMS Reservation Speed & Accuracy</span>
+                                                    </span>
+                                                    <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px]">4.5 / 5.0</span>
+                                                </li>
+                                                <li class="p-2.5 bg-white/90 rounded-xl border border-emerald-100 flex items-center justify-between">
+                                                    <span class="flex items-center space-x-2">
+                                                        <i class="fas fa-circle-check text-emerald-600 text-xs"></i>
+                                                        <span class="font-medium text-slate-900">HACCP Cold-chain Safety Compliance</span>
+                                                    </span>
+                                                    <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px]">5.0 / 5.0</span>
                                                 </li>
                                             </ul>
                                         </div>
 
-                                        <div class="p-4 bg-amber-50/40 rounded-2xl border border-amber-100 space-y-2">
-                                            <span
-                                                class="font-bold text-amber-900 uppercase text-[11px] flex items-center">
-                                                <i class="fas fa-triangle-exclamation mr-1.5 text-amber-600"></i>
-                                                Development Gaps to Address (&lt; 3.0 Threshold)
-                                            </span>
-                                            <ul class="space-y-1 text-slate-700">
-                                                <li class="flex items-center justify-between">
-                                                    <span class="flex items-center space-x-2"><i class="fas fa-arrow-right text-red-600 text-[10px]"></i> <span>French Wine Pairing (Rating: <strong class="text-red-600">2.40 / 5.0</strong>)</span></span>
-                                                    <button onclick="openRemedialBooksModal('maria')" class="text-primary font-bold hover:underline text-[10px]">+ Prescribe Book</button>
+                                        <!-- Gaps Card -->
+                                        <div class="p-5 bg-amber-50/40 rounded-2xl border border-amber-200/80 space-y-3">
+                                            <div class="flex items-center justify-between border-b border-amber-200/80 pb-2.5">
+                                                <span class="font-bold text-amber-950 text-xs flex items-center">
+                                                    <i class="fas fa-triangle-exclamation mr-2 text-amber-600 text-sm"></i>
+                                                    Development Gaps (&lt; 3.0 Threshold)
+                                                </span>
+                                                <span class="text-[10px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">Action Required</span>
+                                            </div>
+                                            <ul class="space-y-2 text-slate-700">
+                                                <li class="p-2.5 bg-white/90 rounded-xl border border-amber-200/70 flex items-center justify-between gap-2">
+                                                    <div class="flex items-center space-x-2 min-w-0">
+                                                        <i class="fas fa-circle-exclamation text-red-600 text-xs flex-shrink-0"></i>
+                                                        <div class="truncate">
+                                                            <p class="font-semibold text-slate-900 text-xs truncate">French & Italian Wine Pairing</p>
+                                                            <p class="text-[10px] text-red-600 font-bold">Appraisal Rating: 2.40 / 5.0</p>
+                                                        </div>
+                                                    </div>
+                                                    <button onclick="openRemedialBooksModal('maria')" class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1">
+                                                        <i class="fas fa-book-medical text-[10px]"></i>
+                                                        <span>Prescribe</span>
+                                                    </button>
                                                 </li>
-                                                <li class="flex items-center justify-between">
-                                                    <span class="flex items-center space-x-2"><i class="fas fa-arrow-right text-red-600 text-[10px]"></i> <span>Banquet Floor Rush Delegation (Rating: <strong class="text-red-600">2.80 / 5.0</strong>)</span></span>
-                                                    <button onclick="openRemedialBooksModal('maria')" class="text-primary font-bold hover:underline text-[10px]">+ Prescribe Book</button>
+                                                <li class="p-2.5 bg-white/90 rounded-xl border border-amber-200/70 flex items-center justify-between gap-2">
+                                                    <div class="flex items-center space-x-2 min-w-0">
+                                                        <i class="fas fa-circle-exclamation text-red-600 text-xs flex-shrink-0"></i>
+                                                        <div class="truncate">
+                                                            <p class="font-semibold text-slate-900 text-xs truncate">Banquet Floor Rush Delegation</p>
+                                                            <p class="text-[10px] text-red-600 font-bold">Appraisal Rating: 2.80 / 5.0</p>
+                                                        </div>
+                                                    </div>
+                                                    <button onclick="openRemedialBooksModal('maria')" class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1">
+                                                        <i class="fas fa-book-medical text-[10px]"></i>
+                                                        <span>Prescribe</span>
+                                                    </button>
                                                 </li>
-                                                <li class="flex items-center justify-between">
-                                                    <span class="flex items-center space-x-2"><i class="fas fa-arrow-right text-amber-600 text-[10px]"></i> <span>Micros POS Advanced Split Billing (Gap: -0.5)</span></span>
-                                                    <button onclick="openRemedialBooksModal('maria')" class="text-primary font-bold hover:underline text-[10px]">+ Prescribe Book</button>
+                                                <li class="p-2.5 bg-white/90 rounded-xl border border-amber-200/70 flex items-center justify-between gap-2">
+                                                    <div class="flex items-center space-x-2 min-w-0">
+                                                        <i class="fas fa-circle-exclamation text-amber-600 text-xs flex-shrink-0"></i>
+                                                        <div class="truncate">
+                                                            <p class="font-semibold text-slate-900 text-xs truncate">Micros POS Advanced Split Billing</p>
+                                                            <p class="text-[10px] text-amber-700 font-bold">Competency Gap: -0.5 Level</p>
+                                                        </div>
+                                                    </div>
+                                                    <button onclick="openRemedialBooksModal('maria')" class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1">
+                                                        <i class="fas fa-book-medical text-[10px]"></i>
+                                                        <span>Prescribe</span>
+                                                    </button>
                                                 </li>
                                             </ul>
                                         </div>
                                     </div>
 
-                                    <!-- 70-20-10 IDP Plan Cards -->
-                                    <div class="space-y-3 text-xs">
-                                        <div class="flex items-center justify-between">
-                                            <h4 class="font-heading font-bold text-slate-900 text-sm">70-20-10 Active Development Commitments</h4>
+                                    <!-- 70-20-10 IDP Plan Cards Section -->
+                                    <div class="space-y-3.5 text-xs">
+                                        <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+                                            <div>
+                                                <h4 class="font-heading font-bold text-slate-900 text-sm">70-20-10 Active Development Commitments</h4>
+                                                <p class="text-slate-500 text-[11px]">Experiential, Mentorship & Formal LMS actions mapped for Q3/Q4 growth</p>
+                                            </div>
                                             <button onclick="openRemedialBooksModal('maria')" class="text-xs text-primary font-bold hover:underline flex items-center space-x-1">
                                                 <i class="fas fa-book-bookmark text-[11px]"></i>
                                                 <span>Browse All LMS Books &rarr;</span>
                                             </button>
                                         </div>
 
-                                        <div id="idp-perf-commitments-container" class="space-y-3">
-                                            <div
-                                                class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                                <div class="space-y-1">
-                                                    <span
-                                                        class="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">70%
-                                                        Experiential (On-the-Job)</span>
-                                                    <p class="font-bold text-slate-900 text-sm">Lead Front Desk Shift during
-                                                        International Film Festival</p>
-                                                    <p class="text-slate-500">Take charge of VIP queue dispatch and suite
-                                                        allocation for 4 consecutive days.</p>
+                                        <div id="idp-perf-commitments-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <!-- 70% Experiential Card -->
+                                            <div class="p-5 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200/80 hover:border-blue-300 transition shadow-2xs hover:shadow-xs flex flex-col justify-between space-y-3">
+                                                <div class="space-y-2">
+                                                    <div class="flex items-center justify-between">
+                                                        <span class="text-[10px] font-bold bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full">70% Experiential</span>
+                                                        <span class="text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">On-the-Job</span>
+                                                    </div>
+                                                    <h5 class="font-heading font-bold text-slate-900 text-sm">Lead Front Desk Shift during Film Festival</h5>
+                                                    <p class="text-slate-600 text-xs leading-relaxed">Take charge of VIP queue dispatch and suite allocation for 4 consecutive days.</p>
                                                 </div>
-                                                <span
-                                                    class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-xl flex-shrink-0">In
-                                                    Progress (60%)</span>
+                                                <div class="pt-3 border-t border-slate-200/70 flex items-center justify-between text-xs">
+                                                    <span class="text-slate-400 text-[11px]"><i class="fas fa-calendar-check mr-1"></i>4 Days Active</span>
+                                                    <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-xl">In Progress (60%)</span>
+                                                </div>
                                             </div>
 
-                                            <div
-                                                class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                                <div class="space-y-1">
-                                                    <span
-                                                        class="text-[10px] font-bold bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">20%
-                                                        Social (Mentorship)</span>
-                                                    <p class="font-bold text-slate-900 text-sm">Bi-weekly Sommelier
-                                                        Shadowing with Pierre Dubois</p>
-                                                    <p class="text-slate-500">Shadow master sommelier during Friday evening
-                                                        wine service to master wine pairing descriptors.</p>
+                                            <!-- 20% Social Card -->
+                                            <div class="p-5 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200/80 hover:border-purple-300 transition shadow-2xs hover:shadow-xs flex flex-col justify-between space-y-3">
+                                                <div class="space-y-2">
+                                                    <div class="flex items-center justify-between">
+                                                        <span class="text-[10px] font-bold bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full">20% Social</span>
+                                                        <span class="text-[10px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">Mentorship</span>
+                                                    </div>
+                                                    <h5 class="font-heading font-bold text-slate-900 text-sm">Sommelier Shadowing with Pierre Dubois</h5>
+                                                    <p class="text-slate-600 text-xs leading-relaxed">Shadow master sommelier during Friday evening wine service to master wine pairing descriptors.</p>
                                                 </div>
-                                                <span
-                                                    class="text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1.5 rounded-xl flex-shrink-0">Scheduled</span>
+                                                <div class="pt-3 border-t border-slate-200/70 flex items-center justify-between text-xs">
+                                                    <span class="text-slate-400 text-[11px]"><i class="fas fa-user-tie mr-1"></i>Master Pierre</span>
+                                                    <span class="text-xs font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-xl">Scheduled</span>
+                                                </div>
                                             </div>
 
-                                            <div
-                                                class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                                <div class="space-y-1">
-                                                    <span
-                                                        class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">10%
-                                                        Formal (LMS Courses)</span>
-                                                    <p class="font-bold text-slate-900 text-sm">Certified Wine Knowledge
-                                                        Level 2 & Service Recovery 101</p>
-                                                    <p class="text-slate-500">Complete modular LMS course and pass knowledge
-                                                        quiz (+100 XP).</p>
+                                            <!-- 10% Formal Card -->
+                                            <div class="p-5 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200/80 hover:border-emerald-300 transition shadow-2xs hover:shadow-xs flex flex-col justify-between space-y-3">
+                                                <div class="space-y-2">
+                                                    <div class="flex items-center justify-between">
+                                                        <span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">10% Formal</span>
+                                                        <span class="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">LMS Courses</span>
+                                                    </div>
+                                                    <h5 class="font-heading font-bold text-slate-900 text-sm">Certified Wine Knowledge Level 2</h5>
+                                                    <p class="text-slate-600 text-xs leading-relaxed">Complete modular LMS course & service recovery handbook to pass knowledge quiz (+100 XP).</p>
                                                 </div>
-                                                <span
-                                                    class="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl flex-shrink-0">Enrolled
-                                                    in LMS</span>
+                                                <div class="pt-3 border-t border-slate-200/70 flex items-center justify-between text-xs">
+                                                    <span class="text-slate-400 text-[11px]"><i class="fas fa-graduation-cap mr-1"></i>+100 XP</span>
+                                                    <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-xl">Enrolled in LMS</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>MS</span>
                                         </div>
                                     </div>
                                 </div>

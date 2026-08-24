@@ -1,5 +1,5 @@
-<!DOCTYPE view>
-<view lang="en">
+<!DOCTYPE html>
+<html lang="en">
 
     <head>
         <meta charset="UTF-8">
@@ -106,4 +106,4 @@
         <script src="js/kudos.js"></script>
         <script src="js/app.js"></script>
     </body>
-</view>
+</html>

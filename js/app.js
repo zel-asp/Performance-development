@@ -162,7 +162,9 @@
                     }
                 });
 
-                if (pillarPrefix === 'lms' && subKey === 'tna') {
+                if (pillarPrefix === 'perf') {
+                    updatePerfStepper(subKey);
+                } else if (pillarPrefix === 'lms' && subKey === 'tna') {
                     if (typeof renderTnaEnrollments === 'function') renderTnaEnrollments();
                 } else if (pillarPrefix === 'lms' && subKey === 'modules') {
                     if (typeof renderLmsBooks === 'function') renderLmsBooks();
@@ -176,6 +178,70 @@
                     if (subKey === 'compliance' && chartLmsComplianceInstance) chartLmsComplianceInstance.resize();
                     if (subKey === 'climate' && chartHourlySentimentInstance) chartHourlySentimentInstance.resize();
                 }, 80);
+            }
+
+            // 7-Stage Performance Stepper Dynamic Progress State
+            function updatePerfStepper(activeSubKey) {
+                const perfStages = ['plan', 'approve', 'monitor', 'eval', 'review', 'idp', 'cycle'];
+                const activeIdx = perfStages.indexOf(activeSubKey);
+                if (activeIdx === -1) return;
+
+                const stepItems = document.querySelectorAll('.perf-step-item');
+                const stepLines = document.querySelectorAll('.perf-step-line');
+
+                stepItems.forEach((item, idx) => {
+                    const bubble = item.querySelector('.perf-step-bubble');
+                    const title = item.querySelector('.perf-step-title');
+                    const sub = item.querySelector('.perf-step-sub');
+
+                    if (idx < activeIdx) {
+                        // Completed stage
+                        if (bubble) {
+                            bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold shadow-xs group-hover:scale-110 transition';
+                            bubble.innerHTML = '<i class="fas fa-check text-[9px]"></i>';
+                        }
+                        if (title) {
+                            title.className = 'perf-step-title font-bold text-slate-800 text-[11px] group-hover:text-primary transition';
+                        }
+                        if (sub) {
+                            sub.className = 'perf-step-sub text-[9px] text-slate-400';
+                        }
+                    } else if (idx === activeIdx) {
+                        // Active current stage
+                        if (bubble) {
+                            bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold ring-4 ring-primary/20 shadow-xs group-hover:scale-110 transition';
+                            bubble.textContent = (idx + 1);
+                        }
+                        if (title) {
+                            title.className = 'perf-step-title font-bold text-primary text-[11px]';
+                        }
+                        if (sub) {
+                            sub.className = 'perf-step-sub text-[9px] text-primary/70 font-medium';
+                        }
+                    } else {
+                        // Upcoming stage
+                        if (bubble) {
+                            bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-200 transition';
+                            bubble.textContent = (idx + 1);
+                        }
+                        if (title) {
+                            title.className = 'perf-step-title font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition';
+                        }
+                        if (sub) {
+                            sub.className = 'perf-step-sub text-[9px] text-slate-400';
+                        }
+                    }
+                });
+
+                stepLines.forEach((line, idx) => {
+                    if (idx < activeIdx) {
+                        line.className = 'perf-step-line flex-1 h-0.5 bg-emerald-500 mx-2 transition-colors';
+                    } else if (idx === activeIdx) {
+                        line.className = 'perf-step-line flex-1 h-0.5 bg-primary/40 mx-2 transition-colors';
+                    } else {
+                        line.className = 'perf-step-line flex-1 h-0.5 bg-slate-200 mx-2 transition-colors';
+                    }
+                });
             }
 
             // Auth and Persona
@@ -396,37 +462,32 @@
                 const cat = document.getElementById('goal-cat-input').value;
                 const date = document.getElementById('goal-date-input').value;
                 const kpi = document.getElementById('goal-kpi-input').value;
+                const weight = document.getElementById('goal-weight-input') ? document.getElementById('goal-weight-input').value : '20% (Standard)';
+                const evidence = document.getElementById('goal-evidence-input') ? document.getElementById('goal-evidence-input').value : '';
 
                 const tbody = document.getElementById('goals-table-body');
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-50 transition bg-emerald-50/20';
-                tr.innerHTML = `
-                <td class="px-5 py-4 font-semibold text-slate-900">
-                    ${title}
-                    <p class="text-[11px] text-slate-400 font-normal">Newly submitted</p>
-                </td>
-                <td class="px-5 py-4 font-medium">${kpi}</td>
-                <td class="px-5 py-4">${cat}</td>
-                <td class="px-5 py-4">
-                    <div class="flex items-center space-x-2">
-                        <div class="w-16 bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                            <div class="bg-primary h-1.5 rounded-full" style="width: 15%"></div>
-                        </div>
-                        <span class="font-bold">15%</span>
-                    </div>
-                </td>
-                <td class="px-5 py-4 text-slate-500">${date}</td>
-                <td class="px-5 py-4">
-                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Pending Approval</span>
-                </td>
-                <td class="px-5 py-4 text-right">
-                    <button onclick="openGoalReview('${title}')" class="text-primary hover:text-primary-dark font-semibold">Review</button>
-                </td>
-            `;
-                tbody.insertBefore(tr, tbody.firstChild);
+                if (tbody) {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50/60 transition bg-emerald-50/20';
+                    tr.innerHTML = `
+                    <td class="px-5 py-4 font-semibold text-slate-900">
+                        ${title}
+                        <p class="text-[11px] text-slate-400 font-normal">${cat}</p>
+                    </td>
+                    <td class="px-5 py-4 font-mono font-medium text-slate-800">${kpi}</td>
+                    <td class="px-5 py-4 font-bold text-slate-700">${weight.split(' ')[0]} ${weight.includes('(') ? weight.substring(weight.indexOf('(')) : ''}</td>
+                    <td class="px-5 py-4 text-slate-600">${evidence || 'Newly submitted documentation & evidence logs'}</td>
+                    <td class="px-5 py-4 text-slate-500">${date}</td>
+                    <td class="px-5 py-4 text-right">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Pending Approval</span>
+                    </td>
+                `;
+                    tbody.insertBefore(tr, tbody.firstChild);
+                }
 
                 totalGoals++;
-                document.getElementById('kpi-goals-ratio').textContent = `${completedGoals} of ${totalGoals} Done`;
+                const kpiRatio = document.getElementById('kpi-goals-ratio');
+                if (kpiRatio) kpiRatio.textContent = `${completedGoals} of ${totalGoals} Done`;
 
                 closeModal('modal-create-goal');
                 showToast(`Goal "${title}" submitted to supervisor!`, 'success');

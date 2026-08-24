@@ -841,19 +841,20 @@ const lmsTrainingBooks = [
                 const idpContainer = document.getElementById('idp-perf-commitments-container');
                 if (idpContainer) {
                     const newCommitment = document.createElement('div');
-                    newCommitment.className = 'p-4 bg-amber-50/70 rounded-2xl border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs animate-fadeIn';
+                    newCommitment.className = 'p-5 bg-amber-50/70 hover:bg-white rounded-2xl border border-amber-300 transition shadow-2xs hover:shadow-xs flex flex-col justify-between space-y-3 animate-fadeIn';
                     newCommitment.innerHTML = `
-                        <div class="space-y-1">
-                            <div class="flex items-center space-x-2">
-                                <span class="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">10% Formal (<3.0 Remedial LMS)</span>
-                                <span class="text-[10px] font-bold text-red-600">Prescribed Handbook</span>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-bold bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full">10% Formal</span>
+                                <span class="text-[10px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">&lt; 3.0 Remedial</span>
                             </div>
-                            <p class="font-bold text-slate-900 text-sm">${book.title}</p>
-                            <p class="text-slate-600 text-xs">Assigned to close competency gap for ${emp.name.split('·')[0].trim()}. Complete handbook and pass quiz for calibration.</p>
+                            <h5 class="font-heading font-bold text-slate-900 text-sm">${book.title}</h5>
+                            <p class="text-slate-600 text-xs leading-relaxed">Assigned to close competency gap for ${emp.name.split('·')[0].trim()}. Complete handbook and pass quiz for calibration.</p>
                         </div>
-                        <span class="text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1.5 rounded-xl flex-shrink-0 border border-amber-300">
-                            Prescribed & Enrolled
-                        </span>
+                        <div class="pt-3 border-t border-amber-200 flex items-center justify-between text-xs">
+                            <span class="text-amber-800 text-[11px] font-semibold"><i class="fas fa-book-medical mr-1"></i>Prescribed</span>
+                            <span class="text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-1 rounded-xl border border-amber-300">Enrolled</span>
+                        </div>
                     `;
                     idpContainer.prepend(newCommitment);
                 }
