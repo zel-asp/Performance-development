@@ -188,6 +188,8 @@
                                     </div>
                                 </div>
 
+
+
                                 <!-- Performance Objectives Table -->
                                 <div class="card-clean overflow-hidden">
                                     <div
@@ -204,69 +206,18 @@
                                     </div>
                                     <div class="overflow-x-auto custom-scrollbar">
                                         <table class="w-full text-left text-xs">
-                                            <thead
-                                                class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-100">
+                                            <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-100">
                                                 <tr>
-                                                    <th class="px-5 py-3">Performance Objective</th>
-                                                    <th class="px-5 py-3">Measurable KPI Formula</th>
-                                                    <th class="px-5 py-3">Weight</th>
-                                                    <th class="px-5 py-3">Expected Deliverables & Evidence</th>
-                                                    <th class="px-5 py-3">Target Date</th>
+                                                    <th class="px-5 py-3">Employee, Position &amp; Dept</th>
+                                                    <th class="px-5 py-3">Attendance</th>
+                                                    <th class="px-5 py-3">Ratings (Mgr / Cust)</th>
+                                                    <th class="px-5 py-3">Objectives &amp; KPIs</th>
                                                     <th class="px-5 py-3 text-right">Status</th>
+                                                    <th class="px-5 py-3 text-right">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="goals-table-body" class="divide-y divide-slate-100 text-slate-700">
-                                                <tr class="hover:bg-slate-50/60 transition">
-                                                    <td class="px-5 py-4 font-semibold text-slate-900">
-                                                        VIP Guest Check-in Experience & NPS Lift
-                                                        <p class="text-[11px] text-slate-400 font-normal">Front Office &
-                                                            Guest Experience</p>
-                                                    </td>
-                                                    <td class="px-5 py-4 font-mono font-medium text-slate-800">NPS &ge;
-                                                        +92 Score</td>
-                                                    <td class="px-5 py-4 font-bold text-primary">35% (Core)</td>
-                                                    <td class="px-5 py-4 text-slate-600">Medallia monthly review scores,
-                                                        Opera PMS check-in logs</td>
-                                                    <td class="px-5 py-4 text-slate-500">Aug 30, 2026</td>
-                                                    <td class="px-5 py-4 text-right">
-                                                        <span
-                                                            class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Approved</span>
-                                                    </td>
-                                                </tr>
-                                                <tr class="hover:bg-slate-50/60 transition">
-                                                    <td class="px-5 py-4 font-semibold text-slate-900">
-                                                        Fine Dining Upselling & Sommelier Pairing
-                                                        <p class="text-[11px] text-slate-400 font-normal">Food &
-                                                            Beverage Service</p>
-                                                    </td>
-                                                    <td class="px-5 py-4 font-mono font-medium text-slate-800">+18% Avg
-                                                        Check Lift</td>
-                                                    <td class="px-5 py-4 font-bold text-slate-700">30% (Standard)</td>
-                                                    <td class="px-5 py-4 text-slate-600">Micros POS beverage and reserve
-                                                        vintage weekly reports</td>
-                                                    <td class="px-5 py-4 text-slate-500">Sep 15, 2026</td>
-                                                    <td class="px-5 py-4 text-right">
-                                                        <span
-                                                            class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Approved</span>
-                                                    </td>
-                                                </tr>
-                                                <tr class="hover:bg-slate-50/60 transition">
-                                                    <td class="px-5 py-4 font-semibold text-slate-900">
-                                                        HACCP Food Safety & Sanitation Compliance
-                                                        <p class="text-[11px] text-slate-400 font-normal">Culinary &
-                                                            Kitchen Hygiene</p>
-                                                    </td>
-                                                    <td class="px-5 py-4 font-mono font-medium text-slate-800">100%
-                                                        Audit Pass (0 Violations)</td>
-                                                    <td class="px-5 py-4 font-bold text-slate-700">35% (Core)</td>
-                                                    <td class="px-5 py-4 text-slate-600">Daily cold-chain walk-in
-                                                        temperature logs and QA sign-off</td>
-                                                    <td class="px-5 py-4 text-slate-500">Sep 30, 2026</td>
-                                                    <td class="px-5 py-4 text-right">
-                                                        <span
-                                                            class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Approved</span>
-                                                    </td>
-                                                </tr>
+                                                <!-- Rendered dynamically by js/performance.js -->
                                             </tbody>
                                         </table>
                                     </div>
@@ -295,9 +246,8 @@
                             </div>
 
                             <!-- ======================================================== -->
-                            <!-- STAGE 2 SUB-PANEL: GOAL SETTING & APPROVAL                -->
-                            <!-- ======================================================== -->
-                            <div id="sub-perf-approve" class="sub-panel sub-panel-perf space-y-4">
+                            <div id="sub-perf-approve" class="sub-panel sub-panel-perf hidden space-y-4">
+
                                 <div class="card-clean p-6 space-y-4">
                                     <div
                                         class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
@@ -310,49 +260,17 @@
                                             <p class="text-xs text-slate-500">Supervisors review employee goals against
                                                 departmental quotas before locking the baseline.</p>
                                         </div>
-                                        <span
-                                            class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-xl self-start sm:self-auto">
-                                            <i class="fas fa-lock text-slate-400 mr-1"></i> Baseline Locked for Q3
-                                        </span>
+                                        <div class="flex items-center space-x-2 self-start sm:self-auto">
+                                            <button onclick="approveAllPendingGoals()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
+                                                <i class="fas fa-check-double"></i>
+                                                <span>Approve All Pending Goals</span>
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <!-- Calibration Workflow Cards -->
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
-                                            <div class="flex items-center justify-between">
-                                                <span class="font-bold text-slate-900 text-sm">VIP Guest NPS Lift
-                                                    (+92)</span>
-                                                <span
-                                                    class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Endorsed</span>
-                                            </div>
-                                            <p class="text-xs text-slate-600">Supervisor Note: "Target is aggressive but
-                                                achievable given Maria's strong rapport with presidential suite guests.
-                                                Endorsed with 35% appraisal weight."</p>
-                                            <div
-                                                class="pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-400">
-                                                <span>Calibrated by Chef Marco</span>
-                                                <span>Aug 02, 2026</span>
-                                            </div>
-                                        </div>
-
-                                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
-                                            <div class="flex items-center justify-between">
-                                                <span class="font-bold text-slate-900 text-sm">Fine Dining Upselling
-                                                    (+18%)</span>
-                                                <span
-                                                    class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Endorsed</span>
-                                            </div>
-                                            <p class="text-xs text-slate-600">Supervisor Note: "Reviewed and calibrated
-                                                against Micros POS historical evening covers. Sommelier pairing assigned
-                                                for coaching support."</p>
-                                            <div
-                                                class="pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-400">
-                                                <span>Calibrated by Elena Vance</span>
-                                                <span>Aug 03, 2026</span>
-                                            </div>
-                                        </div>
-
+                                    <!-- Dynamic Calibration Workflow Cards (Pending Goals Roster) -->
+                                    <div id="approval-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <!-- Rendered dynamically by js/performance.js -->
                                     </div>
 
                                     <!-- Locked Status Card -->
@@ -374,62 +292,51 @@
                             <!-- ======================================================== -->
                             <!-- STAGE 3 SUB-PANEL: PERFORMANCE MONITORING                 -->
                             <!-- ======================================================== -->
-                            <div id="sub-perf-monitor" class="sub-panel sub-panel-perf space-y-4">
+                            <div id="sub-perf-monitor" class="sub-panel sub-panel-perf hidden space-y-4">
 
-                                <!-- Continuous Progress Bar Header -->
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <div class="card-clean p-4 space-y-2">
-                                        <div
-                                            class="flex justify-between items-center text-xs text-slate-500 font-medium">
-                                            <span>VIP Check-in NPS</span>
-                                            <span
-                                                class="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">90%
-                                                Met</span>
+                                <!-- Monitoring Employee Roster Table (Categorized by Position & Department) -->
+                                <div class="card-clean overflow-hidden">
+                                    <div class="p-4 bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                                        <div>
+                                            <h3 class="font-heading font-bold text-sm text-slate-900">Continuous Shift Performance Monitoring</h3>
+                                            <p class="text-slate-500 text-xs">Click any employee row to inspect their progress timeline stream or trigger appraisal evaluation.</p>
                                         </div>
-                                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                            <div class="bg-emerald-500 h-2 rounded-full" style="width: 90%"></div>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="text-slate-400 font-semibold text-[11px]">Filter Dept:</span>
+                                            <select id="filter-monitoring-dept" onchange="filterMonitoringByDept(this.value)" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                                <option value="all">All Departments</option>
+                                                <option value="Front Office">Front Office</option>
+                                                <option value="Food & Beverage">Food & Beverage</option>
+                                                <option value="Culinary">Culinary</option>
+                                                <option value="Housekeeping">Housekeeping</option>
+                                            </select>
                                         </div>
-                                        <p class="text-[11px] text-slate-400">Current NPS: +91.8 (Target: +92)</p>
                                     </div>
-
-                                    <div class="card-clean p-4 space-y-2">
-                                        <div
-                                            class="flex justify-between items-center text-xs text-slate-500 font-medium">
-                                            <span>Wine Upsell Rev</span>
-                                            <span
-                                                class="text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-full">65%
-                                                Met</span>
-                                        </div>
-                                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                            <div class="bg-amber-500 h-2 rounded-full" style="width: 65%"></div>
-                                        </div>
-                                        <p class="text-[11px] text-slate-400">Current Check Lift: +11.7% (Target: +18%)
-                                        </p>
-                                    </div>
-
-                                    <div class="card-clean p-4 space-y-2">
-                                        <div
-                                            class="flex justify-between items-center text-xs text-slate-500 font-medium">
-                                            <span>HACCP Sanitization</span>
-                                            <span
-                                                class="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">100%
-                                                Met</span>
-                                        </div>
-                                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                            <div class="bg-emerald-500 h-2 rounded-full" style="width: 100%"></div>
-                                        </div>
-                                        <p class="text-[11px] text-slate-400">0 Violations logged in 30 days</p>
+                                    <div class="overflow-x-auto custom-scrollbar">
+                                        <table class="w-full text-left text-xs">
+                                            <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-100">
+                                                <tr>
+                                                    <th class="px-5 py-3">Employee &amp; Position</th>
+                                                    <th class="px-5 py-3">Department</th>
+                                                    <th class="px-5 py-3">Attendance</th>
+                                                    <th class="px-5 py-3">Ratings (Mgr / Cust)</th>
+                                                    <th class="px-5 py-3">KPI Target Progress</th>
+                                                    <th class="px-5 py-3 text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="monitoring-roster-tbody" class="divide-y divide-slate-100 text-slate-700">
+                                                <!-- Rendered dynamically by js/performance.js -->
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
 
-                                <!-- Continuous Activity Stream & Accomplishment / Challenge Log -->
-                                <div class="card-clean p-6 space-y-4">
-                                    <div class="flex justify-between items-center">
+                                <!-- Continuous Activity Stream & Accomplishment / Challenge Log (Drill-Down Container) -->
+                                <div id="monitoring-employee-detail-card" class="card-clean p-6 space-y-4">
+                                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                                         <div>
-                                            <h3 class="font-heading font-bold text-base text-slate-900">Continuous
-                                                Monitoring Activity Stream</h3>
-                                            <p class="text-xs text-slate-500">Record accomplishments, operational
-                                                challenges, feedback notes, and evidence</p>
+                                            <h3 id="mon-detail-name" class="font-heading font-bold text-base text-slate-900">Maria Santos</h3>
+                                            <p id="mon-detail-pos" class="text-xs text-slate-500">Front Desk Host · Front Office — Continuous Monitoring Stream</p>
                                         </div>
                                         <div class="flex items-center space-x-2">
                                             <button onclick="openModal('modal-ai-feedback')"
@@ -495,24 +402,46 @@
                                 </div>
                             </div>
 
-                            <!-- ======================================================== -->
-                            <!-- STAGE 4 SUB-PANEL: PERFORMANCE EVALUATION                 -->
-                            <!-- ======================================================== -->
-                            <div id="sub-perf-eval" class="sub-panel sub-panel-perf space-y-4">
-                                <div class="card-clean p-6 space-y-6">
-                                    <div
-                                        class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                            <div id="sub-perf-eval" class="sub-panel sub-panel-perf hidden space-y-4">
+
+                                <!-- Stage 4 Employee Roster List First -->
+                                <div id="eval-roster-list-card" class="card-clean overflow-hidden">
+                                    <div class="p-4 bg-white border-b border-slate-100 flex items-center justify-between text-xs">
                                         <div>
-                                            <span
-                                                class="text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">Phase
-                                                4: Formal Evaluation</span>
-                                            <h3 class="font-heading font-bold text-lg text-slate-900 mt-1">Multi-Factor
-                                                Appraisal & Assessment</h3>
-                                            <p class="text-xs text-slate-500">Employee self-assessment and supervisor
-                                                ratings assessed against agreed objectives and competencies.</p>
+                                            <h3 class="font-heading font-bold text-sm text-slate-900">Stage 4: Employee Appraisal Evaluation Roster</h3>
+                                            <p class="text-slate-500 text-xs">Select an employee from the roster to open their multi-factor appraisal assessment.</p>
                                         </div>
-                                        <button onclick="openModal('modal-self-assessment')"
-                                            class="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-md hover:bg-primary-dark self-start sm:self-auto">
+                                    </div>
+                                    <div class="overflow-x-auto custom-scrollbar">
+                                        <table class="w-full text-left text-xs">
+                                            <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-100">
+                                                <tr>
+                                                    <th class="px-5 py-3">Employee &amp; Position</th>
+                                                    <th class="px-5 py-3">Attendance</th>
+                                                    <th class="px-5 py-3">Ratings (Mgr / Cust)</th>
+                                                    <th class="px-5 py-3">Appraisal Status</th>
+                                                    <th class="px-5 py-3 text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="eval-roster-tbody" class="divide-y divide-slate-100 text-slate-700">
+                                                <!-- Rendered dynamically by js/performance.js -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Appraisal Detail View Card -->
+                                <div id="eval-detail-view-card" class="card-clean p-6 space-y-6 hidden">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                                        <div>
+                                            <button onclick="hideEmployeeEvalDetail()" class="text-xs text-primary font-bold hover:underline mb-1 flex items-center space-x-1">
+                                                <i class="fas fa-arrow-left"></i><span>Back to Employee List</span>
+                                            </button>
+                                            <span class="text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full block w-fit">Phase 4: Formal Evaluation</span>
+                                            <h3 id="eval-detail-emp-title" class="font-heading font-bold text-lg text-slate-900 mt-1">Multi-Factor Appraisal &amp; Assessment</h3>
+                                            <p class="text-xs text-slate-500">Employee self-assessment and supervisor ratings assessed against agreed objectives and competencies.</p>
+                                        </div>
+                                        <button onclick="openModal('modal-self-assessment')" class="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-md hover:bg-primary-dark self-start sm:self-auto">
                                             <i class="fas fa-edit mr-1"></i> Open Appraisal Form
                                         </button>
                                     </div>
@@ -576,9 +505,34 @@
                             </div>
 
                             <!-- ======================================================== -->
-                            <!-- STAGE 5 SUB-PANEL: REVIEW & CALIBRATION APPROVAL          -->
-                            <!-- ======================================================== -->
-                            <div id="sub-perf-review" class="sub-panel sub-panel-perf space-y-4">
+                            <div id="sub-perf-review" class="sub-panel sub-panel-perf hidden space-y-4">
+
+                                <!-- Stage 5 Employee Review Roster -->
+                                <div class="card-clean overflow-hidden">
+                                    <div class="p-4 bg-white border-b border-slate-100 flex items-center justify-between text-xs">
+                                        <div>
+                                            <h3 class="font-heading font-bold text-sm text-slate-900">Stage 5: Calibration &amp; 1-on-1 Review Roster</h3>
+                                            <p class="text-slate-500 text-xs">HR bell-curve normalization and formal 1-on-1 rating calibration sign-offs.</p>
+                                        </div>
+                                    </div>
+                                    <div class="overflow-x-auto custom-scrollbar">
+                                        <table class="w-full text-left text-xs">
+                                            <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-100">
+                                                <tr>
+                                                    <th class="px-5 py-3">Employee &amp; Position</th>
+                                                    <th class="px-5 py-3">Department</th>
+                                                    <th class="px-5 py-3">Calibrated Score</th>
+                                                    <th class="px-5 py-3">Review Status</th>
+                                                    <th class="px-5 py-3 text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="review-roster-tbody" class="divide-y divide-slate-100 text-slate-700">
+                                                <!-- Rendered dynamically by js/performance.js -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
                                 <div class="card-clean p-6 space-y-6">
                                     <div
                                         class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
@@ -645,7 +599,34 @@
                             <!-- ======================================================== -->
                             <!-- STAGE 6 SUB-PANEL: DEVELOPMENT PLANNING (IDP)             -->
                             <!-- ======================================================== -->
-                            <div id="sub-perf-idp" class="sub-panel sub-panel-perf space-y-5">
+                            <div id="sub-perf-idp" class="sub-panel sub-panel-perf hidden space-y-5">
+
+                                <!-- Stage 6 Employee IDP Roster -->
+                                <div class="card-clean overflow-hidden">
+                                    <div class="p-4 bg-white border-b border-slate-100 flex items-center justify-between text-xs">
+                                        <div>
+                                            <h3 class="font-heading font-bold text-sm text-slate-900">Stage 6: Individual Development Plan (IDP) Roster</h3>
+                                            <p class="text-slate-500 text-xs">70-20-10 experiential, social, and formal learning plans for hotel staff.</p>
+                                        </div>
+                                    </div>
+                                    <div class="overflow-x-auto custom-scrollbar">
+                                        <table class="w-full text-left text-xs">
+                                            <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-100">
+                                                <tr>
+                                                    <th class="px-5 py-3">Employee</th>
+                                                    <th class="px-5 py-3">Position &amp; Department</th>
+                                                    <th class="px-5 py-3">IDP 70-20-10 Mapping</th>
+                                                    <th class="px-5 py-3">Status</th>
+                                                    <th class="px-5 py-3 text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="idp-roster-tbody" class="divide-y divide-slate-100 text-slate-700">
+                                                <!-- Rendered dynamically by js/performance.js -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
                                 <div class="card-clean p-6 space-y-6">
                                     <!-- Header -->
                                     <div
@@ -831,7 +812,34 @@
                             <!-- ======================================================== -->
                             <!-- STAGE 7 SUB-PANEL: IMPLEMENTATION & NEXT CYCLE            -->
                             <!-- ======================================================== -->
-                            <div id="sub-perf-cycle" class="sub-panel sub-panel-perf space-y-4">
+                            <div id="sub-perf-cycle" class="sub-panel sub-panel-perf hidden space-y-4">
+
+                                <!-- Stage 7 Employee Next Cycle Roster -->
+                                <div class="card-clean overflow-hidden">
+                                    <div class="p-4 bg-white border-b border-slate-100 flex items-center justify-between text-xs">
+                                        <div>
+                                            <h3 class="font-heading font-bold text-sm text-slate-900">Stage 7: Next Cycle Transition Roster</h3>
+                                            <p class="text-slate-500 text-xs">Rollover active quarterly targets and performance growth lifts into the next cycle baseline.</p>
+                                        </div>
+                                    </div>
+                                    <div class="overflow-x-auto custom-scrollbar">
+                                        <table class="w-full text-left text-xs">
+                                            <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-100">
+                                                <tr>
+                                                    <th class="px-5 py-3">Employee</th>
+                                                    <th class="px-5 py-3">Department</th>
+                                                    <th class="px-5 py-3">Growth Lift</th>
+                                                    <th class="px-5 py-3">Status</th>
+                                                    <th class="px-5 py-3 text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="cycle-roster-tbody" class="divide-y divide-slate-100 text-slate-700">
+                                                <!-- Rendered dynamically by js/performance.js -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
                                 <div class="card-clean p-6 space-y-6">
                                     <div
                                         class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">

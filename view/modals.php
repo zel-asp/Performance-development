@@ -1830,3 +1830,93 @@
                 </div>
             </div>
         </div>
+
+        <!-- 16. Modal: View Performance Goal & Objectives -->
+        <div id="modal-view-goal" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-[#E8DEDC]">
+                <div class="p-5 border-b border-[#E8DEDC] flex items-center justify-between bg-white flex-shrink-0">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary flex items-center justify-center text-lg font-bold border border-primary-100">
+                            <i class="fas fa-bullseye"></i>
+                        </div>
+                        <div>
+                            <h3 id="view-modal-emp-name" class="font-heading font-bold text-base text-slate-900">Employee Goal Details</h3>
+                            <p id="view-modal-emp-pos" class="text-xs text-slate-500">Position · Department</p>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('modal-view-goal')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
+                    <div class="grid grid-cols-3 gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200 text-center">
+                        <div>
+                            <span class="text-slate-400 text-[10px] block">Attendance Score</span>
+                            <span id="view-modal-attendance" class="font-bold text-slate-900 text-xs">--</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 text-[10px] block">Manager Rating</span>
+                            <span id="view-modal-mgr-rating" class="font-bold text-slate-900 text-xs">--</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 text-[10px] block">Customer / Guest Rating</span>
+                            <span id="view-modal-cust-rating" class="font-bold text-amber-600 text-xs">--</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Defined Objectives &amp; KPIs:</h4>
+                        <div id="view-modal-goals-list" class="space-y-3">
+                            <!-- Rendered by js/performance.js -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-end space-x-2">
+                    <button onclick="closeModal('modal-view-goal')" class="btn-primary px-5 py-2 text-xs font-bold">Done</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 17. Modal: Revise Performance Goal & Objectives -->
+        <div id="modal-revise-goal" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-[#E8DEDC]">
+                <div class="p-5 border-b border-[#E8DEDC] flex items-center justify-between bg-white flex-shrink-0">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center text-lg font-bold border border-amber-200">
+                            <i class="fas fa-pen-to-square"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-heading font-bold text-base text-slate-900">Revise Performance Objective</h3>
+                            <p id="revise-modal-emp-name" class="text-xs text-slate-500">Employee Name</p>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('modal-revise-goal')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <form onsubmit="saveGoalRevision(event)" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">Objective Title</label>
+                        <input id="revise-goal-title" type="text" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-primary focus:outline-none">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">Measurable KPI Formula</label>
+                        <input id="revise-goal-kpi" type="text" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs font-bold text-primary focus:ring-2 focus:ring-primary focus:outline-none">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">Deliverables &amp; Evidence Requirements</label>
+                        <textarea id="revise-goal-deliverables" rows="3" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
+                    </div>
+
+                    <div class="pt-3 border-t border-[#E8DEDC] flex items-center justify-end space-x-2">
+                        <button type="button" onclick="closeModal('modal-revise-goal')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
+                        <button type="submit" class="btn-primary px-5 py-2 text-xs font-bold">Save Revision</button>
+                    </div>
+                </form>
+            </div>
+        </div>

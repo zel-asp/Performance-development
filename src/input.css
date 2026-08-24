@@ -433,12 +433,12 @@ body {
 
 /* Pillar & Sub-panel Display System */
 .pillar-panel {
-  display: none;
-  animation: fadeIn 0.15s ease-in-out;
+  display: none !important;
 }
 
 .pillar-panel.active {
-  display: block;
+  display: block !important;
+  animation: fadeIn 0.15s ease-in-out;
 }
 
 .sub-panel,
@@ -449,8 +449,7 @@ body {
 .sub-panel-training,
 .sub-panel-succession,
 .sub-panel-social {
-  display: none;
-  animation: fadeIn 0.15s ease-in-out;
+  display: none !important;
 }
 
 .sub-panel.active,
@@ -461,7 +460,8 @@ body {
 .sub-panel-training.active,
 .sub-panel-succession.active,
 .sub-panel-social.active {
-  display: block;
+  display: block !important;
+  animation: fadeIn 0.15s ease-in-out;
 }
 
 @keyframes fadeIn {

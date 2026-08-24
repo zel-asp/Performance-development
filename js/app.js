@@ -94,9 +94,15 @@
                 }
 
                 // Panels
-                document.querySelectorAll('.pillar-panel').forEach(panel => panel.classList.remove('active'));
+                document.querySelectorAll('.pillar-panel').forEach(panel => {
+                    panel.classList.remove('active');
+                    panel.classList.add('hidden');
+                });
                 const targetPanel = document.getElementById('panel-' + pillarKey);
-                if (targetPanel) targetPanel.classList.add('active');
+                if (targetPanel) {
+                    targetPanel.classList.add('active');
+                    targetPanel.classList.remove('hidden');
+                }
 
                 // Sidebar
                 document.querySelectorAll('#sidebar-nav .nav-item').forEach(item => {
@@ -136,9 +142,15 @@
 
             // Sub-Tab Switcher inside Pillar
             function switchSubTab(pillarPrefix, subKey) {
-                document.querySelectorAll(`.sub-panel-${pillarPrefix}`).forEach(p => p.classList.remove('active'));
+                document.querySelectorAll(`.sub-panel-${pillarPrefix}`).forEach(p => {
+                    p.classList.remove('active');
+                    p.classList.add('hidden');
+                });
                 const targetSub = document.getElementById(`sub-${pillarPrefix}-${subKey}`);
-                if (targetSub) targetSub.classList.add('active');
+                if (targetSub) {
+                    targetSub.classList.add('active');
+                    targetSub.classList.remove('hidden');
+                }
 
                 document.querySelectorAll(`.subnav-${pillarPrefix}`).forEach(btn => {
                     btn.classList.remove('active');
@@ -149,6 +161,7 @@
 
                 if (pillarPrefix === 'perf') {
                     updatePerfStepper(subKey);
+                    if (typeof updateAllPerfStepperBadges === 'function') updateAllPerfStepperBadges();
                 } else if (pillarPrefix === 'comp') {
                     if (subKey === 'profiles') {
                         if (typeof renderRoleCompetencyFramework === 'function') renderRoleCompetencyFramework();
@@ -201,20 +214,13 @@
                         if (title) {
                             title.className = 'perf-step-title font-bold text-slate-800 text-[11px] group-hover:text-primary transition';
                         }
-                        if (sub) {
-                            sub.className = 'perf-step-sub text-[9px] text-slate-400';
-                        }
                     } else if (idx === activeIdx) {
                         // Active current stage
                         if (bubble) {
                             bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold ring-4 ring-primary/20 shadow-xs group-hover:scale-110 transition';
-                            bubble.textContent = (idx + 1);
                         }
                         if (title) {
                             title.className = 'perf-step-title font-bold text-primary text-[11px]';
-                        }
-                        if (sub) {
-                            sub.className = 'perf-step-sub text-[9px] text-primary/70 font-medium';
                         }
                     } else {
                         // Upcoming stage

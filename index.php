@@ -140,6 +140,44 @@
 
         <!-- Compiled Tailwind CSS -->
         <link rel="stylesheet" href="dist/output.css">
+
+        <!-- Pillar & Sub-Panel Display System -->
+        <style>
+            .pillar-panel {
+                display: none !important;
+            }
+            .pillar-panel.active {
+                display: block !important;
+            }
+
+            .sub-panel,
+            .sub-panel-dashboard,
+            .sub-panel-perf,
+            .sub-panel-comp,
+            .sub-panel-lms,
+            .sub-panel-training,
+            .sub-panel-succession,
+            .sub-panel-social {
+                display: none !important;
+            }
+
+            .sub-panel.active,
+            .sub-panel-dashboard.active,
+            .sub-panel-perf.active,
+            .sub-panel-comp.active,
+            .sub-panel-lms.active,
+            .sub-panel-training.active,
+            .sub-panel-succession.active,
+            .sub-panel-social.active {
+                display: block !important;
+                animation: subPanelFadeIn 0.15s ease-in-out;
+            }
+
+            @keyframes subPanelFadeIn {
+                from { opacity: 0; transform: translateY(2px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        </style>
     </head>
 
     <body class="bg-[#FAF8F7] text-[#211A1A] antialiased h-screen flex flex-col overflow-hidden">
@@ -187,6 +225,7 @@
 
         <!-- External Modular JavaScript Scripts from js/ -->
         <script src="js/charts.js"></script>
+        <script src="js/performance.js"></script>
         <script src="js/competencies.js"></script>
         <script src="js/lms.js"></script>
         <script src="js/training.js"></script>
