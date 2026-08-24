@@ -19,6 +19,46 @@
         <!-- Chart.js CDN -->
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+        <!-- Sonner Toast (vanilla) CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/vanilla-sonner@latest/dist/vanilla-sonner.min.css" rel="stylesheet" />
+
+        <!-- Sonner Toast Controller & Global Shim with Max 3 FIFO Queue -->
+        <script>
+            window._toastQueue = [];
+            window._activeToastIds = [];
+            const MAX_VISIBLE_TOASTS = 3;
+
+            window.showToast = function(msg, type = 'info') {
+                if (window.toast) {
+                    while (window._activeToastIds.length >= MAX_VISIBLE_TOASTS) {
+                        const oldestId = window._activeToastIds.shift();
+                        if (oldestId !== undefined) {
+                            window.toast.dismiss(oldestId);
+                        }
+                    }
+                    let id;
+                    if (type === 'success') id = window.toast.success(msg);
+                    else if (type === 'error') id = window.toast.error(msg);
+                    else if (type === 'warning') id = window.toast.warning(msg);
+                    else id = window.toast.info(msg);
+
+                    if (id !== undefined) {
+                        window._activeToastIds.push(id);
+                    }
+                } else {
+                    window._toastQueue.push({ msg, type });
+                }
+            };
+        </script>
+        <script type="module">
+            import { toast } from 'https://cdn.jsdelivr.net/npm/vanilla-sonner/+esm';
+            window.toast = toast;
+            if (window._toastQueue && window._toastQueue.length > 0) {
+                window._toastQueue.forEach(t => window.showToast(t.msg, t.type));
+                window._toastQueue = [];
+            }
+        </script>
+
         <!-- Tailwind Theme Configuration -->
         <script>
             tailwind.config = {
@@ -97,9 +137,8 @@
     </head>
 
     <body class="bg-[#FAF8F7] text-[#211A1A] antialiased h-screen flex flex-col overflow-hidden">
-
-        <!-- Toast Notifications Hub -->
-        <div id="toast-container"></div>
+        <!-- Sonner Toaster Container with Dismiss/Close (X) Button (Max 3) -->
+        <ol id="sonner-toast-container" position="top-right" max-toasts="3" rich-colors="true" close-button="true" theme="light"></ol>
 
         <!-- 1. Authentication & Role Demo Screen -->
         <?php include_once 'view/auth.php'; ?>

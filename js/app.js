@@ -32,23 +32,7 @@
                 }
             }
 
-            // Toasts
-            function showToast(message, type = 'info') {
-                const container = document.getElementById('toast-container');
-                const toast = document.createElement('div');
-                const bgColor = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-slate-900';
-                const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-triangle-exclamation' : 'fa-info-circle';
-
-                toast.className = `toast px-4 py-3 rounded-2xl text-white text-xs font-semibold shadow-xl flex items-center space-x-2.5 ${bgColor}`;
-                toast.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
-
-                container.appendChild(toast);
-                setTimeout(() => {
-                    toast.style.opacity = '0';
-                    toast.style.transition = 'opacity 0.3s ease';
-                    setTimeout(() => toast.remove(), 300);
-                }, 3000);
-            }
+            // Toasts — delegated to Sonner via window.showToast (see index.php module script)
 
             // Mobile Sidebar Controller with Smooth Animation
             let isMobileSidebarOpen = false;

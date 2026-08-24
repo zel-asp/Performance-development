@@ -1201,7 +1201,7 @@ function updateCompetencyRadarChart(emp, profile) {
     const supervisorData = profile.competencies.map(c => emp.ratings[c.id]?.supervisor || 3.5);
     const calibratedData = profile.competencies.map(c => emp.ratings[c.id]?.calibrated || 3.5);
 
-    if (window.chartCompetencyRadarInstance) {
+    if (window.chartCompetencyRadarInstance && window.chartCompetencyRadarInstance.data && window.chartCompetencyRadarInstance.data.datasets && window.chartCompetencyRadarInstance.data.datasets.length >= 4) {
         window.chartCompetencyRadarInstance.data.labels = labels;
         window.chartCompetencyRadarInstance.data.datasets[0].data = targetData;
         window.chartCompetencyRadarInstance.data.datasets[1].data = selfData;
@@ -1209,6 +1209,9 @@ function updateCompetencyRadarChart(emp, profile) {
         window.chartCompetencyRadarInstance.data.datasets[3].data = calibratedData;
         window.chartCompetencyRadarInstance.update();
     } else {
+        if (window.chartCompetencyRadarInstance && typeof window.chartCompetencyRadarInstance.destroy === 'function') {
+            window.chartCompetencyRadarInstance.destroy();
+        }
         window.chartCompetencyRadarInstance = new Chart(ctx, {
             type: 'radar',
             data: {
