@@ -28,17 +28,17 @@
                     </p>
                 </div>
 
-                <div class="space-y-2 pt-2 text-[11px] text-[#F1E9E7]/90">
-                    <div class="flex items-center space-x-2">
-                        <i class="fas fa-shield-check text-gold-light"></i>
+                <div class="space-y-2.5 pt-2 text-xs text-[#F1E9E7]">
+                    <div class="flex items-center space-x-2.5">
+                        <i class="fas fa-shield-halved text-amber-300 text-sm"></i>
                         <span>Secure Role-Based Access</span>
                     </div>
-                    <div class="flex items-center space-x-2">
-                        <i class="fas fa-id-card-clip text-gold-light"></i>
+                    <div class="flex items-center space-x-2.5">
+                        <i class="fas fa-id-card text-amber-300 text-sm"></i>
                         <span>Verified Associate Credentials</span>
                     </div>
-                    <div class="flex items-center space-x-2">
-                        <i class="fas fa-bolt text-gold-light"></i>
+                    <div class="flex items-center space-x-2.5">
+                        <i class="fas fa-bolt text-amber-300 text-sm"></i>
                         <span>Realtime Shift Sync &amp; AI Copilot</span>
                     </div>
                 </div>

@@ -266,55 +266,23 @@
                     <!-- Right: HR Quick Tools, Department/Staff Switcher, AI Copilot -->
                     <div class="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3 text-xs flex-shrink-0">
 
-                        <!-- HR Central Master Roster Selector -->
-                        <div
-                            class="hidden lg:flex items-center space-x-2 bg-[#FAF8F7] p-1 rounded-xl border border-[#E8DEDC] text-xs">
-                            <span
-                                class="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-2 flex items-center">
-                                <i class="fas fa-filter text-slate-400 mr-1"></i> Target:
-                            </span>
-
-                            <!-- Department Selector -->
-                            <select id="hr-dept-select" onchange="filterDepartmentStaff(this.value)"
-                                class="bg-white border border-[#E8DEDC] font-semibold text-slate-800 text-xs px-2.5 py-1 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-2xs">
-                                <option value="front_office">Front Office (12 Staff)</option>
-                                <option value="fb_service">Food &amp; Beverage (24 Staff)</option>
-                                <option value="culinary">Kitchen &amp; Culinary (18 Staff)</option>
-                                <option value="housekeeping">Housekeeping (28 Staff)</option>
-                                <option value="banquet">Banquet &amp; Events (18 Staff)</option>
-                            </select>
-
-                            <!-- Employee Roster Selector -->
-                            <select id="hr-staff-select" onchange="selectEmployeeRecord(this.value)"
-                                class="bg-white border border-[#E8DEDC] font-semibold text-primary text-xs px-2.5 py-1 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-2xs">
-                                <option value="maria_santos">Maria Santos (Host · Q3: 4.55)</option>
-                                <option value="carlos_gomez">Carlos Gomez (Concierge · Q3: 4.20)</option>
-                                <option value="ana_tanaka">Ana Tanaka (Auditor · Q3: 4.80)</option>
-                                <option value="lucas_vargas">Lucas Vargas (Host · Q3: 3.90)</option>
-                            </select>
-                        </div>
-
-                        <!-- Roles & Permissions Guide Modal Trigger -->
-                        <button onclick="openModal('modal-role-matrix')" title="View HR Administration Architecture"
-                            class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-[#FAF8F7] hover:bg-slate-100 text-slate-700 rounded-xl border border-[#E8DEDC] font-semibold transition shadow-2xs">
-                            <i class="fas fa-users-gear text-slate-500"></i>
-                            <span class="hidden md:inline">Roles Matrix</span>
-                        </button>
-
-                        <!-- Fast Persona / Operator Switcher -->
-                        <div class="relative">
-                            <div
-                                class="flex items-center space-x-1.5 bg-[#F4F8FA] border border-[#E1ECF2] px-3 py-1.5 rounded-xl">
-                                <i class="fas fa-user-shield text-dusty-dark"></i>
-                                <select id="role-switcher-select" onchange="switchRole(this.value)"
-                                    class="bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer text-xs">
-                                    <option value="hr" selected>Elena Vance (HR Admin)</option>
-                                    <option value="manager">Chef Marco (Supervisor)</option>
-                                    <option value="employee">Maria Santos (Associate)</option>
-                                    <option value="executive">Robert Sterling (Executive)</option>
-                                </select>
+                        <!-- Authenticated User Profile Badge -->
+                        <div id="header-user-profile"
+                            class="flex items-center space-x-2.5 bg-[#FAF8F7] border border-[#E8DEDC] px-3 py-1.5 rounded-2xl shadow-2xs">
+                            <img id="nav-user-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" 
+                                alt="User Avatar" class="w-7 h-7 rounded-full object-cover border border-[#E8DEDC]">
+                            <div class="text-left hidden sm:block">
+                                <p id="nav-user-name" class="font-bold text-slate-800 text-[11px] leading-tight">Maria Santos</p>
+                                <p id="nav-user-role" class="text-[10px] text-slate-500 leading-tight">Front Desk Host · Front Office</p>
                             </div>
                         </div>
+
+                        <!-- Sign Out Button -->
+                        <button onclick="logOutToAuth()" title="Sign Out of Session"
+                            class="flex items-center space-x-1.5 px-2.5 py-1.5 bg-[#FAF8F7] hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 text-slate-600 rounded-xl border border-[#E8DEDC] font-semibold transition text-xs shadow-2xs">
+                            <i class="fas fa-arrow-right-from-bracket text-xs"></i>
+                            <span class="hidden md:inline">Sign Out</span>
+                        </button>
 
                         <!-- AI Copilot Trigger -->
                         <button onclick="openModal('modal-ai-feedback')" title="Open AI Feedback Copilot"

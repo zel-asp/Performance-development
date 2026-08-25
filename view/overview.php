@@ -17,13 +17,7 @@
                                     </button>
                                 </div>
                                 <div class="flex items-center space-x-2 flex-shrink-0">
-                                    <span class="text-[11px] font-semibold text-slate-500 hidden sm:inline">100
-                                        Active Staff · HRMS v3.2</span>
-                                    <button onclick="openModal('modal-role-matrix')"
-                                        class="btn-secondary px-3 py-1 text-xs font-semibold whitespace-nowrap">
-                                        <i class="fas fa-shield-halved text-[10px] mr-1 text-dusty-dark"></i>
-                                        <span>Roles Matrix</span>
-                                    </button>
+                                    <span class="text-[11px] font-semibold text-slate-500 hidden sm:inline">Oxford Suites Makati · Live Workplace</span>
                                 </div>
                             </div>
 

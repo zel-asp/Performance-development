@@ -318,8 +318,14 @@
                 document.querySelectorAll('.user-avatar-circle').forEach(el => el.textContent = persona.initials);
                 const heroGreet = document.getElementById('hero-greeting-text');
                 if (heroGreet) heroGreet.textContent = persona.greeting;
-                const roleSelect = document.getElementById('role-switcher-select');
-                if (roleSelect) roleSelect.value = roleKey;
+
+                // Update Header User Profile Badge
+                const navAvatar = document.getElementById('nav-user-avatar');
+                const navName = document.getElementById('nav-user-name');
+                const navRole = document.getElementById('nav-user-role');
+                if (navAvatar && persona.avatar) navAvatar.src = persona.avatar;
+                if (navName) navName.textContent = persona.name;
+                if (navRole) navRole.textContent = `${persona.role} · ${persona.dept || 'Makati'}`;
 
                 // Update Dynamic Role Context Banner
                 const contextBanner = document.getElementById('role-context-banner');
@@ -341,7 +347,7 @@
                     contextBanner.className = `p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs transition ${persona.bannerClass}`;
                 }
 
-                showToast(`Active persona: ${persona.name} (${persona.tag})`, 'info');
+                showToast(`Signed in: ${persona.name} (${persona.tag})`, 'info');
             }
 
             // HR Central Roster Management Helpers
