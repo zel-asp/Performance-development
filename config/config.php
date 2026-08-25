@@ -6,7 +6,10 @@
 
 // Load environment variables from .env
 if (!function_exists('loadEnv')) {
-    function loadEnv($filePath = __DIR__ . '/.env') {
+    function loadEnv($filePath = null) {
+        if ($filePath === null) {
+            $filePath = file_exists(__DIR__ . '/.env') ? __DIR__ . '/.env' : __DIR__ . '/../.env';
+        }
         if (!file_exists($filePath)) {
             return [];
         }
