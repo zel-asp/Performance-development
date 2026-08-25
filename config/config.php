@@ -1,10 +1,4 @@
 <?php
-/**
- * Supabase & Database Configuration File
- * Oxford Suites, Makati · HR3 System
- */
-
-// Load environment variables from .env
 if (!function_exists('loadEnv')) {
     function loadEnv($filePath = null) {
         if ($filePath === null) {
@@ -19,16 +13,12 @@ if (!function_exists('loadEnv')) {
 
 $env = loadEnv();
 
-// Supabase Credentials
 define('SUPABASE_URL', $env['SUPABASE_URL'] ?? '');
 define('SUPABASE_ANON_KEY', $env['SUPABASE_ANON_KEY'] ?? '');
 define('SUPABASE_SERVICE_ROLE_KEY', $env['SUPABASE_SERVICE_ROLE_KEY'] ?? '');
 define('DATABASE_URL', $env['DATABASE_URL'] ?? '');
 
-/**
- * 1. Direct PostgreSQL PDO Database Connection (to Supabase DB)
- * @return PDO|null
- */
+
 function getSupabaseDb() {
     static $pdo = null;
     if ($pdo !== null) {
