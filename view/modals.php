@@ -78,37 +78,30 @@
             <form id="form-create-goal" onsubmit="handleGoalSubmit(event)" class="space-y-4 text-xs">
 
                 <!-- HR Target Assignment Scope -->
-                <div class="p-3 bg-purple-50/70 rounded-xl border border-purple-200/80 space-y-1">
-                    <div class="flex justify-between items-center">
-                        <label class="font-bold text-purple-950 text-[11px]"><i
-                                class="fas fa-bullseye text-purple-600 mr-1"></i> HR Assignment Target Scope
-                            *</label>
-                        <span class="text-[10px] text-purple-700 font-semibold">Centralized HR Dispatch</span>
-                    </div>
+                <div class="p-3 bg-purple-50/60 rounded-xl border border-purple-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <label class="font-bold text-purple-950 text-[11px] flex items-center shrink-0">
+                        <i class="fas fa-bullseye text-purple-600 mr-1.5"></i> Assign Goal To:
+                    </label>
                     <select id="goal-target-scope"
-                        class="w-full px-3 py-2 rounded-lg border border-purple-200 text-xs font-bold text-purple-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary">
-                        <option value="single">Assign to Selected Staff: Maria Santos (Front Desk Host)</option>
-                        <option value="dept">Cascade to ENTIRE Department: Front Office (All 12 Staff)</option>
-                        <option value="property">Hotel-wide Benchmark Objective (All 100 Employees)</option>
+                        class="w-full sm:w-auto flex-1 px-3 py-1.5 rounded-lg border border-purple-200 text-xs font-semibold text-purple-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option value="single">Maria Santos (Front Desk Host)</option>
+                        <option value="dept">Entire Front Office Department (12 Staff)</option>
+                        <option value="property">Hotel-wide Benchmark (All 100 Staff)</option>
                     </select>
                 </div>
 
                 <!-- Objective Title -->
                 <div class="space-y-1">
-                    <div class="flex justify-between items-center">
-                        <label class="font-bold text-slate-800 text-[11px]">1. Performance Objective / Milestone
-                            *</label>
-                        <span class="text-[10px] text-slate-400">Core milestone commitment</span>
-                    </div>
-                    <textarea id="goal-title-input" required rows="2"
-                        placeholder="Describe the primary service or operational objective you are committing to achieve (e.g., Elevate VIP Guest Check-in Experience & NPS Loyalty Index)..."
-                        class="w-full p-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none font-medium custom-scrollbar bg-slate-50/50 hover:bg-white transition"></textarea>
+                    <label class="font-bold text-slate-800 text-[11px]">1. Goal / Objective *</label>
+                    <input type="text" id="goal-title-input" required
+                        placeholder="e.g., Elevate VIP Guest Check-in Experience & NPS Loyalty Index"
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none font-medium bg-slate-50/50 hover:bg-white transition">
                 </div>
 
-                <!-- Department & Date -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <!-- Department & Target Date -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div class="space-y-1">
-                        <label class="font-bold text-slate-800 text-[11px]">2. Department / Function *</label>
+                        <label class="font-bold text-slate-800 text-[11px]">2. Department *</label>
                         <select id="goal-cat-input"
                             class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
                             <option>Front Office & Guest Experience</option>
@@ -120,40 +113,50 @@
                         </select>
                     </div>
                     <div class="space-y-1">
-                        <label class="font-bold text-slate-800 text-[11px]">3. Target Completion Date *</label>
+                        <label class="font-bold text-slate-800 text-[11px]">3. Target Date *</label>
                         <input type="date" id="goal-date-input" required value="2026-09-30"
                             class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
                     </div>
                 </div>
 
-                <!-- KPI Formula -->
-                <div class="space-y-1">
+                <!-- Simplified Target Metric (Replaces Confusing KPI Formula) -->
+                <div class="space-y-1.5 p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80">
                     <div class="flex justify-between items-center">
-                        <label class="font-bold text-slate-800 text-[11px]">4. Measurable KPI Formula *</label>
-                        <span class="text-[10px] text-primary font-semibold">Formula format</span>
+                        <label class="font-bold text-slate-800 text-[11px] flex items-center space-x-1.5">
+                            <i class="fas fa-chart-line text-primary"></i>
+                            <span>4. Target / Success Metric *</span>
+                        </label>
+                        <span class="text-[10px] text-slate-400">Clear target result</span>
                     </div>
-                    <textarea id="goal-kpi-input" required rows="2"
-                        placeholder="Define how success is measured (e.g., Net Promoter Score (NPS) >= +92 Score, or Check Average +18%)..."
-                        class="w-full p-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none font-medium custom-scrollbar bg-slate-50/50 hover:bg-white transition"></textarea>
+                    <input type="text" id="goal-kpi-input" required
+                        placeholder="e.g., Score >= 92%, +18% Average Check, or Zero Defects"
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none bg-white transition">
 
-                    <div class="flex items-center space-x-1.5 pt-0.5 flex-wrap gap-y-1">
-                        <span class="text-[10px] text-slate-400">Quick KPI formats:</span>
+                    <div class="flex items-center space-x-1.5 pt-1 flex-wrap gap-y-1">
+                        <span class="text-[10px] text-slate-400 font-medium">Quick Presets:</span>
                         <button type="button" onclick="setKPIValue('NPS >= +92 Score')"
-                            class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-md font-mono transition">NPS
-                            &gt;= +92</button>
+                            class="text-[10px] bg-white border border-slate-200 hover:border-primary hover:text-primary text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
+                            ⭐ NPS &ge; +92
+                        </button>
                         <button type="button" onclick="setKPIValue('+18% Beverage Rev/Cover')"
-                            class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-md font-mono transition">+18%
-                            Avg Check</button>
+                            class="text-[10px] bg-white border border-slate-200 hover:border-primary hover:text-primary text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
+                            📈 +18% Avg Check
+                        </button>
                         <button type="button" onclick="setKPIValue('100% Audit Score (Zero Violations)')"
-                            class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-md font-mono transition">100%
-                            Audit Pass</button>
+                            class="text-[10px] bg-white border border-slate-200 hover:border-primary hover:text-primary text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
+                            ✅ 100% Audit Pass
+                        </button>
+                        <button type="button" onclick="setKPIValue('< 22 mins / suite turnover')"
+                            class="text-[10px] bg-white border border-slate-200 hover:border-primary hover:text-primary text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
+                            ⏱️ &lt; 22m Turnover
+                        </button>
                     </div>
                 </div>
 
-                <!-- Weight & Evidence -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <!-- Priority / Weighting & Optional Notes -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div class="space-y-1">
-                        <label class="font-bold text-slate-800 text-[11px]">5. Appraisal Weighting</label>
+                        <label class="font-bold text-slate-800 text-[11px]">5. Priority Weight</label>
                         <select id="goal-weight-input"
                             class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
                             <option>High Priority (35% Weight - Core Role Objective)</option>
@@ -162,19 +165,18 @@
                         </select>
                     </div>
                     <div class="space-y-1">
-                        <label class="font-bold text-slate-800 text-[11px]">6. Expected Outputs &
-                            Evidence</label>
-                        <textarea id="goal-evidence-input" rows="2"
-                            placeholder="Detail deliverables, feedback cards, Opera PMS logs, or audit certificates..."
-                            class="w-full p-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium custom-scrollbar bg-slate-50/50"></textarea>
+                        <label class="font-bold text-slate-800 text-[11px]">6. Evidence / Deliverables (Optional)</label>
+                        <input type="text" id="goal-evidence-input"
+                            placeholder="e.g., Monthly guest feedback reports, PMS logs"
+                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
                     </div>
                 </div>
 
                 <!-- Gemini AI Alignment Box -->
-                <div class="p-3.5 bg-blue-50/60 rounded-2xl border border-blue-100 flex items-start space-x-3">
+                <div class="p-3 bg-blue-50/60 rounded-2xl border border-blue-100 flex items-start space-x-3">
                     <div
-                        class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs flex-shrink-0 shadow-2xs">
-                        <i class="fas fa-sparkles"></i>
+                        class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs flex-shrink-0 shadow-2xs">
+                        <i class="fas fa-sparkles text-[10px]"></i>
                     </div>
                     <div class="text-[11px] text-slate-800 leading-relaxed">
                         <span class="font-bold text-indigo-950">✦ Gemini Goal Copilot:</span>
@@ -1889,7 +1891,11 @@
                         </div>
                         <div>
                             <h3 class="font-heading font-bold text-base text-slate-900">Revise Performance Objective</h3>
-                            <p id="revise-modal-emp-name" class="text-xs text-slate-500">Employee Name</p>
+                            <div class="flex items-center space-x-1.5">
+                                <p id="revise-modal-emp-name" class="text-xs font-semibold text-slate-700">Employee Name</p>
+                                <span class="text-slate-300">·</span>
+                                <p id="revise-modal-emp-pos" class="text-[11px] text-slate-400 font-medium">Position</p>
+                            </div>
                         </div>
                     </div>
                     <button onclick="closeModal('modal-revise-goal')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
@@ -1899,18 +1905,18 @@
 
                 <form onsubmit="saveGoalRevision(event)" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
                     <div class="space-y-1">
-                        <label class="font-bold text-slate-800 text-[11px]">Objective Title</label>
+                        <label class="font-bold text-slate-800 text-[11px]">Objective / Goal Title</label>
                         <input id="revise-goal-title" type="text" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-primary focus:outline-none">
                     </div>
 
                     <div class="space-y-1">
-                        <label class="font-bold text-slate-800 text-[11px]">Measurable KPI Formula</label>
-                        <input id="revise-goal-kpi" type="text" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs font-bold text-primary focus:ring-2 focus:ring-primary focus:outline-none">
+                        <label class="font-bold text-slate-800 text-[11px]">Target / Success Metric</label>
+                        <input id="revise-goal-kpi" type="text" required placeholder="e.g., Score >= 92%, +18% Average Check" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-primary focus:ring-2 focus:ring-primary focus:outline-none">
                     </div>
 
                     <div class="space-y-1">
-                        <label class="font-bold text-slate-800 text-[11px]">Deliverables &amp; Evidence Requirements</label>
-                        <textarea id="revise-goal-deliverables" rows="3" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
+                        <label class="font-bold text-slate-800 text-[11px]">Deliverables &amp; Evidence (Optional)</label>
+                        <textarea id="revise-goal-deliverables" rows="2" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
                     </div>
 
                     <div class="pt-3 border-t border-[#E8DEDC] flex items-center justify-end space-x-2">

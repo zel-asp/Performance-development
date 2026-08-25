@@ -443,8 +443,8 @@ function openViewGoalModal(empId) {
             <p class="text-slate-500 text-[11px]">Category: <strong>${g.category || 'General'}</strong></p>
             <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/80">
                 <div>
-                    <span class="text-slate-400 block text-[10px]">KPI Formula:</span>
-                    <strong class="font-mono text-primary text-xs">${g.kpi}</strong>
+                    <span class="text-slate-400 block text-[10px]">Target Metric:</span>
+                    <strong class="text-primary text-xs">${g.kpi}</strong>
                 </div>
                 <div>
                     <span class="text-slate-400 block text-[10px]">Appraisal Weight:</span>

@@ -451,7 +451,7 @@
 
             function setKPIValue(kpiStr) {
                 document.getElementById('goal-kpi-input').value = kpiStr;
-                showToast(`KPI set: "${kpiStr}"`, 'info');
+                showToast(`Target set: "${kpiStr}"`, 'info');
             }
 
             function setRoughNote(noteStr) {
