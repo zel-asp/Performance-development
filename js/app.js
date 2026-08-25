@@ -388,23 +388,92 @@
                 showToast(`Active record: ${staffId.replace('_', ' ').toUpperCase()}`, 'success');
             }
 
-            function fastLoginAs(roleKey) {
-                switchRole(roleKey);
-                document.getElementById('auth-screen').classList.add('hidden');
-                showToast(`Welcome ${personaData[roleKey].name}!`, 'success');
-                initAllCharts();
+            const AuthAPI = {
+                baseUrl: 'api/auth.php',
+                async request(action, method = 'GET', payload = null) {
+                    const url = `${this.baseUrl}?action=${action}`;
+                    const options = {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
+                    };
+                    if (payload && method !== 'GET') {
+                        options.body = JSON.stringify(payload);
+                    }
+                    try {
+                        const res = await fetch(url, options);
+                        const data = await res.json();
+                        return data;
+                    } catch (e) {
+                        console.warn('[AuthAPI Warning]:', e.message);
+                        return { success: true };
+                    }
+                },
+                fastLogin(roleKey) { return this.request('fast_login', 'POST', { roleKey }); },
+                login(identifier, password) { return this.request('login', 'POST', { identifier, password }); },
+                logout() { return this.request('logout', 'POST'); }
+            };
+
+            function togglePasswordVisibility() {
+                const passInput = document.getElementById('login-password');
+                const passIcon = document.getElementById('password-toggle-icon');
+                if (!passInput || !passIcon) return;
+
+                if (passInput.type === 'password') {
+                    passInput.type = 'text';
+                    passIcon.classList.remove('fa-eye');
+                    passIcon.classList.add('fa-eye-slash');
+                } else {
+                    passInput.type = 'password';
+                    passIcon.classList.remove('fa-eye-slash');
+                    passIcon.classList.add('fa-eye');
+                }
             }
 
-            function handleLoginSubmit(e) {
+            function fillLoginCredentials(code, pass = 'oxford2026') {
+                const identifierInput = document.getElementById('login-identifier');
+                const passwordInput = document.getElementById('login-password');
+                if (identifierInput) identifierInput.value = code;
+                if (passwordInput) passwordInput.value = pass;
+                showToast(`Filled credentials for ${code}`, 'info');
+            }
+
+            async function handleLoginSubmit(e) {
                 e.preventDefault();
-                document.getElementById('auth-screen').classList.add('hidden');
-                showToast('Welcome to Oxford Suites, Makati!', 'success');
-                initAllCharts();
+                const identifierInput = document.getElementById('login-identifier');
+                const passwordInput = document.getElementById('login-password');
+
+                const identifier = identifierInput?.value?.trim() || 'OXF-EMP-1001';
+                const password = passwordInput?.value?.trim() || 'oxford2026';
+
+                try {
+                    const res = await AuthAPI.login(identifier, password);
+                    if (res && res.success && res.data && res.data.user) {
+                        const user = res.data.user;
+                        const roleKey = res.data.roleKey || user.role_key || 'employee';
+
+                        switchRole(roleKey);
+                        document.getElementById('auth-screen').classList.add('hidden');
+                        showToast(`Welcome ${user.full_name} (${user.title})!`, 'success');
+                        initAllCharts();
+                    } else {
+                        showToast(res?.message || 'Login failed. Please check credentials.', 'error');
+                    }
+                } catch (err) {
+                    // Fallback to demo entry
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    showToast('Welcome to Oxford Suites, Makati!', 'success');
+                    initAllCharts();
+                }
             }
 
-            function logOutToAuth() {
+            async function logOutToAuth() {
                 document.getElementById('auth-screen').classList.remove('hidden');
                 showToast('Signed out of session', 'info');
+                try {
+                    await AuthAPI.logout();
+                } catch (err) {
+                    console.warn('Backend logout sync:', err);
+                }
             }
 
             // Form Templates

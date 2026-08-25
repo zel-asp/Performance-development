@@ -10,10 +10,71 @@
  */
 
 // =========================================================================
+// 0. AJAX FETCH API CLIENT
+// =========================================================================
+
+const TrainingAPI = {
+    baseUrl: 'api/training.php',
+
+    async request(action, method = 'GET', payload = null) {
+        const url = method === 'GET' && payload 
+            ? `${this.baseUrl}?action=${action}&${new URLSearchParams(payload)}`
+            : `${this.baseUrl}?action=${action}`;
+
+        const options = {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        };
+
+        if (payload && method !== 'GET') {
+            options.body = JSON.stringify(payload);
+        }
+
+        try {
+            const response = await fetch(url, options);
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Server request failed');
+            }
+            return result.data;
+        } catch (error) {
+            console.error(`[TrainingAPI Error] [${action}]:`, error);
+            if (typeof window.showToast === 'function') {
+                window.showToast(error.message || 'Server communication error', 'error');
+            }
+            throw error;
+        }
+    },
+
+    bootstrap() { return this.request('bootstrap'); },
+    getNeeds(filters = {}) { return this.request('get_needs', 'GET', filters); },
+    createNeed(data) { return this.request('create_need', 'POST', data); },
+    getPrograms(filters = {}) { return this.request('get_programs', 'GET', filters); },
+    createProgram(data) { return this.request('create_program', 'POST', data); },
+    getSessions(filters = {}) { return this.request('get_sessions', 'GET', filters); },
+    scheduleSession(data) { return this.request('create_session', 'POST', data); },
+    updateAttendance(sessionId, associateId, status, checkInTime = null) {
+        return this.request('update_attendance', 'POST', {
+            session_id: sessionId,
+            employee_id: associateId,
+            attendance_status: status,
+            check_in_time: checkInTime
+        });
+    },
+    submitEvaluation(payload) { return this.request('submit_evaluation', 'POST', payload); },
+    getCertificates(filters = {}) { return this.request('get_certificates', 'GET', filters); },
+    getReports(filters = {}) { return this.request('get_reports', 'GET', filters); }
+};
+
+// =========================================================================
 // 1. STATE STORES
 // =========================================================================
 
-const trainingNeedsState = [
+let trainingNeedsState = [
     {
         id: 'need-1',
         title: 'Frontline Conflict De-escalation Deficit',
@@ -100,7 +161,7 @@ const trainingNeedsState = [
     }
 ];
 
-const trainingProgramsState = [
+let trainingProgramsState = [
     {
         id: 'prog-1',
         title: 'Hospitality Crisis Diplomacy & Guest De-escalation',
@@ -238,7 +299,7 @@ const trainingProgramsState = [
     }
 ];
 
-const trainingSessionsState = [
+let trainingSessionsState = [
     {
         id: 'sess-101',
         programId: 'prog-1',
@@ -364,7 +425,7 @@ const trainingSessionsState = [
     }
 ];
 
-const trainingResultsState = [
+let trainingResultsState = [
     {
         id: 'res-901',
         sessionId: 'sess-101',
@@ -436,7 +497,8 @@ let currentEvaluationContext = {
 // 2. INITIALIZATION
 // =========================================================================
 
-function initTrainingManagement() {
+async function initTrainingManagement() {
+    // 1. Initial Synchronous Render with Local State
     renderTrainingNeeds();
     renderTrainingPrograms();
     renderTrainingSessions();
@@ -445,6 +507,29 @@ function initTrainingManagement() {
     renderCertsTable();
     renderBasicTrainingReport();
     updateTrainingStats();
+
+    // 2. Asynchronous Fetch & Sync from MVC Backend
+    try {
+        const bootstrapData = await TrainingAPI.bootstrap();
+        if (bootstrapData) {
+            if (Array.isArray(bootstrapData.needs)) trainingNeedsState = bootstrapData.needs;
+            if (Array.isArray(bootstrapData.programs)) trainingProgramsState = bootstrapData.programs;
+            if (Array.isArray(bootstrapData.sessions)) trainingSessionsState = bootstrapData.sessions;
+            if (Array.isArray(bootstrapData.results)) trainingResultsState = bootstrapData.results;
+
+            // Re-render UI with synchronized server state
+            renderTrainingNeeds();
+            renderTrainingPrograms();
+            renderTrainingSessions();
+            renderAttendanceConsole();
+            renderTrainingResults();
+            renderCertsTable();
+            renderBasicTrainingReport();
+            updateTrainingStats();
+        }
+    } catch (err) {
+        console.warn('[Training] Running with cached offline state:', err.message);
+    }
 }
 
 function switchTrainingStage(stageSubTab) {
@@ -755,26 +840,42 @@ function renderAttendanceConsole() {
     }).join('');
 }
 
-function setAssociateAttendance(sessionId, associateId, status) {
+async function setAssociateAttendance(sessionId, associateId, status) {
     const session = trainingSessionsState.find(s => s.id === sessionId);
     if (!session) return;
 
     const member = session.roster.find(r => r.associateId === associateId);
     if (!member) return;
 
+    const prevStatus = member.attendanceStatus;
+    const prevRate = member.attendanceRate;
+
+    // 1. Optimistic UI update
     member.attendanceStatus = status;
     member.attendanceRate = status === 'Absent' ? 0 : 100;
     
     const now = new Date();
-    member.checkInTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const checkInTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    member.checkInTime = checkInTime;
 
     renderAttendanceConsole();
     renderTrainingSessions();
     renderBasicTrainingReport();
     showToast(`Attendance recorded: ${member.name} marked as "${status}"`, 'success');
+
+    // 2. Persist to MVC Backend via AJAX
+    try {
+        await TrainingAPI.updateAttendance(sessionId, associateId, status, checkInTime);
+    } catch (err) {
+        // Rollback on network failure
+        member.attendanceStatus = prevStatus;
+        member.attendanceRate = prevRate;
+        renderAttendanceConsole();
+        renderTrainingSessions();
+    }
 }
 
-function markAllSessionPresent() {
+async function markAllSessionPresent() {
     const session = trainingSessionsState.find(s => s.id === activeAttendanceSessionId);
     if (!session) return;
 
@@ -791,6 +892,15 @@ function markAllSessionPresent() {
     renderTrainingSessions();
     renderBasicTrainingReport();
     showToast(`All participants in "${session.title}" marked as Attended!`, 'success');
+
+    // Persist all via AJAX
+    try {
+        await Promise.all(session.roster.map(m => 
+            TrainingAPI.updateAttendance(session.id, m.associateId, 'Attended', timeStr)
+        ));
+    } catch (err) {
+        console.warn('Failed to bulk sync attendance:', err);
+    }
 }
 
 function changeAttendanceSession(sessionId) {
@@ -889,8 +999,8 @@ function setKirkpatrickRating(type, stars) {
     }
 }
 
-function submitTrainingEvaluation() {
-    const { sessionId, associateId, programId, answers } = currentEvaluationContext;
+async function submitTrainingEvaluation() {
+    const { sessionId, associateId, programId, answers, kirkpatrickFeedback } = currentEvaluationContext;
     const session = trainingSessionsState.find(s => s.id === sessionId);
     const member = session?.roster.find(r => r.associateId === associateId);
     const program = trainingProgramsState.find(p => p.id === programId);
@@ -900,67 +1010,39 @@ function submitTrainingEvaluation() {
         return;
     }
 
-    let correctCount = 0;
-    const totalQuestions = program.quizQuestions.length;
-
-    program.quizQuestions.forEach((q, idx) => {
-        if (answers[idx] === q.correct) {
-            correctCount++;
-        }
-    });
-
-    const answeredKeys = Object.keys(answers);
-    const calculatedScore = answeredKeys.length > 0 
-        ? Math.round((correctCount / totalQuestions) * 100)
-        : 95;
-
-    const isPassed = calculatedScore >= program.passingScore;
-    const resultId = `res-${Date.now()}`;
-    const certReference = `OXF-CERT-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    const newResult = {
-        id: resultId,
-        sessionId: sessionId,
-        programId: programId,
-        programTitle: program.title,
-        category: program.category,
-        dept: session.dept,
-        associateId: associateId,
-        associateName: member.name,
-        associateRole: member.role,
-        associateAvatar: member.avatar,
-        trainerName: session.trainerName,
-        completionDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        attendanceRate: `${member.attendanceRate}%`,
-        quizScore: calculatedScore,
-        passingThreshold: program.passingScore,
-        resultStatus: isPassed ? 'Passed & Certified' : 'Failed - Remedial Required',
-        feedbackRating: currentEvaluationContext.kirkpatrickFeedback.trainerRating,
-        certificateReference: isPassed ? certReference : null,
-        competencyTarget: program.targetCompetency,
-        competencyKey: program.competencyKey,
-        competencyScoreBefore: 3.5,
-        competencyScoreAfter: isPassed ? 4.8 : 3.5,
-        syncedToProfile: isPassed,
-        xpAwarded: isPassed ? program.xpAward : 0
-    };
-
-    trainingResultsState.unshift(newResult);
-
-    member.evaluationStatus = 'Completed';
-    member.attendanceStatus = 'Completed';
-    member.score = calculatedScore;
-    member.resultId = resultId;
-
     closeModal('modal-training-evaluation');
 
-    if (isPassed) {
-        feedResultsIntoCompetency(newResult);
-        showToast(`Evaluation Passed (${calculatedScore}%)! Cert: ${certReference} recorded & Profile updated!`, 'success');
-        switchTrainingStage('results');
-    } else {
-        showToast(`Evaluation Score: ${calculatedScore}% (Threshold: ${program.passingScore}%). Result recorded.`, 'error');
-        switchTrainingStage('results');
+    try {
+        const payload = {
+            sessionId: sessionId,
+            programId: programId,
+            associateId: associateId,
+            answers: answers,
+            kirkpatrickFeedback: kirkpatrickFeedback
+        };
+
+        const resData = await TrainingAPI.submitEvaluation(payload);
+
+        if (resData && resData.evaluation) {
+            const evalRecord = resData.evaluation;
+            trainingResultsState.unshift(evalRecord);
+
+            member.evaluationStatus = 'Completed';
+            member.attendanceStatus = 'Completed';
+            member.score = evalRecord.quizScore;
+            member.resultId = evalRecord.id;
+
+            if (resData.isPassed) {
+                feedResultsIntoCompetency(evalRecord);
+                showToast(`Evaluation Passed (${evalRecord.quizScore}%)! Cert: ${resData.certificateNumber} generated & +150 XP awarded!`, 'success');
+                switchTrainingStage('results');
+            } else {
+                showToast(`Evaluation Score: ${evalRecord.quizScore}% (Threshold: ${evalRecord.passingThreshold}%). Remedial required.`, 'warning');
+                switchTrainingStage('results');
+            }
+        }
+    } catch (err) {
+        showToast('Failed to submit evaluation to server: ' + err.message, 'error');
     }
 
     renderAttendanceConsole();
@@ -1267,7 +1349,7 @@ function openScheduleModal(preselectedProgramId = null) {
     openModal('modal-schedule-training-session');
 }
 
-function saveScheduledSession() {
+async function saveScheduledSession() {
     const progId = document.getElementById('sched-modal-program-select')?.value;
     const trainerName = document.getElementById('sched-modal-trainer')?.value || 'Master Sommelier Pierre';
     const location = document.getElementById('sched-modal-venue')?.value || 'Executive Boardroom';
@@ -1327,13 +1409,20 @@ function saveScheduledSession() {
     updateTrainingStats();
     showToast(`Training session "${newSession.title}" scheduled!`, 'success');
     switchTrainingStage('schedules');
+
+    // Async persist to backend
+    try {
+        await TrainingAPI.scheduleSession(newSession);
+    } catch (err) {
+        console.warn('Could not persist session to backend:', err);
+    }
 }
 
 function openCreateProgramModal() {
     openModal('modal-create-training-program');
 }
 
-function saveNewTrainingProgram() {
+async function saveNewTrainingProgram() {
     const title = document.getElementById('prog-modal-title-input')?.value || 'Hospitality Advanced Service Standard';
     const category = document.getElementById('prog-modal-category')?.value || 'Skill Gap';
     const dept = document.getElementById('prog-modal-dept')?.value || 'Front Office';
@@ -1384,6 +1473,13 @@ function saveNewTrainingProgram() {
     updateTrainingStats();
     showToast(`Training Program "${title}" created!`, 'success');
     switchTrainingStage('programs');
+
+    // Async persist to backend
+    try {
+        await TrainingAPI.createProgram(newProg);
+    } catch (err) {
+        console.warn('Could not persist program to backend:', err);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
