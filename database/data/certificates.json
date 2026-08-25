@@ -1,0 +1,28 @@
+[
+    {
+        "id": "cert-1",
+        "certificate_number": "OXF-CERT-2026-0889",
+        "employee_id": "emp-102",
+        "associate_name": "Carlos Gomez",
+        "program_title": "Hospitality Crisis Diplomacy & Guest De-escalation",
+        "category": "Service Excellence",
+        "dept": "Front Office",
+        "score": 95,
+        "issue_date": "Aug 24, 2026",
+        "gm_signature": "General Manager, Oxford Suites",
+        "verification_seal_code": "OXF-SEAL-889-VERIFIED"
+    },
+    {
+        "id": "cert-2",
+        "certificate_number": "OXF-CERT-2026-0742",
+        "employee_id": "emp-101",
+        "associate_name": "Maria Santos",
+        "program_title": "HACCP Level 3 Food Safety & Cold-Chain Mastery",
+        "category": "Mandatory Compliance",
+        "dept": "Culinary",
+        "score": 98,
+        "issue_date": "Jul 15, 2026",
+        "gm_signature": "General Manager, Oxford Suites",
+        "verification_seal_code": "OXF-SEAL-742-VERIFIED"
+    }
+]
