@@ -176,5 +176,20 @@
         "supervisor_notes": null,
         "created_at": "2026-08-26T13:28:27+00:00",
         "updated_at": "2026-08-26T13:28:27+00:00"
+    },
+    {
+        "id": "mon-41d96497",
+        "goal_id": 28,
+        "employee_id": "emp-102",
+        "milestone_title": "Task Completed: Basta gawin mo to",
+        "actual_metric": "Goal Progress: 100%",
+        "progress": 100,
+        "accomplishments": "oki",
+        "challenges": null,
+        "feedback": "oki",
+        "supporting_evidence": "Task Checklist Verified",
+        "supervisor_notes": null,
+        "created_at": "2026-08-26T18:56:23+00:00",
+        "updated_at": "2026-08-26T18:56:23+00:00"
     }
 ]

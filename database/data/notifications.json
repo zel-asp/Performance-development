@@ -823,5 +823,18 @@
         "created_at": "2026-08-26T13:56:49+00:00",
         "updated_at": "2026-08-26T13:56:49+00:00",
         "goal_id": 28
+    },
+    {
+        "id": "notif-cd3bcc3c",
+        "recipient_role": "Supervisor",
+        "user_id": "emp-102",
+        "type": "task_completed",
+        "title": "Task Completed with Feedback \u2728",
+        "message": "Employee completed \"Basta gawin mo to\" and submitted learnings & feedback.",
+        "related_id": "task-gen-5beea946",
+        "is_read": false,
+        "created_at": "2026-08-26T18:56:23+00:00",
+        "updated_at": "2026-08-26T18:56:23+00:00",
+        "goal_id": 28
     }
 ]

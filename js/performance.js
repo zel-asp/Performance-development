@@ -1237,6 +1237,15 @@ window.handleSpecificTaskSubmit = handleSpecificTaskSubmit;
  * 2D. EMPLOYEE TASK COMPLETION WITH AUTO-DETECTED DATE/TIME & LEARNINGS
  * -------------------------------------------------------------
  */
+function triggerTaskCompletionModal(taskId, goalId, checkboxEl) {
+    if (checkboxEl) {
+        window.lastActiveTaskCheckbox = checkboxEl;
+        checkboxEl.checked = false; // keep unchecked until modal submission is confirmed
+    }
+    openCompleteTaskModal(taskId, goalId);
+}
+window.triggerTaskCompletionModal = triggerTaskCompletionModal;
+
 function openCompleteTaskModal(taskId, goalId) {
     let goal = (window.dbGoals || []).find(g => String(g.id) === String(goalId));
     if (!goal) {
@@ -1268,6 +1277,17 @@ function openCompleteTaskModal(taskId, goalId) {
                 target_date: goal?.target_date || 'Q3 2026'
             };
         }
+    }
+    if (!task) {
+        (window.dbGoals || []).forEach(g => {
+            if (!task && g.tasks) {
+                const found = g.tasks.find(t => String(t.id) === String(taskId));
+                if (found) {
+                    task = found;
+                    if (!goal) goal = g;
+                }
+            }
+        });
     }
 
     const idInput = document.getElementById('complete-task-id');
