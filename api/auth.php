@@ -37,6 +37,11 @@ try {
             $response = $authController->getCurrentUser();
             break;
 
+        case 'list_users':
+        case 'users':
+            $response = $authController->listUsers();
+            break;
+
         case 'logout':
             $response = $authController->logout();
             break;

@@ -1,7 +1,8 @@
-<!-- ========================================================================= -->
-<!-- 1. AUTHENTICATION & LOGIN SCREEN (OXFORD SUITES ASSOCIATE PORTAL)          -->
-<!-- Clean Employee Code & Password Login (Standard Password: oxford2026)      -->
-<!-- ========================================================================= -->
+<script>
+    if (localStorage.getItem('oxford_session_auth') === 'true') {
+        document.write('<style id="auth-hide-style">#auth-screen{display:none!important;}</style>');
+    }
+</script>
 <div id="auth-screen"
     class="fixed inset-0 z-50 bg-[#211A1A]/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
     <div

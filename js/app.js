@@ -21,6 +21,25 @@
                     if (id === 'modal-recognition' && typeof initKudosRosterModal === 'function') {
                         initKudosRosterModal();
                     }
+                    if (id === 'modal-create-goal') {
+                        const scopeContainer = document.getElementById('goal-target-scope')?.closest('.bg-purple-50\\/60, .p-3');
+                        const scopeSelect = document.getElementById('goal-target-scope');
+                        const currentUserId = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+                        const isAssociate = (window.activePersonaRole === 'Associate' || activePersonaKey === 'associate' || activePersonaKey === 'employee');
+                        
+                        if (scopeSelect) {
+                            scopeSelect.value = currentUserId;
+                            if (typeof handleGoalScopeChange === 'function') {
+                                handleGoalScopeChange(scopeSelect);
+                            }
+                        }
+
+                        if (isAssociate) {
+                            if (scopeContainer) scopeContainer.classList.add('hidden');
+                        } else {
+                            if (scopeContainer) scopeContainer.classList.remove('hidden');
+                        }
+                    }
                 }
             }
 
@@ -122,12 +141,16 @@
                     }
                 });
 
-                // Resize charts if visible
+                // Resize charts if visible & refresh dynamic data
                 setTimeout(() => {
                     if (pillarKey === 'dashboard') {
                         if (chartPerfTrendInstance) chartPerfTrendInstance.resize();
                         if (chartSentimentDoughnutInstance) chartSentimentDoughnutInstance.resize();
                         if (chartSystemDeptProgressInstance) chartSystemDeptProgressInstance.resize();
+                        if (typeof loadAndRenderPlanningGoals === 'function') loadAndRenderPlanningGoals();
+                    } else if (pillarKey === 'pillar-perf') {
+                        if (typeof loadAndRenderPlanningGoals === 'function') loadAndRenderPlanningGoals();
+                        if (typeof loadAndRenderMonitoringData === 'function') loadAndRenderMonitoringData();
                     } else if (pillarKey === 'pillar-comp') {
                         if (chartCompetencyRadarInstance) chartCompetencyRadarInstance.resize();
                     } else if (pillarKey === 'pillar-lms') {
@@ -159,9 +182,13 @@
                     }
                 });
 
-                if (pillarPrefix === 'perf') {
+                if (pillarPrefix === 'dashboard' && subKey === 'pulse') {
+                    if (typeof loadAndRenderPlanningGoals === 'function') loadAndRenderPlanningGoals();
+                } else if (pillarPrefix === 'perf') {
                     updatePerfStepper(subKey);
                     if (typeof updateAllPerfStepperBadges === 'function') updateAllPerfStepperBadges();
+                    if (typeof loadAndRenderPlanningGoals === 'function') loadAndRenderPlanningGoals();
+                    if (subKey === 'monitor' && typeof loadAndRenderMonitoringData === 'function') loadAndRenderMonitoringData();
                 } else if (pillarPrefix === 'comp') {
                     if (subKey === 'profiles') {
                         if (typeof renderRoleCompetencyFramework === 'function') renderRoleCompetencyFramework();
@@ -248,69 +275,94 @@
                 });
             }
 
-            // Auth and Persona
+            // Auth and Persona based on users table
             const personaData = {
-                employee: {
+                associate: {
+                    id: 'emp-101',
+                    role: 'Associate',
                     name: 'Maria Santos',
                     initials: 'MS',
-                    roleLabel: 'Maria Santos (Host / Employee)',
+                    roleLabel: 'Maria Santos (Associate)',
                     badge: 'Emp',
-                    dept: 'Front Desk Host',
+                    dept: 'Front Office',
                     greeting: 'Good morning, Maria Santos 👋',
-                    title: 'Viewing as: Front Desk Host (Employee / Individual Contributor)',
+                    title: 'Viewing as: Front Desk Host (Associate)',
                     desc: 'You can draft performance objectives, log daily shift accomplishments & evidence, submit self-assessments, and take LMS quizzes.',
-                    tag: 'Individual Contributor',
+                    tag: 'Associate',
                     icon: 'fas fa-user',
                     bannerClass: 'bg-blue-50/80 border-blue-200 text-blue-950',
                     badgeClass: 'bg-blue-100 text-blue-800'
                 },
-                manager: {
-                    name: 'Chef Marco',
+                supervisor: {
+                    id: 'emp-102',
+                    role: 'Supervisor',
+                    name: 'Chef Marco Rossi',
                     initials: 'CM',
-                    roleLabel: 'Chef Marco (Supervisor)',
+                    roleLabel: 'Chef Marco Rossi (Supervisor)',
                     badge: 'Mgr',
-                    dept: 'Culinary & F&B Lead',
+                    dept: 'Culinary & F&B',
                     greeting: 'Good morning, Chef Marco 👨‍🍳',
-                    title: 'Viewing as: F&B & Culinary Supervisor (Operational Leader)',
+                    title: 'Viewing as: F&B & Culinary Supervisor',
                     desc: 'You can review and endorse subordinate goals, write coaching notes, evaluate team appraisals, and assign 70-20-10 IDPs.',
-                    tag: 'Supervisor / Manager',
+                    tag: 'Supervisor',
                     icon: 'fas fa-user-tie',
                     bannerClass: 'bg-amber-50/80 border-amber-200 text-amber-950',
                     badgeClass: 'bg-amber-100 text-amber-800'
                 },
-                hr: {
+                hradmin: {
+                    id: 'emp-103',
+                    role: 'HRAdmin',
                     name: 'Elena Vance',
                     initials: 'EV',
-                    roleLabel: 'Elena Vance (HR Director)',
+                    roleLabel: 'Elena Vance (HRAdmin)',
                     badge: 'HR',
-                    dept: 'HR Director',
+                    dept: 'Human Resources',
                     greeting: 'Welcome back, Elena Vance 📊',
-                    title: 'Viewing as: HR Director (Full Organizational Governance)',
+                    title: 'Viewing as: HRAdmin (Governance)',
                     desc: 'You have full oversight over competency frameworks, bell-curve calibration normalization, LMS compliance, and 9-box succession.',
-                    tag: 'HR Administrator',
+                    tag: 'HRAdmin',
                     icon: 'fas fa-shield-halved',
                     bannerClass: 'bg-purple-50/80 border-purple-200 text-purple-950',
                     badgeClass: 'bg-purple-100 text-purple-800'
                 },
-                executive: {
+                generalmanager: {
+                    id: 'emp-104',
+                    role: 'GeneralManager',
                     name: 'Robert Sterling',
                     initials: 'RS',
-                    roleLabel: 'Robert Sterling (GM / Exec)',
+                    roleLabel: 'Robert Sterling (GeneralManager)',
                     badge: 'Exec',
-                    dept: 'General Manager',
+                    dept: 'Executive Office',
                     greeting: 'Executive Briefing, General Manager Sterling 🏨',
-                    title: 'Viewing as: General Manager (Executive Strategic View)',
+                    title: 'Viewing as: GeneralManager',
                     desc: 'Strategic overview of property-wide Hospitality Index, guest NPS analytics, leadership bench depth, and training ROI.',
-                    tag: 'General Manager',
+                    tag: 'GeneralManager',
                     icon: 'fas fa-chess-king',
                     bannerClass: 'bg-slate-100 border-slate-300 text-slate-950',
                     badgeClass: 'bg-slate-200 text-slate-800'
                 }
             };
+            // Support exact role column lookups
+            personaData['Associate'] = personaData.associate;
+            personaData['Supervisor'] = personaData.supervisor;
+            personaData['HRAdmin'] = personaData.hradmin;
+            personaData['GeneralManager'] = personaData.generalmanager;
+            personaData['employee'] = personaData.associate;
+            personaData['manager'] = personaData.supervisor;
+            personaData['hr'] = personaData.hradmin;
+            personaData['executive'] = personaData.generalmanager;
 
-            function switchRole(roleKey) {
-                activePersonaKey = roleKey;
-                const persona = personaData[roleKey] || personaData.employee;
+            function switchRole(userRole) {
+                const normalizedKey = String(userRole || '').toLowerCase().trim();
+                activePersonaKey = normalizedKey;
+                const persona = personaData[normalizedKey] || personaData[userRole] || personaData.associate;
+
+                window.currentUser = {
+                    id: persona.id,
+                    full_name: persona.name,
+                    role: persona.role,
+                    department: persona.dept
+                };
 
                 document.querySelectorAll('.sidebar-user-name').forEach(el => el.textContent = persona.name);
                 document.querySelectorAll('.sidebar-user-dept').forEach(el => el.textContent = persona.dept);
@@ -318,6 +370,16 @@
                 document.querySelectorAll('.user-avatar-circle').forEach(el => el.textContent = persona.initials);
                 const heroGreet = document.getElementById('hero-greeting-text');
                 if (heroGreet) heroGreet.textContent = persona.greeting;
+
+                const quickSwitcher = document.getElementById('quick-role-switcher');
+                if (quickSwitcher) {
+                    for (let opt of quickSwitcher.options) {
+                        if (opt.value.toLowerCase() === normalizedKey || opt.value.toLowerCase() === (persona.role || '').toLowerCase()) {
+                            quickSwitcher.value = opt.value;
+                            break;
+                        }
+                    }
+                }
 
                 // Update Header User Profile Badge
                 const navAvatar = document.getElementById('nav-user-avatar');
@@ -347,7 +409,62 @@
                     contextBanner.className = `p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs transition ${persona.bannerClass}`;
                 }
 
+                window.activePersonaRole = persona.role;
+                applyRoleVisibility(persona.role);
+                if (typeof loadLiveNotifications === 'function') {
+                    loadLiveNotifications(persona.role);
+                }
+                if (typeof loadAndRenderPlanningGoals === 'function') {
+                    loadAndRenderPlanningGoals();
+                }
                 showToast(`Signed in: ${persona.name} (${persona.tag})`, 'info');
+            }
+
+            function applyRoleVisibility(userRole) {
+                // Read exclusively from the users.role column value
+                const roleName = String(userRole || '').toLowerCase().trim();
+                const isAssociate = (roleName === 'associate' || roleName === 'employee' || roleName === 'staff');
+
+                // In Overview Hub sub-navigation, hide "2. System & Property Analytics" for Associate
+                const systemSubTabBtn = document.querySelector('button[data-sub="system"]');
+                if (systemSubTabBtn) {
+                    if (isAssociate) {
+                        systemSubTabBtn.classList.add('hidden');
+                        if (typeof switchSubTab === 'function') {
+                            switchSubTab('dashboard', 'pulse');
+                        }
+                    } else {
+                        systemSubTabBtn.classList.remove('hidden');
+                    }
+                }
+
+                // Supervisor & Management only navigation items
+                const supervisorOnlyPillars = [
+                    'pillar-perf',
+                    'pillar-comp',
+                    'pillar-training',
+                    'pillar-succession',
+                    'pillar-reports'
+                ];
+
+                document.querySelectorAll('.nav-item').forEach(link => {
+                    const pillar = link.getAttribute('data-pillar');
+                    if (supervisorOnlyPillars.includes(pillar)) {
+                        if (isAssociate) {
+                            link.classList.add('hidden');
+                        } else {
+                            link.classList.remove('hidden');
+                        }
+                    }
+                });
+
+                // If active pillar was supervisor-only and current user is an Associate, return to overview dashboard
+                const activePanel = document.querySelector('.pillar-panel.active');
+                if (isAssociate && activePanel && supervisorOnlyPillars.includes(activePanel.id)) {
+                    if (typeof switchPillar === 'function') {
+                        switchPillar('dashboard');
+                    }
+                }
             }
 
             // HR Central Roster Management Helpers
@@ -455,10 +572,15 @@
                     const res = await AuthAPI.login(identifier, password);
                     if (res && res.success && res.data && res.data.user) {
                         const user = res.data.user;
-                        const roleKey = res.data.roleKey || user.role_key || 'employee';
+                        const userRole = user.role || res.data.role || 'Associate';
 
-                        switchRole(roleKey);
-                        document.getElementById('auth-screen').classList.add('hidden');
+                        localStorage.setItem('oxford_session_auth', 'true');
+                        localStorage.setItem('oxford_session_user', JSON.stringify(user));
+                        localStorage.setItem('oxford_session_role', userRole);
+
+                        switchRole(userRole);
+                        const authScreen = document.getElementById('auth-screen');
+                        if (authScreen) authScreen.classList.add('hidden');
                         showToast(`Welcome ${user.full_name} (${user.title})!`, 'success');
                         initAllCharts();
                     } else {
@@ -466,21 +588,55 @@
                     }
                 } catch (err) {
                     // Fallback to demo entry
-                    document.getElementById('auth-screen').classList.add('hidden');
+                    localStorage.setItem('oxford_session_auth', 'true');
+                    localStorage.setItem('oxford_session_role', 'employee');
+                    const authScreen = document.getElementById('auth-screen');
+                    if (authScreen) authScreen.classList.add('hidden');
                     showToast('Welcome to Oxford Suites, Makati!', 'success');
                     initAllCharts();
                 }
             }
 
             async function logOutToAuth() {
-                document.getElementById('auth-screen').classList.remove('hidden');
+                localStorage.removeItem('oxford_session_auth');
+                localStorage.removeItem('oxford_session_user');
+                localStorage.removeItem('oxford_session_role');
+
+                // Remove any injected hide-style element
+                const hideStyle = document.getElementById('auth-hide-style');
+                if (hideStyle) {
+                    hideStyle.remove();
+                }
+
+                const authScreen = document.getElementById('auth-screen');
+                if (authScreen) {
+                    authScreen.style.removeProperty('display');
+                    authScreen.classList.remove('hidden');
+                    authScreen.classList.add('flex');
+                }
+
                 showToast('Signed out of session', 'info');
+
                 try {
                     await AuthAPI.logout();
                 } catch (err) {
                     console.warn('Backend logout sync:', err);
                 }
             }
+            window.logOutToAuth = logOutToAuth;
+
+            // Restore user session on refresh
+            document.addEventListener('DOMContentLoaded', () => {
+                const isAuth = localStorage.getItem('oxford_session_auth');
+                const savedRole = localStorage.getItem('oxford_session_role');
+                const authScreen = document.getElementById('auth-screen');
+                if (isAuth === 'true' && authScreen) {
+                    authScreen.classList.add('hidden');
+                    if (savedRole && typeof switchRole === 'function') {
+                        switchRole(savedRole);
+                    }
+                }
+            });
 
             // Form Templates
             function fillGoalTemplate(type) {
@@ -534,43 +690,7 @@
                 showToast('Scenario loaded! Click Generate below.', 'info');
             }
 
-            // Handlers
-            function handleGoalSubmit(e) {
-                e.preventDefault();
-                const title = document.getElementById('goal-title-input').value;
-                const cat = document.getElementById('goal-cat-input').value;
-                const date = document.getElementById('goal-date-input').value;
-                const kpi = document.getElementById('goal-kpi-input').value;
-                const weight = document.getElementById('goal-weight-input') ? document.getElementById('goal-weight-input').value : '20% (Standard)';
-                const evidence = document.getElementById('goal-evidence-input') ? document.getElementById('goal-evidence-input').value : '';
 
-                const tbody = document.getElementById('goals-table-body');
-                if (tbody) {
-                    const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-slate-50/60 transition bg-emerald-50/20';
-                    tr.innerHTML = `
-                    <td class="px-5 py-4 font-semibold text-slate-900">
-                        ${title}
-                        <p class="text-[11px] text-slate-400 font-normal">${cat}</p>
-                    </td>
-                    <td class="px-5 py-4 font-mono font-medium text-slate-800">${kpi}</td>
-                    <td class="px-5 py-4 font-bold text-slate-700">${weight.split(' ')[0]} ${weight.includes('(') ? weight.substring(weight.indexOf('(')) : ''}</td>
-                    <td class="px-5 py-4 text-slate-600">${evidence || 'Newly submitted documentation & evidence logs'}</td>
-                    <td class="px-5 py-4 text-slate-500">${date}</td>
-                    <td class="px-5 py-4 text-right">
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Pending Approval</span>
-                    </td>
-                `;
-                    tbody.insertBefore(tr, tbody.firstChild);
-                }
-
-                totalGoals++;
-                const kpiRatio = document.getElementById('kpi-goals-ratio');
-                if (kpiRatio) kpiRatio.textContent = `${completedGoals} of ${totalGoals} Done`;
-
-                closeModal('modal-create-goal');
-                showToast(`Goal "${title}" submitted to supervisor!`, 'success');
-            }
 
             function openGoalReview(title) {
                 document.getElementById('review-goal-title').textContent = title;

@@ -266,6 +266,18 @@
                     <!-- Right: HR Quick Tools, Department/Staff Switcher, AI Copilot -->
                     <div class="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3 text-xs flex-shrink-0">
 
+                        <!-- Quick Role / Persona Switcher -->
+                        <div class="flex items-center space-x-1.5">
+                            <label for="quick-role-switcher" class="text-[10px] font-bold text-slate-400 hidden xl:inline">Role View:</label>
+                            <select id="quick-role-switcher" onchange="switchRole(this.value)"
+                                class="px-2.5 py-1.5 bg-[#FAF8F7] hover:bg-white text-slate-800 rounded-xl border border-[#E8DEDC] font-semibold transition text-xs shadow-2xs focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer">
+                                <option value="Associate">👤 Associate (Maria Santos)</option>
+                                <option value="Supervisor">👨‍🍳 Supervisor (Chef Marco)</option>
+                                <option value="HRAdmin">📊 HRAdmin (Elena Vance)</option>
+                                <option value="GeneralManager">🏨 GeneralManager (Sterling)</option>
+                            </select>
+                        </div>
+
                         <!-- Authenticated User Profile Badge -->
                         <div id="header-user-profile"
                             class="flex items-center space-x-2.5 bg-[#FAF8F7] border border-[#E8DEDC] px-3 py-1.5 rounded-2xl shadow-2xs">

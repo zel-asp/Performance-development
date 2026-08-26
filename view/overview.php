@@ -138,11 +138,33 @@
 
                                 </div>
 
-                                <!-- 2-Column: Key Trends + Shift Climate -->
-                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <!-- Individual Performance Objectives Card (Live Supabase Data) -->
+                                <div class="card-clean p-6 space-y-4">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                                        <div class="space-y-0.5">
+                                            <div class="flex items-center space-x-2">
+                                                <h3 class="font-heading font-bold text-base text-slate-900">
+                                                    My Active Performance Objectives</h3>
+                                                <span id="emp-pulse-goals-count" class="badge-primary">0 Goals</span>
+                                            </div>
+                                            <p class="text-xs text-slate-500">Self-set target metrics awaiting supervisor calibration or actively tracked for Q3.</p>
+                                        </div>
+                                        <button onclick="openModal('modal-create-goal')"
+                                            class="btn-primary px-3.5 py-1.5 text-xs font-bold inline-flex items-center space-x-1.5 self-start sm:self-auto shadow-2xs">
+                                            <i class="fas fa-plus text-xs"></i>
+                                            <span>Set Performance Objective</span>
+                                        </button>
+                                    </div>
+                                    <div id="emp-pulse-goals-container" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                        <!-- Dynamic live goals loaded from Supabase -->
+                                    </div>
+                                </div>
+
+                                <!-- 2-Column: Key Trends + Shift Climate (Balanced Side-by-Side) -->
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                                     <!-- Quality & KPI Trend Line Chart -->
-                                    <div class="lg:col-span-2 card-clean p-6 space-y-3">
+                                    <div class="card-clean p-6 space-y-3">
                                         <div class="flex items-center justify-between">
                                             <div>
                                                 <h3 class="font-heading font-bold text-base text-slate-900">

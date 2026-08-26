@@ -91,13 +91,31 @@ class BaseModel
         $data['updated_at'] = date('c');
 
         // Attempt update on Supabase
-        supabaseRequest($this->table . '?id=eq.' . urlencode($id), 'PATCH', $data, true);
+        $res = supabaseRequest($this->table . '?id=eq.' . urlencode($id), 'PATCH', $data, true);
+        if ($res['status'] >= 200 && $res['status'] < 300 && !empty($res['data'])) {
+            $updatedItem = is_array($res['data']) && isset($res['data'][0]) ? $res['data'][0] : $res['data'];
+            // Sync with local store
+            $all = $this->getLocalData();
+            $found = false;
+            foreach ($all as &$item) {
+                if ((string)($item['id'] ?? '') === (string)$id) {
+                    $item = array_merge($item, $updatedItem);
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                $all[] = $updatedItem;
+            }
+            $this->saveLocalData($all);
+            return $updatedItem;
+        }
 
         // Update in local data store
         $all = $this->getLocalData();
         $updatedItem = null;
         foreach ($all as &$item) {
-            if (($item['id'] ?? '') === $id) {
+            if ((string)($item['id'] ?? '') === (string)$id) {
                 $item = array_merge($item, $data);
                 $updatedItem = $item;
                 break;

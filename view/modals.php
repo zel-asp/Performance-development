@@ -82,11 +82,14 @@
                     <label class="font-bold text-purple-950 text-[11px] flex items-center shrink-0">
                         <i class="fas fa-bullseye text-purple-600 mr-1.5"></i> Assign Goal To:
                     </label>
-                    <select id="goal-target-scope"
+                    <select id="goal-target-scope" onchange="if(typeof handleGoalScopeChange === 'function') handleGoalScopeChange(this)"
                         class="w-full sm:w-auto flex-1 px-3 py-1.5 rounded-lg border border-purple-200 text-xs font-semibold text-purple-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary">
-                        <option value="single">Maria Santos (Front Desk Host)</option>
-                        <option value="dept">Entire Front Office Department (12 Staff)</option>
-                        <option value="property">Hotel-wide Benchmark (All 100 Staff)</option>
+                        <option value="emp-101" data-scope="single" data-name="Maria Santos" data-dept="Front Office & Guest Experience" data-role="Associate">Maria Santos (Associate · Front Desk Host)</option>
+                        <option value="emp-102" data-scope="single" data-name="Chef Marco Rossi" data-dept="Culinary & F&B" data-role="Supervisor">Chef Marco Rossi (Supervisor · Executive Sous Chef)</option>
+                        <option value="emp-103" data-scope="single" data-name="Elena Vance" data-dept="Human Resources" data-role="HRAdmin">Elena Vance (HRAdmin · Director of People)</option>
+                        <option value="emp-104" data-scope="single" data-name="Robert Sterling" data-dept="Executive Office" data-role="GeneralManager">Robert Sterling (GeneralManager · Managing Director)</option>
+                        <option value="dept" data-scope="dept" data-name="Entire Front Office Department" data-dept="Front Office & Guest Experience" data-role="Associate">Entire Front Office Department (12 Staff)</option>
+                        <option value="property" data-scope="property" data-name="Hotel-wide Benchmark" data-dept="Front Office & Guest Experience" data-role="Associate">Hotel-wide Benchmark (All 100 Staff)</option>
                     </select>
                 </div>
 
@@ -196,14 +199,176 @@
             <div class="flex items-center space-x-2.5 ml-auto">
                 <button type="button" onclick="closeModal('modal-create-goal')"
                     class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
-                <button type="button" onclick="document.getElementById('form-create-goal').requestSubmit()"
-                    class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5">
+                <button type="submit" form="form-create-goal" id="btn-submit-create-goal" onclick="handleGoalSubmit(event)"
+                    class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 cursor-pointer">
                     <span>Submit for Approval</span>
                     <i class="fas fa-arrow-right text-[10px]"></i>
                 </button>
             </div>
         </div>
 
+    </div>
+</div>
+
+<!-- Modal: View Goal Objectives & KPIs -->
+<div id="modal-view-goal" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+    <div class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- Header -->
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            <div class="flex items-center space-x-3.5">
+                <div class="w-10 h-10 rounded-full bg-primary-50 text-primary flex items-center justify-center text-base font-bold border border-primary-100 shadow-2xs">
+                    <i class="fas fa-bullseye"></i>
+                </div>
+                <div>
+                    <span class="badge-primary">Objective Details</span>
+                    <h3 id="view-modal-emp-name" class="font-heading font-bold text-base text-slate-900 mt-0.5">Associate Performance Plan</h3>
+                    <p id="view-modal-emp-pos" class="text-[11px] text-slate-500 font-medium">Front Desk Host · Front Office</p>
+                </div>
+            </div>
+            <button onclick="closeModal('modal-view-goal')"
+                class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs bg-white flex-1">
+            <div class="grid grid-cols-3 gap-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/70 text-center">
+                <div>
+                    <span class="text-[10px] text-slate-400 block font-semibold">Attendance</span>
+                    <span id="view-modal-attendance" class="font-bold text-slate-800 text-xs">96.5%</span>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-400 block font-semibold">Manager Rating</span>
+                    <span id="view-modal-mgr-rating" class="font-bold text-slate-900 text-xs">⭐ 4.6</span>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-400 block font-semibold">Guest Sentiment</span>
+                    <span id="view-modal-cust-rating" class="font-bold text-amber-600 text-xs">⭐ 4.8</span>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <h4 class="font-bold text-slate-800 text-[11px]">Defined Target Objectives:</h4>
+                <div id="view-modal-goals-list" class="space-y-3">
+                    <!-- Dynamic Objective Cards -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50 flex items-center justify-end space-x-2">
+            <button onclick="closeModal('modal-view-goal')" class="btn-secondary px-4 py-2 text-xs font-semibold">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Revise Performance Objective -->
+<div id="modal-revise-goal" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+    <div class="modal-card max-w-xl w-full overflow-hidden max-h-[92vh] flex flex-col">
+        <!-- Header -->
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            <div class="flex items-center space-x-3.5">
+                <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center text-base font-bold border border-amber-100 shadow-2xs">
+                    <i class="fas fa-pen-to-square"></i>
+                </div>
+                <div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Calibration & Revision</span>
+                    <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">Revise Performance Objective</h3>
+                    <p class="text-[11px] text-slate-500 font-medium">
+                        <span id="revise-modal-emp-name">Maria Santos</span> &middot; <span id="revise-modal-emp-pos">Front Office</span>
+                    </p>
+                </div>
+            </div>
+            <button onclick="closeModal('modal-revise-goal')"
+                class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 overflow-y-auto custom-scrollbar space-y-4 bg-white flex-1 text-xs">
+            <form id="form-revise-goal" onsubmit="saveGoalRevision(event)" class="space-y-4">
+                <input type="hidden" id="revise-goal-id">
+
+                <!-- Title -->
+                <div class="space-y-1">
+                    <label class="font-bold text-slate-800 text-[11px]">1. Goal / Objective Title *</label>
+                    <input type="text" id="revise-goal-title" required
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none font-medium bg-slate-50/50 hover:bg-white transition">
+                </div>
+
+                <!-- Department & Target Date -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">2. Department</label>
+                        <select id="revise-goal-cat"
+                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
+                            <option>Front Office & Guest Experience</option>
+                            <option>Food & Beverage Service</option>
+                            <option>Culinary & Kitchen Brigade</option>
+                            <option>Housekeeping & Facilities</option>
+                            <option>Banquet & Event Operations</option>
+                            <option>Leadership & Team Mentorship</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">3. Target Date</label>
+                        <input type="date" id="revise-goal-date"
+                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
+                    </div>
+                </div>
+
+                <!-- Target Metric -->
+                <div class="space-y-1">
+                    <label class="font-bold text-slate-800 text-[11px]">4. Target / Success Metric *</label>
+                    <input type="text" id="revise-goal-kpi" required
+                        placeholder="e.g., NPS >= +92 Score or Table reset < 3 mins"
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none bg-white transition">
+                </div>
+
+                <!-- Priority Weight -->
+                <div class="space-y-1">
+                    <label class="font-bold text-slate-800 text-[11px]">5. Priority Weight</label>
+                    <select id="revise-goal-weight"
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
+                        <option>High Priority (35% Weight - Core Role Objective)</option>
+                        <option selected>Medium Priority (20% Weight - Standard Operational Goal)</option>
+                        <option>Developmental (15% Weight - Learning Goal)</option>
+                    </select>
+                </div>
+
+                <!-- Deliverables / Evidence -->
+                <div class="space-y-1">
+                    <label class="font-bold text-slate-800 text-[11px]">6. Evidence & Verification Deliverables</label>
+                    <input type="text" id="revise-goal-deliverables"
+                        placeholder="e.g., Medallia guest satisfaction monthly reports, PMS shift logs"
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
+                </div>
+
+                <!-- Supervisor Coaching & Calibration Notes -->
+                <div id="container-revise-goal-notes" class="space-y-1">
+                    <div class="flex items-center justify-between">
+                        <label id="label-revise-goal-notes" class="font-bold text-slate-800 text-[11px]">7. Calibration &amp; Coaching Notes (Optional)</label>
+                        <span id="badge-revise-notes-auth" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Supervisor Notes</span>
+                    </div>
+                    <textarea id="revise-goal-notes" rows="2"
+                        placeholder="Add revision rationale, supervisor coaching notes, or check-in instructions..."
+                        class="w-full p-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-slate-50/50"></textarea>
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-end space-x-2.5 flex-shrink-0">
+            <button type="button" onclick="closeModal('modal-revise-goal')"
+                class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
+            <button type="submit" form="form-revise-goal" id="btn-save-goal-revision" onclick="saveGoalRevision(event)"
+                class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 cursor-pointer shadow-xs">
+                <span>Save &amp; Update Objective</span>
+                <i class="fas fa-check text-[10px]"></i>
+            </button>
+        </div>
     </div>
 </div>
 
@@ -1833,96 +1998,375 @@
             </div>
         </div>
 
-        <!-- 16. Modal: View Performance Goal & Objectives -->
-        <div id="modal-view-goal" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-            <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-[#E8DEDC]">
-                <div class="p-5 border-b border-[#E8DEDC] flex items-center justify-between bg-white flex-shrink-0">
+
+
+        <!-- 17. Modal: Log Performance Milestone & KPI Progress -->
+        <div id="modal-log-milestone" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary flex items-center justify-center text-lg font-bold border border-primary-100">
-                            <i class="fas fa-bullseye"></i>
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-lg font-bold border border-emerald-200 shadow-2xs">
+                            <i class="fas fa-flag-checkered"></i>
                         </div>
                         <div>
-                            <h3 id="view-modal-emp-name" class="font-heading font-bold text-base text-slate-900">Employee Goal Details</h3>
-                            <p id="view-modal-emp-pos" class="text-xs text-slate-500">Position · Department</p>
-                        </div>
-                    </div>
-                    <button onclick="closeModal('modal-view-goal')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
-                        <i class="fas fa-times text-xs"></i>
-                    </button>
-                </div>
-
-                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
-                    <div class="grid grid-cols-3 gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-200 text-center">
-                        <div>
-                            <span class="text-slate-400 text-[10px] block">Attendance Score</span>
-                            <span id="view-modal-attendance" class="font-bold text-slate-900 text-xs">--</span>
-                        </div>
-                        <div>
-                            <span class="text-slate-400 text-[10px] block">Manager Rating</span>
-                            <span id="view-modal-mgr-rating" class="font-bold text-slate-900 text-xs">--</span>
-                        </div>
-                        <div>
-                            <span class="text-slate-400 text-[10px] block">Customer / Guest Rating</span>
-                            <span id="view-modal-cust-rating" class="font-bold text-amber-600 text-xs">--</span>
-                        </div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Defined Objectives &amp; KPIs:</h4>
-                        <div id="view-modal-goals-list" class="space-y-3">
-                            <!-- Rendered by js/performance.js -->
-                        </div>
-                    </div>
-                </div>
-
-                <div class="p-4 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-end space-x-2">
-                    <button onclick="closeModal('modal-view-goal')" class="btn-primary px-5 py-2 text-xs font-bold">Done</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 17. Modal: Revise Performance Goal & Objectives -->
-        <div id="modal-revise-goal" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-            <div class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-[#E8DEDC]">
-                <div class="p-5 border-b border-[#E8DEDC] flex items-center justify-between bg-white flex-shrink-0">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center text-lg font-bold border border-amber-200">
-                            <i class="fas fa-pen-to-square"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-heading font-bold text-base text-slate-900">Revise Performance Objective</h3>
                             <div class="flex items-center space-x-1.5">
-                                <p id="revise-modal-emp-name" class="text-xs font-semibold text-slate-700">Employee Name</p>
-                                <span class="text-slate-300">·</span>
-                                <p id="revise-modal-emp-pos" class="text-[11px] text-slate-400 font-medium">Position</p>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Stage 3 · Monitoring</span>
+                                <span class="text-[10px] text-slate-400">Shift Progress Log</span>
                             </div>
+                            <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">Log Milestone &amp; Actual KPI</h3>
+                            <p class="text-[11px] text-slate-500 font-medium">
+                                <span id="milestone-emp-name">Maria Santos</span> &middot; <span id="milestone-emp-pos">Front Office</span>
+                            </p>
                         </div>
                     </div>
-                    <button onclick="closeModal('modal-revise-goal')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                    <button onclick="closeModal('modal-log-milestone')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
                         <i class="fas fa-times text-xs"></i>
                     </button>
                 </div>
 
-                <form onsubmit="saveGoalRevision(event)" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
+                <form id="form-log-milestone" onsubmit="saveMilestoneLog(event)" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
+                    <input type="hidden" id="milestone-emp-id">
+
+                    <!-- 1. Target Objective Selector -->
                     <div class="space-y-1">
-                        <label class="font-bold text-slate-800 text-[11px]">Objective / Goal Title</label>
-                        <input id="revise-goal-title" type="text" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-primary focus:outline-none">
+                        <label class="font-bold text-slate-800 text-[11px]">1. Select Target Objective *</label>
+                        <select id="milestone-goal-select" required onchange="onMilestoneGoalChange()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-primary focus:outline-none bg-slate-50">
+                            <!-- Populated dynamically -->
+                        </select>
                     </div>
 
+                    <!-- 2. Milestone / Shift Achievement Description -->
                     <div class="space-y-1">
-                        <label class="font-bold text-slate-800 text-[11px]">Target / Success Metric</label>
-                        <input id="revise-goal-kpi" type="text" required placeholder="e.g., Score >= 92%, +18% Average Check" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-primary focus:ring-2 focus:ring-primary focus:outline-none">
+                        <label class="font-bold text-slate-800 text-[11px]">2. Milestone / Shift Deliverable Title *</label>
+                        <input id="milestone-title" type="text" required placeholder="e.g., Completed 45 VIP check-ins with 100% Medallia rating" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-900 focus:ring-2 focus:ring-primary focus:outline-none bg-slate-50">
                     </div>
 
-                    <div class="space-y-1">
-                        <label class="font-bold text-slate-800 text-[11px]">Deliverables &amp; Evidence (Optional)</label>
-                        <textarea id="revise-goal-deliverables" rows="2" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
+                    <!-- 3. Actual Metric & Progress Slider -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label class="font-bold text-slate-800 text-[11px]">3. Actual Metric Achieved *</label>
+                            <input id="milestone-actual-metric" type="text" required placeholder="e.g., +94 NPS or 48s Response" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-primary focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center">
+                                <label class="font-bold text-slate-800 text-[11px]">4. Goal Progress Achieved</label>
+                                <span id="milestone-progress-val" class="font-bold font-mono text-emerald-700 text-xs">85%</span>
+                            </div>
+                            <input id="milestone-progress-range" type="range" min="10" max="100" step="5" value="85" oninput="document.getElementById('milestone-progress-val').textContent = this.value + '%'" class="w-full accent-primary mt-2 cursor-pointer">
+                        </div>
                     </div>
 
-                    <div class="pt-3 border-t border-[#E8DEDC] flex items-center justify-end space-x-2">
-                        <button type="button" onclick="closeModal('modal-revise-goal')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
-                        <button type="submit" class="btn-primary px-5 py-2 text-xs font-bold">Save Revision</button>
+                    <!-- 4. Accomplishments Recorded -->
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px] flex items-center space-x-1.5">
+                            <i class="fas fa-trophy text-amber-500"></i>
+                            <span>5. Accomplishments Recorded</span>
+                        </label>
+                        <textarea id="milestone-accomplishments" rows="2" placeholder="Record key shift wins, guest commendations, revenue upsell milestones, or audit achievements..." class="w-full p-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-slate-50"></textarea>
+                    </div>
+
+                    <!-- 5. Challenges Encountered -->
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px] flex items-center space-x-1.5">
+                            <i class="fas fa-triangle-exclamation text-rose-500"></i>
+                            <span>6. Challenges &amp; Obstacles Encountered</span>
+                        </label>
+                        <textarea id="milestone-challenges" rows="2" placeholder="Record shift bottlenecks, high-occupancy rushes, inventory delays, or operational hurdles..." class="w-full p-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-slate-50"></textarea>
+                    </div>
+
+                    <!-- 6. Feedback & Coaching -->
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px] flex items-center space-x-1.5">
+                            <i class="fas fa-comments text-indigo-500"></i>
+                            <span>7. Coaching &amp; Operational Feedback</span>
+                        </label>
+                        <textarea id="milestone-feedback" rows="2" placeholder="Record supervisor calibration notes, peer observations, or actionable next steps..." class="w-full p-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-slate-50"></textarea>
+                    </div>
+
+                    <!-- 7. Supporting Evidence -->
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px] flex items-center space-x-1.5">
+                            <i class="fas fa-paperclip text-slate-500"></i>
+                            <span>8. Supporting Evidence / Verification Source</span>
+                        </label>
+                        <input id="milestone-evidence" type="text" placeholder="e.g., Medallia Guest Survey #4412, Micros POS Shift Report, Opera PMS Speed Log" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary focus:outline-none bg-slate-50">
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+                        <button type="button" onclick="closeModal('modal-log-milestone')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
+                        <button type="submit" id="btn-save-milestone" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-xs">
+                            <i class="fas fa-check text-[10px]"></i>
+                            <span>Save Milestone &amp; Update KPI</span>
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
+
+        <!-- 19. Modal: General Tasks Template Matrix (Add/Edit) -->
+        <div id="modal-general-task" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
+                <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 flex-shrink-0">
+                    <div class="flex items-center space-x-3.5">
+                        <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary flex items-center justify-center text-lg shadow-2xs border border-primary-100">
+                            <i class="fas fa-list-check"></i>
+                        </div>
+                        <div>
+                            <span id="general-task-modal-badge" class="text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary px-2 py-0.5 rounded-full">General Task Matrix</span>
+                            <h3 id="general-task-modal-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Add Standard General Task</h3>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('modal-general-task')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <form id="form-general-task" onsubmit="handleGeneralTaskSubmit(event)" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
+                    <input type="hidden" id="general-task-id" value="">
+
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">Task Title / Standard Action *</label>
+                        <input type="text" id="general-task-title" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none" placeholder="e.g., Hospitality 5-Star Standard Operating Procedure (SOP) Refresher">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label class="font-bold text-slate-800 text-[11px]">Category *</label>
+                            <select id="general-task-category" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+                                <option value="SOP & Standards">SOP &amp; Standards</option>
+                                <option value="Operational Excellence">Operational Excellence</option>
+                                <option value="Guest Experience">Guest Experience</option>
+                                <option value="Hygiene & Sanitation">Hygiene &amp; Sanitation</option>
+                                <option value="Communication & Escalation">Communication &amp; Escalation</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="font-bold text-slate-800 text-[11px]">Deadline Offset (Days Before Goal Target)</label>
+                            <input type="number" id="general-task-days-offset" min="1" max="90" value="7" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            <span class="text-[10px] text-slate-400 block">Due N days before employee's target date</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">Priority / Weight</label>
+                        <select id="general-task-weight" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none bg-white">
+                            <option value="Standard">Standard Priority</option>
+                            <option value="High Priority">High Priority (Critical Milestone)</option>
+                            <option value="Mandatory Compliance">Mandatory Compliance Checklist</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">Detailed Description / SOP Requirements</label>
+                        <textarea id="general-task-desc" rows="3" class="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar" placeholder="Provide actionable guidelines, checklist criteria, or expectations for the employee..."></textarea>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2">
+                        <button type="button" onclick="closeModal('modal-general-task')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
+                        <button type="submit" id="btn-save-general-task" class="btn-primary px-5 py-2 text-xs font-bold shadow-xs">
+                            <i class="fas fa-save mr-1.5"></i> Save Task Template
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 20. Modal: Create Specific Task for Objective -->
+        <div id="modal-specific-task" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
+                <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-primary-50/40 flex-shrink-0">
+                    <div class="flex items-center space-x-3.5">
+                        <div class="w-10 h-10 rounded-2xl bg-primary text-white flex items-center justify-center text-lg shadow-2xs">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary px-2 py-0.5 rounded-full">Specific Task Assignment</span>
+                            <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">Add Specific Task for Objective</h3>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('modal-specific-task')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <form id="form-specific-task" onsubmit="handleSpecificTaskSubmit(event)" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
+                    <input type="hidden" id="specific-task-goal-id" value="">
+                    <input type="hidden" id="specific-task-employee-id" value="">
+                    <input type="hidden" id="specific-task-goal-target-date" value="">
+
+                    <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Target Objective</p>
+                        <p id="specific-task-goal-title-display" class="font-bold text-slate-900 text-xs">Loading Goal...</p>
+                        <p class="text-[11px] text-slate-500 flex items-center space-x-2">
+                            <span>Target Date: <strong id="specific-task-goal-date-display" class="text-primary font-bold">2026-09-30</strong></span>
+                            <span>·</span>
+                            <span>Assigned To: <strong id="specific-task-emp-name-display" class="text-slate-800">Maria Santos</strong></span>
+                        </p>
+                    </div>
+
+                    <!-- Dynamic Multiple Specific Task Rows Container -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="font-bold text-slate-800 text-[11px] flex items-center space-x-1.5">
+                                <i class="fas fa-list-check text-primary"></i>
+                                <span>Specific Action Tasks to Assign</span>
+                            </label>
+                            <button type="button" onclick="addSpecificTaskRow()" class="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-bold text-[10px] inline-flex items-center space-x-1 transition shadow-2xs">
+                                <i class="fas fa-plus text-[8px]"></i>
+                                <span>Add Another Task</span>
+                            </button>
+                        </div>
+
+                        <div id="specific-tasks-rows-container" class="space-y-3">
+                            <!-- Populated dynamically by JS or starts with 1 default row -->
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <button type="button" onclick="addSpecificTaskRow()" class="text-primary hover:underline text-xs font-bold inline-flex items-center space-x-1">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>+ Add More Task Fields</span>
+                        </button>
+                        <div class="flex items-center space-x-2">
+                            <button type="button" onclick="closeModal('modal-specific-task')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
+                            <button type="submit" id="btn-save-specific-task" class="btn-primary px-5 py-2 text-xs font-bold shadow-xs flex items-center space-x-1.5">
+                                <i class="fas fa-check-double text-[10px]"></i>
+                                <span id="btn-save-specific-task-text">Assign Tasks to Objective</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 21. Modal: Employee Task Completion with Live Timestamp & Learnings / Feedback -->
+        <div id="modal-complete-task" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-emerald-200">
+                <div class="px-6 py-5 border-b border-emerald-100 flex items-center justify-between bg-emerald-50/70 flex-shrink-0">
+                    <div class="flex items-center space-x-3.5">
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-lg shadow-2xs">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Task Accomplishment</span>
+                            <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">Complete Task &amp; Submit Learnings</h3>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('modal-complete-task')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <form id="form-complete-task" onsubmit="handleTaskCompletionSubmit(event)" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
+                    <input type="hidden" id="complete-task-id" value="">
+                    <input type="hidden" id="complete-task-goal-id" value="">
+
+                    <!-- Task Information Card -->
+                    <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span id="complete-task-type-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary">General Checklist</span>
+                            <span class="text-[10px] text-slate-400 font-semibold" id="complete-task-due-badge">Due: 2026-09-20</span>
+                        </div>
+                        <h4 id="complete-task-title-display" class="font-bold text-slate-900 text-sm">Hospitality 5-Star Standard Operating Procedure Refresher</h4>
+                        <p id="complete-task-desc-display" class="text-slate-600 text-[11px] leading-relaxed">Review hotel front-of-house service protocols and luxury guest greeting guidelines.</p>
+                    </div>
+
+                    <!-- Automatic Time & Date Detection Box -->
+                    <div class="p-3 bg-indigo-50/70 rounded-2xl border border-indigo-200 flex items-center justify-between">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-7 h-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xs">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-indigo-950 uppercase tracking-wider">Completion Timestamp (Auto-Detected)</p>
+                                <p id="complete-task-detected-time" class="text-xs font-bold text-indigo-700 font-mono">2026-08-26 20:30:00 (Local Time)</p>
+                            </div>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center space-x-1">
+                            <i class="fas fa-circle-dot text-[8px] animate-pulse"></i>
+                            <span>Live Verified</span>
+                        </span>
+                        <input type="hidden" id="complete-task-iso-timestamp" value="">
+                    </div>
+
+                    <!-- Employee Key Learnings Textarea -->
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px] flex items-center justify-between">
+                            <span>1. Key Learnings &amp; Growth Reflections *</span>
+                            <span class="text-[10px] text-slate-400 font-normal">What did you learn or improve?</span>
+                        </label>
+                        <textarea id="complete-task-learnings" required rows="3" class="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none custom-scrollbar" placeholder="e.g., Gained mastery in French wine pairing storytelling and expedited check-in handling within 2 minutes..."></textarea>
+                    </div>
+
+                    <!-- Employee Operational Feedback Textarea -->
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px] flex items-center justify-between">
+                            <span>2. Operational Feedback &amp; Observations</span>
+                            <span class="text-[10px] text-slate-400 font-normal">Any obstacles, suggestions or tool needs?</span>
+                        </label>
+                        <textarea id="complete-task-feedback" rows="3" class="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none custom-scrollbar" placeholder="e.g., Suggest updating the digital wine menu on tablets for faster tableside lookup during peak Friday rushes..."></textarea>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2">
+                        <button type="button" onclick="closeModal('modal-complete-task')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
+                        <button type="submit" id="btn-confirm-complete-task" class="btn-primary px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 border-emerald-600 shadow-xs">
+                            <i class="fas fa-check-double mr-1.5"></i> Confirm &amp; Submit Task Completion
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 22. Modal: Supervisor Task Coaching & Accomplishment Feedback -->
+        <div id="modal-supervisor-task-feedback" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-amber-200">
+                <div class="px-6 py-5 border-b border-amber-100 flex items-center justify-between bg-amber-50/70 flex-shrink-0">
+                    <div class="flex items-center space-x-3.5">
+                        <div class="w-10 h-10 rounded-2xl bg-amber-600 text-white flex items-center justify-center text-lg shadow-2xs">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Supervisor Calibration</span>
+                            <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">Record Accomplishments &amp; Coaching Feedback</h3>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('modal-supervisor-task-feedback')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <form id="form-supervisor-task-feedback" onsubmit="handleSupervisorTaskFeedbackSubmit(event)" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
+                    <input type="hidden" id="super-feedback-task-id" value="">
+
+                    <!-- Task & Employee Learnings Preview -->
+                    <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                        <h4 id="super-feedback-task-title" class="font-bold text-slate-900 text-xs">Sommelier Reserve Wine Pairing Workshop</h4>
+                        <div id="super-feedback-employee-box" class="p-2.5 bg-white rounded-xl border border-slate-200/80 space-y-1">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Employee Submitted Learnings &amp; Feedback</p>
+                            <p id="super-feedback-learnings-text" class="text-[11px] text-slate-700 italic">"Gained confidence explaining vintage profiles..."</p>
+                            <p id="super-feedback-feedback-text" class="text-[10px] text-slate-500">Feedback: "Would love a quick pocket cheat-sheet..."</p>
+                        </div>
+                    </div>
+
+                    <!-- Supervisor Recorded Accomplishment -->
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">Accomplishments Recorded</label>
+                        <input type="text" id="super-feedback-accomplishment" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none" placeholder="e.g., Successfully achieved +$480 beverage upsell during Aug 25 evening rush">
+                    </div>
+
+                    <!-- Supervisor Coaching & Operational Feedback -->
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">Coaching &amp; Operational Feedback *</label>
+                        <textarea id="super-feedback-coaching" required rows="3" class="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none custom-scrollbar" placeholder="e.g., Excellent demonstration of table engagement. Next step: practice wine decanting techniques during quiet hours..."></textarea>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2">
+                        <button type="button" onclick="closeModal('modal-supervisor-task-feedback')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
+                        <button type="submit" id="btn-save-super-feedback" class="btn-primary px-5 py-2 text-xs font-bold bg-amber-600 hover:bg-amber-700 border-amber-600 shadow-xs">
+                            <i class="fas fa-save mr-1.5"></i> Save Feedback to Monitoring
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+

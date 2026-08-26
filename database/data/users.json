@@ -6,13 +6,17 @@
         "email": "maria.santos@oxfordsuitesmakati.com",
         "password": "oxford2026",
         "role": "Associate",
-        "role_key": "employee",
+        "role_key": "Associate",
         "title": "Front Desk Host",
         "dept": "Front Office",
         "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
         "current_level": 3,
         "total_xp": 450,
-        "status": "Active"
+        "status": "Active",
+        "password_hash": null,
+        "department": "Front Office",
+        "created_at": "2026-08-25T17:00:53.288564+00:00",
+        "updated_at": "2026-08-25T18:09:14+00:00"
     },
     {
         "id": "emp-102",

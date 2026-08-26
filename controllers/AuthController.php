@@ -56,29 +56,29 @@ class AuthController
             'message' => "Welcome back, {$user['full_name']}!",
             'data'    => [
                 'user'         => $user,
-                'roleKey'      => $user['role_key'] ?? 'employee',
+                'role'         => $user['role'] ?? 'Associate',
                 'session_token'=> bin2hex(random_bytes(16))
             ]
         ];
     }
 
     /**
-     * Fast Persona Login (Demo Roles)
+     * Fast Persona Login using users.role column strictly
      */
     public function fastLogin(array $payload): array
     {
-        $roleKey = $payload['roleKey'] ?? $payload['role_key'] ?? 'employee';
-        $user = $this->authModel->findByRoleKey($roleKey);
+        $role = $payload['role'] ?? $payload['roleKey'] ?? $payload['role_key'] ?? 'Associate';
+        $user = $this->authModel->findByRole($role);
 
         if (!$user) {
             return [
                 'success' => false,
-                'message' => "User persona for role '{$roleKey}' not found."
+                'message' => "User for role '{$role}' not found in database."
             ];
         }
 
         if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+            @session_start();
         }
         $_SESSION['authenticated_user'] = $user;
 
@@ -87,7 +87,7 @@ class AuthController
             'message' => "Signed in as {$user['full_name']} ({$user['title']})",
             'data'    => [
                 'user'         => $user,
-                'roleKey'      => $roleKey,
+                'role'         => $user['role'],
                 'session_token'=> bin2hex(random_bytes(16))
             ]
         ];
@@ -106,6 +106,23 @@ class AuthController
         return [
             'success' => true,
             'data'    => $user
+        ];
+    }
+
+    /**
+     * Get All Users from users table
+     */
+    public function listUsers(): array
+    {
+        $users = $this->authModel->all();
+        foreach ($users as &$u) {
+            unset($u['password_hash']);
+            unset($u['password']);
+        }
+        return [
+            'success' => true,
+            'data'    => $users,
+            'count'   => count($users)
         ];
     }
 

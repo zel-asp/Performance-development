@@ -175,15 +175,15 @@
                                         class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs border-t border-[#E8DEDC]">
                                         <div class="bg-[#FAF8F7] p-3 rounded-2xl border border-[#E8DEDC]">
                                             <p class="text-slate-500 text-[10px]">Agreed Objectives</p>
-                                            <p class="text-lg font-bold text-slate-900 font-heading">3 Active Targets</p>
+                                            <p id="perf-plan-active-targets" class="text-lg font-bold text-slate-900 font-heading">3 Active Targets</p>
                                         </div>
                                         <div class="bg-[#FAF8F7] p-3 rounded-2xl border border-[#E8DEDC]">
                                             <p class="text-slate-500 text-[10px]">Total Weight Allocation</p>
-                                            <p class="text-lg font-bold text-sage-dark font-heading">100% Calibrated</p>
+                                            <p id="perf-plan-weight-alloc" class="text-lg font-bold text-sage-dark font-heading">100% Calibrated</p>
                                         </div>
                                         <div class="bg-[#FAF8F7] p-3 rounded-2xl border border-[#E8DEDC]">
                                             <p class="text-slate-500 text-[10px]">Target Alignment</p>
-                                            <p class="text-lg font-bold text-primary font-heading">5-Star Standards</p>
+                                            <p id="perf-plan-target-alignment" class="text-lg font-bold text-primary font-heading">5-Star Standards</p>
                                         </div>
                                     </div>
                                 </div>
@@ -208,11 +208,13 @@
                                         <table class="w-full text-left text-xs">
                                             <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-100">
                                                 <tr>
-                                                    <th class="px-5 py-3">Employee, Position &amp; Dept</th>
-                                                    <th class="px-5 py-3">Attendance</th>
-                                                    <th class="px-5 py-3">Ratings (Mgr / Cust)</th>
-                                                    <th class="px-5 py-3">Objectives &amp; KPIs</th>
-                                                    <th class="px-5 py-3 text-right">Status</th>
+                                                    <th class="px-5 py-3">Employee</th>
+                                                    <th class="px-5 py-3">Objective &amp; Dept</th>
+                                                    <th class="px-5 py-3">Target Metric / KPI</th>
+                                                    <th class="px-5 py-3">Target Date</th>
+                                                    <th class="px-5 py-3">Weight</th>
+                                                    <th class="px-5 py-3">Progress</th>
+                                                    <th class="px-5 py-3 text-center">Status</th>
                                                     <th class="px-5 py-3 text-right">Actions</th>
                                                 </tr>
                                             </thead>
@@ -221,6 +223,44 @@
                                             </tbody>
                                         </table>
                                     </div>
+                                    <div id="planning-pagination-container" class="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs"></div>
+                                </div>
+
+                                <!-- Supervisor General Task Checklist Matrix Table -->
+                                <div id="general-tasks-matrix-card" class="card-clean overflow-hidden">
+                                    <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+                                        <div>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary px-2 py-0.5 rounded-full">Supervisor Matrix</span>
+                                                <span class="text-xs text-slate-400 font-medium">Standard Baseline Checklists</span>
+                                            </div>
+                                            <h4 class="font-heading font-bold text-sm text-slate-900 mt-1">General Tasks &amp; Operational Checklist Matrix</h4>
+                                            <p class="text-xs text-slate-500">Standard checklist items automatically assigned to all employees setting performance objectives.</p>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <button onclick="openCreateGeneralTaskModal()" class="btn-primary px-3.5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-2xs">
+                                                <i class="fas fa-plus text-[11px]"></i>
+                                                <span>Add General Task</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="overflow-x-auto custom-scrollbar">
+                                        <table class="w-full text-left text-xs">
+                                            <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-100">
+                                                <tr>
+                                                    <th class="px-5 py-3">Task Title &amp; Category</th>
+                                                    <th class="px-5 py-3">SOP Requirements / Guidelines</th>
+                                                    <th class="px-5 py-3">Target Deadline Offset</th>
+                                                    <th class="px-5 py-3">Priority / Weight</th>
+                                                    <th class="px-5 py-3 text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="general-tasks-tbody" class="divide-y divide-slate-100 text-slate-700">
+                                                <!-- Rendered dynamically by js/performance.js -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div id="general-tasks-pagination-container" class="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs"></div>
                                 </div>
 
                                 <!-- Initial Development Needs Identification -->
@@ -232,7 +272,7 @@
                                     </div>
                                     <div class="space-y-1 flex-1">
                                         <p class="font-bold text-indigo-950 text-sm">Initial Development Needs
-                                            Identified for this Period</p>
+                                             Identified for this Period</p>
                                         <p class="text-slate-700 leading-relaxed">During the joint planning session,
                                             supervisor Marco noted that to sustain the <strong>+18% Upsell
                                                 target</strong>, Maria requires advanced mentorship in French & Italian
@@ -302,7 +342,11 @@
                                             <p class="text-slate-500 text-xs">Click any employee row to inspect their progress timeline stream or trigger appraisal evaluation.</p>
                                         </div>
                                         <div class="flex items-center space-x-2">
-                                            <span class="text-slate-400 font-semibold text-[11px]">Filter Dept:</span>
+                                            <button onclick="autoCalculateAllMonitoringProgress()" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 shadow-xs border-indigo-600">
+                                                <i class="fas fa-bolt text-[11px]"></i>
+                                                <span>Auto-Calculate All KPIs</span>
+                                            </button>
+                                            <span class="text-slate-400 font-semibold text-[11px] ml-1">Filter:</span>
                                             <select id="filter-monitoring-dept" onchange="filterMonitoringByDept(this.value)" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                                                 <option value="all">All Departments</option>
                                                 <option value="Front Office">Front Office</option>
@@ -329,75 +373,53 @@
                                             </tbody>
                                         </table>
                                     </div>
+                                    <div id="monitoring-pagination-container" class="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs"></div>
                                 </div>
 
                                 <!-- Continuous Activity Stream & Accomplishment / Challenge Log (Drill-Down Container) -->
                                 <div id="monitoring-employee-detail-card" class="card-clean p-6 space-y-4">
-                                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                                         <div>
-                                            <h3 id="mon-detail-name" class="font-heading font-bold text-base text-slate-900">Maria Santos</h3>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary px-2 py-0.5 rounded-full">Monitoring Drill-Down</span>
+                                                <span class="text-xs text-slate-400 font-medium">Objective &amp; Action Task Stream</span>
+                                            </div>
+                                            <h3 id="mon-detail-name" class="font-heading font-bold text-base text-slate-900 mt-1">Maria Santos</h3>
                                             <p id="mon-detail-pos" class="text-xs text-slate-500">Front Desk Host · Front Office — Continuous Monitoring Stream</p>
                                         </div>
                                         <div class="flex items-center space-x-2">
                                             <button onclick="openModal('modal-ai-feedback')"
-                                                class="btn-primary px-3.5 py-2 text-xs font-bold flex items-center space-x-1.5">
+                                                class="btn-primary px-3.5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-2xs">
                                                 <i class="fas fa-wand-magic-sparkles text-[11px]"></i>
                                                 <span>AI Refiner</span>
                                             </button>
-                                            <button onclick="logAchievementPrompt()"
-                                                class="btn-secondary px-3.5 py-2 text-xs font-semibold">
-                                                + Log Milestone
+                                            <button onclick="openLogMilestoneModal(window.selectedEmployeeContext?.id || 'emp-101')"
+                                                class="btn-secondary px-3.5 py-2 text-xs font-semibold hover:bg-slate-100 flex items-center space-x-1">
+                                                <i class="fas fa-flag-checkered text-emerald-600 text-xs"></i>
+                                                <span>+ Log Milestone</span>
                                             </button>
                                         </div>
                                     </div>
 
-                                    <div id="timeline-stream-container" class="space-y-3 text-xs">
-
-                                        <div class="flex items-start space-x-3.5 group">
-                                            <div class="flex flex-col items-center self-stretch">
-                                                <div class="w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100 mt-1 flex-shrink-0"></div>
-                                                <div class="w-0.5 flex-1 bg-slate-200 my-1 min-h-[36px]"></div>
-                                            </div>
-                                            <div class="flex-1 bg-slate-50 p-4 rounded-2xl border border-slate-200/60 space-y-1">
-                                                <div class="flex items-center justify-between">
-                                                    <span class="font-bold text-slate-900">Accomplishment Logged: 100% Medallia 5-Star Rating</span>
-                                                    <span class="text-slate-400">Aug 21 · 14:30</span>
-                                                </div>
-                                                <p class="text-slate-600">Presidential suite guest commendation logged for prompt champagne service and express check-in under 2 minutes.</p>
-                                                <div class="pt-1 text-[11px] text-primary font-medium flex items-center space-x-1">
-                                                    <i class="fas fa-paperclip"></i>
-                                                    <span>Attached Evidence: Medallia_Guest_Card_#8842.pdf</span>
-                                                </div>
-                                            </div>
+                                    <!-- Interactive Filter & Search Bar for Monitoring Stream -->
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-200/80 text-xs">
+                                        <div class="flex items-center space-x-1.5 flex-wrap gap-1">
+                                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Filter:</span>
+                                            <button type="button" onclick="setMonitoringStreamFilter('all')" id="btn-stream-filter-all" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-primary text-white shadow-2xs transition">All Tasks</button>
+                                            <button type="button" onclick="setMonitoringStreamFilter('pending')" id="btn-stream-filter-pending" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">⏳ Pending</button>
+                                            <button type="button" onclick="setMonitoringStreamFilter('completed')" id="btn-stream-filter-completed" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">✓ Completed</button>
+                                            <button type="button" onclick="setMonitoringStreamFilter('specific')" id="btn-stream-filter-specific" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">Specific Action</button>
+                                            <button type="button" onclick="setMonitoringStreamFilter('general')" id="btn-stream-filter-general" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">General SOP</button>
                                         </div>
-
-                                        <div class="flex items-start space-x-3.5 group">
-                                            <div class="flex flex-col items-center self-stretch">
-                                                <div class="w-3.5 h-3.5 rounded-full bg-primary ring-4 ring-primary-100 mt-1 flex-shrink-0"></div>
-                                                <div class="w-0.5 flex-1 bg-slate-200 my-1 min-h-[36px]"></div>
-                                            </div>
-                                            <div class="flex-1 bg-slate-50 p-4 rounded-2xl border border-slate-200/60 space-y-1">
-                                                <div class="flex items-center justify-between">
-                                                    <span class="font-bold text-slate-900">Coaching Session: Sommelier Upselling Review</span>
-                                                    <span class="text-slate-400">Aug 18 · 09:15</span>
-                                                </div>
-                                                <p class="text-slate-600">Supervisor Marco reviewed guest table conversation tactics for vintage wines with Maria. Action item: Shadow sommelier Pierre on Friday rush.</p>
-                                            </div>
+                                        <div class="relative">
+                                            <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-[10px]"></i>
+                                            <input type="text" id="stream-task-search-input" oninput="onMonitoringStreamSearch(this.value)" placeholder="Search tasks, learnings, feedback..." class="pl-7 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary w-full sm:w-56 font-medium text-slate-800">
                                         </div>
+                                    </div>
 
-                                        <div class="flex items-start space-x-3.5 group">
-                                            <div class="flex flex-col items-center self-stretch">
-                                                <div class="w-3.5 h-3.5 rounded-full bg-amber-500 ring-4 ring-amber-100 mt-1 flex-shrink-0"></div>
-                                            </div>
-                                            <div class="flex-1 bg-slate-50 p-4 rounded-2xl border border-slate-200/60 space-y-1">
-                                                <div class="flex items-center justify-between">
-                                                    <span class="font-bold text-slate-900">Operational Challenge Logged: Micros POS Latency</span>
-                                                    <span class="text-slate-400">Aug 12 · 20:00</span>
-                                                </div>
-                                                <p class="text-slate-600">Network lag during Friday peak rush caused 4-minute bill split delays. Escalated to IT engineering team.</p>
-                                            </div>
-                                        </div>
-
+                                    <!-- Compact Goal-Separated Container -->
+                                    <div id="timeline-stream-container" class="space-y-3.5 text-xs">
+                                        <!-- Rendered dynamically by js/performance.js -->
                                     </div>
                                 </div>
                             </div>

@@ -38,28 +38,31 @@ class AuthModel extends BaseModel
         return $this->findByIdentifier($code);
     }
 
-    public function findByRoleKey(string $roleKey): ?array
+    public function findByRole(string $role): ?array
     {
-        $roleMap = [
-            'employee'   => 'emp-101',
-            'manager'    => 'emp-102',
-            'hr'         => 'emp-103',
-            'executive'  => 'emp-104'
-        ];
-
-        $targetId = $roleMap[strtolower($roleKey)] ?? null;
-        if ($targetId) {
-            $emp = $this->find($targetId);
-            if ($emp) return $emp;
-        }
-
+        $targetRole = strtolower(trim($role));
         $all = $this->all();
+
+        // 1. Match strictly by role column in users table
         foreach ($all as $emp) {
-            if (strtolower($emp['role_key'] ?? $emp['role'] ?? '') === strtolower($roleKey)) {
+            if (strtolower($emp['role'] ?? '') === $targetRole) {
                 return $emp;
             }
         }
-        return $all[0] ?? null;
+
+        // 2. Match by user ID (e.g. emp-101, emp-102)
+        foreach ($all as $emp) {
+            if (strtolower($emp['id'] ?? '') === $targetRole) {
+                return $emp;
+            }
+        }
+
+        return !empty($all) ? $all[0] : null;
+    }
+
+    public function findByRoleKey(string $roleKey): ?array
+    {
+        return $this->findByRole($roleKey);
     }
 
     /**

@@ -1,212 +1,169 @@
 /**
  * Oxford Suites, Makati - Activity & Notification Center Engine
+ * Real-time Database Notification & Alert Pipeline
  * 
  * Scope:
- * 1. Operational Alerts Inbox (Critical compliance, pending approvals, milestones)
+ * 1. Operational Alerts Inbox (Supervisor alerts on goal creation; Employee alerts on goal revision/approval)
  * 2. Immutable System Audit Log (Chronological event stream across all 7 modules)
  * 3. Gemini AI Shift Risk & Sentiment Diagnostic Alerts
- * 4. User Notification Delivery Preferences & Dynamic Counter Sync
+ * 4. Dynamic Counter Sync & Role-based notification routing
  */
 
 // =========================================================================
-// 1. STATE STORES
+// 1. NOTIFICATION API CLIENT
 // =========================================================================
 
-let alertsState = [
-    {
-        id: 'alt-101',
-        title: 'HACCP Level 3 Food Safety Recertification Due',
-        category: 'compliance',
-        priority: 'critical', // 'critical', 'action', 'info'
-        dept: 'Culinary',
-        icon: 'fa-triangle-exclamation',
-        color: 'rose',
-        timestamp: '15 mins ago',
-        date: 'Aug 24, 2026',
-        message: '3 Kitchen Leads have Food Safety certification expiring in 14 days. Enforce enrollment in the upcoming HACCP refresher cohort.',
-        actionLabel: 'View Training &rarr;',
-        actionTarget: 'pillar-training',
-        actionSubTab: 'programs',
-        isRead: false
-    },
-    {
-        id: 'alt-102',
-        title: 'Gemini Shift Risk: Peak Dinner Rush Sentiment Drop',
-        category: 'sentiment_ai',
-        priority: 'critical',
-        dept: 'Front Office',
-        icon: 'fa-robot',
-        color: 'terracotta',
-        timestamp: '42 mins ago',
-        date: 'Aug 24, 2026',
-        message: 'Gemini detected a 16.5% sentiment dip between 19:00 - 20:30 due to long check-in queue backlog. Floor supervisor dispatch recommended.',
-        actionLabel: 'View Shift Climate &rarr;',
-        actionTarget: 'pillar-social',
-        actionSubTab: 'climate',
-        isRead: false
-    },
-    {
-        id: 'alt-103',
-        title: '1-on-1 Calibration Approval Pending: Maria Santos',
-        category: 'performance',
-        priority: 'action',
-        dept: 'Front Office',
-        icon: 'fa-user-clock',
-        color: 'amber',
-        timestamp: '2 hours ago',
-        date: 'Aug 24, 2026',
-        message: 'Q3 formal review for Maria Santos has been submitted by Supervisor Marco Rossi. Awaiting HR Director digital signature.',
-        actionLabel: 'Sign-off Appraisal &rarr;',
-        actionTarget: 'pillar-perf',
-        actionSubTab: 'review',
-        isRead: false
-    },
-    {
-        id: 'alt-104',
-        title: 'Post-Training Knowledge Evaluation Pending',
-        category: 'training',
-        priority: 'action',
-        dept: 'Front Office',
-        icon: 'fa-chalkboard-user',
-        color: 'primary',
-        timestamp: '4 hours ago',
-        date: 'Aug 24, 2026',
-        message: 'Maria Santos completed attendance for "Frontline Conflict & Crisis Diplomacy". Post-training quiz is ready for grading.',
-        actionLabel: 'Open Evaluation &rarr;',
-        actionTarget: 'pillar-training',
-        actionSubTab: 'evaluation',
-        isRead: false
-    },
-    {
-        id: 'alt-105',
-        title: 'Milestone Honor: Maria Santos Unlocked "Diplomacy Lead"',
-        category: 'gamification',
-        priority: 'info',
-        dept: 'Front Office',
-        icon: 'fa-award',
-        color: 'gold',
-        timestamp: 'Yesterday at 18:30',
-        date: 'Aug 23, 2026',
-        message: 'Maria earned 5 verified peer recognitions for exceptional guest de-escalation. Deterministic badge added to public profile (+150 XP).',
-        actionLabel: 'View Recognition &rarr;',
-        actionTarget: 'pillar-social',
-        actionSubTab: 'kudos',
-        isRead: true
-    },
-    {
-        id: 'alt-106',
-        title: 'Succession Bench Updated: Front Office Asst Manager',
-        category: 'succession',
-        priority: 'info',
-        dept: 'Front Office',
-        icon: 'fa-sitemap',
-        color: 'sage',
-        timestamp: '2 days ago',
-        date: 'Aug 22, 2026',
-        message: 'Maria Santos calculated readiness score reached 94%. HR status officially set to "Ready Now" (0–6 months horizon).',
-        actionLabel: 'View Bench Matrix &rarr;',
-        actionTarget: 'pillar-succession',
-        actionSubTab: 'records',
-        isRead: true
-    }
-];
+const NotificationAPI = {
+    baseUrl: 'api/notifications.php',
 
-let auditLogsState = [
-    {
-        id: 'LOG-9401',
-        timestamp: 'Aug 24, 2026 · 19:42:10',
-        module: 'Social Recognition',
-        action: 'SUPERVISOR_COMMENDATION_GRANTED',
-        actor: 'Elena Vance (HR Director)',
-        target: 'Maria Santos (Front Desk Host)',
-        details: 'Commendation awarded for crisis diplomacy during diplomat delegation arrival (+100 XP granted).',
-        status: 'SUCCESS',
-        ip: '192.168.1.45 (HR Terminal)'
+    async getNotifications(role = 'all') {
+        try {
+            const res = await fetch(`${this.baseUrl}?action=get_notifications&role=${encodeURIComponent(role)}`);
+            const json = await res.json();
+            return json.data || [];
+        } catch (err) {
+            console.error('Failed to fetch live notifications:', err);
+            return [];
+        }
     },
-    {
-        id: 'LOG-9400',
-        timestamp: 'Aug 24, 2026 · 17:15:33',
-        module: 'Succession Planning',
-        action: 'HR_READINESS_FLAG_UPDATED',
-        actor: 'Elena Vance (HR Director)',
-        target: 'Maria Santos × FO Assistant Manager',
-        details: 'Manual flag updated to "Ready Now" based on 94% computed capability match.',
-        status: 'SUCCESS',
-        ip: '192.168.1.45 (HR Terminal)'
-    },
-    {
-        id: 'LOG-9399',
-        timestamp: 'Aug 24, 2026 · 15:30:00',
-        module: 'Training Management',
-        action: 'CERTIFICATE_GENERATED_AND_ISSUED',
-        actor: 'System Automation',
-        target: 'Maria Santos (Score: 96%)',
-        details: 'Certificate Reference OXF-CERT-2026-0889 issued. De-escalation competency elevated to 4.8 Master (+150 XP).',
-        status: 'SUCCESS',
-        ip: 'Internal System Worker'
-    },
-    {
-        id: 'LOG-9398',
-        timestamp: 'Aug 24, 2026 · 14:00:22',
-        module: 'Performance Management',
-        action: '1_ON_1_CALIBRATION_ENDORSED',
-        actor: 'Marco Rossi (Supervisor)',
-        target: 'Maria Santos (Appraisal Q3)',
-        details: 'Final calibrated score approved at 4.80 / 5.0 (Exceeds Expectations).',
-        status: 'SUCCESS',
-        ip: '192.168.1.88 (Culinary / F&B Office)'
-    },
-    {
-        id: 'LOG-9397',
-        timestamp: 'Aug 24, 2026 · 11:20:05',
-        module: 'Gemini Copilot',
-        action: 'GEMINI_SBI_COACHING_GENERATED',
-        actor: 'Gemini 1.5 API Engine',
-        target: 'Prompt: VIP Check-in Protocol',
-        details: 'Generated structured Situation-Behavior-Impact feedback coaching draft for supervisor review.',
-        status: 'SUCCESS',
-        ip: 'Google Gemini API Endpoint'
-    },
-    {
-        id: 'LOG-9396',
-        timestamp: 'Aug 24, 2026 · 08:30:00',
-        module: 'Realtime Sentiment',
-        action: 'SHIFT_SENTIMENT_PULSE_LOGGED',
-        actor: 'Front Office Shift Roster (14 Staff)',
-        target: 'Morning Shift Handover',
-        details: 'Shift sentiment logged as 71.2% Positive, 21.0% Neutral, 7.8% Stress.',
-        status: 'SUCCESS',
-        ip: 'Floor Kiosks / Mobile'
-    }
-];
 
+    async markAsRead(id) {
+        try {
+            const res = await fetch(`${this.baseUrl}?action=mark_read`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+            return await res.json();
+        } catch (err) {
+            console.error('Failed to mark notification as read:', err);
+            return { success: false };
+        }
+    },
+
+    async markAllAsRead(role = 'all') {
+        try {
+            const res = await fetch(`${this.baseUrl}?action=mark_all_read`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ role })
+            });
+            return await res.json();
+        } catch (err) {
+            console.error('Failed to mark all as read:', err);
+            return { success: false };
+        }
+    }
+};
+
+window.NotificationAPI = NotificationAPI;
+
+// Live Alert State Store (Clean Database Initialized)
+let alertsState = [];
 let activeAlertsFilter = 'all';
 let activeAuditModuleFilter = 'all';
 
+// Audit Logs Store
+let auditLogsState = [
+    {
+        id: 'LOG-9401',
+        timestamp: 'Today · Just now',
+        module: 'Performance Management',
+        action: 'PERFORMANCE_GOAL_LIFECYCLE_SYNC',
+        actor: 'Oxford System Engine',
+        target: 'Performance Objectives Pipeline',
+        details: 'Live database synchronization active for employee objectives & supervisor calibrations.',
+        status: 'SUCCESS',
+        ip: '192.168.1.45 (Supabase Cluster)'
+    }
+];
+
 // =========================================================================
-// 2. INITIALIZATION & RENDERING
+// 2. INITIALIZATION & LIVE NOTIFICATIONS SYNC
 // =========================================================================
 
-function initNotificationsHub() {
-    renderAlertsKPIs();
-    renderAlertsInbox();
+async function initNotificationsHub() {
+    const currentRole = window.activePersonaRole || (window.activePersonaKey === 'employee' ? 'Associate' : 'Supervisor');
+    await loadLiveNotifications(currentRole);
     renderAuditLogs();
+}
+
+async function loadLiveNotifications(role = 'all') {
+    const data = await NotificationAPI.getNotifications(role);
+    
+    // Format database notifications into alert card objects
+    alertsState = data.map(item => {
+        let icon = 'fa-bell';
+        let color = 'primary';
+        let priority = 'info';
+        let actionLabel = 'View Details →';
+        let actionTarget = 'pillar-overview';
+        let actionSubTab = 'pulse';
+
+        if (item.type === 'goal_created') {
+            icon = 'fa-bullseye';
+            color = 'amber';
+            priority = 'action';
+            actionLabel = 'Review & Endorse Goal →';
+            actionTarget = 'pillar-perf';
+            actionSubTab = 'plan';
+        } else if (item.type === 'goal_revised') {
+            icon = 'fa-pen-to-square';
+            color = 'purple';
+            priority = 'action';
+            actionLabel = 'View Calibrated Target →';
+            actionTarget = 'pillar-overview';
+            actionSubTab = 'pulse';
+        } else if (item.type === 'goal_approved') {
+            icon = 'fa-circle-check';
+            color = 'emerald';
+            priority = 'info';
+            actionLabel = 'View Approved Plan →';
+            actionTarget = 'pillar-overview';
+            actionSubTab = 'pulse';
+        }
+
+        const dateStr = item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently';
+        const fullDate = item.created_at ? new Date(item.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+
+        return {
+            id: item.id,
+            title: item.title,
+            category: item.type,
+            priority: priority,
+            dept: item.recipient_role || 'General',
+            icon: icon,
+            color: color,
+            timestamp: dateStr,
+            date: fullDate,
+            message: item.message,
+            actionLabel: actionLabel,
+            actionTarget: actionTarget,
+            actionSubTab: actionSubTab,
+            isRead: !!item.is_read
+        };
+    });
+
+    renderAlertsInbox();
+    renderAlertsKPIs();
     updateUnreadBadges();
 }
 
+window.loadLiveNotifications = loadLiveNotifications;
+
 function renderAlertsKPIs() {
-    const unreadCount = alertsState.filter(a => !a.isRead).length;
+    const totalAlerts = alertsState.length;
     const criticalCount = alertsState.filter(a => a.priority === 'critical' && !a.isRead).length;
     const actionCount = alertsState.filter(a => a.priority === 'action' && !a.isRead).length;
     const totalLogs = auditLogsState.length;
 
-    const elUnread = document.getElementById('stat-alerts-unread');
-    const elCritical = document.getElementById('stat-alerts-critical');
-    const elAction = document.getElementById('stat-alerts-action');
-    const elLogs = document.getElementById('stat-alerts-logs');
+    const elTotal = document.getElementById('notif-kpi-total-alerts');
+    const elCrit = document.getElementById('notif-kpi-critical-count');
+    const elAction = document.getElementById('notif-kpi-action-count');
+    const elLogs = document.getElementById('notif-kpi-total-logs');
 
-    if (elUnread) elUnread.textContent = unreadCount;
-    if (elCritical) elCritical.textContent = criticalCount;
+    if (elTotal) elTotal.textContent = totalAlerts;
+    if (elCrit) elCrit.textContent = criticalCount;
     if (elAction) elAction.textContent = actionCount;
     if (elLogs) elLogs.textContent = `${totalLogs} Events`;
 }
@@ -270,7 +227,7 @@ function renderAlertsInbox() {
 
     if (filtered.length === 0) {
         container.innerHTML = `
-            <div class="card-clean p-10 text-center text-slate-400 space-y-2 border border-[#E8DEDC] bg-white">
+            <div class="card-clean p-10 text-center text-slate-400 space-y-2 border border-[#E8DEDC] bg-white rounded-2xl">
                 <i class="fas fa-bell-slash text-3xl text-slate-300"></i>
                 <p class="font-bold text-slate-700 text-sm">No alerts in this category</p>
                 <p class="text-xs text-slate-500">All notifications have been reviewed and acknowledged.</p>
@@ -284,13 +241,13 @@ function renderAlertsInbox() {
             ? `<span class="badge-terracotta text-[10px] font-bold"><i class="fas fa-circle-exclamation mr-1"></i> Critical</span>`
             : alert.priority === 'action'
             ? `<span class="badge-gold text-[10px] font-bold"><i class="fas fa-clock mr-1"></i> Action Required</span>`
-            : `<span class="badge-sage text-[10px] font-bold"><i class="fas fa-info-circle mr-1"></i> Milestone</span>`;
+            : `<span class="badge-sage text-[10px] font-bold"><i class="fas fa-info-circle mr-1"></i> Notification</span>`;
 
         return `
-            <div class="card-clean p-4 sm:p-5 transition hover:shadow-md border border-[#E8DEDC] ${alert.isRead ? 'bg-white opacity-85' : 'bg-primary-50/20 border-primary/30 ring-1 ring-primary/20'} space-y-3">
+            <div class="card-clean p-4 sm:p-5 transition hover:shadow-md border border-[#E8DEDC] rounded-2xl ${alert.isRead ? 'bg-white opacity-85' : 'bg-primary-50/20 border-primary/30 ring-1 ring-primary/20'} space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                     <div class="flex items-start space-x-3.5">
-                        <div class="w-10 h-10 rounded-2xl bg-${alert.color}-500/10 text-${alert.color}-700 border border-${alert.color}-500/20 flex items-center justify-center text-base flex-shrink-0 mt-0.5">
+                        <div class="w-10 h-10 rounded-2xl bg-${alert.color}-500/10 text-${alert.color}-700 border border-${alert.color}-500/20 flex items-center justify-center text-base flex-shrink-0 mt-0.5 shadow-2xs">
                             <i class="fas ${alert.icon}"></i>
                         </div>
                         <div class="space-y-1">
@@ -324,7 +281,7 @@ function renderAlertsInbox() {
     }).join('');
 }
 
-function markAlertRead(alertId) {
+async function markAlertRead(alertId) {
     const alert = alertsState.find(a => a.id === alertId);
     if (!alert) return;
 
@@ -332,15 +289,24 @@ function markAlertRead(alertId) {
     renderAlertsInbox();
     renderAlertsKPIs();
     updateUnreadBadges();
-    showToast(`Notification "${alert.title}" acknowledged.`, 'info');
+
+    await NotificationAPI.markAsRead(alertId);
+    if (typeof showToast === 'function') {
+        showToast(`Notification "${alert.title}" acknowledged.`, 'info');
+    }
 }
 
-function markAllAlertsRead() {
+async function markAllAlertsRead() {
     alertsState.forEach(a => a.isRead = true);
     renderAlertsInbox();
     renderAlertsKPIs();
     updateUnreadBadges();
-    showToast('All notifications marked as acknowledged.', 'success');
+
+    const currentRole = window.activePersonaRole || (window.activePersonaKey === 'employee' ? 'Associate' : 'Supervisor');
+    await NotificationAPI.markAllAsRead(currentRole);
+    if (typeof showToast === 'function') {
+        showToast('All notifications marked as acknowledged.', 'success');
+    }
 }
 
 function navigateAlertAction(targetPillar, targetSubTab) {
