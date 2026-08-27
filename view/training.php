@@ -39,97 +39,28 @@
         </div>
     </div>
 
-    <!-- 5 In-Scope Workflow Process Stepper -->
-    <div class="card-clean p-4 bg-white border border-[#E8DEDC] space-y-3">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E8DEDC] pb-2.5">
-            <div>
-                <h3 class="font-heading font-bold text-sm text-slate-900 flex items-center space-x-2">
-                    <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
-                    <span>Training Management Operational Scope</span>
-                </h3>
-                <p class="text-slate-500 text-xs">Schedule &rarr; Attend &rarr; Evaluate &rarr; Record Results &rarr; Report</p>
-            </div>
-            <span class="badge-primary text-[10px] font-bold">Standard Workflow</span>
-        </div>
-
-        <!-- Stepper Buttons -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-xs">
-            
-            <button onclick="switchTrainingStage('programs')" data-stage="programs" 
-                class="training-stage-step border border-primary bg-primary/10 text-primary p-2.5 rounded-xl text-left transition hover:shadow-sm">
-                <span class="block text-[10px] font-extrabold opacity-75">1. PROGRAM CREATION</span>
-                <span class="font-bold text-xs block truncate"><i class="fas fa-book-open mr-1"></i> Skill Gap / Compliance</span>
-            </button>
-
-            <button onclick="switchTrainingStage('schedules')" data-stage="schedules" 
-                class="training-stage-step border border-[#E8DEDC] bg-[#FAF8F7] text-slate-600 p-2.5 rounded-xl text-left transition hover:shadow-sm">
-                <span class="block text-[10px] font-extrabold opacity-75">2. SCHEDULING</span>
-                <span class="font-bold text-xs block truncate"><i class="fas fa-calendar-days mr-1"></i> Date, Venue, Trainer</span>
-            </button>
-
-            <button onclick="switchTrainingStage('attendance')" data-stage="attendance" 
-                class="training-stage-step border border-[#E8DEDC] bg-[#FAF8F7] text-slate-600 p-2.5 rounded-xl text-left transition hover:shadow-sm">
-                <span class="block text-[10px] font-extrabold opacity-75">3. ATTENDANCE</span>
-                <span class="font-bold text-xs block truncate"><i class="fas fa-user-check mr-1"></i> Attended / Absent / Done</span>
-            </button>
-
-            <button onclick="switchTrainingStage('results')" data-stage="results" 
-                class="training-stage-step border border-[#E8DEDC] bg-[#FAF8F7] text-slate-600 p-2.5 rounded-xl text-left transition hover:shadow-sm">
-                <span class="block text-[10px] font-extrabold opacity-75">4. POST-EVALUATION</span>
-                <span class="font-bold text-xs block truncate"><i class="fas fa-clipboard-check mr-1"></i> Score &amp; Certificate</span>
-            </button>
-
-            <button onclick="switchTrainingStage('reports')" data-stage="reports" 
-                class="training-stage-step border border-[#E8DEDC] bg-[#FAF8F7] text-slate-600 p-2.5 rounded-xl text-left transition hover:shadow-sm">
-                <span class="block text-[10px] font-extrabold opacity-75">5. TRAINING REPORT</span>
-                <span class="font-bold text-xs block truncate"><i class="fas fa-chart-column mr-1"></i> Dept &amp; Program Audit</span>
-            </button>
-
-        </div>
-    </div>
-
-    <!-- Navigation Tabs -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div class="subnav-track flex items-center space-x-1.5 p-1.5 overflow-x-auto custom-scrollbar flex-shrink-0">
+    <!-- Streamlined Modern Sub-Navigation Bar -->
+    <div class="border-b border-[#E8DEDC] pb-3">
+        <div class="subnav-track flex items-center space-x-1.5 p-1.5 overflow-x-auto custom-scrollbar">
             <button onclick="switchSubTab('training', 'needs')" class="subnav-pill subnav-training active" data-sub="needs">
                 <i class="fas fa-bullseye mr-1.5 text-terracotta-dark"></i>
                 <span>Needs &amp; Gaps</span>
             </button>
             <button onclick="switchSubTab('training', 'programs')" class="subnav-pill subnav-training" data-sub="programs">
                 <i class="fas fa-book-bookmark mr-1.5 text-gold-dark"></i>
-                <span>1. Programs</span>
+                <span>Programs Catalog</span>
             </button>
             <button onclick="switchSubTab('training', 'schedules')" class="subnav-pill subnav-training" data-sub="schedules">
                 <i class="fas fa-calendar-days mr-1.5 text-dusty-dark"></i>
-                <span>2. Scheduling</span>
+                <span>Scheduling</span>
             </button>
             <button onclick="switchSubTab('training', 'attendance')" class="subnav-pill subnav-training" data-sub="attendance">
                 <i class="fas fa-user-check mr-1.5 text-sage-dark"></i>
-                <span>3. Attendance</span>
+                <span>Attendance</span>
             </button>
             <button onclick="switchSubTab('training', 'results')" class="subnav-pill subnav-training" data-sub="results">
                 <i class="fas fa-square-poll-vertical mr-1.5 text-primary"></i>
-                <span>4. Evaluation &amp; Results</span>
-            </button>
-            <button onclick="switchSubTab('training', 'reports')" class="subnav-pill subnav-training" data-sub="reports">
-                <i class="fas fa-chart-pie mr-1.5 text-dusty-dark"></i>
-                <span>5. Training Reports</span>
-            </button>
-            <button onclick="switchSubTab('training', 'certs')" class="subnav-pill subnav-training" data-sub="certs">
-                <i class="fas fa-certificate mr-1.5 text-amber-600"></i>
-                <span>Licenses Registry</span>
-            </button>
-        </div>
-
-        <!-- Action Bar -->
-        <div class="flex items-center space-x-2">
-            <button onclick="openCreateProgramModal()" class="btn-secondary px-3.5 py-2 text-xs font-bold flex items-center space-x-1.5 flex-shrink-0">
-                <i class="fas fa-plus"></i>
-                <span>+ Create Program</span>
-            </button>
-            <button onclick="openScheduleModal()" class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5 flex-shrink-0 shadow-sm">
-                <i class="fas fa-calendar-plus"></i>
-                <span>+ Schedule Session</span>
+                <span>Evaluation &amp; Results</span>
             </button>
         </div>
     </div>
@@ -146,6 +77,23 @@
             <span class="badge-terracotta"><i class="fas fa-bolt mr-1"></i> Live Needs Queue</span>
         </div>
 
+        <!-- Needs Filter Pill Bar -->
+        <div class="flex items-center justify-between gap-3 bg-white p-2 rounded-xl border border-[#E8DEDC]">
+            <div class="flex items-center space-x-1.5 overflow-x-auto">
+                <button onclick="setNeedsFilter('active')" id="btn-needs-filter-active" class="px-3 py-1 rounded-lg text-xs font-bold bg-primary text-white transition shadow-sm">
+                    <i class="fas fa-bolt mr-1 text-amber-300"></i> Active Deficits
+                </button>
+                <button onclick="setNeedsFilter('resolved')" id="btn-needs-filter-resolved" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition">
+                    <i class="fas fa-check-circle mr-1 text-emerald-600"></i> Resolved History
+                </button>
+                <button onclick="setNeedsFilter('all')" id="btn-needs-filter-all" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition">
+                    All Audit Triggers
+                </button>
+            </div>
+            <span id="needs-filter-count-badge" class="text-[11px] font-semibold text-slate-500 pr-2">Showing Active Deficits</span>
+        </div>
+
+        <!-- Live Needs Queue List -->
         <div id="training-needs-list" class="space-y-3">
             <!-- Rendered by js/training.js -->
         </div>

@@ -31,6 +31,27 @@ class TrainingSessionModel extends BaseModel
         if (!isset($data['roster'])) {
             $data['roster'] = [];
         }
+
+        // Map frontend key names to Supabase schema columns
+        if (isset($data['date']) && !isset($data['session_date'])) {
+            $data['session_date'] = $data['date'];
+        }
+        if (isset($data['time']) && !isset($data['time_slot'])) {
+            $data['time_slot'] = $data['time'];
+        }
+        if (isset($data['programId']) && !isset($data['program_id'])) {
+            $data['program_id'] = $data['programId'];
+        }
+        if (isset($data['trainerName']) && !isset($data['trainer_name'])) {
+            $data['trainer_name'] = $data['trainerName'];
+        }
+        if (isset($data['trainerTitle']) && !isset($data['trainer_title'])) {
+            $data['trainer_title'] = $data['trainerTitle'];
+        }
+        if (isset($data['trainerAvatar']) && !isset($data['trainer_avatar'])) {
+            $data['trainer_avatar'] = $data['trainerAvatar'];
+        }
+
         return $this->create($data);
     }
 
