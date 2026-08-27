@@ -191,5 +191,20 @@
         "supervisor_notes": null,
         "created_at": "2026-08-26T18:56:23+00:00",
         "updated_at": "2026-08-26T18:56:23+00:00"
+    },
+    {
+        "id": "mon-3964d5cc",
+        "goal_id": 28,
+        "employee_id": "emp-102",
+        "milestone_title": "Task Completed: gawin mo din to boy",
+        "actual_metric": "Goal Progress: 100%",
+        "progress": 100,
+        "accomplishments": "tapos bossing",
+        "challenges": null,
+        "feedback": "tapos",
+        "supporting_evidence": "Task Checklist Verified",
+        "supervisor_notes": null,
+        "created_at": "2026-08-27T12:18:04+00:00",
+        "updated_at": "2026-08-27T12:18:04+00:00"
     }
 ]

@@ -31,6 +31,22 @@ class PerformanceGoalModel extends BaseModel
     }
 
     /**
+     * Get goals for a specific employee ID with alias matching
+     */
+    public function getGoalsByEmployee(string $empId): array
+    {
+        $all = $this->getGoals();
+        $normalizedId = strtolower(trim($empId));
+        return array_values(array_filter($all, function ($g) use ($normalizedId) {
+            $gEmp = strtolower(trim($g['employee_id'] ?? ''));
+            if ($gEmp === $normalizedId) return true;
+            if ($normalizedId === 'emp-101' && in_array($gEmp, ['emp-1', 'oxf-emp-1001'])) return true;
+            if ($normalizedId === 'emp-102' && in_array($gEmp, ['emp-2', 'oxf-sup-2001'])) return true;
+            return false;
+        }));
+    }
+
+    /**
      * Create a new performance goal record directly in the Supabase database
      */
     public function createGoal(array $data): array

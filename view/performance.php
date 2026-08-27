@@ -426,12 +426,16 @@
 
                             <div id="sub-perf-eval" class="sub-panel sub-panel-perf hidden space-y-4">
 
-                                <!-- Stage 4 Employee Roster List First -->
+                                <!-- Stage 4 Employee Roster List Firs                                <!-- Stage 4 Employee Appraisal Evaluation Roster -->
                                 <div id="eval-roster-list-card" class="card-clean overflow-hidden">
-                                    <div class="p-4 bg-white border-b border-slate-100 flex items-center justify-between text-xs">
+                                    <div class="p-4 bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                                         <div>
-                                            <h3 class="font-heading font-bold text-sm text-slate-900">Stage 4: Employee Appraisal Evaluation Roster</h3>
-                                            <p class="text-slate-500 text-xs">Select an employee from the roster to open their multi-factor appraisal assessment.</p>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">Phase 4 Stepper</span>
+                                                <span class="text-xs text-slate-400 font-medium">Multi-Factor Assessment</span>
+                                            </div>
+                                            <h3 class="font-heading font-bold text-sm text-slate-900 mt-1">Stage 4: Employee Appraisal Evaluation Roster</h3>
+                                            <p class="text-slate-500 text-xs">Evaluate associate performance against agreed objectives, deliverables, and 5-star hospitality competencies.</p>
                                         </div>
                                     </div>
                                     <div class="overflow-x-auto custom-scrollbar">
@@ -439,9 +443,11 @@
                                             <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-100">
                                                 <tr>
                                                     <th class="px-5 py-3">Employee &amp; Position</th>
-                                                    <th class="px-5 py-3">Attendance</th>
-                                                    <th class="px-5 py-3">Ratings (Mgr / Cust)</th>
-                                                    <th class="px-5 py-3">Appraisal Status</th>
+                                                    <th class="px-5 py-3">Department</th>
+                                                    <th class="px-5 py-3">Objectives Progress</th>
+                                                    <th class="px-5 py-3">Self-Rating</th>
+                                                    <th class="px-5 py-3">Supervisor Score</th>
+                                                    <th class="px-5 py-3 text-center">Status</th>
                                                     <th class="px-5 py-3 text-right">Actions</th>
                                                 </tr>
                                             </thead>
@@ -452,76 +458,91 @@
                                     </div>
                                 </div>
 
-                                <!-- Appraisal Detail View Card -->
+                                <!-- Appraisal Detail View Card (Dynamic per Employee) -->
                                 <div id="eval-detail-view-card" class="card-clean p-6 space-y-6 hidden">
                                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                                         <div>
-                                            <button onclick="hideEmployeeEvalDetail()" class="text-xs text-primary font-bold hover:underline mb-1 flex items-center space-x-1">
-                                                <i class="fas fa-arrow-left"></i><span>Back to Employee List</span>
+                                            <button onclick="hideEmployeeEvalDetail()" class="text-xs text-primary font-bold hover:underline mb-1.5 flex items-center space-x-1">
+                                                <i class="fas fa-arrow-left text-[10px]"></i><span>Back to Appraisal Roster</span>
                                             </button>
-                                            <span class="text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full block w-fit">Phase 4: Formal Evaluation</span>
-                                            <h3 id="eval-detail-emp-title" class="font-heading font-bold text-lg text-slate-900 mt-1">Multi-Factor Appraisal &amp; Assessment</h3>
-                                            <p class="text-xs text-slate-500">Employee self-assessment and supervisor ratings assessed against agreed objectives and competencies.</p>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">Phase 4: Formal Evaluation</span>
+                                                <span id="eval-detail-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Rated</span>
+                                            </div>
+                                            <h3 id="eval-detail-emp-title" class="font-heading font-bold text-lg text-slate-900 mt-1">Maria Santos — Formal Multi-Factor Appraisal</h3>
+                                            <p id="eval-detail-emp-subtitle" class="text-xs text-slate-500">Front Desk Host · Front Office &amp; Guest Experience</p>
                                         </div>
-                                        <button onclick="openModal('modal-self-assessment')" class="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-md hover:bg-primary-dark self-start sm:self-auto">
-                                            <i class="fas fa-edit mr-1"></i> Open Appraisal Form
-                                        </button>
+                                        <div class="flex items-center space-x-2 self-start sm:self-auto">
+                                            <button id="btn-open-eval-appraisal" onclick="openAppraisalModal(window.selectedEvalEmpId)" class="btn-primary px-4 py-2 text-xs font-bold shadow-xs">
+                                                <i class="fas fa-edit mr-1"></i> Open Appraisal Form
+                                            </button>
+                                            <button onclick="switchSubTab('perf', 'review')" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Proceed to Phase 5: Calibration">
+                                                <span>Phase 5 Calibration</span>
+                                                <i class="fas fa-arrow-right text-[10px]"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Objectives Scorecard Breakdown -->
+                                    <div class="space-y-2">
+                                        <h4 class="font-heading font-bold text-xs text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
+                                            <i class="fas fa-bullseye text-primary"></i>
+                                            <span>Agreed Performance Objectives &amp; Task Deliverables Scorecard</span>
+                                        </h4>
+                                        <div id="eval-detail-objectives-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            <!-- Populated dynamically by showEmployeeEvalDetail() -->
+                                        </div>
                                     </div>
 
                                     <!-- Side-by-Side Ratings Grid -->
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div
-                                            class="p-5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3 text-xs">
+                                        <!-- Employee Self-Assessment Card -->
+                                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3 text-xs">
                                             <div class="flex justify-between items-center">
-                                                <span class="font-bold text-slate-600 uppercase text-[11px]">Employee
-                                                    Self-Assessment</span>
-                                                <span
-                                                    class="text-xs font-bold bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">Submitted</span>
+                                                <span class="font-bold text-slate-700 uppercase text-[11px] flex items-center space-x-1.5">
+                                                    <i class="fas fa-user text-primary"></i>
+                                                    <span>Employee Self-Assessment</span>
+                                                </span>
+                                                <span id="eval-detail-self-status-badge" class="text-[10px] font-bold bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">Submitted</span>
                                             </div>
-                                            <div class="text-3xl font-heading font-bold text-primary">4.3 <span
-                                                    class="text-sm font-normal text-slate-400">/ 5.0 (Advanced)</span>
+                                            <div id="eval-detail-self-score" class="text-3xl font-heading font-bold text-primary">
+                                                4.3 <span class="text-sm font-normal text-slate-400">/ 5.0 (Advanced)</span>
                                             </div>
-                                            <div class="space-y-1 text-slate-600">
-                                                <p><strong>Guest Satisfaction:</strong> 4.8 / 5.0 ("Consistent adherence
-                                                    to 5-star hotel check-in protocols")</p>
-                                                <p><strong>PMS Speed:</strong> 4.5 / 5.0 ("Maintained under 2-min
-                                                    check-in time")</p>
-                                                <p><strong>Conflict De-escalation:</strong> 3.8 / 5.0 ("Handled rain
-                                                    delay smoothly; requesting coaching")</p>
+                                            <div id="eval-detail-self-breakdown" class="space-y-1.5 text-slate-600">
+                                                <!-- Dynamic criteria breakdown -->
                                             </div>
                                         </div>
 
-                                        <div
-                                            class="p-5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3 text-xs">
+                                        <!-- Supervisor Assessment Card -->
+                                        <div class="p-5 bg-purple-50/40 rounded-2xl border border-purple-200 space-y-3 text-xs">
                                             <div class="flex justify-between items-center">
-                                                <span class="font-bold text-slate-600 uppercase text-[11px]">Supervisor
-                                                    Assessment</span>
-                                                <span
-                                                    class="text-xs font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">Rated</span>
+                                                <span class="font-bold text-purple-950 uppercase text-[11px] flex items-center space-x-1.5">
+                                                    <i class="fas fa-user-tie text-purple-700"></i>
+                                                    <span>Supervisor Appraisal Assessment</span>
+                                                </span>
+                                                <span id="eval-detail-super-status-badge" class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">Rated</span>
                                             </div>
-                                            <div class="text-3xl font-heading font-bold text-slate-900">4.6 <span
-                                                    class="text-sm font-normal text-slate-400">/ 5.0 (Master
-                                                    Tier)</span></div>
-                                            <div class="space-y-1 text-slate-600">
-                                                <p><strong>Supervisor Recommendation:</strong> "Maria is one of our top
-                                                    guest ambassadors. High aptitude for Front Desk Lead promotion
-                                                    track."</p>
-                                                <p><strong>Target Area:</strong> "Wine pairing upselling to be
-                                                    reinforced in Q4 IDP."</p>
+                                            <div id="eval-detail-super-score" class="text-3xl font-heading font-bold text-slate-900">
+                                                4.6 <span class="text-sm font-normal text-slate-400">/ 5.0 (Master Tier)</span>
+                                            </div>
+                                            <div id="eval-detail-super-recommendation" class="space-y-1.5 text-slate-700">
+                                                <!-- Dynamic recommendation -->
                                             </div>
                                         </div>
                                     </div>
 
                                     <!-- Peer 360 Feedback Summary -->
-                                    <div
-                                        class="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 space-y-2 text-xs">
+                                    <div class="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 space-y-2 text-xs">
                                         <div class="flex justify-between items-center font-bold text-purple-950">
-                                            <span>Hospitality 360° Peer Feedback Commendations</span>
-                                            <span class="text-purple-700">4 Reviews Received</span>
+                                            <span class="flex items-center space-x-1.5">
+                                                <i class="fas fa-comments text-purple-600"></i>
+                                                <span>Hospitality 360° Peer Feedback Commendations</span>
+                                            </span>
+                                            <span id="eval-detail-peer-count" class="text-purple-700 font-semibold">4 Reviews Received</span>
                                         </div>
-                                        <p class="text-slate-700 leading-relaxed">"Maria demonstrates exemplary poise
-                                            under pressure. Always steps in to assist banquet hosts when lobby queues
-                                            form." — <em>Carlos Gomez (Concierge Host)</em></p>
+                                        <div id="eval-detail-peer-feedback" class="text-slate-700 leading-relaxed">
+                                            <p>"Maria demonstrates exemplary poise under pressure. Always steps in to assist banquet hosts when lobby queues form." — <em>Carlos Gomez (Concierge Host)</em></p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

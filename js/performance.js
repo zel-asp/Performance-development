@@ -127,12 +127,34 @@ const PerformanceAPI = {
             supervisor_accomplishment: accomplishment,
             supervisor_feedback: coachingFeedback
         });
+    },
+
+    // 10. Evaluation & Multi-Factor Appraisal (Database Driven)
+    getEvaluations(filters = {}) {
+        return this.request('get_evaluations', 'GET', filters);
+    },
+
+    getEvaluation(employeeId) {
+        return this.request('get_evaluation', 'GET', { employee_id: employeeId });
+    },
+
+    submitAppraisal(data) {
+        return this.request('submit_appraisal', 'POST', data);
+    },
+
+    submitSelfAssessment(data) {
+        return this.request('submit_self_assessment', 'POST', data);
+    },
+
+    calibrateEvaluation(data) {
+        return this.request('calibrate_evaluation', 'POST', data);
     }
 };
 
 window.PerformanceAPI = PerformanceAPI;
 window.dbGoals = [];
 window.dbGeneralTasks = [];
+window.dbEvaluations = [];
 window.dbGoalTasks = [];
 
 // Dynamic Performance Roster State strictly matching users with performance goals
@@ -255,10 +277,24 @@ function renderPerformanceSkeletons() {
         `).join('');
     }
 
+    const evalTbody = document.getElementById('eval-roster-tbody');
+    if (evalTbody && (!window.perfRoster || window.perfRoster.length === 0)) {
+        evalTbody.innerHTML = Array(3).fill(0).map(() => `
+            <tr class="animate-pulse border-b border-slate-100 text-xs">
+                <td class="px-5 py-4"><div class="flex items-center space-x-3"><div class="w-9 h-9 rounded-full bg-slate-200"></div><div class="space-y-1.5"><div class="h-3.5 bg-slate-200 rounded w-28"></div><div class="h-2.5 bg-slate-100 rounded w-20"></div></div></div></td>
+                <td class="px-5 py-4"><div class="h-5 bg-slate-100 rounded-full w-24"></div></td>
+                <td class="px-5 py-4"><div class="space-y-1"><div class="h-2.5 bg-slate-200 rounded w-16"></div><div class="w-full bg-slate-200 h-1.5 rounded-full"></div></div></td>
+                <td class="px-5 py-4"><div class="h-5 bg-slate-200 rounded w-16"></div></td>
+                <td class="px-5 py-4"><div class="h-5 bg-slate-200 rounded w-16"></div></td>
+                <td class="px-5 py-4 text-center"><div class="h-5 bg-slate-200 rounded-full w-16 mx-auto"></div></td>
+                <td class="px-5 py-4 text-right"><div class="h-7 bg-slate-200 rounded-lg w-20 ml-auto"></div></td>
+            </tr>
+        `).join('');
+    }
+
     const tbodies = [
         'approve-goals-tbody',
         'monitoring-roster-tbody',
-        'eval-roster-tbody',
         'review-roster-tbody',
         'idp-roster-tbody',
         'cycle-roster-tbody'
@@ -360,6 +396,29 @@ async function loadAndRenderPlanningGoals() {
             emp.approvalStatus = emp.planningStatus;
         });
 
+        // Fetch dynamic evaluations directly from database
+        try {
+            const evalData = await PerformanceAPI.getEvaluations();
+            if (evalData && Array.isArray(evalData.evaluations)) {
+                window.dbEvaluations = evalData.evaluations;
+                evalData.evaluations.forEach(ev => {
+                    const emp = window.perfRoster.find(e => e.id === ev.employee_id || (ev.employee_id === 'emp-101' && (e.id === 'emp-1' || e.id === 'OXF-EMP-1001')) || (ev.employee_id === 'emp-102' && (e.id === 'emp-2' || e.id === 'OXF-SUP-2001')));
+                    if (emp) {
+                        emp.evaluationRecord = ev;
+                        emp.evaluationStatus = ev.status || 'Pending';
+                        if (ev.self_rating) emp.selfRating = parseFloat(ev.self_rating);
+                        if (ev.supervisor_rating) {
+                            emp.supervisorRating = parseFloat(ev.supervisor_rating);
+                            emp.managerRating = parseFloat(ev.supervisor_rating);
+                        }
+                        if (ev.tier_label) emp.tierLabel = ev.tier_label;
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn('Database evaluations load note:', e);
+        }
+
         // Update Planning Hero KPI Cards
         const activeTargetsEl = document.getElementById('perf-plan-active-targets');
         if (activeTargetsEl) {
@@ -375,6 +434,7 @@ async function loadAndRenderPlanningGoals() {
         renderApprovalRosterTable();
         renderGeneralTasksTable();
         renderEmployeePulseGoals(goals);
+        renderEvaluationRosterTable();
         updateAllPerfStepperBadges();
 
     } catch (err) {
@@ -382,6 +442,7 @@ async function loadAndRenderPlanningGoals() {
         renderPlanningRosterTable();
         renderGeneralTasksTable();
         renderEmployeePulseGoals(window.dbGoals || []);
+        renderEvaluationRosterTable();
     }
 }
 
@@ -465,7 +526,7 @@ function renderEmployeePulseGoals(goals) {
         const specificTasks = tasks.filter(t => t.task_type === 'specific');
         const completedTasksCount = tasks.filter(t => t.status === 'completed').length;
         const totalTasksCount = tasks.length;
-        const progressPct = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : (isApproved ? 50 : 0);
+        const progressPct = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : (g.status === 'Completed' ? 100 : 0);
 
         return `
             <div class="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3 flex flex-col justify-between hover:border-primary/40 transition">
@@ -767,7 +828,7 @@ function renderPlanningRosterTable() {
         const tasks = goal.tasks || [];
         const completedTasks = tasks.filter(t => t.status === 'completed').length;
         const totalTasks = tasks.length;
-        const taskProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : (isApproved ? 50 : 0);
+        const taskProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : (goal.status === 'Completed' ? 100 : 0);
 
         tr.innerHTML = `
             <!-- 1. Employee Column -->
@@ -2121,7 +2182,7 @@ window.approveAllPendingGoals = approveAllPendingGoals;
  */
 
 function calculateEmployeeProgress(emp) {
-    if (emp.goals && emp.goals.length > 0) {
+    if (emp && emp.goals && emp.goals.length > 0) {
         let totalProgress = 0;
         let countedGoals = 0;
 
@@ -2132,10 +2193,8 @@ function calculateEmployeeProgress(emp) {
                 totalProgress += Math.round((completed / tasks.length) * 100);
             } else if (g.status === 'Completed') {
                 totalProgress += 100;
-            } else if (g.status === 'Approved') {
-                totalProgress += 75;
             } else {
-                totalProgress += 30;
+                totalProgress += (typeof g.task_progress === 'number' ? g.task_progress : (g.milestoneProgress || g.progress || 0));
             }
             countedGoals++;
         });
@@ -2145,7 +2204,7 @@ function calculateEmployeeProgress(emp) {
         }
     }
 
-    return 80;
+    return 0;
 }
 
 function autoCalculateAllMonitoringProgress() {
@@ -2171,7 +2230,8 @@ function renderMonitoringRosterTable() {
     container.innerHTML = '';
     const deptFilter = document.getElementById('filter-monitoring-dept')?.value || 'all';
 
-    let list = window.perfRoster || [];
+    // Only display employees who have active/set performance objectives
+    let list = (window.perfRoster || []).filter(e => (e.goals && e.goals.length > 0) || (e.goalsCount > 0));
     if (deptFilter !== 'all') {
         list = list.filter(e => e.department.toLowerCase() === deptFilter.toLowerCase());
     }
@@ -2180,7 +2240,11 @@ function renderMonitoringRosterTable() {
         container.innerHTML = `
             <tr>
                 <td colspan="6" class="p-8 text-center bg-white text-slate-500 text-xs">
-                    No employee records found matching selected filter.
+                    <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2 text-base">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <p class="font-bold text-slate-700 mb-0.5">No Active Performance Goals to Monitor</p>
+                    <p class="text-slate-400 text-[11px]">Employees will appear in Phase 3 Monitoring once their performance objectives are defined and approved in Phase 1 &amp; Phase 2.</p>
                 </td>
             </tr>
         `;
@@ -2768,9 +2832,11 @@ function triggerEvaluationForEmployee(empId) {
 
 /**
  * -------------------------------------------------------------
- * 4. STAGES 4, 5, 6, 7 — EMPLOYEE LIST FIRST PATTERN
+ * 4. STAGE 4 — FORMAL EVALUATION & MULTI-FACTOR APPRAISAL CONTROLLER
  * -------------------------------------------------------------
  */
+window.selectedEvalEmpId = 'emp-101';
+
 function renderEvaluationRosterTable() {
     const container = document.getElementById('eval-roster-tbody');
     if (!container) return;
@@ -2779,53 +2845,411 @@ function renderEvaluationRosterTable() {
     window.perfRoster.forEach(emp => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
-        const att = emp.attendance || { present: 23, absent: 0, percentage: '100%' };
-        const mgrRating = typeof emp.managerRating === 'number' ? emp.managerRating.toFixed(1) : '4.8';
-        const custRating = typeof emp.customerRating === 'number' ? emp.customerRating.toFixed(1) : '4.9';
+
+        // Calculate actual task progress for this employee
+        const empGoals = (window.dbGoals || []).filter(g => g.employee_id === emp.id || (emp.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (g.employee_id === 'emp-2' || g.employee_id === 'OXF-SUP-2001')));
+        let totalTasks = 0;
+        let completedTasks = 0;
+        empGoals.forEach(g => {
+            (g.tasks || []).forEach(t => {
+                totalTasks++;
+                if (t.status === 'completed') completedTasks++;
+            });
+        });
+        const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : (emp.monitoringProgress || 85);
+        
+        // Read evaluation data from database records if available
+        const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
+        const selfRating = evalRec && evalRec.self_rating ? parseFloat(evalRec.self_rating) : (emp.selfRating || (emp.id === 'emp-102' ? 4.7 : 4.3));
+        const supervisorRating = evalRec && evalRec.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : (emp.supervisorRating || emp.managerRating || 4.6);
+        const evalStatus = evalRec ? evalRec.status : (emp.evaluationStatus || 'Pending');
+        const isRated = evalStatus === 'Rated' || evalStatus === 'Calibrated';
+        const tierLabel = evalRec && evalRec.tier_label ? evalRec.tier_label : (supervisorRating >= 4.5 ? 'Master Tier' : 'Advanced');
 
         tr.innerHTML = `
             <td class="px-5 py-4">
                 <div class="flex items-center space-x-3">
-                    <div class="w-9 h-9 rounded-full ${emp.avatarBg || 'bg-primary'} text-white font-bold text-xs flex items-center justify-center">${emp.avatar || emp.name.slice(0, 2).toUpperCase()}</div>
+                    <div class="w-9 h-9 rounded-full ${emp.avatarBg || 'bg-primary'} text-white font-bold text-xs flex items-center justify-center shadow-2xs flex-shrink-0">
+                        ${emp.avatar || emp.name.slice(0, 2).toUpperCase()}
+                    </div>
                     <div>
-                        <p class="font-bold text-slate-900 text-sm">${emp.name}</p>
-                        <p class="text-[11px] text-slate-500">${emp.position} · <span class="text-primary font-bold">${emp.department}</span></p>
+                        <p class="font-bold text-slate-900 text-sm leading-tight">${emp.name}</p>
+                        <p class="text-[10px] text-slate-500 font-medium">${emp.position}</p>
                     </div>
                 </div>
             </td>
-            <td class="px-5 py-4 font-bold text-slate-800">${att.present}P / ${att.absent}A (${att.percentage})</td>
-            <td class="px-5 py-4 font-bold text-amber-600">⭐ ${mgrRating} Mgr / ⭐ ${custRating} Cust</td>
             <td class="px-5 py-4">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${emp.evaluationStatus === 'Rated' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                    ${emp.evaluationStatus || 'Pending Evaluation'}
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">${emp.department}</span>
+            </td>
+            <td class="px-5 py-4 min-w-[130px]">
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between text-[10px] font-bold">
+                        <span class="text-slate-600">${completedTasks}/${totalTasks} Tasks</span>
+                        <span class="text-primary font-mono">${progressPct}%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                        <div class="${progressPct >= 100 ? 'bg-emerald-500' : 'bg-primary'} h-1.5 rounded-full" style="width: ${progressPct}%"></div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-5 py-4 whitespace-nowrap">
+                <span class="font-bold text-slate-900 text-xs bg-primary/5 px-2 py-0.5 rounded border border-primary/10">⭐ ${selfRating.toFixed(1)}</span>
+                <span class="text-[9px] text-slate-400 block mt-0.5">Self-Score</span>
+            </td>
+            <td class="px-5 py-4 whitespace-nowrap">
+                ${isRated ? `
+                    <span class="font-bold text-emerald-800 text-xs bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">⭐ ${supervisorRating.toFixed(1)}</span>
+                    <span class="text-[9px] text-emerald-600 block mt-0.5 font-semibold">${tierLabel}</span>
+                ` : `
+                    <span class="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center space-x-1">
+                        <i class="fas fa-clock text-[8px]"></i><span>Pending Review</span>
+                    </span>
+                `}
+            </td>
+            <td class="px-5 py-4 text-center whitespace-nowrap">
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${isRated ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                    ${isRated ? '✓ Rated' : 'Pending'}
                 </span>
             </td>
-            <td class="px-5 py-4 text-right">
-                <button onclick="showEmployeeEvalDetail('${emp.id}')" class="px-3.5 py-1.5 bg-primary text-white text-xs font-bold rounded-xl shadow-xs hover:bg-primary-dark transition">
-                    View Evaluation
+            <td class="px-5 py-4 text-right space-x-1.5 whitespace-nowrap">
+                <button onclick="showEmployeeEvalDetail('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition shadow-2xs" title="View Full Multi-Factor Appraisal">
+                    <i class="fas fa-eye mr-1"></i>View
+                </button>
+                <button onclick="openAppraisalModal('${emp.id}')" class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-[11px] font-bold shadow-xs transition" title="Open Appraisal Scoring Form">
+                    <i class="fas fa-star-half-stroke mr-1"></i>Evaluate
                 </button>
             </td>
         `;
         container.appendChild(tr);
     });
 }
+window.renderEvaluationRosterTable = renderEvaluationRosterTable;
 
 function showEmployeeEvalDetail(empId) {
-    const emp = window.perfRoster.find(e => e.id === empId);
+    const emp = window.perfRoster.find(e => e.id === empId) || window.perfRoster[0];
     if (!emp) return;
+    window.selectedEvalEmpId = emp.id;
+
     document.getElementById('eval-roster-list-card')?.classList.add('hidden');
     const detail = document.getElementById('eval-detail-view-card');
-    if (detail) {
-        document.getElementById('eval-detail-emp-title').innerText = `${emp.name} — Formal Multi-Factor Appraisal`;
-        detail.classList.remove('hidden');
-        detail.scrollIntoView({ behavior: 'smooth' });
+    if (!detail) return;
+
+    // Read DB evaluation record
+    const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
+
+    // Header info
+    const titleEl = document.getElementById('eval-detail-emp-title');
+    const subEl = document.getElementById('eval-detail-emp-subtitle');
+    if (titleEl) titleEl.innerText = `${emp.name} — Formal Multi-Factor Appraisal`;
+    if (subEl) subEl.innerText = `${emp.position} · ${emp.department}`;
+    
+    const isRated = (evalRec && (evalRec.status === 'Rated' || evalRec.status === 'Calibrated')) || emp.evaluationStatus === 'Rated';
+    const statusBadge = document.getElementById('eval-detail-status-badge');
+    if (statusBadge) {
+        statusBadge.className = `px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isRated ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`;
+        statusBadge.textContent = isRated ? '✓ Appraisal Rated (Database)' : 'Pending Evaluation';
     }
+
+    // Objectives Scorecard
+    const empGoals = (window.dbGoals || []).filter(g => g.employee_id === emp.id || (emp.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (g.employee_id === 'emp-2' || g.employee_id === 'OXF-SUP-2001')));
+    const objContainer = document.getElementById('eval-detail-objectives-container');
+    if (objContainer) {
+        if (empGoals.length === 0) {
+            objContainer.innerHTML = `<p class="col-span-full text-slate-400 italic text-xs py-2">No active objectives calibrated yet.</p>`;
+        } else {
+            objContainer.innerHTML = empGoals.map((g, idx) => {
+                const tasks = g.tasks || [];
+                const done = tasks.filter(t => t.status === 'completed').length;
+                const total = tasks.length;
+                const pct = total > 0 ? Math.round((done / total) * 100) : (g.status === 'Approved' ? 100 : 50);
+                return `
+                    <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5 text-xs">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-900 line-clamp-1">${idx + 1}. ${g.title}</span>
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary">${g.weight ? g.weight.split(' ')[0] : '25%'}</span>
+                        </div>
+                        <p class="text-[10px] text-slate-500 font-mono font-bold">${g.target_metric}</p>
+                        <div class="space-y-1 pt-1">
+                            <div class="flex items-center justify-between text-[9px] font-bold text-slate-600">
+                                <span>Tasks: ${done}/${total} Done</span>
+                                <span class="text-primary">${pct}%</span>
+                            </div>
+                            <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-primary h-1.5 rounded-full" style="width: ${pct}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
+    // Self-Assessment & Breakdown from DB
+    const selfScore = evalRec && evalRec.self_rating ? parseFloat(evalRec.self_rating) : (emp.selfRating || (emp.id === 'emp-102' ? 4.7 : 4.3));
+    const selfScoreEl = document.getElementById('eval-detail-self-score');
+    if (selfScoreEl) {
+        selfScoreEl.innerHTML = `${selfScore.toFixed(1)} <span class="text-sm font-normal text-slate-400">/ 5.0 (${selfScore >= 4.5 ? 'Master' : selfScore >= 4.0 ? 'Advanced' : 'Proficient'})</span>`;
+    }
+
+    const selfBreakdownEl = document.getElementById('eval-detail-self-breakdown');
+    if (selfBreakdownEl) {
+        const selfList = evalRec && Array.isArray(evalRec.self_breakdown) && evalRec.self_breakdown.length > 0 ? evalRec.self_breakdown : null;
+        if (selfList) {
+            selfBreakdownEl.innerHTML = selfList.map(item => `
+                <p><strong>${item.criterion || item.title}:</strong> ${item.score || item.rating} / 5.0 ("${item.notes || item.rationale || 'Self-assessed'}")</p>
+            `).join('');
+        } else if (emp.id === 'emp-102') {
+            selfBreakdownEl.innerHTML = `
+                <p><strong>Culinary Excellence &amp; Plating:</strong> 4.9 / 5.0 ("Achieved 98% food quality benchmark")</p>
+                <p><strong>Food Cost &amp; Inventory Management:</strong> 4.7 / 5.0 ("Maintained cost ratio under 26.5%")</p>
+                <p><strong>Brigade Mentorship &amp; Hygiene:</strong> 4.5 / 5.0 ("Trained 4 apprentice line chefs")</p>
+            `;
+        } else {
+            selfBreakdownEl.innerHTML = `
+                <p><strong>Guest Satisfaction Protocols:</strong> 4.8 / 5.0 ("Consistently achieved 5-star check-in ratings")</p>
+                <p><strong>PMS Reservation Speed:</strong> 4.5 / 5.0 ("Maintained under 2-min transaction speed")</p>
+                <p><strong>Conflict De-escalation &amp; Teamwork:</strong> 3.8 / 5.0 ("Handled rain delay check-ins smoothly")</p>
+            `;
+        }
+    }
+
+    // Supervisor Assessment & Recommendation from DB
+    const superScore = evalRec && evalRec.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : (emp.supervisorRating || emp.managerRating || 4.6);
+    const tierLabel = evalRec && evalRec.tier_label ? evalRec.tier_label : (superScore >= 4.5 ? 'Master Tier' : 'Advanced Tier');
+    const superScoreEl = document.getElementById('eval-detail-super-score');
+    if (superScoreEl) {
+        superScoreEl.innerHTML = `${superScore.toFixed(1)} <span class="text-sm font-normal text-slate-400">/ 5.0 (${tierLabel})</span>`;
+    }
+
+    const superRecEl = document.getElementById('eval-detail-super-recommendation');
+    if (superRecEl) {
+        if (evalRec && evalRec.supervisor_notes) {
+            superRecEl.innerHTML = `<p><strong>Supervisor Endorsement:</strong> "${evalRec.supervisor_notes}"</p>`;
+        } else if (emp.id === 'emp-102') {
+            superRecEl.innerHTML = `
+                <p><strong>Supervisor Endorsement:</strong> "Marco has elevated our hotel fine-dining reputation and mentored junior staff seamlessly."</p>
+                <p><strong>Development Focus:</strong> "Q4 focus on sustainable farm-to-table wine dinner series."</p>
+            `;
+        } else {
+            superRecEl.innerHTML = `
+                <p><strong>Supervisor Endorsement:</strong> "Maria is one of our top front-of-house ambassadors with exemplary guest rapport. Recommended for Front Office Lead track."</p>
+                <p><strong>Development Focus:</strong> "Wine storytelling &amp; luxury upselling module for Q4 IDP."</p>
+            `;
+        }
+    }
+
+    // Peer 360 Feedback from DB
+    const peerEl = document.getElementById('eval-detail-peer-feedback');
+    if (peerEl) {
+        const peerList = evalRec && Array.isArray(evalRec.peer_feedback) && evalRec.peer_feedback.length > 0 ? evalRec.peer_feedback : null;
+        if (peerList) {
+            peerEl.innerHTML = peerList.map(pf => `
+                <p class="mb-1.5">"${pf.feedback}" — <em>${pf.reviewer} (${pf.role})</em></p>
+            `).join('');
+        } else if (emp.id === 'emp-102') {
+            peerEl.innerHTML = `<p>"Chef Marco always maintains supreme kitchen calm during 200+ banquet rushes and ensures immaculate taste." — <em>Elena Vance (F&amp;B Director)</em></p>`;
+        } else {
+            peerEl.innerHTML = `<p>"Maria demonstrates exemplary poise under pressure. Always steps in to assist banquet hosts when lobby queues form." — <em>Carlos Gomez (Concierge Host)</em></p>`;
+        }
+    }
+
+    detail.classList.remove('hidden');
+    detail.scrollIntoView({ behavior: 'smooth' });
 }
+window.showEmployeeEvalDetail = showEmployeeEvalDetail;
 
 function hideEmployeeEvalDetail() {
     document.getElementById('eval-detail-view-card')?.classList.add('hidden');
     document.getElementById('eval-roster-list-card')?.classList.remove('hidden');
 }
+window.hideEmployeeEvalDetail = hideEmployeeEvalDetail;
+
+function openAppraisalModal(empId) {
+    const emp = window.perfRoster.find(e => e.id === empId) || window.perfRoster[0];
+    if (!emp) return;
+
+    window.selectedEvalEmpId = emp.id;
+    const targetInput = document.getElementById('eval-target-emp-id');
+    const titleEl = document.getElementById('modal-eval-emp-title');
+    if (targetInput) targetInput.value = emp.id;
+    if (titleEl) titleEl.textContent = `Appraisal Review: ${emp.name} (${emp.position})`;
+
+    const criteriaContainer = document.getElementById('appraisal-criteria-container');
+    if (!criteriaContainer) return;
+
+    // Load active goals and DB evaluation criteria
+    const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
+    const empGoals = (window.dbGoals || []).filter(g => g.employee_id === emp.id || (emp.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (g.employee_id === 'emp-2' || g.employee_id === 'OXF-SUP-2001')));
+    
+    let criteriaList = [];
+    if (evalRec && Array.isArray(evalRec.criteria_scores) && evalRec.criteria_scores.length > 0) {
+        criteriaList = evalRec.criteria_scores.map(c => ({
+            title: c.title,
+            metric: c.metric,
+            weight: c.weight || 30,
+            initialRating: c.rating || 4.5,
+            rationale: c.rationale || 'Demonstrated high consistency in achieving target deliverables.'
+        }));
+    } else if (empGoals.length > 0) {
+        criteriaList = empGoals.map((g, idx) => ({
+            title: g.title,
+            metric: g.target_metric,
+            weight: parseInt(g.weight || '30', 10) || 30,
+            initialRating: 4.5,
+            rationale: 'Demonstrated high consistency in achieving target deliverables with positive guest feedback.'
+        }));
+    } else {
+        criteriaList = [
+            { title: 'Operational Excellence & Protocol Adherence', metric: '100% SOP Compliance', weight: 40, initialRating: 4.8, rationale: 'Standard hospitality protocol adherence.' },
+            { title: 'Guest Satisfaction & Service Speed', metric: 'CSAT >= 95%', weight: 30, initialRating: 4.5, rationale: 'Swift check-in and dining turnaround.' },
+            { title: 'Teamwork, Conflict De-escalation & Mentorship', metric: 'Zero Unresolved Escalations', weight: 30, initialRating: 4.2, rationale: 'Assists colleagues during high volume rushes.' }
+        ];
+    }
+
+    criteriaContainer.innerHTML = criteriaList.map((c, idx) => `
+        <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2.5">
+            <div class="flex justify-between items-center font-semibold text-xs">
+                <span class="text-slate-900">${idx + 1}. ${c.title} <span class="text-primary font-bold">(Weight: ${c.weight}%)</span></span>
+                <span id="criteria-val-display-${idx}" class="text-primary font-mono font-bold">${c.initialRating} / 5.0</span>
+            </div>
+            <p class="text-[10px] text-slate-500 font-medium font-mono">Target Metric: ${c.metric}</p>
+            <input type="range" min="1" max="5" step="0.1" value="${c.initialRating}" data-title="${encodeURIComponent(c.title)}" data-metric="${encodeURIComponent(c.metric)}" data-weight="${c.weight}" id="criteria-slider-${idx}" oninput="updateAppraisalComputedScore()" class="w-full accent-[#9E1B20] appraisal-score-slider cursor-pointer">
+            <textarea rows="2" placeholder="Provide performance evidence, KPI deliverables observed, and coaching notes..." class="w-full p-2.5 bg-white rounded-xl border border-[#E8DEDC] text-xs text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar">${c.rationale || 'Demonstrated high consistency in achieving target deliverables with positive guest feedback.'}</textarea>
+        </div>
+    `).join('');
+
+    // Prepopulate supervisor recommendation textarea if present
+    const notesInput = document.getElementById('eval-supervisor-notes');
+    if (notesInput && evalRec && evalRec.supervisor_notes) {
+        notesInput.value = evalRec.supervisor_notes;
+    }
+
+    updateAppraisalComputedScore();
+    openModal('modal-self-assessment');
+}
+window.openAppraisalModal = openAppraisalModal;
+
+function updateAppraisalComputedScore() {
+    const sliders = document.querySelectorAll('.appraisal-score-slider');
+    if (!sliders || sliders.length === 0) return;
+
+    let totalWeight = 0;
+    let weightedSum = 0;
+
+    sliders.forEach((slider, idx) => {
+        const val = parseFloat(slider.value) || 3.0;
+        const weight = parseFloat(slider.dataset.weight) || 33.3;
+        const display = document.getElementById(`criteria-val-display-${idx}`);
+        if (display) {
+            display.textContent = `${val.toFixed(1)} / 5.0`;
+        }
+        weightedSum += val * weight;
+        totalWeight += weight;
+    });
+
+    const finalScore = totalWeight > 0 ? (weightedSum / totalWeight) : 4.5;
+    const tier = finalScore >= 4.5 ? 'Master Tier' : finalScore >= 4.0 ? 'Advanced' : finalScore >= 3.0 ? 'Proficient' : 'Developing';
+    const displayEl = document.getElementById('eval-overall-score-display');
+    if (displayEl) {
+        displayEl.textContent = `${finalScore.toFixed(2)} / 5.0 (${tier})`;
+    }
+}
+window.updateAppraisalComputedScore = updateAppraisalComputedScore;
+
+async function handleAppraisalSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const empId = document.getElementById('eval-target-emp-id')?.value || window.selectedEvalEmpId || 'emp-101';
+    const emp = window.perfRoster.find(e => e.id === empId);
+
+    const submitBtn = document.getElementById('btn-submit-appraisal');
+    const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Saving to Database...</span>';
+    }
+
+    try {
+        // Compute the final score and collect criteria scores
+        const sliders = document.querySelectorAll('.appraisal-score-slider');
+        let totalWeight = 0;
+        let weightedSum = 0;
+        const criteriaScores = [];
+
+        sliders.forEach((slider, idx) => {
+            const val = parseFloat(slider.value) || 4.5;
+            const weight = parseFloat(slider.dataset.weight) || 33.3;
+            const title = decodeURIComponent(slider.dataset.title || `Criterion ${idx + 1}`);
+            const metric = decodeURIComponent(slider.dataset.metric || 'Target >= 95%');
+            const textarea = slider.parentElement?.querySelector('textarea');
+            const rationale = textarea ? textarea.value.trim() : '';
+
+            weightedSum += val * weight;
+            totalWeight += weight;
+
+            criteriaScores.push({
+                title,
+                metric,
+                weight,
+                rating: val,
+                rationale
+            });
+        });
+
+        const finalScore = totalWeight > 0 ? parseFloat((weightedSum / totalWeight).toFixed(2)) : 4.60;
+        const supervisorNotes = document.getElementById('eval-supervisor-notes')?.value.trim() || 'Appraisal successfully endorsed with positive hospitality benchmarking.';
+
+        // Save directly to Database via PerformanceAPI
+        const saved = await PerformanceAPI.submitAppraisal({
+            employee_id: empId,
+            supervisor_rating: finalScore,
+            criteria_scores: criteriaScores,
+            supervisor_notes: supervisorNotes
+        });
+
+        // Update local memory and cache
+        if (emp) {
+            emp.evaluationStatus = 'Rated';
+            emp.supervisorRating = finalScore;
+            emp.managerRating = finalScore;
+            emp.tierLabel = saved.tier_label || (finalScore >= 4.5 ? 'Master Tier' : 'Advanced');
+            emp.evaluationRecord = saved;
+            emp.reviewStatus = 'Pending Calibration';
+        }
+
+        // Update dbEvaluations array
+        const existingIdx = (window.dbEvaluations || []).findIndex(ev => ev.employee_id === empId);
+        if (existingIdx >= 0) {
+            window.dbEvaluations[existingIdx] = saved;
+        } else {
+            window.dbEvaluations.push(saved);
+        }
+
+        if (typeof showToast === 'function') {
+            showToast(`🎉 Formal appraisal successfully saved to database for ${emp ? emp.name : 'Employee'}! (${finalScore.toFixed(2)} / 5.0)`, 'success');
+        }
+
+        closeModal('modal-self-assessment');
+        renderEvaluationRosterTable();
+        showEmployeeEvalDetail(empId);
+        updateAllPerfStepperBadges();
+
+        if (typeof loadLiveNotifications === 'function') {
+            loadLiveNotifications(window.activePersonaRole || 'Supervisor');
+        }
+    } catch (err) {
+        console.error('Appraisal database submission error:', err);
+        if (typeof showToast === 'function') {
+            showToast(err.message || 'Failed to save appraisal to database.', 'error');
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origBtnHtml;
+        }
+    }
+}
+window.handleAppraisalSubmit = handleAppraisalSubmit;
 
 function renderReviewRosterTable() {
     const container = document.getElementById('review-roster-tbody');

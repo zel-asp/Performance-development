@@ -836,5 +836,119 @@
         "created_at": "2026-08-26T18:56:23+00:00",
         "updated_at": "2026-08-26T18:56:23+00:00",
         "goal_id": 28
+    },
+    {
+        "id": "notif-3acc4165",
+        "recipient_role": "Associate",
+        "user_id": "emp-102",
+        "type": "task_assigned",
+        "title": "Specific Action Tasks Assigned (1) \ud83d\udccb",
+        "message": "Supervisor assigned 1 new action tasks to your performance objective.",
+        "related_id": "task-spec-34231ae1",
+        "is_read": false,
+        "created_at": "2026-08-27T12:17:46+00:00",
+        "updated_at": "2026-08-27T12:17:46+00:00",
+        "goal_id": 28
+    },
+    {
+        "id": "notif-8415c2dd",
+        "recipient_role": "Supervisor",
+        "user_id": "emp-102",
+        "type": "task_completed",
+        "title": "Task Completed with Feedback \u2728",
+        "message": "Employee completed \"gawin mo din to boy\" and submitted learnings & feedback.",
+        "related_id": "task-spec-34231ae1",
+        "is_read": false,
+        "created_at": "2026-08-27T12:18:04+00:00",
+        "updated_at": "2026-08-27T12:18:04+00:00",
+        "goal_id": 28
+    },
+    {
+        "id": "notif-b8d06e89",
+        "recipient_role": "Associate",
+        "user_id": "emp-101",
+        "type": "goal_created",
+        "title": "New Department Objective Set \ud83d\udccb",
+        "message": "Supervisor Chef Marco Rossi established new target \"Express Suite Turnover & 5-Star Deep Clean Sanitization\" (Housekeeping & Facilities).",
+        "related_id": "29",
+        "is_read": false,
+        "created_at": "2026-08-27T12:18:52+00:00",
+        "updated_at": "2026-08-27T12:18:52+00:00",
+        "goal_id": 29
+    },
+    {
+        "id": "notif-a8461c6d",
+        "user_id": "emp-101",
+        "type": "performance",
+        "title": "Performance Appraisal Endorsed",
+        "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 4.75 / 5.0 (Master Tier).",
+        "is_read": false,
+        "created_at": "2026-08-27T13:35:50+00:00"
+    },
+    {
+        "id": "notif-78cf6b7e",
+        "user_id": "emp-101",
+        "type": "performance",
+        "title": "Performance Appraisal Endorsed",
+        "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 4.75 / 5.0 (Master Tier).",
+        "is_read": false,
+        "created_at": "2026-08-27T13:37:32+00:00"
+    },
+    {
+        "id": "notif-7d4e0525",
+        "recipient_role": "Associate",
+        "user_id": "emp-101",
+        "type": "goal_created",
+        "title": "New Department Objective Set \ud83d\udccb",
+        "message": "Supervisor Chef Marco Rossi established new target \"Elevate VIP Guest Check-in Experience & NPS Loyalty Index\" (Front Office & Guest Experience).",
+        "related_id": "30",
+        "is_read": false,
+        "created_at": "2026-08-27T13:41:36+00:00",
+        "updated_at": "2026-08-27T13:41:36+00:00",
+        "goal_id": 30
+    },
+    {
+        "id": "notif-290b1115",
+        "recipient_role": "Supervisor",
+        "user_id": "emp-102",
+        "type": "goal_approved",
+        "title": "Objective Approved & Tasks Assigned! \ud83c\udf89",
+        "message": "Performance objective \"Elevate VIP Guest Check-in Experience & NPS Loyalty Index\" for Chef Marco Rossi was approved. Task checklist is active.",
+        "related_id": "30",
+        "is_read": false,
+        "created_at": "2026-08-27T13:41:56+00:00",
+        "updated_at": "2026-08-27T13:41:56+00:00",
+        "goal_id": 30
+    },
+    {
+        "id": "notif-cb10323a",
+        "recipient_role": "Supervisor",
+        "user_id": "emp-102",
+        "type": "goal_revised",
+        "title": "Performance Objective Revised \u270d\ufe0f",
+        "message": "Your performance objective \"nah\" was revised. Target Metric: Net Promoter Score (NPS) >= +92 Score.",
+        "related_id": "30",
+        "is_read": false,
+        "created_at": "2026-08-27T13:46:50+00:00",
+        "updated_at": "2026-08-27T13:46:50+00:00",
+        "goal_id": 30
+    },
+    {
+        "id": "notif-62a16a82",
+        "user_id": "emp-102",
+        "type": "performance",
+        "title": "Performance Appraisal Endorsed",
+        "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 2.14 / 5.0 (Developing).",
+        "is_read": false,
+        "created_at": "2026-08-27T13:48:33+00:00"
+    },
+    {
+        "id": "notif-494f2ea1",
+        "user_id": "emp-102",
+        "type": "performance",
+        "title": "Performance Appraisal Endorsed",
+        "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 1 / 5.0 (Developing).",
+        "is_read": false,
+        "created_at": "2026-08-27T13:49:21+00:00"
     }
 ]

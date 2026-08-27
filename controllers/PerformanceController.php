@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../models/PerformanceGoalModel.php';
 require_once __DIR__ . '/../models/PerformanceMonitoringModel.php';
 require_once __DIR__ . '/../models/PerformanceTaskModel.php';
+require_once __DIR__ . '/../models/PerformanceEvaluationModel.php';
 require_once __DIR__ . '/../models/AuthModel.php';
 require_once __DIR__ . '/../models/NotificationModel.php';
 
@@ -11,6 +12,7 @@ class PerformanceController
     private PerformanceGoalModel $goalModel;
     private PerformanceMonitoringModel $monitoringModel;
     private PerformanceTaskModel $taskModel;
+    private PerformanceEvaluationModel $evaluationModel;
     private AuthModel $authModel;
     private NotificationModel $notificationModel;
 
@@ -19,6 +21,7 @@ class PerformanceController
         $this->goalModel = new PerformanceGoalModel();
         $this->monitoringModel = new PerformanceMonitoringModel();
         $this->taskModel = new PerformanceTaskModel();
+        $this->evaluationModel = new PerformanceEvaluationModel();
         $this->authModel = new AuthModel();
         $this->notificationModel = new NotificationModel();
     }
@@ -799,25 +802,35 @@ class PerformanceController
             $empLogs = array_values(array_filter($allLogs, fn($l) => strtolower(trim($l['employee_id'] ?? '')) === $eId));
             $empTasks = array_values(array_filter($allTasks, fn($t) => strtolower(trim($t['employee_id'] ?? '')) === $eId));
 
+            $evalRecord = $this->evaluationModel->getEvaluationByEmployee($eId);
+            $evalStatus = $evalRecord['status'] ?? 'Pending';
+            $selfRating = isset($evalRecord['self_rating']) ? (float)$evalRecord['self_rating'] : ($eId === 'emp-102' ? 4.7 : 4.3);
+            $mgrRating = isset($evalRecord['supervisor_rating']) && $evalRecord['supervisor_rating'] > 0 ? (float)$evalRecord['supervisor_rating'] : 4.8;
+            $tierLabel = $evalRecord['tier_label'] ?? ($mgrRating >= 4.5 ? 'Master Tier' : 'Proficient');
+
             $roster[] = [
-                'id'                 => $eId,
-                'name'               => $name,
-                'position'           => $pos,
-                'department'         => $dept,
-                'avatar'             => strtoupper(substr($name, 0, 2)),
-                'avatarBg'           => $eId === 'emp-102' ? 'bg-amber-600' : 'bg-primary',
-                'attendance'         => ['present' => 22, 'absent' => 1, 'total' => 23, 'percentage' => '95.6%'],
-                'managerRating'      => 4.8,
-                'customerRating'     => 4.9,
-                'goalsCount'         => count($goals),
-                'approvedCount'      => $approvedCount,
-                'goals'              => $goals,
-                'tasks'              => $empTasks,
-                'monitoringLogs'     => $empLogs,
-                'monitoringProgress' => $overallProgress,
-                'monitoringStatus'   => $statusStr,
-                'evaluationStatus'   => 'Pending Evaluation'
-            ];
+                    'id'                 => $eId,
+                    'name'               => $name,
+                    'position'           => $pos,
+                    'department'         => $dept,
+                    'avatar'             => strtoupper(substr($name, 0, 2)),
+                    'avatarBg'           => $eId === 'emp-102' ? 'bg-amber-600' : 'bg-primary',
+                    'attendance'         => ['present' => 22, 'absent' => 1, 'total' => 23, 'percentage' => '95.6%'],
+                    'selfRating'         => $selfRating,
+                    'managerRating'      => $mgrRating,
+                    'supervisorRating'   => $mgrRating,
+                    'customerRating'     => 4.9,
+                    'tierLabel'          => $tierLabel,
+                    'goalsCount'         => count($goals),
+                    'approvedCount'      => $approvedCount,
+                    'goals'              => $goals,
+                    'tasks'              => $empTasks,
+                    'monitoringLogs'     => $empLogs,
+                    'monitoringProgress' => $overallProgress,
+                    'monitoringStatus'   => $statusStr,
+                    'evaluationStatus'   => $evalStatus,
+                    'evaluationRecord'   => $evalRecord
+                ];
         }
 
         return [
@@ -830,6 +843,104 @@ class PerformanceController
                 'logs'            => $allLogs
             ],
             'message' => 'Monitoring data dynamically loaded with tasks and live progress calculations.'
+        ];
+    }
+
+    // =========================================================================
+    // 10. EVALUATION & MULTI-FACTOR APPRAISAL (DATABASE DRIVEN)
+    // =========================================================================
+
+    /**
+     * Get all performance evaluations from database
+     */
+    public function getEvaluations(array $payload = []): array
+    {
+        $evaluations = $this->evaluationModel->getEvaluations($payload);
+        return [
+            'success' => true,
+            'data'    => [
+                'evaluations' => $evaluations,
+                'total'       => count($evaluations)
+            ],
+            'message' => 'Evaluations retrieved successfully from database.'
+        ];
+    }
+
+    /**
+     * Get single employee evaluation with active goals & criteria
+     */
+    public function getEvaluation(array $payload): array
+    {
+        $empId = $payload['employee_id'] ?? $payload['id'] ?? 'emp-101';
+        $evaluation = $this->evaluationModel->getEvaluationByEmployee($empId);
+
+        // Fetch employee's active goals to construct criteria if needed
+        $goals = $this->enrichGoalsWithTasks($this->goalModel->getGoalsByEmployee($empId));
+
+        return [
+            'success' => true,
+            'data'    => [
+                'evaluation' => $evaluation,
+                'goals'      => $goals
+            ],
+            'message' => "Evaluation for {$empId} retrieved successfully."
+        ];
+    }
+
+    /**
+     * Submit supervisor appraisal scoring & save to database
+     */
+    public function submitAppraisal(array $payload): array
+    {
+        $empId = $payload['employee_id'] ?? 'emp-101';
+        $saved = $this->evaluationModel->saveSupervisorAppraisal($payload);
+
+        // Create notification for employee
+        $score = $saved['supervisor_rating'] ?? 4.60;
+        $this->notificationModel->create([
+            'id' => 'notif-' . bin2hex(random_bytes(4)),
+            'user_id' => $empId,
+            'type' => 'performance',
+            'title' => 'Performance Appraisal Endorsed',
+            'message' => "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of {$score} / 5.0 ({$saved['tier_label']}).",
+            'is_read' => false,
+            'created_at' => date('c')
+        ]);
+
+        return [
+            'success' => true,
+            'data'    => $saved,
+            'message' => "Formal appraisal successfully saved to database with score {$score}."
+        ];
+    }
+
+    /**
+     * Submit self-assessment ratings
+     */
+    public function submitSelfAssessment(array $payload): array
+    {
+        $empId = $payload['employee_id'] ?? 'emp-101';
+        $saved = $this->evaluationModel->saveSelfAssessment($payload);
+
+        return [
+            'success' => true,
+            'data'    => $saved,
+            'message' => "Self-assessment successfully recorded in database."
+        ];
+    }
+
+    /**
+     * Calibrate 1-on-1 performance review
+     */
+    public function calibrateEvaluation(array $payload): array
+    {
+        $empId = $payload['employee_id'] ?? 'emp-101';
+        $saved = $this->evaluationModel->calibrateEvaluation($payload);
+
+        return [
+            'success' => true,
+            'data'    => $saved,
+            'message' => "1-on-1 performance calibration successfully recorded."
         ];
     }
 }

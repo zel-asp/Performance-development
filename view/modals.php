@@ -495,20 +495,19 @@
 </div>
 
 <!-- 4. Modal: Performance Evaluation (Step 4 & 5) -->
+<!-- 4. Modal: Formal Multi-Factor Performance Appraisal & Evaluation -->
 <div id="modal-self-assessment" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-    <div class="modal-card max-w-xl w-full overflow-hidden max-h-[90vh] flex flex-col">
+    <div class="modal-card max-w-2xl w-full overflow-hidden max-h-[92vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-100">
 
-        <div
-            class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
-            <div class="flex items-center space-x-3">
-                <div
-                    class="w-11 h-11 rounded-full bg-sage-50 text-sage-dark flex items-center justify-center text-lg font-bold border border-sage-100">
+        <!-- Header -->
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            <div class="flex items-center space-x-3.5">
+                <div class="w-11 h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-lg font-bold border border-primary/20 shadow-2xs">
                     <i class="fas fa-star-half-stroke"></i>
                 </div>
                 <div>
-                    <span class="badge-sage">Steps 4 &amp; 5 · Formal Evaluation</span>
-                    <h3 class="font-heading font-bold text-lg text-slate-900 mt-0.5">2026 Q3 Appraisal Review
-                    </h3>
+                    <span class="text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">Phase 4 · Formal Appraisal Evaluation</span>
+                    <h3 id="modal-eval-emp-title" class="font-heading font-bold text-lg text-slate-900 mt-0.5">Appraisal Review: Maria Santos</h3>
                 </div>
             </div>
             <button onclick="closeModal('modal-self-assessment')"
@@ -517,62 +516,60 @@
             </button>
         </div>
 
-        <div class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs bg-white">
-            <!-- 1-5 Scale Guide -->
-            <div class="p-3 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] text-[10px] text-slate-600">
-                <p class="font-bold text-slate-800 text-[11px] mb-1">1-5 Rating Scale Guide:</p>
-                <div class="grid grid-cols-5 gap-1 text-center font-medium">
-                    <span class="p-1 rounded bg-terracotta-50 text-terracotta-dark">1: Below</span>
-                    <span class="p-1 rounded bg-gold-50 text-gold-dark">2: Developing</span>
-                    <span class="p-1 rounded bg-dusty-50 text-dusty-dark">3: Proficient</span>
-                    <span class="p-1 rounded bg-sage-50 text-sage-dark font-bold">4: Advanced</span>
-                    <span class="p-1 rounded bg-primary-50 text-primary font-bold">5: Master</span>
+        <form id="form-appraisal-evaluation" onsubmit="handleAppraisalSubmit(event)" class="flex flex-col flex-1 overflow-hidden">
+            <input type="hidden" id="eval-target-emp-id" value="emp-101">
+
+            <div class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs bg-white flex-1">
+                <!-- 1-5 Scale Guide -->
+                <div class="p-3 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] text-[10px] text-slate-600">
+                    <div class="flex items-center justify-between mb-1">
+                        <p class="font-bold text-slate-800 text-[11px]">1-5 Rating Scale Guide:</p>
+                        <div class="flex items-center space-x-1 font-mono">
+                            <span class="text-slate-400">Current Computed:</span>
+                            <span id="eval-overall-score-display" class="font-bold text-primary text-xs">4.5 / 5.0 (Advanced)</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-5 gap-1 text-center font-medium">
+                        <span class="p-1 rounded bg-rose-50 text-rose-800">1: Below</span>
+                        <span class="p-1 rounded bg-amber-50 text-amber-800">2: Developing</span>
+                        <span class="p-1 rounded bg-blue-50 text-blue-800">3: Proficient</span>
+                        <span class="p-1 rounded bg-emerald-50 text-emerald-800 font-bold">4: Advanced</span>
+                        <span class="p-1 rounded bg-primary-50 text-primary font-bold">5: Master</span>
+                    </div>
+                </div>
+
+                <!-- Dynamic Objective & Competency Criteria Container -->
+                <div id="appraisal-criteria-container" class="space-y-3.5">
+                    <!-- Populated dynamically by openAppraisalModal() in performance.js -->
+                </div>
+
+                <!-- Evaluator / Supervisor Recommendation & Development Notes -->
+                <div class="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 space-y-2">
+                    <label class="font-bold text-purple-950 text-xs flex items-center space-x-1.5">
+                        <i class="fas fa-comment-dots text-purple-600"></i>
+                        <span>Supervisor Appraisal Coaching &amp; Recommendation *</span>
+                    </label>
+                    <textarea id="eval-supervisor-notes" required rows="2"
+                        placeholder="Detail key performance highlights, leadership strengths, promotion aptitude, or specific IDP areas for Q4..."
+                        class="w-full p-2.5 bg-white rounded-xl border border-purple-200 text-xs text-slate-800 focus:ring-2 focus:ring-purple-500 focus:outline-none custom-scrollbar">Maria continues to demonstrate exceptional hospitality leadership and poise. Highly recommended for Senior Lead track.</textarea>
                 </div>
             </div>
 
-            <div class="space-y-4">
-                <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2">
-                    <div class="flex justify-between items-center font-semibold">
-                        <span>1. Guest Satisfaction &amp; 5-Star Protocols (Weight: 40%)</span>
-                        <span class="text-primary font-bold">4.8 / 5.0 (Advanced)</span>
-                    </div>
-                    <input type="range" min="1" max="5" step="0.1" value="4.8" class="w-full accent-[#9E1B20]">
-                    <textarea rows="2"
-                        placeholder="Provide achievements, guest commendations, and rationale for this rating..."
-                        class="w-full p-2.5 bg-white rounded-xl border border-[#E8DEDC] text-xs focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar"></textarea>
+            <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
+                <div class="text-[11px] text-slate-500 font-medium">
+                    <span>Appraisal weights will normalize to 100% calibration.</span>
                 </div>
-
-                <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2">
-                    <div class="flex justify-between items-center font-semibold">
-                        <span>2. PMS Reservation Speed &amp; Coordination (Weight: 30%)</span>
-                        <span class="text-primary font-bold">4.5 / 5.0 (Advanced)</span>
-                    </div>
-                    <input type="range" min="1" max="5" step="0.1" value="4.5" class="w-full accent-[#9E1B20]">
-                    <textarea rows="2"
-                        placeholder="Detail PMS efficiency metrics, check-in speeds, and shift coordination notes..."
-                        class="w-full p-2.5 bg-white rounded-xl border border-[#E8DEDC] text-xs focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar"></textarea>
-                </div>
-
-                <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2">
-                    <div class="flex justify-between items-center font-semibold">
-                        <span>3. Conflict De-escalation &amp; Mentorship (Weight: 30%)</span>
-                        <span class="text-primary font-bold">3.8 / 5.0 (Developing)</span>
-                    </div>
-                    <input type="range" min="1" max="5" step="0.1" value="3.8" class="w-full accent-[#9E1B20]">
-                    <textarea rows="2"
-                        placeholder="List guest resolution examples, mentorship moments, or areas where coaching is requested..."
-                        class="w-full p-2.5 bg-white rounded-xl border border-[#E8DEDC] text-xs focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar"></textarea>
+                <div class="flex items-center space-x-2.5">
+                    <button type="button" onclick="closeModal('modal-self-assessment')"
+                        class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
+                    <button type="submit" id="btn-submit-appraisal"
+                        class="btn-primary px-5 py-2 text-xs font-bold shadow-xs">
+                        <i class="fas fa-check-double mr-1.5"></i>
+                        <span>Save &amp; Endorse Appraisal</span>
+                    </button>
                 </div>
             </div>
-        </div>
-
-        <div
-            class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex justify-end space-x-2.5 flex-shrink-0">
-            <button onclick="closeModal('modal-self-assessment')"
-                class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
-            <button onclick="submitSelfAssessment()"
-                class="btn-primary px-5 py-2 text-xs font-bold">Submit Evaluation</button>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -2050,9 +2047,9 @@
                         <div class="space-y-1">
                             <div class="flex justify-between items-center">
                                 <label class="font-bold text-slate-800 text-[11px]">4. Goal Progress Achieved</label>
-                                <span id="milestone-progress-val" class="font-bold font-mono text-emerald-700 text-xs">85%</span>
+                                <span id="milestone-progress-val" class="font-bold font-mono text-emerald-700 text-xs">0%</span>
                             </div>
-                            <input id="milestone-progress-range" type="range" min="10" max="100" step="5" value="85" oninput="document.getElementById('milestone-progress-val').textContent = this.value + '%'" class="w-full accent-primary mt-2 cursor-pointer">
+                            <input id="milestone-progress-range" type="range" min="0" max="100" step="5" value="0" oninput="document.getElementById('milestone-progress-val').textContent = this.value + '%'" class="w-full accent-primary mt-2 cursor-pointer">
                         </div>
                     </div>
 

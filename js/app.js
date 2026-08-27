@@ -153,12 +153,25 @@
                         if (typeof loadAndRenderMonitoringData === 'function') loadAndRenderMonitoringData();
                     } else if (pillarKey === 'pillar-comp') {
                         if (chartCompetencyRadarInstance) chartCompetencyRadarInstance.resize();
+                        if (typeof renderRoleCompetencyFramework === 'function') renderRoleCompetencyFramework();
+                        if (typeof renderCompetencyMatrixTable === 'function') renderCompetencyMatrixTable();
                     } else if (pillarKey === 'pillar-lms') {
                         if (chartLmsComplianceInstance) chartLmsComplianceInstance.resize();
                         if (typeof renderLmsBooks === 'function') renderLmsBooks();
                         if (typeof renderTnaEnrollments === 'function') renderTnaEnrollments();
+                    } else if (pillarKey === 'pillar-training') {
+                        if (typeof renderTrainingProgramsView === 'function') renderTrainingProgramsView();
+                        if (typeof renderTrainingNeedsAnalysisView === 'function') renderTrainingNeedsAnalysisView();
+                    } else if (pillarKey === 'pillar-succession') {
+                        if (typeof renderSuccession9BoxGrid === 'function') renderSuccession9BoxGrid();
+                        if (typeof renderSuccessionBenchView === 'function') renderSuccessionBenchView();
                     } else if (pillarKey === 'pillar-social') {
                         if (chartHourlySentimentInstance) chartHourlySentimentInstance.resize();
+                        if (typeof renderLiveFeed === 'function') renderLiveFeed();
+                    } else if (pillarKey === 'pillar-notifications') {
+                        if (typeof loadLiveNotifications === 'function') loadLiveNotifications(window.activePersonaRole || 'Associate');
+                    } else if (pillarKey === 'pillar-reports') {
+                        if (typeof renderAuditLogExports === 'function') renderAuditLogExports();
                     }
                 }, 80);
             }

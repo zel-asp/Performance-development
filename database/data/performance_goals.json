@@ -236,5 +236,39 @@
         "supervisor_notes": null,
         "created_at": "2026-08-26T13:53:08.284122",
         "updated_at": "2026-08-26T13:56:48"
+    },
+    {
+        "id": 29,
+        "employee_id": "emp-102",
+        "role": "supervisor",
+        "target_scope": "single",
+        "title": "Express Suite Turnover & 5-Star Deep Clean Sanitization",
+        "department": "Housekeeping & Facilities",
+        "target_date": "2026-09-30",
+        "target_metric": "Turnaround < 22 mins / suite",
+        "weight": "Medium Priority (20% Weight - Standard Operational Goal)",
+        "evidence": "Housekeeping PMS floor logs.",
+        "status": "Pending Approval",
+        "supervisor_id": null,
+        "supervisor_notes": null,
+        "created_at": "2026-08-27T12:18:51.687929",
+        "updated_at": "2026-08-27T12:18:51.687929"
+    },
+    {
+        "id": 30,
+        "employee_id": "emp-102",
+        "role": "supervisor",
+        "target_scope": "single",
+        "title": "nah",
+        "department": "Front Office & Guest Experience",
+        "target_date": "2026-09-30",
+        "target_metric": "Net Promoter Score (NPS) >= +92 Score",
+        "weight": "High Priority (35% Weight - Core Role Objective)",
+        "evidence": "Monthly Medallia guest ratings and Opera PMS check-in speed logs.",
+        "status": "Approved",
+        "supervisor_id": null,
+        "supervisor_notes": "",
+        "created_at": "2026-08-27T13:41:36.357815",
+        "updated_at": "2026-08-27T13:46:50"
     }
 ]

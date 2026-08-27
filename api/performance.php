@@ -106,6 +106,28 @@ try {
             $response = $controller->addSupervisorTaskFeedback($payload);
             break;
 
+        // 10. Evaluation & Multi-Factor Appraisal (Database Driven)
+        case 'get_evaluations':
+            $response = $controller->getEvaluations($payload);
+            break;
+
+        case 'get_evaluation':
+            $response = $controller->getEvaluation($payload);
+            break;
+
+        case 'submit_appraisal':
+        case 'save_evaluation':
+            $response = $controller->submitAppraisal($payload);
+            break;
+
+        case 'submit_self_assessment':
+            $response = $controller->submitSelfAssessment($payload);
+            break;
+
+        case 'calibrate_evaluation':
+            $response = $controller->calibrateEvaluation($payload);
+            break;
+
         default:
             http_response_code(400);
             $response = [
