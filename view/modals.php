@@ -2377,6 +2377,15 @@
 
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2">
                         <button type="button" onclick="closeModal('modal-supervisor-task-feedback')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
+                        <button type="submit" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-sm">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Save Feedback &amp; Complete</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- ======================================================== -->
         <!-- MODAL: 1-ON-1 CALIBRATION & FORMAL REVIEW SIGN-OFF       -->
         <!-- ======================================================== -->
