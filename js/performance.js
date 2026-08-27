@@ -464,6 +464,8 @@ async function loadAndRenderPlanningGoals() {
         renderEmployeePulseGoals(window.dbGoals || []);
         renderEvaluationRosterTable();
         renderReviewRosterTable();
+        renderIDPRosterTable();
+        renderCycleRosterTable();
         updateAllPerfStepperBadges();
     }
 }
@@ -859,8 +861,8 @@ function renderPlanningRosterTable() {
                         ${emp.avatar || emp.name.slice(0, 2).toUpperCase()}
                     </div>
                     <div>
-                        <p class="font-bold text-slate-900 text-xs leading-tight">${emp.name}</p>
-                        <p class="text-[10px] text-slate-500 font-medium">${emp.position}</p>
+                        <p class="font-bold text-slate-900 text-xs leading-tight max-w-[150px] truncate" title="${emp.name}">${emp.name}</p>
+                        <p class="text-[10px] text-slate-500 font-medium max-w-[150px] truncate" title="${emp.position}">${emp.position}</p>
                     </div>
                 </div>
             </td>
@@ -869,16 +871,16 @@ function renderPlanningRosterTable() {
             <td class="px-5 py-4">
                 <div class="space-y-1 max-w-[240px]">
                     <div class="flex items-center space-x-1.5 flex-wrap">
-                        <p class="font-bold text-slate-900 text-xs leading-snug">${goal.title}</p>
+                        <p class="font-bold text-slate-900 text-xs leading-snug line-clamp-2" title="${goal.title}">${goal.title}</p>
                         ${isRevised ? `<span class="px-1.5 py-0.2 rounded text-[8px] font-bold bg-purple-100 text-purple-700 border border-purple-200">Edited</span>` : ''}
                     </div>
-                    <span class="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded inline-block">${goal.department || emp.department}</span>
+                    <span class="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded inline-block max-w-[200px] truncate" title="${goal.department || emp.department}">${goal.department || emp.department}</span>
                 </div>
             </td>
 
             <!-- 3. Target Metric / KPI -->
             <td class="px-5 py-4">
-                <span class="text-primary font-bold font-mono text-[11px] bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10 block w-fit">
+                <span class="text-primary font-bold font-mono text-[11px] bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10 block w-fit max-w-[180px] truncate" title="${goal.target_metric}">
                     ${goal.target_metric}
                 </span>
             </td>
@@ -993,12 +995,12 @@ function renderGeneralTasksTable() {
         tr.innerHTML = `
             <td class="px-5 py-3.5">
                 <div class="space-y-1">
-                    <p class="font-bold text-slate-900 text-xs">${t.title}</p>
+                    <p class="font-bold text-slate-900 text-xs max-w-[200px] truncate" title="${t.title}">${t.title}</p>
                     <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-primary/10 text-primary">${t.category || 'Operational Excellence'}</span>
                 </div>
             </td>
             <td class="px-5 py-3.5 max-w-sm">
-                <p class="text-slate-600 text-[11px] leading-relaxed">${t.description || 'Standard hotel operating guideline verification.'}</p>
+                <p class="text-slate-600 text-[11px] leading-relaxed line-clamp-2" title="${t.description || 'Standard hotel operating guideline verification.'}">${t.description || 'Standard hotel operating guideline verification.'}</p>
             </td>
             <td class="px-5 py-3.5">
                 <span class="font-mono font-bold text-slate-800 text-[11px]">-${t.target_days_offset || 7} Days</span>
@@ -2305,13 +2307,13 @@ function renderMonitoringRosterTable() {
                         ${emp.avatar || emp.name.slice(0, 2).toUpperCase()}
                     </div>
                     <div>
-                        <p class="font-bold text-slate-900 text-sm leading-tight">${emp.name}</p>
-                        <span class="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded">${emp.position}</span>
+                        <p class="font-bold text-slate-900 text-sm leading-tight max-w-[150px] truncate" title="${emp.name}">${emp.name}</p>
+                        <span class="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded max-w-[150px] truncate block" title="${emp.position}">${emp.position}</span>
                     </div>
                 </div>
             </td>
             <td class="px-5 py-4">
-                <span class="font-semibold text-slate-700">${emp.department}</span>
+                <span class="font-semibold text-slate-700 max-w-[130px] truncate block" title="${emp.department}">${emp.department}</span>
             </td>
             <td class="px-5 py-4">
                 <div class="space-y-0.5">
@@ -2374,19 +2376,19 @@ function toggleEmployeeMonitoringDetail(empId) {
     if (!emp) return;
     window.selectedEmployeeContext = emp;
     
-    const detailBox = document.getElementById('monitoring-employee-detail-card');
-    if (detailBox) {
-        document.getElementById('mon-detail-name').innerText = emp.name;
-        document.getElementById('mon-detail-pos').innerText = `${emp.position} · ${emp.department} — Continuous Monitoring & Task Stream`;
-        detailBox.classList.remove('hidden');
-        
-        // Render dynamic task accomplishments and activity stream
-        renderEmployeeMonitoringStream(emp);
-        detailBox.scrollIntoView({ behavior: 'smooth' });
-    }
+    const nameEl = document.getElementById('mon-modal-emp-name') || document.getElementById('mon-detail-name');
+    const posEl = document.getElementById('mon-modal-emp-pos') || document.getElementById('mon-detail-pos');
+    if (nameEl) nameEl.innerText = `${emp.name} — Shift Monitoring Stream`;
+    if (posEl) posEl.innerText = `${emp.position} · ${emp.department}`;
+    
+    // Render dynamic task accomplishments and activity stream
+    renderEmployeeMonitoringStream(emp);
+
+    // Open dedicated Monitoring Stream modal
+    openModal('modal-monitoring-stream');
 
     if (typeof showToast === 'function') {
-        showToast(`Loaded continuous shift stream & task matrix for ${emp.name}`, 'info');
+        showToast(`Loaded continuous shift stream for ${emp.name}`, 'info');
     }
 }
 window.toggleEmployeeMonitoringDetail = toggleEmployeeMonitoringDetail;
@@ -2912,13 +2914,13 @@ function renderEvaluationRosterTable() {
                         ${emp.avatar || emp.name.slice(0, 2).toUpperCase()}
                     </div>
                     <div>
-                        <p class="font-bold text-slate-900 text-sm leading-tight">${emp.name}</p>
-                        <p class="text-[10px] text-slate-500 font-medium">${emp.position}</p>
+                        <p class="font-bold text-slate-900 text-sm leading-tight max-w-[150px] truncate" title="${emp.name}">${emp.name}</p>
+                        <p class="text-[10px] text-slate-500 font-medium max-w-[150px] truncate" title="${emp.position}">${emp.position}</p>
                     </div>
                 </div>
             </td>
             <td class="px-5 py-4">
-                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">${emp.department}</span>
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 max-w-[130px] truncate block" title="${emp.department}">${emp.department}</span>
             </td>
             <td class="px-5 py-4 min-w-[130px]">
                 <div class="space-y-1">
@@ -2971,7 +2973,7 @@ function renderEvaluationRosterTable() {
                 `}
             </td>
             <td class="px-5 py-4 text-right space-x-1.5 whitespace-nowrap">
-                <button onclick="showEmployeeEvalDetail('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition shadow-2xs" title="View Full Appraisal">
+                <button onclick="showEmployeeEvalDetail('${emp.id}', true)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition shadow-2xs" title="View Full Appraisal">
                     <i class="fas fa-eye mr-1"></i>View
                 </button>
                 ${!allTasksDone ? `
@@ -2994,22 +2996,18 @@ function renderEvaluationRosterTable() {
 }
 window.renderEvaluationRosterTable = renderEvaluationRosterTable;
 
-function showEmployeeEvalDetail(empId) {
+function showEmployeeEvalDetail(empId, openModalImmediately = false) {
     if (!empId) return;
     const emp = window.perfRoster.find(e => isSameEmployee(e.id, empId));
     if (!emp) return;
     window.selectedEvalEmpId = emp.id;
 
-    document.getElementById('eval-roster-list-card')?.classList.add('hidden');
-    const detail = document.getElementById('eval-detail-view-card');
-    if (!detail) return;
-
     // Read DB evaluation record from database store
     const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id));
 
-    // Header info
-    const titleEl = document.getElementById('eval-detail-emp-title');
-    const subEl = document.getElementById('eval-detail-emp-subtitle');
+    // Header info (Support both modal and inline IDs if present)
+    const titleEl = document.getElementById('eval-modal-emp-title') || document.getElementById('eval-detail-emp-title');
+    const subEl = document.getElementById('eval-modal-emp-subtitle') || document.getElementById('eval-detail-emp-subtitle');
     if (titleEl) titleEl.innerText = `${emp.name} — Formal Supervisor Appraisal`;
     if (subEl) subEl.innerText = `${emp.position} · ${emp.department}`;
     
@@ -3018,7 +3016,7 @@ function showEmployeeEvalDetail(empId) {
     const isBelowBenchmark = isRated && superScore > 0 && superScore < 3.0;
     const tierLabel = evalRec && evalRec.tier_label ? evalRec.tier_label : (superScore >= 4.5 ? 'Master Tier' : (superScore >= 3.5 ? 'Advanced Tier' : (superScore >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)')));
 
-    const statusBadge = document.getElementById('eval-detail-status-badge');
+    const statusBadge = document.getElementById('eval-modal-status-badge') || document.getElementById('eval-detail-status-badge');
     if (statusBadge) {
         if (isBelowBenchmark) {
             statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200';
@@ -3151,14 +3149,14 @@ function showEmployeeEvalDetail(empId) {
         }
     }
 
-    detail.classList.remove('hidden');
-    detail.scrollIntoView({ behavior: 'smooth' });
+    if (openModalImmediately) {
+        openModal('modal-view-appraisal');
+    }
 }
 window.showEmployeeEvalDetail = showEmployeeEvalDetail;
 
 function hideEmployeeEvalDetail() {
-    document.getElementById('eval-detail-view-card')?.classList.add('hidden');
-    document.getElementById('eval-roster-list-card')?.classList.remove('hidden');
+    closeModal('modal-view-appraisal');
 }
 window.hideEmployeeEvalDetail = hideEmployeeEvalDetail;
 
@@ -3385,6 +3383,8 @@ async function handleAppraisalSubmit(e) {
         renderEvaluationRosterTable();
         showEmployeeEvalDetail(empId);
         renderReviewRosterTable();
+        renderIDPRosterTable();
+        renderCycleRosterTable();
         updateAllPerfStepperBadges();
 
         if (typeof loadLiveNotifications === 'function') {
@@ -3452,7 +3452,7 @@ function renderReviewRosterTable() {
     if (!window.selectedCalibEmpId || !evaluatedEmployees.some(e => isSameEmployee(e.id, window.selectedCalibEmpId))) {
         window.selectedCalibEmpId = evaluatedEmployees[0].id;
     }
-    showCalibrationDetail(window.selectedCalibEmpId);
+    showCalibrationDetail(window.selectedCalibEmpId, false);
 
     evaluatedEmployees.forEach(emp => {
         const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
@@ -3472,12 +3472,12 @@ function renderReviewRosterTable() {
                         ${emp.avatar || (emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0, 2) : 'EM')}
                     </div>
                     <div>
-                        <p class="font-bold text-slate-900 leading-tight">${emp.name}</p>
-                        <p class="text-[10px] text-slate-400">${emp.position}</p>
+                        <p class="font-bold text-slate-900 leading-tight max-w-[150px] truncate" title="${emp.name}">${emp.name}</p>
+                        <p class="text-[10px] text-slate-400 max-w-[150px] truncate" title="${emp.position}">${emp.position}</p>
                     </div>
                 </div>
             </td>
-            <td class="px-5 py-4 text-slate-600 font-medium">${emp.department}</td>
+            <td class="px-5 py-4 text-slate-600 font-medium max-w-[130px] truncate" title="${emp.department}">${emp.department}</td>
             <td class="px-5 py-4">
                 ${rawSupScore > 0 ? `
                     <span class="font-mono font-bold text-xs ${rawSupScore < 3.0 ? 'text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200' : 'text-slate-800'}">
@@ -3502,7 +3502,7 @@ function renderReviewRosterTable() {
             </td>
             <td class="px-5 py-4 text-right">
                 <div class="flex items-center justify-end space-x-1.5">
-                    <button onclick="showCalibrationDetail('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition flex items-center space-x-1" title="View Calibration Detail Card">
+                    <button onclick="showCalibrationDetail('${emp.id}', true)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition flex items-center space-x-1" title="View Calibration Detail Card">
                         <i class="fas fa-eye text-indigo-600"></i>
                         <span>View</span>
                     </button>
@@ -3512,7 +3512,7 @@ function renderReviewRosterTable() {
                             <span>Send Kudos</span>
                         </button>
                     ` : `
-                        <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}');" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold rounded-xl text-xs border border-rose-200 transition flex items-center space-x-1" title="Create Development Plan in Stage 6">
+                        <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}', true);" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold rounded-xl text-xs border border-rose-200 transition flex items-center space-x-1" title="Create Development Plan in Stage 6">
                             <i class="fas fa-file-pen text-rose-600"></i>
                             <span>Create Dev Plan</span>
                         </button>
@@ -3576,7 +3576,7 @@ function showEmptyCalibrationDetail() {
 }
 window.showEmptyCalibrationDetail = showEmptyCalibrationDetail;
 
-function showCalibrationDetail(empId) {
+function showCalibrationDetail(empId, openModalImmediately = false) {
     if (!empId) {
         showEmptyCalibrationDetail();
         return;
@@ -3596,16 +3596,18 @@ function showCalibrationDetail(empId) {
         return;
     }
 
-    const titleEl = document.getElementById('calib-detail-emp-title');
-    const roleEl = document.getElementById('calib-detail-emp-role');
+    window.selectedCalibEmpId = emp.id;
+
+    const titleEl = document.getElementById('calib-modal-emp-title') || document.getElementById('calib-detail-emp-title');
+    const roleEl = document.getElementById('calib-modal-emp-subtitle') || document.getElementById('calib-detail-emp-role');
     const avatarEl = document.getElementById('calib-detail-emp-avatar');
-    const statusBadge = document.getElementById('calib-detail-status-badge');
+    const statusBadge = document.getElementById('calib-modal-status-badge') || document.getElementById('calib-detail-status-badge');
     const scoreValEl = document.getElementById('calib-detail-score-val');
     const tierLabelEl = document.getElementById('calib-detail-tier-label');
     const minutesEl = document.getElementById('calib-detail-discussion-minutes');
     const nextStepContainer = document.getElementById('calib-next-step-container');
 
-    if (titleEl) titleEl.textContent = emp.name;
+    if (titleEl) titleEl.textContent = `${emp.name} — 1-on-1 Discussion Minutes`;
     if (roleEl) roleEl.textContent = `${emp.position} · ${emp.department}`;
     if (avatarEl) avatarEl.textContent = emp.avatar || emp.name.split(' ').map(n => n[0]).join('').substring(0, 2);
 
@@ -3648,6 +3650,11 @@ function showCalibrationDetail(empId) {
         }
     }
 
+    const openCalibBtn = document.getElementById('calib-detail-btn-open-modal');
+    if (openCalibBtn) {
+        openCalibBtn.setAttribute('onclick', `open1on1CalibrationModal('${emp.id}')`);
+    }
+
     // Dynamic Next Step: Show Send Colleague Kudos if >= 3.0, or Create Development Plan if < 3.0
     if (nextStepContainer) {
         const effectiveScore = calibScore !== null ? calibScore : rawSupScore;
@@ -3671,7 +3678,7 @@ function showCalibrationDetail(empId) {
                         <i class="fas fa-triangle-exclamation text-rose-600 text-base"></i>
                         <span><strong>Performance Gap Detected:</strong> Score (⭐ <strong>${effectiveScore.toFixed(2)} / 5.0</strong>) is below 3.0 standard. Proceed to Stage 6 to create an Individual Development Plan.</span>
                     </div>
-                    <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}');" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex-shrink-0 flex items-center space-x-1.5">
+                    <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}', true);" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex-shrink-0 flex items-center space-x-1.5">
                         <i class="fas fa-file-pen"></i>
                         <span>Create Development Plan &rarr;</span>
                     </button>
@@ -3690,6 +3697,10 @@ function showCalibrationDetail(empId) {
                 </div>
             `;
         }
+    }
+
+    if (openModalImmediately) {
+        openModal('modal-view-calibration');
     }
 }
 window.showCalibrationDetail = showCalibrationDetail;
@@ -3872,6 +3883,8 @@ async function handleCalibrationSubmit(e) {
         closeModal('modal-1on1-calibration');
         renderReviewRosterTable();
         showCalibrationDetail(empId);
+        renderIDPRosterTable();
+        renderCycleRosterTable();
         updateAllPerfStepperBadges();
 
         if (typeof loadLiveNotifications === 'function') {
@@ -4293,7 +4306,92 @@ function showEmptyIDPDetail() {
 }
 window.showEmptyIDPDetail = showEmptyIDPDetail;
 
-function showIDPDetail(empId) {
+function renderIDPRosterTable() {
+    const container = document.getElementById('idp-roster-tbody');
+    if (!container) return;
+    container.innerHTML = '';
+
+    // ONLY show employees who have approved goals AND evaluated ratings in database (Phase 4 / 5 evaluation)
+    const roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster.filter(emp => {
+        const hasGoal = (window.dbGoals || []).some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const score = (evalRec && evalRec.calibrated_score !== undefined && evalRec.calibrated_score !== null && parseFloat(evalRec.calibrated_score) > 0)
+            ? parseFloat(evalRec.calibrated_score)
+            : ((evalRec && evalRec.supervisor_rating !== undefined && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0)
+                ? parseFloat(evalRec.supervisor_rating)
+                : ((emp.supervisorRating && parseFloat(emp.supervisorRating) > 0)
+                    ? parseFloat(emp.supervisorRating)
+                    : ((emp.managerRating && parseFloat(emp.managerRating) > 0) ? parseFloat(emp.managerRating) : 0)));
+        return hasGoal && score > 0;
+    }) : [];
+
+    if (roster.length === 0) {
+        container.innerHTML = `<tr><td colspan="5" class="px-5 py-6 text-center text-slate-400 italic">No employees with evaluated ratings found in IDP roster. Complete Stage 4 appraisals and Stage 5 calibration first.</td></tr>`;
+        showEmptyIDPDetail();
+        return;
+    }
+
+    roster.forEach(emp => {
+        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const score = (evalRec && evalRec.calibrated_score !== undefined && evalRec.calibrated_score !== null && parseFloat(evalRec.calibrated_score) > 0)
+            ? parseFloat(evalRec.calibrated_score)
+            : ((evalRec && evalRec.supervisor_rating !== undefined && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0)
+                ? parseFloat(evalRec.supervisor_rating)
+                : ((emp.supervisorRating && parseFloat(emp.supervisorRating) > 0)
+                    ? parseFloat(emp.supervisorRating)
+                    : ((emp.managerRating && parseFloat(emp.managerRating) > 0) ? parseFloat(emp.managerRating) : 0)));
+        const hasPassed = score >= 3.0;
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
+        tr.innerHTML = `
+            <td class="px-5 py-4 font-bold text-slate-900">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-7 h-7 rounded-full ${emp.avatarBg || 'bg-emerald-100 text-emerald-800'} font-bold flex items-center justify-center text-xs shadow-2xs">
+                        ${emp.avatar || (emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0, 2) : 'EM')}
+                    </div>
+                    <span class="max-w-[150px] truncate" title="${emp.name}">${emp.name}</span>
+                </div>
+            </td>
+            <td class="px-5 py-4 text-slate-500 max-w-[150px] truncate" title="${emp.position} · ${emp.department}">${emp.position} · ${emp.department}</td>
+            <td class="px-5 py-4 font-bold text-slate-800">
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${!hasPassed && score > 0 ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
+                    ${!hasPassed && score > 0 ? `⚠️ PIP Remediation (${score.toFixed(2)}/5.0)` : `⭐ Proficient (${score.toFixed(2)}/5.0)`}
+                </span>
+            </td>
+            <td class="px-5 py-4">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${hasPassed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                    ${hasPassed ? 'Clearance Active' : 'Action Plan Active'}
+                </span>
+            </td>
+            <td class="px-5 py-4 text-right">
+                <div class="flex items-center justify-end space-x-1.5">
+                    <button onclick="showIDPDetail('${emp.id}', true)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center space-x-1">
+                        <i class="fas fa-eye"></i>
+                        <span>View IDP</span>
+                    </button>
+                    ${hasPassed ? `
+                        <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Send Colleague Kudos">
+                            <i class="fas fa-award text-amber-600"></i>
+                            <span>Send Kudos</span>
+                        </button>
+                    ` : ''}
+                </div>
+            </td>
+        `;
+        container.appendChild(tr);
+    });
+
+    if (roster.length > 0) {
+        if (!window.selectedEvalEmpId || !roster.some(e => isSameEmployee(e.id, window.selectedEvalEmpId))) {
+            window.selectedEvalEmpId = roster[0].id;
+        }
+        showIDPDetail(window.selectedEvalEmpId, false);
+    }
+}
+window.renderIDPRosterTable = renderIDPRosterTable;
+
+function showIDPDetail(empId, openModalImmediately = false) {
     if (!empId) {
         showEmptyIDPDetail();
         return;
@@ -4306,7 +4404,13 @@ function showIDPDetail(empId) {
     }
 
     const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
-    const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+    const score = (evalRec && evalRec.calibrated_score !== undefined && evalRec.calibrated_score !== null && parseFloat(evalRec.calibrated_score) > 0)
+        ? parseFloat(evalRec.calibrated_score)
+        : ((evalRec && evalRec.supervisor_rating !== undefined && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0)
+            ? parseFloat(evalRec.supervisor_rating)
+            : ((emp.supervisorRating && parseFloat(emp.supervisorRating) > 0)
+                ? parseFloat(emp.supervisorRating)
+                : ((emp.managerRating && parseFloat(emp.managerRating) > 0) ? parseFloat(emp.managerRating) : 0)));
 
     if (score === 0) {
         showEmptyIDPDetail();
@@ -4560,6 +4664,10 @@ function showIDPDetail(empId) {
             `;
         }
     }
+
+    if (openModalImmediately && typeof openModal === 'function') {
+        openModal('modal-idp-detail');
+    }
 }
 window.showIDPDetail = showIDPDetail;
 
@@ -4654,10 +4762,10 @@ function renderCycleRosterTable() {
                     <div class="w-7 h-7 rounded-full bg-teal-100 text-teal-800 font-bold flex items-center justify-center text-xs">
                         ${emp.avatar || (emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0, 2) : 'EM')}
                     </div>
-                    <span>${emp.name}</span>
+                    <span class="max-w-[150px] truncate" title="${emp.name}">${emp.name}</span>
                 </div>
             </td>
-            <td class="px-5 py-4 text-slate-500">${emp.department}</td>
+            <td class="px-5 py-4 text-slate-500 max-w-[130px] truncate" title="${emp.department}">${emp.department}</td>
             <td class="px-5 py-4 font-bold ${isCalibrated ? (hasPassed ? 'text-emerald-700' : 'text-rose-600') : 'text-slate-400 font-normal italic'}">
                 ${isCalibrated ? `${hasPassed ? '⭐' : '⚠️'} ${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || (hasPassed ? 'Calibrated' : 'Needs PIP')})` : 'Pending Review'}
             </td>
@@ -4667,7 +4775,7 @@ function renderCycleRosterTable() {
                 </span>
             </td>
             <td class="px-5 py-4 text-right">
-                <button onclick="showCycleDetail('${emp.id}')" class="px-3.5 py-1.5 ${hasPassed ? 'bg-primary hover:bg-primary-dark text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'} font-bold rounded-xl text-xs shadow-xs transition">
+                <button onclick="showCycleDetail('${emp.id}', true)" class="px-3.5 py-1.5 ${hasPassed ? 'bg-primary hover:bg-primary-dark text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'} font-bold rounded-xl text-xs shadow-xs transition">
                     ${hasPassed ? 'View Rollover' : 'Review Plan'}
                 </button>
             </td>
@@ -4679,12 +4787,12 @@ function renderCycleRosterTable() {
         if (!window.selectedEvalEmpId || !roster.some(e => isSameEmployee(e.id, window.selectedEvalEmpId))) {
             window.selectedEvalEmpId = roster[0].id;
         }
-        showCycleDetail(window.selectedEvalEmpId);
+        showCycleDetail(window.selectedEvalEmpId, false);
     }
 }
 window.renderCycleRosterTable = renderCycleRosterTable;
 
-function showCycleDetail(empId) {
+function showCycleDetail(empId, openModalImmediately = false) {
     if (!empId) {
         showEmptyCycleDetail();
         return;
@@ -4811,7 +4919,16 @@ function showCycleDetail(empId) {
             `;
         }
     }
+
+    if (openModalImmediately) {
+        if (!hasPassed && retryCount <= 2) {
+            openReviewTasksModal(emp.id);
+        } else if (typeof openModal === 'function') {
+            openModal('modal-cycle-detail');
+        }
+    }
 }
+window.showCycleDetail = showCycleDetail;
 function openReviewTasksModal(empId) {
     const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || (window.perfRoster || [])[0];
     if (!emp) return;
@@ -5150,69 +5267,54 @@ function getPerformanceStageStatus(stageKey) {
 function updateAllPerfStepperBadges() {
     const stages = ['plan', 'approve', 'monitor', 'eval', 'review', 'idp', 'cycle'];
     const stageNumbers = { plan: 1, approve: 2, monitor: 3, eval: 4, review: 5, idp: 6, cycle: 7 };
-    const totalGoals = (window.dbGoals || []).length;
+
+    const planCount = (window.dbGoals || []).length;
+    const approvedGoalsCount = (window.dbGoals || []).filter(g => g.status === 'Approved' || g.status === 'Completed').length;
+    const monitoredEmployeesCount = (window.perfRoster || []).filter(e => (window.dbGoals || []).some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, e.id))).length;
+    const evaluatedEmployeesCount = (window.dbEvaluations || []).filter(ev => typeof ev.supervisor_rating !== 'undefined' && ev.supervisor_rating !== null && parseFloat(ev.supervisor_rating) > 0).length;
+    const calibratedEmployeesCount = (window.dbEvaluations || []).filter(ev => ev.status === 'Calibrated' && typeof ev.calibrated_score !== 'undefined' && ev.calibrated_score !== null && parseFloat(ev.calibrated_score) > 0).length;
+    const idpCount = evaluatedEmployeesCount;
+    const cycleCount = evaluatedEmployeesCount;
+
+    const stageDataCounts = {
+        plan: { count: planCount, label: `${planCount} ${planCount === 1 ? 'Goal' : 'Goals'}` },
+        approve: { count: approvedGoalsCount, label: `${approvedGoalsCount} Approved` },
+        monitor: { count: monitoredEmployeesCount, label: `${monitoredEmployeesCount} Monitored` },
+        eval: { count: evaluatedEmployeesCount, label: `${evaluatedEmployeesCount} Evaluated` },
+        review: { count: calibratedEmployeesCount, label: `${calibratedEmployeesCount} Calibrated` },
+        idp: { count: idpCount, label: `${idpCount} ${idpCount === 1 ? 'IDP Plan' : 'IDP Plans'}` },
+        cycle: { count: cycleCount, label: `${cycleCount} ${cycleCount === 1 ? 'Transition' : 'Transitions'}` }
+    };
 
     stages.forEach(stageKey => {
         const item = document.querySelector(`.perf-step-item[data-step-key="${stageKey}"]`);
         const subnavPill = document.querySelector(`.subnav-perf[data-sub="${stageKey}"]`);
         const num = stageNumbers[stageKey];
-
-        if (totalGoals === 0) {
-            // Clean initial state when no goals exist
-            if (item) {
-                const bubble = item.querySelector('.perf-step-bubble');
-                const sub = item.querySelector('.perf-step-sub');
-                if (bubble) {
-                    bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold shadow-2xs transition';
-                    bubble.innerHTML = `<span>${num}</span>`;
-                }
-                if (sub) {
-                    sub.innerHTML = `<span class="text-slate-400 font-medium">Stage ${num}</span>`;
-                }
-            }
-            if (subnavPill) {
-                const checkSpan = subnavPill.querySelector('.subnav-status-icon');
-                if (checkSpan) checkSpan.innerHTML = '';
-            }
-            return;
-        }
-
-        const stageStatus = getPerformanceStageStatus(stageKey);
+        const dataMeta = stageDataCounts[stageKey] || { count: 0, label: `0 ${stageKey}` };
 
         if (item) {
             const bubble = item.querySelector('.perf-step-bubble');
             const sub = item.querySelector('.perf-step-sub');
             if (bubble) {
-                if (stageStatus.isComplete) {
-                    bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold shadow-xs transition';
-                    bubble.innerHTML = '<i class="fas fa-check text-[9px]"></i>';
-                    if (sub) sub.innerHTML = '<span class="text-emerald-600 font-bold">✅ Complete</span>';
-                } else if (stageStatus.pendingCount > 0) {
-                    bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] font-bold shadow-xs transition';
-                    bubble.innerHTML = `<span class="text-[10px]">${stageStatus.pendingCount}</span>`;
-                    if (sub) sub.innerHTML = `<span class="text-amber-600 font-bold">${stageStatus.pendingCount} Pending</span>`;
-                } else {
-                    bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold shadow-2xs transition';
-                    bubble.innerHTML = `<span>${num}</span>`;
-                    if (sub) sub.innerHTML = `<span class="text-slate-400 font-medium">Stage ${num}</span>`;
-                }
+                bubble.textContent = num;
+            }
+            if (sub) {
+                sub.innerHTML = `<span class="text-slate-500 font-semibold">${dataMeta.label}</span>`;
             }
         }
 
         if (subnavPill) {
-            let checkSpan = subnavPill.querySelector('.subnav-status-icon');
-            if (!checkSpan) {
-                checkSpan = document.createElement('span');
-                checkSpan.className = 'subnav-status-icon ml-1.5';
-                subnavPill.appendChild(checkSpan);
+            let countBadge = subnavPill.querySelector('.subnav-count-badge');
+            if (!countBadge) {
+                // Remove any obsolete status icons
+                const oldIcon = subnavPill.querySelector('.subnav-status-icon');
+                if (oldIcon) oldIcon.remove();
+
+                countBadge = document.createElement('span');
+                countBadge.className = 'subnav-count-badge ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-700 border border-slate-200 transition';
+                subnavPill.appendChild(countBadge);
             }
-            if (stageStatus.isComplete) {
-                checkSpan.innerHTML = '<i class="fas fa-check-circle text-emerald-500 text-[11px]" title="Stage Complete"></i>';
-            } else if (stageStatus.pendingCount > 0) {
-                checkSpan.innerHTML = `<span class="px-1.5 py-0.2 bg-amber-500 text-white rounded-full text-[9px] font-bold">${stageStatus.pendingCount}</span>`;
-            } else {
-                checkSpan.innerHTML = '';
-            }
+            countBadge.textContent = dataMeta.count;
         }
     });
 }

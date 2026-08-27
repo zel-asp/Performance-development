@@ -12,12 +12,25 @@
             var chartHourlySentimentInstance = window.chartHourlySentimentInstance || null;
             var chartSystemDeptProgressInstance = window.chartSystemDeptProgressInstance || null;
 
-            // Modal Controls
+            // Dynamic Modal Stack Controller (Fixes nested modal overlap / z-index collisions)
+            window.activeModalStack = window.activeModalStack || [];
+
             function openModal(id) {
                 const el = document.getElementById(id);
                 if (el) {
+                    // Remove if already in stack to prevent duplicate references
+                    window.activeModalStack = window.activeModalStack.filter(mId => mId !== id);
+                    window.activeModalStack.push(id);
+
+                    // Dynamically calculate z-index so every nested child modal opens securely ON TOP
+                    const stackLevel = window.activeModalStack.length;
+                    const calculatedZIndex = 50 + (stackLevel * 20);
+                    el.style.zIndex = calculatedZIndex;
+
                     el.classList.remove('hidden');
                     el.classList.add('flex');
+                    document.body.classList.add('overflow-hidden');
+
                     if (id === 'modal-recognition' && typeof initKudosRosterModal === 'function') {
                         initKudosRosterModal();
                     }
@@ -48,8 +61,22 @@
                 if (el) {
                     el.classList.add('hidden');
                     el.classList.remove('flex');
+                    el.style.zIndex = '';
+
+                    window.activeModalStack = window.activeModalStack.filter(mId => mId !== id);
+                    if (window.activeModalStack.length === 0) {
+                        document.body.classList.remove('overflow-hidden');
+                    }
                 }
             }
+
+            // Global ESC key listener to safely dismiss topmost active modal
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && window.activeModalStack && window.activeModalStack.length > 0) {
+                    const topModalId = window.activeModalStack[window.activeModalStack.length - 1];
+                    closeModal(topModalId);
+                }
+            });
 
             // Toasts — delegated to Sonner via window.showToast (see index.php module script)
 
@@ -235,7 +262,7 @@
                 }, 80);
             }
 
-            // 7-Stage Performance Stepper Dynamic Progress State
+            // 7-Stage Performance Stepper Dynamic Progress State (Pure numerical count, no check icons)
             function updatePerfStepper(activeSubKey) {
                 const perfStages = ['plan', 'approve', 'monitor', 'eval', 'review', 'idp', 'cycle'];
                 const activeIdx = perfStages.indexOf(activeSubKey);
@@ -247,13 +274,12 @@
                 stepItems.forEach((item, idx) => {
                     const bubble = item.querySelector('.perf-step-bubble');
                     const title = item.querySelector('.perf-step-title');
-                    const sub = item.querySelector('.perf-step-sub');
 
                     if (idx < activeIdx) {
-                        // Completed stage
+                        // Passed stage
                         if (bubble) {
-                            bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold shadow-xs group-hover:scale-110 transition';
-                            bubble.innerHTML = '<i class="fas fa-check text-[9px]"></i>';
+                            bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold shadow-2xs group-hover:scale-105 transition';
+                            bubble.textContent = (idx + 1);
                         }
                         if (title) {
                             title.className = 'perf-step-title font-bold text-slate-800 text-[11px] group-hover:text-primary transition';
@@ -262,6 +288,7 @@
                         // Active current stage
                         if (bubble) {
                             bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold ring-4 ring-primary/20 shadow-xs group-hover:scale-110 transition';
+                            bubble.textContent = (idx + 1);
                         }
                         if (title) {
                             title.className = 'perf-step-title font-bold text-primary text-[11px]';
@@ -275,15 +302,12 @@
                         if (title) {
                             title.className = 'perf-step-title font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition';
                         }
-                        if (sub) {
-                            sub.className = 'perf-step-sub text-[9px] text-slate-400';
-                        }
                     }
                 });
 
                 stepLines.forEach((line, idx) => {
                     if (idx < activeIdx) {
-                        line.className = 'perf-step-line flex-1 h-0.5 bg-emerald-500 mx-2 transition-colors';
+                        line.className = 'perf-step-line flex-1 h-0.5 bg-slate-800 mx-2 transition-colors';
                     } else if (idx === activeIdx) {
                         line.className = 'perf-step-line flex-1 h-0.5 bg-primary/40 mx-2 transition-colors';
                     } else {

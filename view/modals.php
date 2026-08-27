@@ -2827,5 +2827,375 @@
             </div>
         </div>
 
+<!-- Modal: Stage 6 Individual Development Plan (IDP) Detail Modal -->
+<div id="modal-idp-detail" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+    <div class="modal-card max-w-4xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
+        <!-- Header -->
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            <div class="flex items-center space-x-3">
+                <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-lg font-bold border border-emerald-100 shadow-2xs">
+                    <i class="fas fa-seedling"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">Phase 6: Development Planning</span>
+                        <h3 id="idp-detail-title" class="font-heading font-bold text-base text-slate-900">70-20-10 Individual Development Plan (IDP)</h3>
+                    </div>
+                    <p id="idp-detail-subtitle" class="text-xs text-slate-500 mt-0.5">Based on appraisal results, employee strengths and development gaps are mapped to tailored 70-20-10 learning actions.</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div id="idp-header-actions" class="flex items-center space-x-2">
+                    <!-- Dynamic header actions (Send Kudos or Prescribe LMS / Add Action) -->
+                </div>
+                <button onclick="closeModal('modal-idp-detail')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-5 text-xs bg-slate-50/40">
+            <!-- Strengths vs Gaps Breakdown from Database -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Strengths Card -->
+                <div class="p-5 bg-white rounded-2xl border border-emerald-100 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between border-b border-emerald-100 pb-2.5">
+                        <span class="font-bold text-emerald-950 text-xs flex items-center">
+                            <i class="fas fa-award mr-2 text-emerald-600 text-sm"></i>
+                            Identified Strengths &amp; Core Competencies
+                        </span>
+                        <span id="idp-strengths-count" class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">0 Calibrated</span>
+                    </div>
+                    <ul id="idp-detail-strengths-list" class="space-y-2 text-slate-700 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                        <!-- Populated dynamically by js/performance.js -->
+                    </ul>
+                </div>
+
+                <!-- Gaps Card -->
+                <div class="p-5 bg-white rounded-2xl border border-amber-200/80 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between border-b border-amber-200/80 pb-2.5">
+                        <span class="font-bold text-amber-950 text-xs flex items-center">
+                            <i class="fas fa-triangle-exclamation mr-2 text-amber-600 text-sm"></i>
+                            Development Gaps (&lt; 3.0 Threshold)
+                        </span>
+                        <span id="idp-gaps-count" class="text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">Action Required</span>
+                    </div>
+                    <ul id="idp-detail-gaps-list" class="space-y-2 text-slate-700 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                        <!-- Populated dynamically by js/performance.js -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 70-20-10 IDP Plan Cards Section from Database -->
+            <div class="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                        <h4 class="font-heading font-bold text-slate-900 text-sm">70-20-10 Active Development Commitments</h4>
+                        <p class="text-slate-500 text-[11px]">Experiential, Mentorship &amp; Formal LMS actions mapped for growth</p>
+                    </div>
+                    <div id="idp-commitments-header-action">
+                        <!-- Dynamic Link -->
+                    </div>
+                </div>
+
+                <div id="idp-perf-commitments-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Populated dynamically by js/performance.js -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
+            <span class="text-[11px] text-slate-500 font-semibold flex items-center">
+                <i class="fas fa-seedling text-emerald-600 mr-1.5"></i>
+                <span>70-20-10 Continuous IDP Capability Framework</span>
+            </span>
+            <button type="button" onclick="closeModal('modal-idp-detail')" class="btn-secondary px-5 py-2 text-xs font-bold">
+                Close Plan
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Stage 7 Next Cycle Transition Detail Modal -->
+<div id="modal-cycle-detail" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+    <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
+        <!-- Header -->
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            <div class="flex items-center space-x-3">
+                <div class="w-11 h-11 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center text-lg font-bold border border-teal-100 shadow-2xs">
+                    <i class="fas fa-rotate"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] font-bold uppercase tracking-wider bg-teal-100 text-teal-800 px-2.5 py-0.5 rounded-full">Phase 7: Next Cycle Transition</span>
+                        <h3 id="cycle-modal-title" class="font-heading font-bold text-base text-slate-900">Next Cycle Rollover</h3>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5">Rollover active quarterly targets and performance growth baseline into the upcoming cycle.</p>
+                </div>
+            </div>
+            <button onclick="closeModal('modal-cycle-detail')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs bg-slate-50/40">
+            <div id="cycle-detail-transition-card" class="card-hero p-6 bg-white space-y-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+                <!-- Rendered dynamically -->
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
+            <span class="text-[11px] text-slate-500 font-semibold"><i class="fas fa-infinity text-teal-600 mr-1.5"></i> Continuous Cycle Architecture</span>
+            <button type="button" onclick="closeModal('modal-cycle-detail')" class="btn-secondary px-5 py-2 text-xs font-bold">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Stage 3 Continuous Monitoring & Activity Stream Modal -->
+<div id="modal-monitoring-stream" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+    <div class="modal-card max-w-4xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
+        <!-- Header -->
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            <div class="flex items-center space-x-3">
+                <div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center text-lg font-bold border border-indigo-100 shadow-2xs">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-2.5 py-0.5 rounded-full">Phase 3: Monitoring Drill-Down</span>
+                        <h3 id="mon-modal-emp-name" class="font-heading font-bold text-base text-slate-900">Continuous Monitoring Stream</h3>
+                    </div>
+                    <p id="mon-modal-emp-pos" class="text-xs text-slate-500 mt-0.5">Real-time KPI progress tracking, SOP checklist completions, and reflective shift logs.</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="openModal('modal-ai-feedback')" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5 shadow-2xs">
+                    <i class="fas fa-wand-magic-sparkles text-[10px]"></i>
+                    <span>AI Refiner</span>
+                </button>
+                <button onclick="openLogMilestoneModal(window.selectedEmployeeContext?.id || 'emp-101')" class="btn-secondary px-3 py-1.5 text-xs font-semibold hover:bg-slate-100 flex items-center space-x-1">
+                    <i class="fas fa-flag-checkered text-emerald-600 text-xs"></i>
+                    <span>+ Log KPI</span>
+                </button>
+                <button onclick="closeModal('modal-monitoring-stream')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs bg-slate-50/40">
+            <!-- Filter & Search Bar -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs text-xs">
+                <div class="flex items-center space-x-1.5 flex-wrap gap-1">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Filter:</span>
+                    <button type="button" onclick="setMonitoringStreamFilter('all')" id="btn-stream-filter-all" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-primary text-white shadow-2xs transition">All Tasks</button>
+                    <button type="button" onclick="setMonitoringStreamFilter('pending')" id="btn-stream-filter-pending" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">⏳ Pending</button>
+                    <button type="button" onclick="setMonitoringStreamFilter('completed')" id="btn-stream-filter-completed" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">✓ Completed</button>
+                    <button type="button" onclick="setMonitoringStreamFilter('specific')" id="btn-stream-filter-specific" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">Specific Action</button>
+                    <button type="button" onclick="setMonitoringStreamFilter('general')" id="btn-stream-filter-general" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">General SOP</button>
+                </div>
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-[10px]"></i>
+                    <input type="text" id="stream-task-search-input" oninput="onMonitoringStreamSearch(this.value)" placeholder="Search tasks, learnings, feedback..." class="pl-7 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary w-full sm:w-56 font-medium text-slate-800">
+                </div>
+            </div>
+
+            <!-- Timeline Stream Container -->
+            <div id="timeline-stream-container" class="space-y-3.5 text-xs">
+                <!-- Rendered dynamically by js/performance.js -->
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
+            <span class="text-[11px] text-slate-500 font-semibold"><i class="fas fa-clock-rotate-left text-indigo-600 mr-1.5"></i> Live Shift Checklists &amp; Milestone Stream</span>
+            <button type="button" onclick="closeModal('modal-monitoring-stream')" class="btn-secondary px-5 py-2 text-xs font-bold">
+                Close Stream
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Stage 4 Formal Multi-Factor Appraisal Detail Modal -->
+<div id="modal-view-appraisal" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+    <div class="modal-card max-w-4xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
+        <!-- Header -->
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            <div class="flex items-center space-x-3">
+                <div class="w-11 h-11 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center text-lg font-bold border border-purple-100 shadow-2xs">
+                    <i class="fas fa-star-half-stroke"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full">Phase 4: Formal Evaluation</span>
+                        <span id="eval-modal-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Rated</span>
+                    </div>
+                    <h3 id="eval-modal-emp-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Formal Multi-Factor Appraisal</h3>
+                    <p id="eval-modal-emp-subtitle" class="text-xs text-slate-500">Position · Department</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button id="btn-open-eval-appraisal" onclick="openAppraisalModal(window.selectedEvalEmpId)" class="btn-primary px-3.5 py-2 text-xs font-bold shadow-xs">
+                    <i class="fas fa-edit mr-1"></i> Open Appraisal Form
+                </button>
+                <button onclick="closeModal('modal-view-appraisal')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs bg-slate-50/40">
+            <!-- Warning Alert Banner if Supervisor Rating Below 3.0 -->
+            <div id="eval-detail-warning-alert" class="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start space-x-3 text-xs text-rose-900 hidden shadow-2xs">
+                <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                    <i class="fas fa-triangle-exclamation"></i>
+                </div>
+                <div class="space-y-0.5">
+                    <p class="font-bold text-rose-950 text-sm">Performance Alert: Rating Below 3.0 Benchmark</p>
+                    <p class="text-rose-800 text-[11px] leading-relaxed">The supervisor appraisal score for this associate is below standard hotel competency requirements (&lt; 3.0). A structured <strong>Performance Improvement Plan (PIP)</strong> and targeted capability retraining are recommended.</p>
+                </div>
+            </div>
+
+            <!-- Objectives Scorecard Breakdown -->
+            <div class="space-y-2">
+                <h4 class="font-heading font-bold text-xs text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
+                    <i class="fas fa-bullseye text-primary"></i>
+                    <span>Agreed Performance Objectives &amp; Task Deliverables Scorecard</span>
+                </h4>
+                <div id="eval-detail-objectives-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <!-- Populated dynamically by showEmployeeEvalDetail() from DB -->
+                </div>
+            </div>
+
+            <!-- Primary Supervisor Appraisal Assessment Card -->
+            <div class="p-5 bg-white rounded-2xl border border-purple-200/90 space-y-4 text-xs shadow-2xs">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-100 pb-3">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center text-xs">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div>
+                            <span class="font-bold text-purple-950 uppercase text-[11px] tracking-wide block">Supervisor Appraisal Scorecard</span>
+                            <span class="text-[10px] text-slate-500">Official calibrated rating recorded in database</span>
+                        </div>
+                    </div>
+                    <span id="eval-detail-super-status-badge" class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full self-start sm:self-auto">Rated</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center bg-purple-50/50 p-4 rounded-xl border border-purple-100">
+                    <div>
+                        <span class="text-[11px] font-semibold text-slate-500 block">Overall Supervisor Rating:</span>
+                        <div id="eval-detail-super-score" class="font-heading font-bold text-2xl text-purple-950 mt-0.5">
+                            0.00 <span class="text-sm font-normal text-slate-400">/ 5.0 (Pending Evaluation)</span>
+                        </div>
+                    </div>
+                    <div id="eval-detail-tier-badge-container" class="text-left sm:text-right">
+                        <!-- Dynamic Tier Badge -->
+                    </div>
+                </div>
+
+                <!-- Evaluated Criteria Breakdown from Database -->
+                <div class="space-y-2 pt-2">
+                    <span class="font-bold text-slate-800 text-xs block">Criteria Rubric Breakdown:</span>
+                    <div id="eval-detail-criteria-breakdown" class="space-y-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Supervisor Recommendation / Notes -->
+                <div class="pt-3 border-t border-purple-100 space-y-1">
+                    <span class="font-bold text-slate-800 text-xs block">Supervisor Endorsement &amp; Coaching Notes:</span>
+                    <div id="eval-detail-super-recommendation" class="text-slate-700 leading-relaxed text-xs">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
+            <button type="button" onclick="closeModal('modal-view-appraisal')" class="btn-secondary px-5 py-2 text-xs font-bold">
+                Close
+            </button>
+            <button onclick="closeModal('modal-view-appraisal'); switchSubTab('perf', 'review');" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
+                <span>Proceed to Phase 5: Calibration</span>
+                <i class="fas fa-arrow-right text-[10px]"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Stage 5 Discussion Minutes & Calibration Detail Modal -->
+<div id="modal-view-calibration" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+    <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
+        <!-- Header -->
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            <div class="flex items-center space-x-3">
+                <div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center text-lg font-bold border border-indigo-100 shadow-2xs">
+                    <i class="fas fa-sliders"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-2.5 py-0.5 rounded-full">Phase 5: Discussion Minutes</span>
+                        <span id="calib-modal-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Calibrated</span>
+                    </div>
+                    <h3 id="calib-modal-emp-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">1-on-1 Discussion &amp; Calibration Approval</h3>
+                    <p id="calib-modal-emp-subtitle" class="text-xs text-slate-500">Employee and supervisor rating normalization.</p>
+                </div>
+            </div>
+            <button onclick="closeModal('modal-view-calibration')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs bg-slate-50/40">
+            <!-- 1-on-1 Discussion Minutes & Rating Record from Database (2 Clean Columns) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+                    <p class="font-bold text-slate-900 text-sm">Final Calibrated Score</p>
+                    <p class="text-3xl font-heading font-bold text-indigo-700">
+                        <span id="calib-detail-score-val">0.00</span> <span class="text-xs font-normal text-slate-400">/ 5.0</span>
+                    </p>
+                    <p class="text-[11px] text-slate-500">Grade: <strong id="calib-detail-tier-label" class="text-slate-800">Pending Calibration</strong></p>
+                </div>
+
+                <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+                    <p class="font-bold text-slate-900 text-sm">Discussion Minutes &amp; Growth Focus</p>
+                    <div id="calib-detail-discussion-minutes" class="text-slate-600 leading-relaxed text-[11px] max-h-28 overflow-y-auto custom-scrollbar">
+                        1-on-1 session discussion minutes pending formal recording in database.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Next Step: Create Development Plan if >= 3.0, or Initiate PIP if < 3.0 -->
+            <div id="calib-next-step-container">
+                <!-- Rendered dynamically by js/performance.js -->
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
+            <button type="button" onclick="closeModal('modal-view-calibration')" class="btn-secondary px-5 py-2 text-xs font-bold">
+                Close
+            </button>
+            <button id="calib-detail-btn-open-modal" onclick="open1on1CalibrationModal(window.selectedEvalEmpId || 'emp-101')" class="btn-primary px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-xs flex items-center space-x-1.5">
+                <i class="fas fa-sliders mr-1"></i>
+                <span>Open Calibration Editor</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+
+
 
 
