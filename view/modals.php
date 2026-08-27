@@ -1353,13 +1353,14 @@
 
         <!-- Body Form -->
         <form id="form-conduct-assessment" onsubmit="handleAssessmentSubmit(event)" class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs bg-white flex-1">
+            <input type="hidden" id="assess-modal-emp-id" value="">
             <div class="p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] text-[11px] text-slate-600">
                 <i class="fas fa-info-circle text-primary mr-1"></i>
-                Rate each dimension based on demonstrated observable behaviors during the 2026 Q3 review period.
+                Rate each applicable competency dimension based on observable behaviors during the review period (Scale: 1 = Needs Significant Improvement to 5 = Outstanding).
             </div>
 
             <!-- Dynamic Fields Container -->
-            <div id="assess-modal-fields" class="space-y-3">
+            <div id="assess-modal-fields" class="space-y-4">
                 <!-- Populated dynamically by launchAssessmentModalFor() -->
             </div>
 
@@ -1371,14 +1372,119 @@
 
         <!-- Footer -->
         <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
-            <span class="text-[11px] text-slate-400 font-medium hidden sm:inline"><i class="fas fa-shield text-slate-300 mr-1"></i> Official HR Record</span>
+            <span class="text-[11px] text-slate-400 font-medium hidden sm:inline"><i class="fas fa-shield text-slate-300 mr-1"></i> Official Supabase DB Record</span>
             <div class="flex items-center space-x-2.5 ml-auto">
                 <button type="button" onclick="closeModal('modal-conduct-assessment')" class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
-                <button type="button" onclick="document.getElementById('form-conduct-assessment').requestSubmit()" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5">
-                    <span>Lock &amp; Calibrate Assessment</span>
+                <button type="button" id="btn-submit-assessment" onclick="document.getElementById('form-conduct-assessment').requestSubmit()" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-2xs">
                     <i class="fas fa-check text-[10px]"></i>
+                    <span>Lock &amp; Save Assessment</span>
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add New Competency (Supabase SQL) -->
+<div id="modal-add-competency" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+    <div class="modal-card max-w-lg w-full overflow-hidden max-h-[92vh] flex flex-col">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            <div class="flex items-center space-x-3">
+                <div class="w-11 h-11 rounded-full bg-primary-50 text-primary flex items-center justify-center text-lg font-bold border border-primary-100">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div>
+                    <span class="badge-primary">Competency Catalog</span>
+                    <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">Define New Competency</h3>
+                </div>
+            </div>
+            <button onclick="closeModal('modal-add-competency')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+
+        <form id="form-add-competency" onsubmit="handleAddCompetencySubmit(event)" class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs bg-white flex-1">
+            <div class="space-y-1">
+                <label class="block font-bold text-slate-800 text-[11px]">Competency Name *</label>
+                <input type="text" id="comp-add-name" required class="w-full px-3.5 py-2.5 rounded-xl border border-[#E8DEDC] focus:ring-2 focus:ring-primary focus:outline-none bg-[#FAF8F7]" placeholder="e.g. VIP Protocol, Room Inspection, POS Operation" oninput="autoGenerateCompKey(this.value)">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-1">
+                    <label class="block font-bold text-slate-800 text-[11px]">Key / Identifier</label>
+                    <input type="text" id="comp-add-key" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] font-mono text-slate-700 uppercase bg-[#FAF8F7]" placeholder="AUTO_GENERATED">
+                </div>
+                <div class="space-y-1">
+                    <label class="block font-bold text-slate-800 text-[11px]">Category *</label>
+                    <select id="comp-add-category" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] font-semibold text-slate-800 bg-[#FAF8F7]">
+                        <option value="Core Hospitality">Core Hospitality</option>
+                        <option value="Technical Systems">Technical Systems</option>
+                        <option value="Compliance & Safety">Compliance &amp; Safety</option>
+                        <option value="Guest Relations">Guest Relations</option>
+                        <option value="Operational Mastery">Operational Mastery</option>
+                        <option value="Culinary Operations">Culinary Operations</option>
+                        <option value="Leadership & Strategy">Leadership &amp; Strategy</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <label class="block font-bold text-slate-800 text-[11px]">Scope *</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] cursor-pointer hover:bg-slate-100 transition">
+                        <input type="radio" name="comp-scope" value="General" checked onchange="handleScopeChange('General')" class="text-primary focus:ring-primary">
+                        <div>
+                            <span class="font-bold text-slate-900 block text-xs">General</span>
+                            <span class="text-[10px] text-slate-500 block">Applies to all departments</span>
+                        </div>
+                    </label>
+                    <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] cursor-pointer hover:bg-slate-100 transition">
+                        <input type="radio" name="comp-scope" value="Specific" onchange="handleScopeChange('Specific')" class="text-primary focus:ring-primary">
+                        <div>
+                            <span class="font-bold text-slate-900 block text-xs">Specific</span>
+                            <span class="text-[10px] text-slate-500 block">Dept &amp; position specific</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Specific Dept & Position Fields (Shown only if Specific) -->
+            <div id="comp-specific-fields" class="space-y-3 p-3 bg-amber-50/50 rounded-xl border border-amber-200/60 hidden">
+                <div class="space-y-1">
+                    <label class="block font-bold text-slate-800 text-[11px]">Department *</label>
+                    <select id="comp-add-dept" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] font-semibold text-slate-800 bg-white">
+                        <!-- Dynamically populated from Supabase departments -->
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="block font-bold text-slate-800 text-[11px]">Position / Role (Optional)</label>
+                    <input type="text" id="comp-add-pos" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-white text-xs" placeholder="e.g. Front Desk Host, Room Attendant, Server, Kitchen Staff (leave blank for all dept roles)">
+                    <span class="text-[10px] text-slate-500 italic block">Leave blank if this competency applies to all positions in the selected department.</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-1">
+                    <label class="block font-bold text-slate-800 text-[11px]">Target Benchmark Rating (1.0 - 5.0)</label>
+                    <input type="number" id="comp-add-benchmark" step="0.1" min="1.0" max="5.0" value="4.5" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] font-bold text-primary bg-[#FAF8F7]">
+                </div>
+                <div class="space-y-1">
+                    <label class="block font-bold text-slate-800 text-[11px]">Maximum Score Scale</label>
+                    <input type="number" id="comp-add-max" step="0.1" min="1.0" max="5.0" value="5.0" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] font-bold text-slate-800 bg-[#FAF8F7]">
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <label class="block font-bold text-slate-800 text-[11px]">Description &amp; Observable Behavioral Rubric</label>
+                <textarea id="comp-add-desc" rows="3" class="w-full p-3 rounded-xl border border-[#E8DEDC] focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-[#FAF8F7]" placeholder="Define observable behavioral expectations and operational standard requirements..."></textarea>
+            </div>
+        </form>
+
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-end space-x-2.5 flex-shrink-0">
+            <button type="button" onclick="closeModal('modal-add-competency')" class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
+            <button type="button" id="btn-submit-add-competency" onclick="document.getElementById('form-add-competency').requestSubmit()" class="btn-primary px-5 py-2 text-xs font-bold shadow-2xs flex items-center space-x-1.5">
+                <i class="fas fa-save text-[10px]"></i>
+                <span>Save Competency to Database</span>
+            </button>
         </div>
     </div>
 </div>
@@ -2907,10 +3013,10 @@
 
         <!-- Footer -->
         <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
-            <span class="text-[11px] text-slate-500 font-semibold flex items-center">
-                <i class="fas fa-seedling text-emerald-600 mr-1.5"></i>
-                <span>70-20-10 Continuous IDP Capability Framework</span>
-            </span>
+            <button onclick="viewEmployeeCompetencyRadar(window.selectedEvalEmpId || 'emp-101')" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold shadow-2xs transition flex items-center space-x-1.5" title="Inspect Associate Competency Radar &amp; Gap Diagnostic">
+                <i class="fas fa-chart-radar text-indigo-600"></i>
+                <span>View Competency Radar &amp; Gap Interventions</span>
+            </button>
             <button type="button" onclick="closeModal('modal-idp-detail')" class="btn-secondary px-5 py-2 text-xs font-bold">
                 Close Plan
             </button>
@@ -3122,9 +3228,15 @@
 
         <!-- Footer -->
         <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
-            <button type="button" onclick="closeModal('modal-view-appraisal')" class="btn-secondary px-5 py-2 text-xs font-bold">
-                Close
-            </button>
+            <div class="flex items-center space-x-2">
+                <button type="button" onclick="closeModal('modal-view-appraisal')" class="btn-secondary px-5 py-2 text-xs font-bold">
+                    Close
+                </button>
+                <button onclick="viewEmployeeCompetencyRadar(window.selectedEvalEmpId || 'emp-101')" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 rounded-xl text-xs font-bold shadow-2xs transition flex items-center space-x-1.5" title="Inspect Associate Competency Radar &amp; Gap Diagnostic">
+                    <i class="fas fa-chart-radar text-indigo-600"></i>
+                    <span>Competency Radar &amp; Gaps</span>
+                </button>
+            </div>
             <button onclick="closeModal('modal-view-appraisal'); switchSubTab('perf', 'review');" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
                 <span>Proceed to Phase 5: Calibration</span>
                 <i class="fas fa-arrow-right text-[10px]"></i>
@@ -3184,9 +3296,15 @@
 
         <!-- Footer -->
         <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
-            <button type="button" onclick="closeModal('modal-view-calibration')" class="btn-secondary px-5 py-2 text-xs font-bold">
-                Close
-            </button>
+            <div class="flex items-center space-x-2">
+                <button type="button" onclick="closeModal('modal-view-calibration')" class="btn-secondary px-5 py-2 text-xs font-bold">
+                    Close
+                </button>
+                <button onclick="viewEmployeeCompetencyRadar(window.selectedEvalEmpId || 'emp-101')" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 rounded-xl text-xs font-bold shadow-2xs transition flex items-center space-x-1.5" title="Inspect Associate Competency Radar &amp; Gap Diagnostic">
+                    <i class="fas fa-chart-radar text-indigo-600"></i>
+                    <span>Competency Radar &amp; Gaps</span>
+                </button>
+            </div>
             <button id="calib-detail-btn-open-modal" onclick="open1on1CalibrationModal(window.selectedEvalEmpId || 'emp-101')" class="btn-primary px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-xs flex items-center space-x-1.5">
                 <i class="fas fa-sliders mr-1"></i>
                 <span>Open Calibration Editor</span>

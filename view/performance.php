@@ -654,8 +654,5 @@
                                     </div>
                                     <div id="cycle-pagination-container" class="p-3 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500"></div>
                                 </div>
-                            </div>div>
+                            </div>
                         </div>
-
-                        <!-- ======================================================== -->
-                        <!-- PILLAR 2: COMPETENCY MANAGEMENT                          -->

@@ -2973,6 +2973,10 @@ function renderEvaluationRosterTable() {
                 `}
             </td>
             <td class="px-5 py-4 text-right space-x-1.5 whitespace-nowrap">
+                <button onclick="viewEmployeeCompetencyRadar('${emp.id}')" class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 rounded-lg text-[11px] font-bold transition shadow-2xs inline-flex items-center space-x-1" title="Inspect Competency Radar &amp; Skills Gap">
+                    <i class="fas fa-chart-radar text-indigo-600 text-[10px]"></i>
+                    <span>Radar</span>
+                </button>
                 <button onclick="showEmployeeEvalDetail('${emp.id}', true)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition shadow-2xs" title="View Full Appraisal">
                     <i class="fas fa-eye mr-1"></i>View
                 </button>
@@ -3502,6 +3506,10 @@ function renderReviewRosterTable() {
             </td>
             <td class="px-5 py-4 text-right">
                 <div class="flex items-center justify-end space-x-1.5">
+                    <button onclick="viewEmployeeCompetencyRadar('${emp.id}')" class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl text-xs border border-indigo-200/80 transition flex items-center space-x-1" title="Inspect Competency Radar &amp; Skills Gap">
+                        <i class="fas fa-chart-radar text-indigo-600"></i>
+                        <span>Radar</span>
+                    </button>
                     <button onclick="showCalibrationDetail('${emp.id}', true)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition flex items-center space-x-1" title="View Calibration Detail Card">
                         <i class="fas fa-eye text-indigo-600"></i>
                         <span>View</span>
@@ -3878,6 +3886,11 @@ async function handleCalibrationSubmit(e) {
 
         if (typeof showToast === 'function') {
             showToast(`🎉 1-on-1 Calibration successfully recorded and locked to database for ${emp ? emp.name : 'Employee'}! (${calibratedScore.toFixed(2)} / 5.0)`, 'success');
+        }
+
+        // Sync Performance Calibration score directly with Competency Management Radar
+        if (typeof window.syncCompetencyWithPerformance === 'function') {
+            window.syncCompetencyWithPerformance(empId);
         }
 
         closeModal('modal-1on1-calibration');
