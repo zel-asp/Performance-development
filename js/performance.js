@@ -432,9 +432,13 @@ async function loadAndRenderPlanningGoals() {
         // Render tables & employee dashboard views
         renderPlanningRosterTable();
         renderApprovalRosterTable();
+        renderMonitoringRosterTable();
         renderGeneralTasksTable();
         renderEmployeePulseGoals(goals);
         renderEvaluationRosterTable();
+        renderReviewRosterTable();
+        renderIDPRosterTable();
+        renderCycleRosterTable();
         updateAllPerfStepperBadges();
 
     } catch (err) {
@@ -443,6 +447,8 @@ async function loadAndRenderPlanningGoals() {
         renderGeneralTasksTable();
         renderEmployeePulseGoals(window.dbGoals || []);
         renderEvaluationRosterTable();
+        renderReviewRosterTable();
+        updateAllPerfStepperBadges();
     }
 }
 
@@ -457,21 +463,20 @@ function renderEmployeePulseGoals(goals) {
     const allGoals = (goals && goals.length > 0) ? goals : (window.dbGoals || []);
 
     const userObj = window.currentUser || JSON.parse(localStorage.getItem('oxford_session_user') || '{}');
-    const currentUserId = userObj.id || userObj.employee_code || 'emp-101';
+    const currentUserId = (userObj.id || userObj.employee_code || (typeof activePersonaKey !== 'undefined' && activePersonaKey === 'supervisor' ? 'emp-102' : 'emp-101')).toLowerCase().trim();
     const currentRole = window.activePersonaRole || userObj.role || 'Associate';
     const isAssociate = (currentRole.toLowerCase() === 'associate' || currentRole.toLowerCase() === 'employee' || (typeof activePersonaKey !== 'undefined' && (activePersonaKey === 'associate' || activePersonaKey === 'employee')));
     
     let empGoals = allGoals.filter(g => {
-        if (isAssociate) {
-            return !g.employee_id || g.employee_id === 'emp-101' || g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001' || g.employee_id === currentUserId || g.role === 'employee' || g.role === 'Associate';
+        const goalEmpId = (g.employee_id || '').toLowerCase().trim();
+        if (currentUserId === 'emp-101') {
+            return goalEmpId === 'emp-101' || goalEmpId === 'emp-1' || goalEmpId === 'oxf-emp-1001';
+        } else if (currentUserId === 'emp-102') {
+            return goalEmpId === 'emp-102' || goalEmpId === 'emp-2' || goalEmpId === 'oxf-sup-2001';
         } else {
-            return g.employee_id === currentUserId || g.employee_id === 'emp-102' || g.role === 'supervisor' || g.role === 'Supervisor';
+            return goalEmpId === currentUserId;
         }
     });
-
-    if (empGoals.length === 0 && allGoals.length > 0) {
-        empGoals = allGoals;
-    }
 
     if (countBadge) {
         countBadge.textContent = `${empGoals.length} Objective${empGoals.length === 1 ? '' : 's'}`;
@@ -2230,13 +2235,14 @@ function renderMonitoringRosterTable() {
     container.innerHTML = '';
     const deptFilter = document.getElementById('filter-monitoring-dept')?.value || 'all';
 
-    // Only display employees who have active/set performance objectives
-    let list = (window.perfRoster || []).filter(e => (e.goals && e.goals.length > 0) || (e.goalsCount > 0));
+    // Only display employees who have active/set performance objectives in the database
+    let list = (window.perfRoster || []).filter(e => (window.dbGoals || []).some(g => g.employee_id === e.id || (e.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')) || (e.id === 'emp-102' && (g.employee_id === 'emp-2' || g.employee_id === 'OXF-SUP-2001'))));
     if (deptFilter !== 'all') {
         list = list.filter(e => e.department.toLowerCase() === deptFilter.toLowerCase());
     }
 
     if (list.length === 0) {
+        document.getElementById('monitoring-employee-detail-card')?.classList.add('hidden');
         container.innerHTML = `
             <tr>
                 <td colspan="6" class="p-8 text-center bg-white text-slate-500 text-xs">
@@ -2842,11 +2848,27 @@ function renderEvaluationRosterTable() {
     if (!container) return;
     container.innerHTML = '';
 
-    window.perfRoster.forEach(emp => {
+    // Only show employees who actually have active performance goals in database
+    const rosterWithGoals = (window.perfRoster || []).filter(emp => (window.dbGoals || []).some(g => g.employee_id === emp.id || (emp.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (g.employee_id === 'emp-2' || g.employee_id === 'OXF-SUP-2001'))));
+
+    if (rosterWithGoals.length === 0) {
+        container.innerHTML = `
+            <tr>
+                <td colspan="6" class="px-5 py-8 text-center text-slate-400 italic bg-slate-50">
+                    <i class="fas fa-bullseye text-2xl mb-2 block text-slate-300"></i>
+                    No employees with active performance goals found in the database. Add and approve goals in Stages 1 &amp; 2 before appraisal evaluation.
+                </td>
+            </tr>
+        `;
+        document.getElementById('eval-detail-view-card')?.classList.add('hidden');
+        return;
+    }
+
+    rosterWithGoals.forEach(emp => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
 
-        // Calculate actual task progress for this employee
+        // Calculate actual task progress for this employee from Database Goals
         const empGoals = (window.dbGoals || []).filter(g => g.employee_id === emp.id || (emp.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (g.employee_id === 'emp-2' || g.employee_id === 'OXF-SUP-2001')));
         let totalTasks = 0;
         let completedTasks = 0;
@@ -2856,15 +2878,14 @@ function renderEvaluationRosterTable() {
                 if (t.status === 'completed') completedTasks++;
             });
         });
-        const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : (emp.monitoringProgress || 85);
+        const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
         
-        // Read evaluation data from database records if available
+        // Read evaluation record directly from Database / Supabase
         const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
-        const selfRating = evalRec && evalRec.self_rating ? parseFloat(evalRec.self_rating) : (emp.selfRating || (emp.id === 'emp-102' ? 4.7 : 4.3));
-        const supervisorRating = evalRec && evalRec.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : (emp.supervisorRating || emp.managerRating || 4.6);
-        const evalStatus = evalRec ? evalRec.status : (emp.evaluationStatus || 'Pending');
-        const isRated = evalStatus === 'Rated' || evalStatus === 'Calibrated';
-        const tierLabel = evalRec && evalRec.tier_label ? evalRec.tier_label : (supervisorRating >= 4.5 ? 'Master Tier' : 'Advanced');
+        const isRated = evalRec && (evalRec.status === 'Rated' || evalRec.status === 'Calibrated');
+        const supervisorRating = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null ? parseFloat(evalRec.supervisor_rating) : (isRated ? (emp.supervisorRating || 0) : 0);
+        const isBelowBenchmark = isRated && supervisorRating > 0 && supervisorRating < 3.0;
+        const tierLabel = evalRec && evalRec.tier_label ? evalRec.tier_label : (supervisorRating >= 4.5 ? 'Master Tier' : (supervisorRating >= 3.5 ? 'Advanced Tier' : (supervisorRating >= 3.0 ? 'Proficient' : 'Needs PIP')));
 
         tr.innerHTML = `
             <td class="px-5 py-4">
@@ -2893,26 +2914,46 @@ function renderEvaluationRosterTable() {
                 </div>
             </td>
             <td class="px-5 py-4 whitespace-nowrap">
-                <span class="font-bold text-slate-900 text-xs bg-primary/5 px-2 py-0.5 rounded border border-primary/10">⭐ ${selfRating.toFixed(1)}</span>
-                <span class="text-[9px] text-slate-400 block mt-0.5">Self-Score</span>
-            </td>
-            <td class="px-5 py-4 whitespace-nowrap">
-                ${isRated ? `
-                    <span class="font-bold text-emerald-800 text-xs bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">⭐ ${supervisorRating.toFixed(1)}</span>
-                    <span class="text-[9px] text-emerald-600 block mt-0.5 font-semibold">${tierLabel}</span>
+                ${isRated ? (isBelowBenchmark ? `
+                    <div class="space-y-1">
+                        <span class="font-bold text-rose-700 text-xs bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 inline-flex items-center space-x-1.5 shadow-2xs">
+                            <i class="fas fa-triangle-exclamation text-rose-600"></i>
+                            <span>⭐ ${supervisorRating.toFixed(2)} / 5.0</span>
+                        </span>
+                        <span class="text-[9px] text-rose-600 font-bold block flex items-center space-x-1">
+                            <span>⚠️ Below 3.0 (Needs PIP)</span>
+                        </span>
+                    </div>
                 ` : `
-                    <span class="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center space-x-1">
-                        <i class="fas fa-clock text-[8px]"></i><span>Pending Review</span>
+                    <div class="space-y-0.5">
+                        <span class="font-bold text-emerald-800 text-xs bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center space-x-1 shadow-2xs">
+                            <span>⭐ ${supervisorRating.toFixed(2)} / 5.0</span>
+                        </span>
+                        <span class="text-[9px] text-emerald-700 font-semibold block">${tierLabel}</span>
+                    </div>
+                `) : `
+                    <span class="text-[10px] text-amber-700 font-bold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 inline-flex items-center space-x-1 shadow-2xs">
+                        <i class="fas fa-clock text-[9px]"></i><span>Pending Evaluation</span>
                     </span>
                 `}
             </td>
             <td class="px-5 py-4 text-center whitespace-nowrap">
-                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${isRated ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                    ${isRated ? '✓ Rated' : 'Pending'}
-                </span>
+                ${isRated ? (isBelowBenchmark ? `
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                        ✓ Evaluated (Needs PIP)
+                    </span>
+                ` : `
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        ✓ Evaluated (${tierLabel})
+                    </span>
+                `) : `
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                        Pending
+                    </span>
+                `}
             </td>
             <td class="px-5 py-4 text-right space-x-1.5 whitespace-nowrap">
-                <button onclick="showEmployeeEvalDetail('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition shadow-2xs" title="View Full Multi-Factor Appraisal">
+                <button onclick="showEmployeeEvalDetail('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition shadow-2xs" title="View Full Appraisal">
                     <i class="fas fa-eye mr-1"></i>View
                 </button>
                 <button onclick="openAppraisalModal('${emp.id}')" class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-[11px] font-bold shadow-xs transition" title="Open Appraisal Scoring Form">
@@ -2926,7 +2967,8 @@ function renderEvaluationRosterTable() {
 window.renderEvaluationRosterTable = renderEvaluationRosterTable;
 
 function showEmployeeEvalDetail(empId) {
-    const emp = window.perfRoster.find(e => e.id === empId) || window.perfRoster[0];
+    if (!empId) return;
+    const emp = window.perfRoster.find(e => e.id === empId);
     if (!emp) return;
     window.selectedEvalEmpId = emp.id;
 
@@ -2934,36 +2976,58 @@ function showEmployeeEvalDetail(empId) {
     const detail = document.getElementById('eval-detail-view-card');
     if (!detail) return;
 
-    // Read DB evaluation record
+    // Read DB evaluation record from database store
     const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
 
     // Header info
     const titleEl = document.getElementById('eval-detail-emp-title');
     const subEl = document.getElementById('eval-detail-emp-subtitle');
-    if (titleEl) titleEl.innerText = `${emp.name} — Formal Multi-Factor Appraisal`;
+    if (titleEl) titleEl.innerText = `${emp.name} — Formal Supervisor Appraisal`;
     if (subEl) subEl.innerText = `${emp.position} · ${emp.department}`;
     
-    const isRated = (evalRec && (evalRec.status === 'Rated' || evalRec.status === 'Calibrated')) || emp.evaluationStatus === 'Rated';
+    const isRated = evalRec && (evalRec.status === 'Rated' || evalRec.status === 'Calibrated');
+    const superScore = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null ? parseFloat(evalRec.supervisor_rating) : 0;
+    const isBelowBenchmark = isRated && superScore > 0 && superScore < 3.0;
+    const tierLabel = evalRec && evalRec.tier_label ? evalRec.tier_label : (superScore >= 4.5 ? 'Master Tier' : (superScore >= 3.5 ? 'Advanced Tier' : (superScore >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)')));
+
     const statusBadge = document.getElementById('eval-detail-status-badge');
     if (statusBadge) {
-        statusBadge.className = `px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isRated ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`;
-        statusBadge.textContent = isRated ? '✓ Appraisal Rated (Database)' : 'Pending Evaluation';
+        if (isBelowBenchmark) {
+            statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200';
+            statusBadge.textContent = `✓ Appraisal Completed (${tierLabel} · < 3.0)`;
+        } else if (isRated) {
+            statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200';
+            statusBadge.textContent = `✓ Appraisal Completed (${tierLabel})`;
+        } else {
+            statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200';
+            statusBadge.textContent = 'Pending Supervisor Evaluation';
+        }
     }
 
-    // Objectives Scorecard
+    // Toggle Warning Alert Banner if Supervisor Rating Below 3.0
+    const warningAlert = document.getElementById('eval-detail-warning-alert');
+    if (warningAlert) {
+        if (isBelowBenchmark) {
+            warningAlert.classList.remove('hidden');
+        } else {
+            warningAlert.classList.add('hidden');
+        }
+    }
+
+    // Objectives Scorecard from Database
     const empGoals = (window.dbGoals || []).filter(g => g.employee_id === emp.id || (emp.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (g.employee_id === 'emp-2' || g.employee_id === 'OXF-SUP-2001')));
     const objContainer = document.getElementById('eval-detail-objectives-container');
     if (objContainer) {
         if (empGoals.length === 0) {
-            objContainer.innerHTML = `<p class="col-span-full text-slate-400 italic text-xs py-2">No active objectives calibrated yet.</p>`;
+            objContainer.innerHTML = `<p class="col-span-full text-slate-400 italic text-xs py-2">No active objectives calibrated in database yet.</p>`;
         } else {
             objContainer.innerHTML = empGoals.map((g, idx) => {
                 const tasks = g.tasks || [];
                 const done = tasks.filter(t => t.status === 'completed').length;
                 const total = tasks.length;
-                const pct = total > 0 ? Math.round((done / total) * 100) : (g.status === 'Approved' ? 100 : 50);
+                const pct = total > 0 ? Math.round((done / total) * 100) : (g.status === 'Completed' ? 100 : 0);
                 return `
-                    <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5 text-xs">
+                    <div class="p-3 bg-white rounded-2xl border border-slate-200 space-y-1.5 text-xs shadow-2xs">
                         <div class="flex items-center justify-between">
                             <span class="font-bold text-slate-900 line-clamp-1">${idx + 1}. ${g.title}</span>
                             <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary">${g.weight ? g.weight.split(' ')[0] : '25%'}</span>
@@ -2974,8 +3038,8 @@ function showEmployeeEvalDetail(empId) {
                                 <span>Tasks: ${done}/${total} Done</span>
                                 <span class="text-primary">${pct}%</span>
                             </div>
-                            <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                                <div class="bg-primary h-1.5 rounded-full" style="width: ${pct}%"></div>
+                            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div class="${pct >= 100 ? 'bg-emerald-500' : 'bg-primary'} h-1.5 rounded-full" style="width: ${pct}%"></div>
                             </div>
                         </div>
                     </div>
@@ -2984,72 +3048,55 @@ function showEmployeeEvalDetail(empId) {
         }
     }
 
-    // Self-Assessment & Breakdown from DB
-    const selfScore = evalRec && evalRec.self_rating ? parseFloat(evalRec.self_rating) : (emp.selfRating || (emp.id === 'emp-102' ? 4.7 : 4.3));
-    const selfScoreEl = document.getElementById('eval-detail-self-score');
-    if (selfScoreEl) {
-        selfScoreEl.innerHTML = `${selfScore.toFixed(1)} <span class="text-sm font-normal text-slate-400">/ 5.0 (${selfScore >= 4.5 ? 'Master' : selfScore >= 4.0 ? 'Advanced' : 'Proficient'})</span>`;
-    }
-
-    const selfBreakdownEl = document.getElementById('eval-detail-self-breakdown');
-    if (selfBreakdownEl) {
-        const selfList = evalRec && Array.isArray(evalRec.self_breakdown) && evalRec.self_breakdown.length > 0 ? evalRec.self_breakdown : null;
-        if (selfList) {
-            selfBreakdownEl.innerHTML = selfList.map(item => `
-                <p><strong>${item.criterion || item.title}:</strong> ${item.score || item.rating} / 5.0 ("${item.notes || item.rationale || 'Self-assessed'}")</p>
-            `).join('');
-        } else if (emp.id === 'emp-102') {
-            selfBreakdownEl.innerHTML = `
-                <p><strong>Culinary Excellence &amp; Plating:</strong> 4.9 / 5.0 ("Achieved 98% food quality benchmark")</p>
-                <p><strong>Food Cost &amp; Inventory Management:</strong> 4.7 / 5.0 ("Maintained cost ratio under 26.5%")</p>
-                <p><strong>Brigade Mentorship &amp; Hygiene:</strong> 4.5 / 5.0 ("Trained 4 apprentice line chefs")</p>
-            `;
+    // Supervisor Assessment Score from Database
+    const superScoreEl = document.getElementById('eval-detail-super-score');
+    if (superScoreEl) {
+        if (isRated) {
+            superScoreEl.innerHTML = `${superScore.toFixed(2)} <span class="text-sm font-normal text-slate-400">/ 5.0 (${tierLabel})</span>`;
         } else {
-            selfBreakdownEl.innerHTML = `
-                <p><strong>Guest Satisfaction Protocols:</strong> 4.8 / 5.0 ("Consistently achieved 5-star check-in ratings")</p>
-                <p><strong>PMS Reservation Speed:</strong> 4.5 / 5.0 ("Maintained under 2-min transaction speed")</p>
-                <p><strong>Conflict De-escalation &amp; Teamwork:</strong> 3.8 / 5.0 ("Handled rain delay check-ins smoothly")</p>
-            `;
+            superScoreEl.innerHTML = `0.00 <span class="text-sm font-normal text-slate-400">/ 5.0 (Pending Evaluation)</span>`;
         }
     }
 
-    // Supervisor Assessment & Recommendation from DB
-    const superScore = evalRec && evalRec.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : (emp.supervisorRating || emp.managerRating || 4.6);
-    const tierLabel = evalRec && evalRec.tier_label ? evalRec.tier_label : (superScore >= 4.5 ? 'Master Tier' : 'Advanced Tier');
-    const superScoreEl = document.getElementById('eval-detail-super-score');
-    if (superScoreEl) {
-        superScoreEl.innerHTML = `${superScore.toFixed(1)} <span class="text-sm font-normal text-slate-400">/ 5.0 (${tierLabel})</span>`;
+    const tierBadgeContainer = document.getElementById('eval-detail-tier-badge-container');
+    if (tierBadgeContainer) {
+        if (isBelowBenchmark) {
+            tierBadgeContainer.innerHTML = `<span class="px-3 py-1 rounded-xl text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200 inline-flex items-center space-x-1.5"><i class="fas fa-triangle-exclamation"></i><span>Below 3.0 Benchmark</span></span>`;
+        } else if (isRated) {
+            tierBadgeContainer.innerHTML = `<span class="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center space-x-1.5"><i class="fas fa-award"></i><span>${tierLabel}</span></span>`;
+        } else {
+            tierBadgeContainer.innerHTML = `<span class="px-3 py-1 rounded-xl text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">Evaluation Pending</span>`;
+        }
     }
 
+    // Evaluated Criteria Breakdown from Database
+    const criteriaBreakdownEl = document.getElementById('eval-detail-criteria-breakdown');
+    if (criteriaBreakdownEl) {
+        const list = evalRec && Array.isArray(evalRec.criteria_scores) && evalRec.criteria_scores.length > 0 ? evalRec.criteria_scores : [];
+        if (list.length > 0) {
+            criteriaBreakdownEl.innerHTML = list.map((c, i) => `
+                <div class="p-3 bg-white rounded-xl border ${c.rating < 3.0 ? 'border-rose-200 bg-rose-50/20' : 'border-slate-200'} space-y-1 shadow-2xs">
+                    <div class="flex justify-between items-center text-xs flex-wrap gap-1">
+                        <span class="font-bold text-slate-900">${i + 1}. ${c.title} <span class="text-[10px] text-slate-400 font-normal">(${c.metric || 'Standard Benchmark'})</span></span>
+                        <span class="font-bold font-mono px-2 py-0.5 rounded text-[11px] ${c.rating < 3.0 ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800'}">
+                            ${c.rating < 3.0 ? '⚠️ ' : ''}⭐ ${parseFloat(c.rating || 0).toFixed(1)} / 5.0 (${c.weight || '33'}% wt)
+                        </span>
+                    </div>
+                    ${c.rationale ? `<p class="text-[11px] text-slate-600 italic pl-2 border-l-2 ${c.rating < 3.0 ? 'border-rose-300' : 'border-purple-300'}">"${c.rationale}"</p>` : ''}
+                </div>
+            `).join('');
+        } else {
+            criteriaBreakdownEl.innerHTML = `<p class="text-slate-400 italic text-[11px] p-3 bg-white rounded-xl border border-slate-200">No specific criteria rubric recorded in database yet.</p>`;
+        }
+    }
+
+    // Supervisor Notes & Recommendation from Database
     const superRecEl = document.getElementById('eval-detail-super-recommendation');
     if (superRecEl) {
         if (evalRec && evalRec.supervisor_notes) {
-            superRecEl.innerHTML = `<p><strong>Supervisor Endorsement:</strong> "${evalRec.supervisor_notes}"</p>`;
-        } else if (emp.id === 'emp-102') {
-            superRecEl.innerHTML = `
-                <p><strong>Supervisor Endorsement:</strong> "Marco has elevated our hotel fine-dining reputation and mentored junior staff seamlessly."</p>
-                <p><strong>Development Focus:</strong> "Q4 focus on sustainable farm-to-table wine dinner series."</p>
-            `;
+            superRecEl.innerHTML = `<p class="text-slate-800 leading-relaxed italic">"${evalRec.supervisor_notes}"</p>`;
         } else {
-            superRecEl.innerHTML = `
-                <p><strong>Supervisor Endorsement:</strong> "Maria is one of our top front-of-house ambassadors with exemplary guest rapport. Recommended for Front Office Lead track."</p>
-                <p><strong>Development Focus:</strong> "Wine storytelling &amp; luxury upselling module for Q4 IDP."</p>
-            `;
-        }
-    }
-
-    // Peer 360 Feedback from DB
-    const peerEl = document.getElementById('eval-detail-peer-feedback');
-    if (peerEl) {
-        const peerList = evalRec && Array.isArray(evalRec.peer_feedback) && evalRec.peer_feedback.length > 0 ? evalRec.peer_feedback : null;
-        if (peerList) {
-            peerEl.innerHTML = peerList.map(pf => `
-                <p class="mb-1.5">"${pf.feedback}" — <em>${pf.reviewer} (${pf.role})</em></p>
-            `).join('');
-        } else if (emp.id === 'emp-102') {
-            peerEl.innerHTML = `<p>"Chef Marco always maintains supreme kitchen calm during 200+ banquet rushes and ensures immaculate taste." — <em>Elena Vance (F&amp;B Director)</em></p>`;
-        } else {
-            peerEl.innerHTML = `<p>"Maria demonstrates exemplary poise under pressure. Always steps in to assist banquet hosts when lobby queues form." — <em>Carlos Gomez (Concierge Host)</em></p>`;
+            superRecEl.innerHTML = `<p class="text-slate-400 italic">No formal supervisor endorsement notes entered in database yet.</p>`;
         }
     }
 
@@ -3064,7 +3111,44 @@ function hideEmployeeEvalDetail() {
 }
 window.hideEmployeeEvalDetail = hideEmployeeEvalDetail;
 
+window.pendingEvalEmpId = null;
+
 function openAppraisalModal(empId) {
+    const emp = window.perfRoster.find(e => e.id === empId) || window.perfRoster[0];
+    if (!emp) return;
+
+    window.selectedEvalEmpId = emp.id;
+
+    // Check if employee has monitoring action tasks in database
+    const empGoals = (window.dbGoals || []).filter(g => g.employee_id === emp.id || (emp.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (g.employee_id === 'emp-2' || g.employee_id === 'OXF-SUP-2001')));
+    let totalTasks = 0;
+    empGoals.forEach(g => {
+        (g.tasks || []).forEach(t => totalTasks++);
+    });
+
+    if (totalTasks === 0) {
+        window.pendingEvalEmpId = emp.id;
+        const msgEl = document.getElementById('eval-no-tasks-emp-msg');
+        if (msgEl) {
+            msgEl.textContent = `${emp.name} (${emp.position}) does not have any active or completed monitoring action tasks recorded in the database yet for this review cycle.`;
+        }
+        openModal('modal-eval-no-tasks-confirm');
+        return;
+    }
+
+    openAppraisalModalInternal(emp.id);
+}
+window.openAppraisalModal = openAppraisalModal;
+
+function proceedToAppraisalModal() {
+    closeModal('modal-eval-no-tasks-confirm');
+    if (window.pendingEvalEmpId) {
+        openAppraisalModalInternal(window.pendingEvalEmpId);
+    }
+}
+window.proceedToAppraisalModal = proceedToAppraisalModal;
+
+function openAppraisalModalInternal(empId) {
     const emp = window.perfRoster.find(e => e.id === empId) || window.perfRoster[0];
     if (!emp) return;
 
@@ -3093,10 +3177,10 @@ function openAppraisalModal(empId) {
     } else if (empGoals.length > 0) {
         criteriaList = empGoals.map((g, idx) => ({
             title: g.title,
-            metric: g.target_metric,
+            metric: g.target_metric || '100% SOP Compliance',
             weight: parseInt(g.weight || '30', 10) || 30,
             initialRating: 4.5,
-            rationale: 'Demonstrated high consistency in achieving target deliverables with positive guest feedback.'
+            rationale: 'Demonstrated consistency in achieving shift deliverables.'
         }));
     } else {
         criteriaList = [
@@ -3114,7 +3198,7 @@ function openAppraisalModal(empId) {
             </div>
             <p class="text-[10px] text-slate-500 font-medium font-mono">Target Metric: ${c.metric}</p>
             <input type="range" min="1" max="5" step="0.1" value="${c.initialRating}" data-title="${encodeURIComponent(c.title)}" data-metric="${encodeURIComponent(c.metric)}" data-weight="${c.weight}" id="criteria-slider-${idx}" oninput="updateAppraisalComputedScore()" class="w-full accent-[#9E1B20] appraisal-score-slider cursor-pointer">
-            <textarea rows="2" placeholder="Provide performance evidence, KPI deliverables observed, and coaching notes..." class="w-full p-2.5 bg-white rounded-xl border border-[#E8DEDC] text-xs text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar">${c.rationale || 'Demonstrated high consistency in achieving target deliverables with positive guest feedback.'}</textarea>
+            <textarea rows="2" placeholder="Provide performance evidence, KPI deliverables observed, and coaching notes..." class="w-full p-2.5 bg-white rounded-xl border border-[#E8DEDC] text-xs text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar">${c.rationale || 'Demonstrated consistency in achieving shift deliverables.'}</textarea>
         </div>
     `).join('');
 
@@ -3127,7 +3211,7 @@ function openAppraisalModal(empId) {
     updateAppraisalComputedScore();
     openModal('modal-self-assessment');
 }
-window.openAppraisalModal = openAppraisalModal;
+window.openAppraisalModalInternal = openAppraisalModalInternal;
 
 function updateAppraisalComputedScore() {
     const sliders = document.querySelectorAll('.appraisal-score-slider');
@@ -3148,10 +3232,16 @@ function updateAppraisalComputedScore() {
     });
 
     const finalScore = totalWeight > 0 ? (weightedSum / totalWeight) : 4.5;
-    const tier = finalScore >= 4.5 ? 'Master Tier' : finalScore >= 4.0 ? 'Advanced' : finalScore >= 3.0 ? 'Proficient' : 'Developing';
+    const isBelow3 = finalScore < 3.0;
+    const tier = finalScore >= 4.5 ? 'Master Tier' : (finalScore >= 3.5 ? 'Advanced Tier' : (finalScore >= 3.0 ? 'Proficient' : '⚠️ Below 3.0 (Needs PIP)'));
     const displayEl = document.getElementById('eval-overall-score-display');
     if (displayEl) {
         displayEl.textContent = `${finalScore.toFixed(2)} / 5.0 (${tier})`;
+        if (isBelow3) {
+            displayEl.className = 'font-mono font-bold text-sm text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 inline-block';
+        } else {
+            displayEl.className = 'font-mono font-bold text-sm text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-block';
+        }
     }
 }
 window.updateAppraisalComputedScore = updateAppraisalComputedScore;
@@ -3212,7 +3302,7 @@ async function handleAppraisalSubmit(e) {
             emp.evaluationStatus = 'Rated';
             emp.supervisorRating = finalScore;
             emp.managerRating = finalScore;
-            emp.tierLabel = saved.tier_label || (finalScore >= 4.5 ? 'Master Tier' : 'Advanced');
+            emp.tierLabel = saved.tier_label || (finalScore >= 4.5 ? 'Master Tier' : 'Advanced Tier');
             emp.evaluationRecord = saved;
             emp.reviewStatus = 'Pending Calibration';
         }
@@ -3232,6 +3322,7 @@ async function handleAppraisalSubmit(e) {
         closeModal('modal-self-assessment');
         renderEvaluationRosterTable();
         showEmployeeEvalDetail(empId);
+        renderReviewRosterTable();
         updateAllPerfStepperBadges();
 
         if (typeof loadLiveNotifications === 'function') {
@@ -3256,104 +3347,1011 @@ function renderReviewRosterTable() {
     if (!container) return;
     container.innerHTML = '';
 
-    window.perfRoster.forEach(emp => {
+    // ONLY display employees who have active goals in database AND a completed Stage 4 evaluation
+    const evaluatedEmployees = (window.perfRoster || []).filter(emp => {
+        const hasGoal = (window.dbGoals || []).some(g => isSameEmployee(g.employee_id, emp.id));
+        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const hasEval = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0;
+        return hasGoal && hasEval;
+    });
+
+    if (evaluatedEmployees.length === 0) {
+        container.innerHTML = `
+            <tr>
+                <td colspan="6" class="px-5 py-8 text-center text-slate-400 italic bg-slate-50">
+                    <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2 text-base">
+                        <i class="fas fa-sliders"></i>
+                    </div>
+                    <p class="font-bold text-slate-700 mb-0.5">No Calibrations Available</p>
+                    <p class="text-slate-400 text-[11px]">Employees must have active performance goals in the database and completed Stage 4 supervisor evaluations before 1-on-1 calibration can occur.</p>
+                </td>
+            </tr>
+        `;
+        showEmptyCalibrationDetail();
+        return;
+    }
+
+    // Auto-select first evaluated employee if none selected
+    if (!window.selectedCalibEmpId || !evaluatedEmployees.some(e => isSameEmployee(e.id, window.selectedCalibEmpId))) {
+        window.selectedCalibEmpId = evaluatedEmployees[0].id;
+    }
+    showCalibrationDetail(window.selectedCalibEmpId);
+
+    evaluatedEmployees.forEach(emp => {
+        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        
+        const rawSupScore = evalRec ? parseFloat(evalRec.supervisor_rating || 0) : (parseFloat(emp.supervisorRating || emp.managerRating || 0));
+        const calibScore = evalRec && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : (rawSupScore > 0 ? rawSupScore : null);
+        const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
+        const tierLabel = evalRec?.tier_label || (calibScore ? (calibScore >= 4.5 ? 'Master Tier' : (calibScore >= 3.5 ? 'Advanced Tier' : (calibScore >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)'))) : 'Pending');
+
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
         tr.innerHTML = `
-            <td class="px-5 py-4 font-bold text-slate-900">${emp.name} (${emp.position})</td>
-            <td class="px-5 py-4 text-slate-600">${emp.department}</td>
-            <td class="px-5 py-4 font-bold text-emerald-600 text-sm">⭐ ${(emp.managerRating * 0.95).toFixed(2)} / 5.0</td>
             <td class="px-5 py-4">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${emp.reviewStatus === 'Calibrated' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                    ${emp.reviewStatus}
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-800 font-bold flex items-center justify-center text-xs">
+                        ${emp.avatar || (emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0, 2) : 'EM')}
+                    </div>
+                    <div>
+                        <p class="font-bold text-slate-900 leading-tight">${emp.name}</p>
+                        <p class="text-[10px] text-slate-400">${emp.position}</p>
+                    </div>
+                </div>
+            </td>
+            <td class="px-5 py-4 text-slate-600 font-medium">${emp.department}</td>
+            <td class="px-5 py-4">
+                ${rawSupScore > 0 ? `
+                    <span class="font-mono font-bold text-xs ${rawSupScore < 3.0 ? 'text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200' : 'text-slate-800'}">
+                        ${rawSupScore < 3.0 ? '⚠️ ' : ''}⭐ ${rawSupScore.toFixed(2)} / 5.0
+                    </span>
+                ` : `<span class="text-slate-400 italic text-[11px]">Unrated</span>`}
+            </td>
+            <td class="px-5 py-4">
+                ${calibScore ? `
+                    <div class="space-y-0.5">
+                        <span class="font-bold font-mono text-xs ${calibScore < 3.0 ? 'text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200' : 'text-indigo-700'}">
+                            ${calibScore < 3.0 ? '⚠️ ' : ''}⭐ ${calibScore.toFixed(2)} / 5.0
+                        </span>
+                        <span class="text-[10px] text-slate-500 block font-medium">(${tierLabel})</span>
+                    </div>
+                ` : `<span class="text-slate-400 italic text-[11px]">Pending 1-on-1</span>`}
+            </td>
+            <td class="px-5 py-4 text-center">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isCalibrated ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}">
+                    ${isCalibrated ? '✓ Calibrated' : 'Pending 1-on-1'}
                 </span>
             </td>
             <td class="px-5 py-4 text-right">
-                <button onclick="switchSubTab('perf', 'idp')" class="px-3.5 py-1.5 bg-indigo-600 text-white font-bold rounded-xl text-xs shadow-xs hover:bg-indigo-700 transition">
-                    Calibrate & IDP &rarr;
-                </button>
+                <div class="flex items-center justify-end space-x-1.5">
+                    <button onclick="showCalibrationDetail('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition flex items-center space-x-1" title="View Calibration Detail Card">
+                        <i class="fas fa-eye text-indigo-600"></i>
+                        <span>View</span>
+                    </button>
+                    <button onclick="open1on1MinutesModal('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition flex items-center space-x-1" title="View 1-on-1 Discussion Minutes">
+                        <i class="fas fa-file-lines text-indigo-600"></i>
+                        <span>Minutes</span>
+                    </button>
+                    <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="Calibrate and Record 1-on-1 Review">
+                        <i class="fas fa-sliders"></i>
+                        <span>Calibrate</span>
+                    </button>
+                </div>
             </td>
         `;
         container.appendChild(tr);
     });
 }
+window.renderReviewRosterTable = renderReviewRosterTable;
+
+function showEmptyCalibrationDetail() {
+    const titleEl = document.getElementById('calib-detail-emp-title');
+    const roleEl = document.getElementById('calib-detail-emp-role');
+    const avatarEl = document.getElementById('calib-detail-emp-avatar');
+    const scoreValEl = document.getElementById('calib-detail-score-val');
+    const tierLabelEl = document.getElementById('calib-detail-tier-label');
+    const minutesEl = document.getElementById('calib-detail-discussion-minutes');
+    const statusBadge = document.getElementById('calib-detail-status-badge');
+    const nextStepContainer = document.getElementById('calib-next-step-container');
+
+    if (titleEl) titleEl.textContent = 'No Calibrations Pending';
+    if (roleEl) roleEl.textContent = 'Awaiting active goals & completed Stage 4 evaluations in database';
+    if (avatarEl) avatarEl.textContent = '--';
+    if (scoreValEl) {
+        scoreValEl.textContent = '0.00';
+        if (scoreValEl.parentElement) scoreValEl.parentElement.className = 'text-3xl font-heading font-bold text-slate-400';
+    }
+    if (tierLabelEl) tierLabelEl.textContent = 'Pending Evaluation';
+    if (statusBadge) {
+        statusBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500';
+        statusBadge.textContent = 'No Active Evaluations';
+    }
+    if (minutesEl) {
+        minutesEl.innerHTML = '<p class="text-slate-400 italic text-center p-3 bg-slate-50 rounded-xl border border-slate-200">No 1-on-1 calibration minutes recorded in database yet.</p>';
+    }
+    if (nextStepContainer) {
+        nextStepContainer.innerHTML = `
+            <div class="p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center text-xs text-slate-500">
+                <i class="fas fa-sliders text-slate-400 text-base mb-1 block"></i>
+                No active 1-on-1 calibrations available. Set and approve performance goals in Stage 1 &amp; 2, and complete Stage 4 appraisal evaluations first.
+            </div>
+        `;
+    }
+}
+window.showEmptyCalibrationDetail = showEmptyCalibrationDetail;
+
+function showCalibrationDetail(empId) {
+    if (!empId) {
+        showEmptyCalibrationDetail();
+        return;
+    }
+
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId));
+    if (!emp) {
+        showEmptyCalibrationDetail();
+        return;
+    }
+
+    window.selectedCalibEmpId = emp.id;
+
+    const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, emp.id));
+    const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+
+    if (empGoals.length === 0 || !evalRec) {
+        showEmptyCalibrationDetail();
+        return;
+    }
+
+    const titleEl = document.getElementById('calib-detail-emp-title');
+    const roleEl = document.getElementById('calib-detail-emp-role');
+    const avatarEl = document.getElementById('calib-detail-emp-avatar');
+    const statusBadge = document.getElementById('calib-detail-status-badge');
+    const scoreValEl = document.getElementById('calib-detail-score-val');
+    const tierLabelEl = document.getElementById('calib-detail-tier-label');
+    const minutesEl = document.getElementById('calib-detail-discussion-minutes');
+    const nextStepContainer = document.getElementById('calib-next-step-container');
+
+    if (titleEl) titleEl.textContent = emp.name;
+    if (roleEl) roleEl.textContent = `${emp.position} · ${emp.department}`;
+    if (avatarEl) avatarEl.textContent = emp.avatar || emp.name.split(' ').map(n => n[0]).join('').substring(0, 2);
+
+    const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
+    const calibScore = isCalibrated && evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : null;
+    const rawSupScore = evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0.00;
+    const tier = isCalibrated ? (evalRec?.tier_label || (calibScore ? (calibScore >= 4.5 ? 'Master Tier' : (calibScore >= 3.5 ? 'Advanced Tier' : (calibScore >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)'))) : 'Pending Calibration')) : 'Pending 1-on-1 Calibration';
+
+    if (statusBadge) {
+        if (isCalibrated) {
+            statusBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200';
+            statusBadge.innerHTML = '✓ Calibrated &amp; Approved';
+        } else {
+            statusBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200';
+            statusBadge.innerHTML = 'Pending 1-on-1 Calibration';
+        }
+    }
+
+    if (scoreValEl) {
+        scoreValEl.textContent = calibScore !== null ? calibScore.toFixed(2) : '--';
+        if (calibScore !== null && calibScore < 3.0) {
+            scoreValEl.parentElement.className = 'text-3xl font-heading font-bold text-rose-600';
+        } else if (calibScore !== null) {
+            scoreValEl.parentElement.className = 'text-3xl font-heading font-bold text-indigo-700';
+        } else {
+            scoreValEl.parentElement.className = 'text-3xl font-heading font-bold text-slate-400';
+        }
+    }
+
+    if (tierLabelEl) tierLabelEl.textContent = tier;
+
+    if (minutesEl) {
+        const recordedMinutes = evalRec?.digital_signoffs?.discussion_minutes;
+        if (recordedMinutes) {
+            minutesEl.innerHTML = `<p class="italic text-slate-700 leading-relaxed">"${recordedMinutes}"</p>`;
+        } else if (evalRec && evalRec.supervisor_notes) {
+            minutesEl.innerHTML = `<p class="italic text-slate-600 leading-relaxed">Supervisor Appraisal Note: "${evalRec.supervisor_notes}". <span class="text-amber-600 block mt-1 font-semibold">1-on-1 discussion minutes pending formal recording.</span></p>`;
+        } else {
+            minutesEl.innerHTML = `<p class="text-slate-400 italic text-center p-3 bg-slate-50 rounded-xl border border-slate-200">No 1-on-1 calibration minutes recorded in database yet.</p>`;
+        }
+    }
+
+    // Dynamic Next Step
+    if (nextStepContainer) {
+        if (isCalibrated && calibScore && calibScore >= 3.0) {
+            nextStepContainer.innerHTML = `
+                <div class="p-4 bg-indigo-50/70 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-indigo-950">
+                    <div class="flex items-center space-x-2.5">
+                        <i class="fas fa-circle-check text-emerald-600 text-base"></i>
+                        <span>Associate calibrated score meets proficiency benchmark (⭐ <strong>${calibScore.toFixed(2)} / 5.0</strong>). Proceed to create the Individual Development Plan.</span>
+                    </div>
+                    <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}');" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs transition flex-shrink-0">
+                        Create Development Plan &rarr;
+                    </button>
+                </div>
+            `;
+        } else if (isCalibrated && calibScore && calibScore < 3.0) {
+            nextStepContainer.innerHTML = `
+                <div class="p-4 bg-rose-50 rounded-2xl border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-950">
+                    <div class="flex items-center space-x-2.5">
+                        <i class="fas fa-triangle-exclamation text-rose-600 text-base"></i>
+                        <span><strong>Performance Warning:</strong> Associate calibrated score (⭐ <strong>${calibScore.toFixed(2)} / 5.0</strong>) is below 3.0 benchmark. Mandatory Performance Improvement Plan (PIP) required.</span>
+                    </div>
+                    <button onclick="openPIPModal('${emp.id}')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex-shrink-0">
+                        <i class="fas fa-file-shield mr-1"></i> Initiate Performance Improvement Plan (PIP) &rarr;
+                    </button>
+                </div>
+            `;
+        } else {
+            nextStepContainer.innerHTML = `
+                <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-950">
+                    <div class="flex items-center space-x-2.5">
+                        <i class="fas fa-sliders text-amber-600 text-base"></i>
+                        <span>Supervisor appraisal complete (⭐ <strong>${rawSupScore.toFixed(2)} / 5.0</strong>). Ready for formal 1-on-1 rating calibration.</span>
+                    </div>
+                    <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition flex-shrink-0">
+                        Calibrate 1-on-1 &rarr;
+                    </button>
+                </div>
+            `;
+        }
+    }
+}
+window.showCalibrationDetail = showCalibrationDetail;
+
+function open1on1CalibrationModal(empId) {
+    if (!empId) {
+        if (typeof showToast === 'function') {
+            showToast('⚠️ Please select an employee to calibrate.', 'info');
+        }
+        return;
+    }
+
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId));
+    if (!emp) {
+        if (typeof showToast === 'function') {
+            showToast('Employee not found in performance roster.', 'error');
+        }
+        return;
+    }
+
+    // 1. Guard check: Employee must have active goals in the database
+    const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, emp.id));
+    if (empGoals.length === 0) {
+        if (typeof showToast === 'function') {
+            showToast(`⚠️ Cannot calibrate: No active performance goals found in the database for ${emp.name}. Set and approve goals first.`, 'warning');
+        }
+        return;
+    }
+
+    // 2. Guard check: Employee must have a completed Stage 4 evaluation in the database
+    const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+    const hasEval = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0;
+    if (!hasEval) {
+        if (typeof showToast === 'function') {
+            showToast(`⚠️ Cannot calibrate: Stage 4 formal supervisor appraisal has not been completed yet in the database for ${emp.name}. Complete evaluation first.`, 'warning');
+        }
+        return;
+    }
+
+    window.selectedEvalEmpId = emp.id;
+
+    const targetInput = document.getElementById('calib-target-emp-id');
+    const titleEl = document.getElementById('modal-calib-emp-title');
+    const nameEl = document.getElementById('calib-emp-name');
+    const roleEl = document.getElementById('calib-emp-role');
+    const avatarEl = document.getElementById('calib-emp-avatar');
+    const rawSupEl = document.getElementById('calib-raw-supervisor-score');
+    const sliderEl = document.getElementById('calib-score-slider');
+    const minutesEl = document.getElementById('calib-discussion-minutes');
+    const tierSelect = document.getElementById('calib-tier-select');
+
+    if (targetInput) targetInput.value = emp.id;
+    if (titleEl) titleEl.textContent = `1-on-1 Review & Calibration: ${emp.name}`;
+    if (nameEl) nameEl.textContent = emp.name;
+    if (roleEl) roleEl.textContent = `${emp.position} · ${emp.department}`;
+    if (avatarEl) avatarEl.textContent = emp.avatar || emp.name.split(' ').map(n => n[0]).join('').substring(0, 2);
+
+    const supScore = evalRec ? parseFloat(evalRec.supervisor_rating || 0) : 0;
+    if (rawSupEl) {
+        rawSupEl.textContent = supScore > 0 ? `⭐ ${supScore.toFixed(2)} / 5.0 (${evalRec?.tier_label || 'Appraised'})` : 'Unrated Draft';
+    }
+
+    const defaultCalibScore = evalRec && evalRec.status === 'Calibrated' && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : (supScore > 0 ? supScore : 4.50);
+    if (sliderEl) {
+        sliderEl.value = defaultCalibScore.toFixed(2);
+    }
+
+    if (minutesEl) {
+        minutesEl.value = evalRec?.digital_signoffs?.discussion_minutes || `Conducted 1-on-1 performance review discussion with ${emp.name}. Reviewed deliverable outcomes and agreed on hospitality development targets for next cycle.`;
+    }
+
+    onCalibrationScoreInput(defaultCalibScore, true);
+    openModal('modal-1on1-calibration');
+}
+window.open1on1CalibrationModal = open1on1CalibrationModal;
+
+function onCalibrationTierSelect(tier) {
+    const sliderEl = document.getElementById('calib-score-slider');
+    let targetScore = 4.80;
+    if (tier === 'Master Tier') {
+        targetScore = 4.80;
+    } else if (tier === 'Advanced Tier') {
+        targetScore = 4.00;
+    } else if (tier === 'Proficient') {
+        targetScore = 3.20;
+    } else if (tier === 'Developing (Needs PIP)') {
+        targetScore = 2.50;
+    }
+
+    if (sliderEl) {
+        sliderEl.value = targetScore.toFixed(2);
+    }
+    onCalibrationScoreInput(targetScore, false);
+}
+window.onCalibrationTierSelect = onCalibrationTierSelect;
+
+function onCalibrationScoreInput(val, syncSelect = true) {
+    const score = parseFloat(val) || 4.0;
+    const isBelow3 = score < 3.0;
+    const tier = score >= 4.5 ? 'Master Tier' : (score >= 3.5 ? 'Advanced Tier' : (score >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)'));
+
+    const displayEl = document.getElementById('calib-computed-score-display');
+    if (displayEl) {
+        displayEl.textContent = `${score.toFixed(2)} / 5.0 (${tier})`;
+        if (isBelow3) {
+            displayEl.className = 'font-mono font-bold text-sm text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200';
+        } else {
+            displayEl.className = 'font-mono font-bold text-sm text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200';
+        }
+    }
+
+    if (syncSelect) {
+        const tierSelect = document.getElementById('calib-tier-select');
+        if (tierSelect) {
+            if (score >= 4.5) tierSelect.value = 'Master Tier';
+            else if (score >= 3.5) tierSelect.value = 'Advanced Tier';
+            else if (score >= 3.0) tierSelect.value = 'Proficient';
+            else tierSelect.value = 'Developing (Needs PIP)';
+        }
+    }
+}
+window.onCalibrationScoreInput = onCalibrationScoreInput;
+
+async function handleCalibrationSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const empId = document.getElementById('calib-target-emp-id')?.value || 'emp-101';
+    const emp = (window.perfRoster || []).find(e => e.id === empId);
+
+    const scoreSlider = document.getElementById('calib-score-slider');
+    const calibratedScore = scoreSlider ? parseFloat(scoreSlider.value) : 4.55;
+    const tierSelect = document.getElementById('calib-tier-select');
+    const tierLabel = tierSelect ? tierSelect.value : (calibratedScore >= 4.5 ? 'Master Tier' : 'Advanced Tier');
+    const discussionMinutes = document.getElementById('calib-discussion-minutes')?.value.trim() || '1-on-1 review session completed.';
+
+    const submitBtn = document.getElementById('btn-submit-calibration');
+    const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Saving to Database...</span>';
+    }
+
+    try {
+        const saved = await PerformanceAPI.calibrateEvaluation({
+            employee_id: empId,
+            calibrated_score: calibratedScore,
+            tier_label: tierLabel,
+            discussion_minutes: discussionMinutes
+        });
+
+        // Update local memory and cache
+        if (emp) {
+            emp.reviewStatus = 'Calibrated';
+            emp.calibratedScore = calibratedScore;
+            emp.tierLabel = tierLabel;
+            emp.evaluationRecord = saved;
+        }
+
+        // Update dbEvaluations array
+        const existingIdx = (window.dbEvaluations || []).findIndex(ev => ev.employee_id === empId);
+        if (existingIdx >= 0) {
+            window.dbEvaluations[existingIdx] = saved;
+        } else {
+            window.dbEvaluations.push(saved);
+        }
+
+        if (typeof showToast === 'function') {
+            showToast(`🎉 1-on-1 Calibration successfully recorded and locked to database for ${emp ? emp.name : 'Employee'}! (${calibratedScore.toFixed(2)} / 5.0)`, 'success');
+        }
+
+        closeModal('modal-1on1-calibration');
+        renderReviewRosterTable();
+        showCalibrationDetail(empId);
+        updateAllPerfStepperBadges();
+
+        if (typeof loadLiveNotifications === 'function') {
+            loadLiveNotifications(window.activePersonaRole || 'Supervisor');
+        }
+    } catch (err) {
+        console.error('Calibration database submission error:', err);
+        if (typeof showToast === 'function') {
+            showToast(err.message || 'Failed to save calibration to database.', 'error');
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origBtnHtml;
+        }
+    }
+}
+window.handleCalibrationSubmit = handleCalibrationSubmit;
+
+function open1on1MinutesModal(empId) {
+    const emp = (window.perfRoster || []).find(e => e.id === empId) || (window.perfRoster || [])[0];
+    if (!emp) return;
+
+    window.selectedEvalEmpId = emp.id;
+
+    const evalRec = (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
+
+    const nameEl = document.getElementById('minutes-modal-emp-name');
+    const roleEl = document.getElementById('minutes-modal-emp-role');
+    const avatarEl = document.getElementById('minutes-modal-avatar');
+    const scoreEl = document.getElementById('minutes-modal-score');
+    const bodyEl = document.getElementById('minutes-modal-body');
+    const calibBtn = document.getElementById('minutes-modal-btn-calibrate');
+
+    if (nameEl) nameEl.textContent = emp.name;
+    if (roleEl) roleEl.textContent = `${emp.position} · ${emp.department}`;
+    if (avatarEl) avatarEl.textContent = emp.name.split(' ').map(n => n[0]).join('').substring(0, 2);
+
+    const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+    const tier = evalRec?.tier_label || (score > 0 ? (score >= 4.5 ? 'Master Tier' : (score >= 3.5 ? 'Advanced Tier' : (score >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)'))) : 'Unrated');
+
+    if (scoreEl) {
+        if (score > 0) {
+            scoreEl.textContent = `⭐ ${score.toFixed(2)} / 5.0 (${tier})`;
+            scoreEl.className = `text-sm font-bold font-mono ${score < 3.0 ? 'text-rose-600' : 'text-indigo-700'}`;
+        } else {
+            scoreEl.textContent = 'Evaluation Pending';
+            scoreEl.className = 'text-xs font-bold text-amber-600';
+        }
+    }
+
+    if (bodyEl) {
+        const recordedMinutes = evalRec?.digital_signoffs?.discussion_minutes;
+        if (recordedMinutes) {
+            bodyEl.innerHTML = `
+                <div class="space-y-2">
+                    <p class="font-bold text-slate-900 text-xs">Summary of 1-on-1 Review Dialogue &amp; Commitments:</p>
+                    <p class="italic text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">"${recordedMinutes}"</p>
+                </div>
+            `;
+        } else if (evalRec && evalRec.supervisor_notes) {
+            bodyEl.innerHTML = `
+                <div class="space-y-2">
+                    <p class="font-bold text-slate-900 text-xs">Supervisor Initial Appraisal Notes:</p>
+                    <p class="italic text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">"${evalRec.supervisor_notes}"</p>
+                    <p class="text-amber-700 text-[11px] font-semibold bg-amber-50 p-2 rounded-lg border border-amber-200">⚠️ Formal 1-on-1 calibration minutes pending recording.</p>
+                </div>
+            `;
+        } else {
+            bodyEl.innerHTML = `
+                <div class="p-6 text-center text-slate-400 italic bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5">
+                    <i class="fas fa-file-circle-question text-2xl text-slate-300 block"></i>
+                    <p class="font-semibold text-slate-600 text-xs">No formal 1-on-1 discussion minutes recorded in database yet.</p>
+                    <p class="text-[11px] text-slate-400">Click "Edit / Calibrate 1-on-1" below to conduct session and save minutes.</p>
+                </div>
+            `;
+        }
+    }
+
+    if (calibBtn) {
+        calibBtn.setAttribute('onclick', `closeModal('modal-1on1-minutes-viewer'); open1on1CalibrationModal('${emp.id}');`);
+    }
+
+    openModal('modal-1on1-minutes-viewer');
+}
+window.open1on1MinutesModal = open1on1MinutesModal;
+
+function openPIPModal(empId) {
+    const emp = (window.perfRoster || []).find(e => e.id === empId) || (window.perfRoster || [])[0];
+    if (!emp) return;
+
+    const evalRec = (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
+
+    const targetInput = document.getElementById('pip-target-emp-id');
+    const titleEl = document.getElementById('pip-modal-title');
+    const deficienciesEl = document.getElementById('pip-deficiencies');
+    const milestonesEl = document.getElementById('pip-milestones');
+
+    if (targetInput) targetInput.value = emp.id;
+    if (titleEl) titleEl.textContent = `Performance Improvement Plan (PIP): ${emp.name}`;
+
+    // Extract any specific gaps from DB criteria
+    const criteriaGaps = (evalRec?.criteria_scores || []).filter(c => c.rating < 3.0);
+    if (deficienciesEl) {
+        if (criteriaGaps.length > 0) {
+            deficienciesEl.value = criteriaGaps.map(g => `${g.title} (Observed Score: ${g.rating}/5.0 - ${g.rationale || 'Gap below standard'})`).join('\n');
+        } else {
+            deficienciesEl.value = `Overall appraisal score (${evalRec?.supervisor_rating || '2.80'} / 5.0) is below the hotel 3.0 minimum proficiency standard. Specific focus needed on shift operational consistency.`;
+        }
+    }
+
+    if (milestonesEl) {
+        milestonesEl.value = `1. Complete assigned remedial LMS handbook certifications.\n2. Bi-weekly coaching reviews with assigned mentor.\n3. Achieve >= 90% benchmark compliance over next 60 days.`;
+    }
+
+    openModal('modal-pip-action');
+}
+window.openPIPModal = openPIPModal;
+
+function handlePIPSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const empId = document.getElementById('pip-target-emp-id')?.value || 'emp-101';
+    const emp = (window.perfRoster || []).find(e => e.id === empId);
+
+    if (typeof showToast === 'function') {
+        showToast(`⚠️ Performance Improvement Plan (PIP) notice issued & logged for ${emp ? emp.name : 'Employee'}.`, 'warning');
+    }
+
+    closeModal('modal-pip-action');
+}
+window.handlePIPSubmit = handlePIPSubmit;
 
 function renderIDPRosterTable() {
     const container = document.getElementById('idp-roster-tbody');
     if (!container) return;
     container.innerHTML = '';
 
-    window.perfRoster.forEach(emp => {
+    const roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster : [];
+    if (roster.length === 0) {
+        container.innerHTML = `<tr><td colspan="5" class="px-5 py-6 text-center text-slate-400 italic">No employees found in IDP roster.</td></tr>`;
+        return;
+    }
+
+    roster.forEach(emp => {
+        const evalRec = (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
+        const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
         tr.innerHTML = `
-            <td class="px-5 py-4 font-bold text-slate-900">${emp.name}</td>
+            <td class="px-5 py-4 font-bold text-slate-900">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs">
+                        ${emp.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                    </div>
+                    <span>${emp.name}</span>
+                </div>
+            </td>
             <td class="px-5 py-4 text-slate-500">${emp.position} · ${emp.department}</td>
-            <td class="px-5 py-4 font-bold text-slate-800">70-20-10 Mapped</td>
+            <td class="px-5 py-4 font-bold text-slate-800">
+                <span class="px-2 py-0.5 rounded-full text-[10px] ${score < 3.0 && score > 0 ? 'bg-rose-100 text-rose-800' : 'bg-blue-50 text-blue-800'}">
+                    ${score < 3.0 && score > 0 ? 'PIP Remediation' : '70-20-10 Mapped'}
+                </span>
+            </td>
             <td class="px-5 py-4">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">${emp.idpStatus}</span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${emp.idpStatus === 'Active IDP' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                    ${emp.idpStatus || 'Active IDP'}
+                </span>
             </td>
             <td class="px-5 py-4 text-right">
-                <button onclick="openRemedialBooksModal('maria')" class="px-3 py-1.5 bg-sage-dark text-white rounded-xl text-xs font-bold transition">
+                <button onclick="showIDPDetail('${emp.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs">
                     View IDP Plan
                 </button>
             </td>
         `;
         container.appendChild(tr);
     });
+
+    if (roster.length > 0) {
+        showIDPDetail(roster[0].id);
+    }
 }
+window.renderIDPRosterTable = renderIDPRosterTable;
+
+function showIDPDetail(empId) {
+    const emp = (window.perfRoster || []).find(e => e.id === empId) || (window.perfRoster || [])[0];
+    if (!emp) return;
+
+    window.selectedEvalEmpId = emp.id;
+
+    const evalRec = (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
+
+    const titleEl = document.getElementById('idp-detail-title');
+    const subtitleEl = document.getElementById('idp-detail-subtitle');
+    const strengthsList = document.getElementById('idp-detail-strengths-list');
+    const gapsList = document.getElementById('idp-detail-gaps-list');
+    const strengthsCount = document.getElementById('idp-strengths-count');
+    const gapsCount = document.getElementById('idp-gaps-count');
+    const commitmentsContainer = document.getElementById('idp-perf-commitments-container');
+
+    if (titleEl) titleEl.textContent = `70-20-10 Individual Development Plan (IDP): ${emp.name}`;
+    if (subtitleEl) subtitleEl.textContent = `Position: ${emp.position} · ${emp.department} · Review Cycle ${evalRec?.cycle_period || '2026-Q3'}`;
+
+    const criteria = evalRec && Array.isArray(evalRec.criteria_scores) ? evalRec.criteria_scores : [];
+    const strengths = criteria.filter(c => parseFloat(c.rating || 0) >= 3.5);
+    const gaps = criteria.filter(c => parseFloat(c.rating || 0) < 3.5);
+
+    if (strengthsCount) strengthsCount.textContent = `${strengths.length} Identified`;
+    if (gapsCount) gapsCount.textContent = `${gaps.length} Action Needed`;
+
+    if (strengthsList) {
+        if (strengths.length > 0) {
+            strengthsList.innerHTML = strengths.map(s => `
+                <li class="p-2.5 bg-white/90 rounded-xl border border-emerald-100 flex items-center justify-between">
+                    <span class="flex items-center space-x-2">
+                        <i class="fas fa-circle-check text-emerald-600 text-xs"></i>
+                        <span class="font-medium text-slate-900">${s.title}</span>
+                    </span>
+                    <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px] font-mono">⭐ ${parseFloat(s.rating).toFixed(1)} / 5.0</span>
+                </li>
+            `).join('');
+        } else {
+            strengthsList.innerHTML = `<li class="p-3 text-center text-slate-400 italic bg-white rounded-xl border border-emerald-100">No calibrated strengths recorded in database yet.</li>`;
+        }
+    }
+
+    if (gapsList) {
+        if (gaps.length > 0) {
+            gapsList.innerHTML = gaps.map(g => `
+                <li class="p-2.5 bg-white/90 rounded-xl border border-amber-200/70 flex items-center justify-between gap-2">
+                    <div class="flex items-center space-x-2 min-w-0">
+                        <i class="fas fa-circle-exclamation ${g.rating < 3.0 ? 'text-rose-600' : 'text-amber-600'} text-xs flex-shrink-0"></i>
+                        <div class="truncate">
+                            <p class="font-semibold text-slate-900 text-xs truncate">${g.title}</p>
+                            <p class="text-[10px] ${g.rating < 3.0 ? 'text-rose-600 font-bold' : 'text-amber-700'}">Appraisal Rating: ⭐ ${parseFloat(g.rating).toFixed(1)} / 5.0</p>
+                        </div>
+                    </div>
+                    <button onclick="openRemedialBooksModal('${emp.id}')" class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1">
+                        <i class="fas fa-book-medical text-[10px]"></i>
+                        <span>Prescribe</span>
+                    </button>
+                </li>
+            `).join('');
+        } else {
+            gapsList.innerHTML = `<li class="p-3 text-center text-slate-400 italic bg-white rounded-xl border border-amber-100">No development gaps recorded in database.</li>`;
+        }
+    }
+
+    // Populate active commitments from database goals/tasks
+    if (commitmentsContainer) {
+        const empGoals = (window.dbGoals || []).filter(g => g.employee_id === emp.id || (emp.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')));
+        if (empGoals.length > 0) {
+            commitmentsContainer.innerHTML = empGoals.map((g, idx) => `
+                <div class="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200/80 transition shadow-2xs flex flex-col justify-between space-y-3">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold ${idx % 3 === 0 ? 'bg-blue-100 text-blue-800' : (idx % 3 === 1 ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800')} px-2.5 py-0.5 rounded-full">
+                                ${idx % 3 === 0 ? '70% Experiential' : (idx % 3 === 1 ? '20% Mentorship' : '10% Formal LMS')}
+                            </span>
+                            <span class="text-[10px] font-mono text-slate-500 font-semibold">${g.target_metric || 'Active Target'}</span>
+                        </div>
+                        <h5 class="font-heading font-bold text-slate-900 text-xs">${g.title}</h5>
+                        <p class="text-slate-600 text-[11px] leading-relaxed line-clamp-2">${g.supervisor_notes || g.evidence || 'Active hospitality developmental target.'}</p>
+                    </div>
+                    <div class="pt-2.5 border-t border-slate-200/70 flex items-center justify-between text-xs">
+                        <span class="text-slate-400 text-[10px]"><i class="fas fa-calendar-check mr-1"></i>${g.target_date || 'Q3 Target'}</span>
+                        <span class="text-[10px] font-bold ${g.status === 'Approved' ? 'text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded' : 'text-amber-700 bg-amber-50 px-2 py-0.5 rounded'}">
+                            ${g.status || 'Active'}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            commitmentsContainer.innerHTML = `
+                <div class="col-span-3 p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-400 italic space-y-1.5">
+                    <i class="fas fa-book-open text-2xl text-slate-300 block"></i>
+                    <p class="font-semibold text-slate-600 text-xs">No active IDP commitments mapped yet in database.</p>
+                    <p class="text-[11px] text-slate-400">Use "Add IDP Action" or "Prescribe LMS Books" above to create tailored commitments.</p>
+                </div>
+            `;
+        }
+    }
+}
+window.showIDPDetail = showIDPDetail;
 
 function renderCycleRosterTable() {
     const container = document.getElementById('cycle-roster-tbody');
     if (!container) return;
     container.innerHTML = '';
 
-    window.perfRoster.forEach(emp => {
+    const roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster : [];
+    if (roster.length === 0) {
+        container.innerHTML = `<tr><td colspan="5" class="px-5 py-6 text-center text-slate-400 italic">No employees found in cycle transition roster.</td></tr>`;
+        return;
+    }
+
+    roster.forEach(emp => {
+        const evalRec = (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
+        const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined));
+        const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
         tr.innerHTML = `
             <td class="px-5 py-4 font-bold text-slate-900">${emp.name}</td>
             <td class="px-5 py-4 text-slate-500">${emp.department}</td>
-            <td class="px-5 py-4 font-bold text-emerald-700">+14.2% Growth Lift</td>
+            <td class="px-5 py-4 font-bold ${isCalibrated ? 'text-emerald-700' : 'text-slate-400 font-normal italic'}">
+                ${isCalibrated ? `⭐ ${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || 'Calibrated'})` : 'Pending Review'}
+            </td>
             <td class="px-5 py-4">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-800">Ready for Q4 Baseline</span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isCalibrated ? 'bg-teal-100 text-teal-800' : 'bg-amber-100 text-amber-800'}">
+                    ${isCalibrated ? 'Ready for Q4 Baseline' : 'Pending Cycle 3 Completion'}
+                </span>
             </td>
             <td class="px-5 py-4 text-right">
-                <button onclick="switchSubTab('perf', 'plan'); showToast('Initiated Q4 planning cycle for ${emp.name}', 'success');" class="px-3.5 py-1.5 bg-primary text-white font-bold rounded-xl text-xs shadow-xs hover:bg-primary-dark transition">
-                    Rollover to Q4
+                <button onclick="showCycleDetail('${emp.id}')" class="px-3.5 py-1.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-xs shadow-xs transition">
+                    View Rollover
                 </button>
             </td>
         `;
         container.appendChild(tr);
     });
+
+    if (roster.length > 0) {
+        showCycleDetail(roster[0].id);
+    }
 }
+window.renderCycleRosterTable = renderCycleRosterTable;
+
+function showCycleDetail(empId) {
+    const emp = (window.perfRoster || []).find(e => e.id === empId) || (window.perfRoster || [])[0];
+    if (!emp) return;
+
+    window.selectedEvalEmpId = emp.id;
+
+    const evalRec = (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
+    const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined));
+    const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+
+    const titleEl = document.getElementById('cycle-detail-title');
+    const transitionCard = document.getElementById('cycle-detail-transition-card');
+
+    if (titleEl) titleEl.textContent = `Development Monitoring & Next Cycle Initiation: ${emp.name}`;
+
+    if (transitionCard) {
+        if (isCalibrated) {
+            transitionCard.innerHTML = `
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                        <span class="badge-sage">Continuous Growth Metric</span>
+                        <h4 class="font-heading font-bold text-lg text-slate-900 mt-1">Development to Performance Transfer: ${emp.name}</h4>
+                    </div>
+                    <span class="text-2xl font-bold text-sage-dark font-heading font-mono">⭐ ${score.toFixed(2)} / 5.0</span>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    By completing the 2026 Q3 performance evaluation and IDP commitments, <strong>${emp.name}</strong> achieved a <strong>${evalRec?.tier_label || 'Calibrated'}</strong> rating. These validated competencies will form the elevated baseline for the upcoming <strong>2026 Q4 Cycle</strong>.
+                </p>
+                <div class="pt-3 border-t border-[#E8DEDC] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <span class="text-xs text-slate-500"><i class="fas fa-check text-sage-dark mr-1.5"></i> All 7 lifecycle phases completed for 2026 Q3</span>
+                    <button onclick="switchSubTab('perf', 'plan'); showToast('Initiated next performance planning cycle for ${emp.name}!', 'success');" class="btn-primary px-5 py-2.5 text-xs font-bold transition flex items-center space-x-2">
+                        <span>Initiate Next Performance Cycle (Q4)</span>
+                        <i class="fas fa-arrow-right text-[10px]"></i>
+                    </button>
+                </div>
+            `;
+        } else {
+            transitionCard.innerHTML = `
+                <div class="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-400 italic space-y-2">
+                    <i class="fas fa-hourglass-start text-3xl text-slate-300 block"></i>
+                    <p class="font-semibold text-slate-700 text-xs">Active review cycle 2026-Q3 must complete Stages 1 through 6 before rollover.</p>
+                    <p class="text-[11px] text-slate-400">Complete formal appraisal and 1-on-1 calibration in Stage 5 to unlock the next cycle transition baseline.</p>
+                </div>
+            `;
+        }
+    }
+}
+window.showCycleDetail = showCycleDetail;
 
 /**
  * -------------------------------------------------------------
  * 5. STEPPER BADGES & PENDING GUARD NAVIGATION
- * Checks if current tab has pending items & displays ✅ checkmark if clear!
+ * Evaluates completion and pending state strictly based on active database records:
+ * - Phase 1 & 2: Complete only if all goals in DB are approved (status: Approved / Completed).
+ * - Phase 3: Pending if KPI target progress of any employee is not 100% or below phase not complete.
+ * - Phase 4: Complete if all employees with approved goals have a supervisor rating (not pending) and Phase 1-2 complete.
+ * - Phase 5: Roster only shows employees with appraisal ratings; Complete if all evaluated have calibrated scores and Phase 4 complete.
  * -------------------------------------------------------------
  */
+function isSameEmployee(idA, idB) {
+    if (!idA || !idB) return false;
+    const a = idA.toString().toLowerCase().trim();
+    const b = idB.toString().toLowerCase().trim();
+    if (a === b) return true;
+    const isA_101 = a === 'emp-101' || a === 'emp-1' || a === 'oxf-emp-1001';
+    const isB_101 = b === 'emp-101' || b === 'emp-1' || b === 'oxf-emp-1001';
+    if (isA_101 && isB_101) return true;
+    const isA_102 = a === 'emp-102' || a === 'emp-2' || a === 'oxf-sup-2001';
+    const isB_102 = b === 'emp-102' || b === 'emp-2' || b === 'oxf-sup-2001';
+    if (isA_102 && isB_102) return true;
+    return false;
+}
+window.isSameEmployee = isSameEmployee;
+
+function getPerformanceStageStatus(stageKey) {
+    const goals = window.dbGoals || [];
+    const evals = window.dbEvaluations || [];
+    const roster = window.perfRoster || [];
+    const totalGoals = goals.length;
+
+    if (totalGoals === 0) {
+        return { isComplete: false, pendingCount: 0, isNeutral: true };
+    }
+
+    // Helper to find evaluation record for an employee from both dbEvaluations and perfRoster
+    const getEvalForEmployee = (empId) => {
+        let ev = evals.find(e => isSameEmployee(e.employee_id, empId));
+        if (!ev) {
+            const empObj = roster.find(r => isSameEmployee(r.id, empId));
+            if (empObj) {
+                if (empObj.evaluationRecord) {
+                    ev = empObj.evaluationRecord;
+                } else if (empObj.supervisorRating || empObj.managerRating) {
+                    ev = {
+                        employee_id: empId,
+                        supervisor_rating: empObj.supervisorRating || empObj.managerRating,
+                        status: empObj.evaluationStatus || 'Rated',
+                        tier_label: empObj.tierLabel || 'Proficient'
+                    };
+                }
+            }
+        }
+        return ev;
+    };
+
+    // 1 & 2: Goals Planning & Approval
+    const unapprovedGoals = goals.filter(g => {
+        const s = (g.status || '').toLowerCase().trim();
+        return s !== 'approved' && s !== 'completed';
+    });
+    const isPhase1_2_Complete = totalGoals > 0 && unapprovedGoals.length === 0;
+
+    if (stageKey === 'plan' || stageKey === 'approve') {
+        if (isPhase1_2_Complete) {
+            return { isComplete: true, pendingCount: 0, isNeutral: false };
+        } else {
+            return { isComplete: false, pendingCount: unapprovedGoals.length, isNeutral: false };
+        }
+    }
+
+    // 3: Continuous Monitoring & KPI Tracking
+    let totalTasks = 0;
+    let completedTasks = 0;
+    goals.forEach(g => {
+        (g.tasks || []).forEach(t => {
+            totalTasks++;
+            if (t.status === 'completed') completedTasks++;
+        });
+    });
+
+    const isPhase3_Complete = isPhase1_2_Complete && totalTasks > 0 && completedTasks === totalTasks;
+    const incompletedTasks = Math.max(0, totalTasks - completedTasks);
+
+    if (stageKey === 'monitor') {
+        if (isPhase3_Complete) {
+            return { isComplete: true, pendingCount: 0, isNeutral: false };
+        } else {
+            const pendingCount = totalTasks === 0 ? goals.length : incompletedTasks;
+            return { isComplete: false, pendingCount: pendingCount, isNeutral: false };
+        }
+    }
+
+    // 4: Employee Appraisal / Evaluation
+    // Complete if all employees with active goals have recorded data in performance_evaluations
+    const employeesWithGoals = [];
+    goals.forEach(g => {
+        const eId = (g.employee_id || '').toLowerCase().trim();
+        if (eId && !employeesWithGoals.some(existing => isSameEmployee(existing, eId))) {
+            employeesWithGoals.push(g.employee_id);
+        }
+    });
+
+    let pendingEvalsCount = 0;
+    employeesWithGoals.forEach(empId => {
+        const ev = getEvalForEmployee(empId);
+        const hasEval = ev && typeof ev.supervisor_rating !== 'undefined' && ev.supervisor_rating !== null && parseFloat(ev.supervisor_rating) > 0;
+        if (!hasEval) {
+            pendingEvalsCount++;
+        }
+    });
+
+    const isPhase4_Complete = employeesWithGoals.length > 0 && pendingEvalsCount === 0;
+
+    if (stageKey === 'eval') {
+        if (isPhase4_Complete) {
+            return { isComplete: true, pendingCount: 0, isNeutral: false };
+        } else {
+            return { isComplete: false, pendingCount: pendingEvalsCount, isNeutral: false };
+        }
+    }
+
+    // 5: 1-on-1 Review & Calibration
+    // Complete if all evaluated employees in performance_evaluations are calibrated
+    const evaluatedEmployees = employeesWithGoals.filter(empId => {
+        const ev = getEvalForEmployee(empId);
+        return ev && typeof ev.supervisor_rating !== 'undefined' && ev.supervisor_rating !== null && parseFloat(ev.supervisor_rating) > 0;
+    });
+
+    let pendingCalibrationsCount = 0;
+    evaluatedEmployees.forEach(empId => {
+        const ev = getEvalForEmployee(empId);
+        const isCalib = ev && ev.status === 'Calibrated' && typeof ev.calibrated_score !== 'undefined' && ev.calibrated_score !== null && parseFloat(ev.calibrated_score) > 0;
+        if (!isCalib) {
+            pendingCalibrationsCount++;
+        }
+    });
+
+    const isPhase5_Complete = isPhase4_Complete && evaluatedEmployees.length > 0 && pendingCalibrationsCount === 0;
+
+    if (stageKey === 'review') {
+        if (isPhase5_Complete) {
+            return { isComplete: true, pendingCount: 0, isNeutral: false };
+        } else {
+            return { isComplete: false, pendingCount: pendingCalibrationsCount, isNeutral: false };
+        }
+    }
+
+    if (stageKey === 'idp' || stageKey === 'cycle') {
+        if (isPhase5_Complete) {
+            return { isComplete: true, pendingCount: 0, isNeutral: false };
+        } else {
+            return { isComplete: false, pendingCount: 0, isNeutral: false };
+        }
+    }
+
+    return { isComplete: false, pendingCount: 0, isNeutral: false };
+}
+
 function updateAllPerfStepperBadges() {
     const stages = ['plan', 'approve', 'monitor', 'eval', 'review', 'idp', 'cycle'];
+    const stageNumbers = { plan: 1, approve: 2, monitor: 3, eval: 4, review: 5, idp: 6, cycle: 7 };
+    const totalGoals = (window.dbGoals || []).length;
 
     stages.forEach(stageKey => {
-        const pendingCount = getStagePendingCount(stageKey);
         const item = document.querySelector(`.perf-step-item[data-step-key="${stageKey}"]`);
         const subnavPill = document.querySelector(`.subnav-perf[data-sub="${stageKey}"]`);
+        const num = stageNumbers[stageKey];
+
+        if (totalGoals === 0) {
+            // Clean initial state when no goals exist
+            if (item) {
+                const bubble = item.querySelector('.perf-step-bubble');
+                const sub = item.querySelector('.perf-step-sub');
+                if (bubble) {
+                    bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold shadow-2xs transition';
+                    bubble.innerHTML = `<span>${num}</span>`;
+                }
+                if (sub) {
+                    sub.innerHTML = `<span class="text-slate-400 font-medium">Stage ${num}</span>`;
+                }
+            }
+            if (subnavPill) {
+                const checkSpan = subnavPill.querySelector('.subnav-status-icon');
+                if (checkSpan) checkSpan.innerHTML = '';
+            }
+            return;
+        }
+
+        const stageStatus = getPerformanceStageStatus(stageKey);
 
         if (item) {
             const bubble = item.querySelector('.perf-step-bubble');
             const sub = item.querySelector('.perf-step-sub');
             if (bubble) {
-                if (pendingCount === 0) {
+                if (stageStatus.isComplete) {
                     bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold shadow-xs transition';
                     bubble.innerHTML = '<i class="fas fa-check text-[9px]"></i>';
                     if (sub) sub.innerHTML = '<span class="text-emerald-600 font-bold">✅ Complete</span>';
-                } else {
+                } else if (stageStatus.pendingCount > 0) {
                     bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center text-[10px] font-bold shadow-xs transition';
-                    bubble.innerHTML = `<span class="text-[10px]">${pendingCount}</span>`;
-                    if (sub) sub.innerHTML = `<span class="text-amber-600 font-bold">${pendingCount} Pending</span>`;
+                    bubble.innerHTML = `<span class="text-[10px]">${stageStatus.pendingCount}</span>`;
+                    if (sub) sub.innerHTML = `<span class="text-amber-600 font-bold">${stageStatus.pendingCount} Pending</span>`;
+                } else {
+                    bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold shadow-2xs transition';
+                    bubble.innerHTML = `<span>${num}</span>`;
+                    if (sub) sub.innerHTML = `<span class="text-slate-400 font-medium">Stage ${num}</span>`;
                 }
             }
         }
@@ -3365,26 +4363,20 @@ function updateAllPerfStepperBadges() {
                 checkSpan.className = 'subnav-status-icon ml-1.5';
                 subnavPill.appendChild(checkSpan);
             }
-            if (pendingCount === 0) {
+            if (stageStatus.isComplete) {
                 checkSpan.innerHTML = '<i class="fas fa-check-circle text-emerald-500 text-[11px]" title="Stage Complete"></i>';
+            } else if (stageStatus.pendingCount > 0) {
+                checkSpan.innerHTML = `<span class="px-1.5 py-0.2 bg-amber-500 text-white rounded-full text-[9px] font-bold">${stageStatus.pendingCount}</span>`;
             } else {
-                checkSpan.innerHTML = `<span class="px-1.5 py-0.2 bg-amber-500 text-white rounded-full text-[9px] font-bold">${pendingCount}</span>`;
+                checkSpan.innerHTML = '';
             }
         }
     });
 }
 
 function getStagePendingCount(stageKey) {
-    if (stageKey === 'plan' || stageKey === 'approve') {
-        return window.perfRoster.filter(e => e.approvalStatus !== 'Approved').length;
-    }
-    if (stageKey === 'eval') {
-        return window.perfRoster.filter(e => e.evaluationStatus !== 'Rated').length;
-    }
-    if (stageKey === 'review') {
-        return window.perfRoster.filter(e => e.reviewStatus !== 'Calibrated').length;
-    }
-    return 0;
+    const status = getPerformanceStageStatus(stageKey);
+    return status.pendingCount;
 }
 
 /**
@@ -3393,3 +4385,4 @@ function getStagePendingCount(stageKey) {
 window.canSwitchSubTabWithGuard = function(currentStageKey, targetStageKey) {
     return true;
 };
+

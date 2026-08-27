@@ -10,15 +10,21 @@ class PerformanceGoalModel extends BaseModel
     }
 
     /**
-     * Fetch all performance goals from Supabase with optional filters
+     * Fetch all performance goals directly from Supabase with optional filters
      */
     public function getGoals(array $filters = []): array
     {
-        $goals = $this->all($filters);
-
-        if (!is_array($goals)) {
-            return [];
+        $queryStr = $this->table;
+        if (!empty($filters)) {
+            $params = [];
+            foreach ($filters as $key => $val) {
+                $params[] = urlencode($key) . '=eq.' . urlencode($val);
+            }
+            $queryStr .= '?' . implode('&', $params);
         }
+
+        $res = supabaseRequest($queryStr, 'GET', null, true);
+        $goals = ($res['status'] === 200 && is_array($res['data'])) ? $res['data'] : [];
 
         // Sort goals by created_at DESC or target_date
         usort($goals, function ($a, $b) {
@@ -79,28 +85,19 @@ class PerformanceGoalModel extends BaseModel
             'supervisor_notes' => !empty($data['supervisor_notes']) ? trim($data['supervisor_notes']) : null
         ];
 
-        // Attempt direct Supabase insert
+        // Direct Supabase insert
         $res = supabaseRequest($this->table, 'POST', $record, true);
         if ($res['status'] >= 200 && $res['status'] < 300 && !empty($res['data'])) {
-            $inserted = is_array($res['data']) && isset($res['data'][0]) ? $res['data'][0] : $res['data'];
-            // Sync with local store
-            $local = $this->getLocalData();
-            $local[] = $inserted;
-            $this->saveLocalData($local);
-            return $inserted;
+            return is_array($res['data']) && isset($res['data'][0]) ? $res['data'][0] : $res['data'];
         }
 
         if (!empty($res['error'])) {
             error_log("Supabase insert error in performance_goals: " . print_r($res, true));
         }
 
-        // Fallback local persistence if offline
         $record['id'] = !empty($res['data']['id']) ? $res['data']['id'] : ('goal-' . substr(bin2hex(random_bytes(4)), 0, 8));
         $record['created_at'] = date('Y-m-d H:i:s');
         $record['updated_at'] = date('Y-m-d H:i:s');
-        $local = $this->getLocalData();
-        $local[] = $record;
-        $this->saveLocalData($local);
         return $record;
     }
 

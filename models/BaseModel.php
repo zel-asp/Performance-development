@@ -111,6 +111,36 @@ class BaseModel
             return $updatedItem;
         }
 
+        // If PATCH affected 0 rows in Supabase because the record didn't exist in Supabase yet, POST it!
+        if ($res['status'] >= 200 && $res['status'] < 300 && empty($res['data'])) {
+            $all = $this->getLocalData();
+            $existing = null;
+            foreach ($all as $item) {
+                if ((string)($item['id'] ?? '') === (string)$id) {
+                    $existing = $item;
+                    break;
+                }
+            }
+            $fullRecord = $existing ? array_merge($existing, $data) : array_merge(['id' => $id], $data);
+            $createRes = supabaseRequest($this->table, 'POST', $fullRecord, true);
+            if ($createRes['status'] >= 200 && $createRes['status'] < 300 && !empty($createRes['data'])) {
+                $updatedItem = is_array($createRes['data']) && isset($createRes['data'][0]) ? $createRes['data'][0] : $createRes['data'];
+                $found = false;
+                foreach ($all as &$item) {
+                    if ((string)($item['id'] ?? '') === (string)$id) {
+                        $item = array_merge($item, $updatedItem);
+                        $found = true;
+                        break;
+                    }
+                }
+                if (!$found) {
+                    $all[] = $updatedItem;
+                }
+                $this->saveLocalData($all);
+                return $updatedItem;
+            }
+        }
+
         // Update in local data store
         $all = $this->getLocalData();
         $updatedItem = null;

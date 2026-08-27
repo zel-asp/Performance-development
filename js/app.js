@@ -202,6 +202,10 @@
                     if (typeof updateAllPerfStepperBadges === 'function') updateAllPerfStepperBadges();
                     if (typeof loadAndRenderPlanningGoals === 'function') loadAndRenderPlanningGoals();
                     if (subKey === 'monitor' && typeof loadAndRenderMonitoringData === 'function') loadAndRenderMonitoringData();
+                    if (subKey === 'eval' && typeof renderEvaluationRosterTable === 'function') renderEvaluationRosterTable();
+                    if (subKey === 'review' && typeof renderReviewRosterTable === 'function') renderReviewRosterTable();
+                    if (subKey === 'idp' && typeof renderIDPRosterTable === 'function') renderIDPRosterTable();
+                    if (subKey === 'cycle' && typeof renderCycleRosterTable === 'function') renderCycleRosterTable();
                 } else if (pillarPrefix === 'comp') {
                     if (subKey === 'profiles') {
                         if (typeof renderRoleCompetencyFramework === 'function') renderRoleCompetencyFramework();

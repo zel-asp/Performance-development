@@ -305,8 +305,14 @@ function renderQualitativePerformanceFeed() {
     const container = document.getElementById('perf-qualitative-recognition-container');
     if (!container) return;
 
-    // Filter recognitions for active appraisal employee (Maria Santos)
-    const mariaPosts = socialFeedPostsState.filter(p => p.receiverName.includes('Maria Santos'));
+    // Check if database social commendations exist for the selected employee
+    const empId = window.selectedEvalEmpId || 'emp-101';
+    const dbPosts = (window.dbSocialPosts || []).filter(p => p.receiver_id === empId || p.receiver_name === empId);
+
+    if (dbPosts.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
 
     container.innerHTML = `
         <div class="p-4 bg-amber-50/40 rounded-2xl border border-amber-200/80 space-y-3 text-xs">
@@ -315,19 +321,19 @@ function renderQualitativePerformanceFeed() {
                     <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                     <h4 class="font-heading font-bold text-xs text-slate-900 uppercase tracking-wider">Verified Social Recognition &amp; Peer Commendations (Q3 Input)</h4>
                 </div>
-                <span class="badge-gold text-[10px] font-bold">${mariaPosts.length} Commendations Recorded</span>
+                <span class="badge-gold text-[10px] font-bold">${dbPosts.length} Commendations Recorded</span>
             </div>
             <p class="text-[11px] text-slate-600 leading-relaxed">
                 The following peer-to-peer quotes and supervisor recognitions are automatically aggregated as <strong>qualitative evidence</strong> for the manager's final rating calibration:
             </p>
             <div class="space-y-2">
-                ${mariaPosts.map(p => `
+                ${dbPosts.map(p => `
                     <div class="p-3 bg-white rounded-xl border border-amber-100 space-y-1 shadow-2xs">
                         <div class="flex items-center justify-between text-[10px]">
-                            <span class="font-bold text-slate-800"><i class="fas fa-user-check text-amber-600 mr-1"></i> ${p.senderName} (${p.senderRole}):</span>
-                            <span class="badge-${p.pointsAwarded >= 100 ? 'primary' : 'dusty'} text-[9px]">+${p.pointsAwarded} XP (${p.categoryLabel})</span>
+                            <span class="font-bold text-slate-800"><i class="fas fa-user-check text-amber-600 mr-1"></i> ${p.sender_name || 'Colleague'} (${p.sender_role || 'Staff'}):</span>
+                            <span class="badge-primary text-[9px]">+${p.points || 50} XP</span>
                         </div>
-                        <p class="text-slate-700 italic text-[11px]">"${p.text}"</p>
+                        <p class="text-slate-700 italic text-[11px]">"${p.message || p.text}"</p>
                     </div>
                 `).join('')}
             </div>
