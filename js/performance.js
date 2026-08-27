@@ -3694,6 +3694,84 @@ function showCalibrationDetail(empId) {
 }
 window.showCalibrationDetail = showCalibrationDetail;
 
+function renderIDPRosterTable() {
+    const container = document.getElementById('idp-roster-tbody');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const evaluatedEmployees = (window.perfRoster || []).filter(emp => {
+        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+        return score > 0;
+    });
+
+    if (evaluatedEmployees.length === 0) {
+        container.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-5 py-8 text-center text-slate-400 italic bg-slate-50">
+                    <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2 text-base">
+                        <i class="fas fa-id-card"></i>
+                    </div>
+                    <p class="font-bold text-slate-700 mb-0.5">No Calibrated IDPs Available</p>
+                    <p class="text-slate-400 text-[11px]">Employees must complete Stage 4 supervisor evaluations and Stage 5 1-on-1 calibrations before 70-20-10 IDP plans are generated.</p>
+                </td>
+            </tr>
+        `;
+        showEmptyIDPDetail();
+        return;
+    }
+
+    if (!window.selectedEvalEmpId || !evaluatedEmployees.some(e => isSameEmployee(e.id, window.selectedEvalEmpId))) {
+        window.selectedEvalEmpId = evaluatedEmployees[0].id;
+    }
+    showIDPDetail(window.selectedEvalEmpId);
+
+    evaluatedEmployees.forEach(emp => {
+        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+        const isPIP = score < 3.0;
+        const isSelected = isSameEmployee(emp.id, window.selectedEvalEmpId);
+
+        const tr = document.createElement('tr');
+        tr.className = `hover:bg-slate-50 transition text-xs border-b border-slate-100 cursor-pointer ${isSelected ? 'bg-indigo-50/50' : ''}`;
+        tr.onclick = () => {
+            window.selectedEvalEmpId = emp.id;
+            renderIDPRosterTable();
+        };
+
+        tr.innerHTML = `
+            <td class="px-5 py-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-800 font-bold flex items-center justify-center text-xs">
+                        ${emp.avatar || (emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0, 2) : 'EM')}
+                    </div>
+                    <div>
+                        <p class="font-bold text-slate-900 leading-tight">${emp.name}</p>
+                        <p class="text-[10px] text-slate-400">${emp.position}</p>
+                    </div>
+                </div>
+            </td>
+            <td class="px-5 py-4 text-slate-600 font-medium">${emp.department}</td>
+            <td class="px-5 py-4 font-mono font-bold ${isPIP ? 'text-rose-600' : 'text-emerald-600'}">
+                ⭐ ${score.toFixed(2)} / 5.0
+            </td>
+            <td class="px-5 py-4">
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${isPIP ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
+                    ${isPIP ? '⚠️ PIP Active (Remediation)' : '🟢 70-20-10 IDP Plan Active'}
+                </span>
+            </td>
+            <td class="px-5 py-4 text-right">
+                <button onclick="event.stopPropagation(); openViewIDPPlanModal('${emp.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1 ml-auto">
+                    <i class="fas fa-eye"></i>
+                    <span>View Plan</span>
+                </button>
+            </td>
+        `;
+        container.appendChild(tr);
+    });
+}
+window.renderIDPRosterTable = renderIDPRosterTable;
+
 function open1on1CalibrationModal(empId) {
     if (!empId) {
         if (typeof showToast === 'function') {

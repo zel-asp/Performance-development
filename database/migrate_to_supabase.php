@@ -217,5 +217,53 @@ $succModel->seedInitialCandidates();
 echo "  - Succession Positions & Candidates seeded successfully.\n";
 
 echo "\n=======================================================\n";
-echo " ALL TRAINING & SUCCESSION DATA MIGRATED TO SUPABASE SUCCESSFULLY!\n";
+echo "--- STEP 8: Migrating Social Recognitions & Shift Sentiments to Supabase ---\n";
+
+$socialPosts = [
+    [
+        'id'             => 'post-101',
+        'sender_id'      => 'emp-105',
+        'sender_name'    => 'Elena Vance',
+        'sender_role'    => 'HR Director & Master Trainer',
+        'sender_type'    => 'Supervisor',
+        'sender_avatar'  => 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+        'receiver_id'    => 'emp-101',
+        'receiver_name'  => 'Maria Santos',
+        'receiver_role'  => 'Front Desk Host',
+        'receiver_dept'  => 'Front Office',
+        'receiver_avatar'=> 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        'category_key'   => 'crisis_recovery',
+        'category_label' => 'Crisis & Conflict Recovery',
+        'points_awarded' => 100,
+        'text_content'   => 'Exceptional de-escalation during the diplomat delegation arrival. Maria calmly arranged executive lounge hospitality and VIP suite keys without friction.',
+        'reactions'      => ['clap' => 14, 'heart' => 9, 'star' => 7, 'fire' => 5]
+    ],
+    [
+        'id'             => 'post-102',
+        'sender_id'      => 'emp-102',
+        'sender_name'    => 'Carlos Gomez',
+        'sender_role'    => 'Concierge Lead',
+        'sender_type'    => 'Peer',
+        'sender_avatar'  => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+        'receiver_id'    => 'emp-101',
+        'receiver_name'  => 'Maria Santos',
+        'receiver_role'  => 'Front Desk Host',
+        'receiver_dept'  => 'Front Office',
+        'receiver_avatar'=> 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        'category_key'   => 'collaboration',
+        'category_label' => 'Team Collaboration',
+        'points_awarded' => 50,
+        'text_content'   => 'Huge thanks to Maria for stepping in during the concierge group luggage dispatch while two flight buses arrived simultaneously. Pure teamwork!',
+        'reactions'      => ['clap' => 8, 'heart' => 12, 'star' => 3, 'fire' => 2]
+    ]
+];
+
+foreach ($socialPosts as $post) {
+    $res = sendSupabaseRequest('social_recognitions', 'POST', $post);
+    echo "  [POST {$post['id']}] Status: " . ($res['status'] ?? 'N/A') . "\n";
+}
+
 echo "=======================================================\n";
+echo " ALL TRAINING, SUCCESSION & SOCIAL DATA MIGRATED TO SUPABASE SUCCESSFULLY!\n";
+echo "=======================================================\n";
+
