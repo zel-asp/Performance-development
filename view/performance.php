@@ -674,7 +674,7 @@
                                             <h3 id="idp-detail-title" class="font-heading font-bold text-lg text-slate-900 mt-1">70-20-10 Individual Development Plan (IDP)</h3>
                                             <p id="idp-detail-subtitle" class="text-xs text-slate-500 mt-0.5">Based on appraisal results, employee strengths and development gaps are mapped to tailored 70-20-10 learning actions.</p>
                                         </div>
-                                        <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                                        <div id="idp-header-actions" class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
                                             <button onclick="openRemedialBooksModal(window.selectedEvalEmpId || 'emp-101')" class="px-3.5 py-2 bg-gold hover:bg-gold-dark text-white rounded-xl text-xs font-semibold shadow-xs flex items-center space-x-1.5 transition">
                                                 <i class="fas fa-book-medical"></i>
                                                 <span>Prescribe LMS Books</span>
@@ -717,17 +717,19 @@
                                         </div>
                                     </div>
 
-<!-- 70-20-10 IDP Plan Cards Section from Database -->
+                                    <!-- 70-20-10 IDP Plan Cards Section from Database -->
                                     <div class="space-y-3.5 text-xs">
                                         <div class="flex items-center justify-between border-t border-slate-100 pt-4">
                                             <div>
                                                 <h4 class="font-heading font-bold text-slate-900 text-sm">70-20-10 Active Development Commitments</h4>
                                                 <p class="text-slate-500 text-[11px]">Experiential, Mentorship &amp; Formal LMS actions mapped for growth</p>
                                             </div>
-                                            <button onclick="openRemedialBooksModal(window.selectedEvalEmpId || 'emp-101')" class="text-xs text-primary font-bold hover:underline flex items-center space-x-1">
-                                                <i class="fas fa-book-bookmark text-[11px]"></i>
-                                                <span>Browse All LMS Books &rarr;</span>
-                                            </button>
+                                            <div id="idp-commitments-header-action">
+                                                <button onclick="openRemedialBooksModal(window.selectedEvalEmpId || 'emp-101')" class="text-xs text-primary font-bold hover:underline flex items-center space-x-1">
+                                                    <i class="fas fa-book-bookmark text-[11px]"></i>
+                                                    <span>Browse All LMS Books &rarr;</span>
+                                                </button>
+                                            </div>
                                         </div>
 
                                         <div id="idp-perf-commitments-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -33,6 +33,7 @@ create table public.performance_goals (
   supervisor_notes text null,
   created_at timestamp without time zone null default CURRENT_TIMESTAMP,
   updated_at timestamp without time zone null default CURRENT_TIMESTAMP,
+  retry_count integer null default 0,
   constraint performance_goals_pkey primary key (id),
   constraint performance_goals_employee_id_fkey foreign KEY (employee_id) references users (id) on update CASCADE on delete CASCADE
 ) TABLESPACE pg_default;
@@ -44,4 +45,3 @@ create index IF not exists idx_role on public.performance_goals using btree (rol
 create index IF not exists idx_dept on public.performance_goals using btree (department) TABLESPACE pg_default;
 
 create index IF not exists idx_status on public.performance_goals using btree (status) TABLESPACE pg_default;
-

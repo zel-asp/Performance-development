@@ -135,12 +135,18 @@ class PerformanceEvaluationModel extends BaseModel
         $supervisorRating = isset($data['supervisor_rating']) ? round((float)$data['supervisor_rating'], 2) : 4.60;
         $calibratedScore = isset($data['calibrated_score']) ? round((float)$data['calibrated_score'], 2) : ($existing['calibrated_score'] ?? $supervisorRating);
 
+        $isRetry = !empty($data['is_retry']) || isset($data['new_supervisor_rating']) || isset($data['new_calibrated_score']);
+        $newSupervisorRating = isset($data['new_supervisor_rating']) ? round((float)$data['new_supervisor_rating'], 2) : ($isRetry ? $supervisorRating : ($existing['new_supervisor_rating'] ?? null));
+        $newCalibratedScore = isset($data['new_calibrated_score']) ? round((float)$data['new_calibrated_score'], 2) : ($isRetry ? $calibratedScore : ($existing['new_calibrated_score'] ?? null));
+
+        $effectiveScore = $isRetry && $newSupervisorRating ? $newSupervisorRating : $supervisorRating;
+
         $tierLabel = 'Proficient';
-        if ($supervisorRating >= 4.5) {
+        if ($effectiveScore >= 4.5) {
             $tierLabel = 'Master Tier';
-        } elseif ($supervisorRating >= 3.5) {
+        } elseif ($effectiveScore >= 3.5) {
             $tierLabel = 'Advanced Tier';
-        } elseif ($supervisorRating >= 3.0) {
+        } elseif ($effectiveScore >= 3.0) {
             $tierLabel = 'Proficient';
         } else {
             $tierLabel = 'Developing (Needs PIP)';
@@ -156,21 +162,23 @@ class PerformanceEvaluationModel extends BaseModel
         ]);
 
         $record = [
-            'id'                => $evalId,
-            'employee_id'       => $empId,
-            'evaluator_id'      => $evaluatorId,
-            'cycle_period'      => $cycle,
-            'supervisor_rating' => $supervisorRating,
-            'calibrated_score'  => $calibratedScore,
-            'tier_label'        => $tierLabel,
-            'status'            => 'Rated',
-            'criteria_scores'   => $criteriaScores,
-            'self_breakdown'    => $selfBreakdown,
-            'supervisor_notes'  => $supervisorNotes,
-            'peer_feedback'     => $peerFeedback,
-            'digital_signoffs'  => $digitalSignoffs,
-            'created_at'        => $existing['created_at'] ?? date('c'),
-            'updated_at'        => date('c')
+            'id'                     => $evalId,
+            'employee_id'            => $empId,
+            'evaluator_id'           => $evaluatorId,
+            'cycle_period'           => $cycle,
+            'supervisor_rating'      => $supervisorRating,
+            'calibrated_score'       => $calibratedScore,
+            'new_supervisor_rating'  => $newSupervisorRating,
+            'new_calibrated_score'   => $newCalibratedScore,
+            'tier_label'             => $tierLabel,
+            'status'                 => 'Rated',
+            'criteria_scores'        => $criteriaScores,
+            'self_breakdown'         => $selfBreakdown,
+            'supervisor_notes'       => $supervisorNotes,
+            'peer_feedback'          => $peerFeedback,
+            'digital_signoffs'       => $digitalSignoffs,
+            'created_at'             => $existing['created_at'] ?? date('c'),
+            'updated_at'             => date('c')
         ];
 
         // If exists in Supabase, update; else create
@@ -195,19 +203,24 @@ class PerformanceEvaluationModel extends BaseModel
             $existing = $this->saveSupervisorAppraisal($data);
         }
 
+        $isRetry = !empty($data['is_retry']) || isset($data['new_calibrated_score']);
         $calibratedScore = isset($data['calibrated_score']) ? round((float)$data['calibrated_score'], 2) : ($existing['supervisor_rating'] ?? 4.60);
+        $newCalibratedScore = isset($data['new_calibrated_score']) ? round((float)$data['new_calibrated_score'], 2) : ($isRetry ? $calibratedScore : ($existing['new_calibrated_score'] ?? null));
+
+        $effectiveScore = $isRetry && $newCalibratedScore ? $newCalibratedScore : $calibratedScore;
         $discussionMinutes = $data['discussion_minutes'] ?? '1-on-1 performance calibration completed.';
-        $tierLabel = $data['tier_label'] ?? ($calibratedScore >= 4.5 ? 'Master Tier' : ($calibratedScore >= 3.5 ? 'Advanced Tier' : ($calibratedScore >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)')));
+        $tierLabel = $data['tier_label'] ?? ($effectiveScore >= 4.5 ? 'Master Tier' : ($effectiveScore >= 3.5 ? 'Advanced Tier' : ($effectiveScore >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)')));
 
         $digitalSignoffs = is_array($existing['digital_signoffs']) ? $existing['digital_signoffs'] : [];
         $digitalSignoffs['discussion_minutes'] = $discussionMinutes;
 
         $record = [
-            'calibrated_score' => $calibratedScore,
-            'tier_label'       => $tierLabel,
-            'status'           => 'Calibrated',
-            'digital_signoffs' => $digitalSignoffs,
-            'updated_at'       => date('c')
+            'calibrated_score'      => $calibratedScore,
+            'new_calibrated_score'  => $newCalibratedScore,
+            'tier_label'            => $tierLabel,
+            'status'                => 'Calibrated',
+            'digital_signoffs'      => $digitalSignoffs,
+            'updated_at'            => date('c')
         ];
 
         $this->update($existing['id'], $record);

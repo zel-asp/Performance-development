@@ -87,5 +87,123 @@
         "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 2.1 / 5.0 (Developing (Needs PIP)).",
         "is_read": false,
         "created_at": "2026-08-27T15:48:33+00:00"
+    },
+    {
+        "id": "notif-c26596c5",
+        "recipient_role": "Associate",
+        "user_id": "emp-101",
+        "type": "task_assigned",
+        "title": "Specific Goal Task Assigned \ud83d\udccb",
+        "message": "Supervisor assigned specific task: \"sa\" (Due: 2026-09-10).",
+        "related_id": "task-spec-b8af3226",
+        "is_read": false,
+        "created_at": "2026-08-27T16:33:29+00:00",
+        "updated_at": "2026-08-27T16:33:29+00:00",
+        "goal_id": 33
+    },
+    {
+        "id": "notif-69ec06ee",
+        "user_id": "emp-101",
+        "type": "performance",
+        "title": "Performance Appraisal Endorsed",
+        "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 2.7 / 5.0 (Developing (Needs PIP)).",
+        "is_read": false,
+        "created_at": "2026-08-27T16:44:39+00:00"
+    },
+    {
+        "id": "notif-e4c64579",
+        "recipient_role": "Associate",
+        "user_id": "emp-101",
+        "type": "goal_created",
+        "title": "New Department Objective Set \ud83d\udccb",
+        "message": "Supervisor Chef Marco Rossi established new target \"Elevate VIP Guest Check-in Experience & NPS Loyalty Index\" (Front Office & Guest Experience).",
+        "related_id": "34",
+        "is_read": false,
+        "created_at": "2026-08-27T17:03:47+00:00",
+        "updated_at": "2026-08-27T17:03:47+00:00",
+        "goal_id": 34
+    },
+    {
+        "id": "notif-37db4d20",
+        "recipient_role": "Supervisor",
+        "user_id": "emp-102",
+        "type": "goal_created",
+        "title": "New Performance Objective Submitted",
+        "message": "Associate Maria Santos submitted a new performance target: \"HACCP Food Safety, Cold-Chain Logging & Zero Non-Conformance\" (Culinary & Kitchen Brigade). Awaiting supervisor calibration.",
+        "related_id": "35",
+        "is_read": false,
+        "created_at": "2026-08-27T17:03:58+00:00",
+        "updated_at": "2026-08-27T17:03:58+00:00",
+        "goal_id": 35
+    },
+    {
+        "id": "notif-0c368717",
+        "recipient_role": "Associate",
+        "user_id": "emp-101",
+        "type": "goal_approved",
+        "title": "Objective Approved & Tasks Assigned! \ud83c\udf89",
+        "message": "Performance objective \"HACCP Food Safety, Cold-Chain Logging & Zero Non-Conformance\" for Maria Santos was approved. Task checklist is active.",
+        "related_id": "35",
+        "is_read": false,
+        "created_at": "2026-08-27T17:10:46+00:00",
+        "updated_at": "2026-08-27T17:10:46+00:00",
+        "goal_id": 35
+    },
+    {
+        "id": "notif-f083d706",
+        "recipient_role": "Supervisor",
+        "user_id": "emp-102",
+        "type": "goal_approved",
+        "title": "Objective Approved & Tasks Assigned! \ud83c\udf89",
+        "message": "Performance objective \"Elevate VIP Guest Check-in Experience & NPS Loyalty Index\" for Chef Marco Rossi was approved. Task checklist is active.",
+        "related_id": "34",
+        "is_read": false,
+        "created_at": "2026-08-27T17:10:47+00:00",
+        "updated_at": "2026-08-27T17:10:47+00:00",
+        "goal_id": 34
+    },
+    {
+        "id": "notif-f8f09e0b",
+        "recipient_role": "Supervisor",
+        "user_id": "emp-102",
+        "type": "task_completed",
+        "title": "Task Completed with Feedback \u2728",
+        "message": "Employee completed \"dasds\" and submitted learnings & feedback.",
+        "related_id": "task-gen-2bc81064",
+        "is_read": false,
+        "created_at": "2026-08-27T17:11:06+00:00",
+        "updated_at": "2026-08-27T17:11:06+00:00",
+        "goal_id": 34
+    },
+    {
+        "id": "notif-63c4bf30",
+        "recipient_role": "Associate",
+        "user_id": "emp-102",
+        "type": "milestone_logged",
+        "title": "Shift Milestone Logged \ud83c\udfaf",
+        "message": "Milestone \"wala\" recorded with metric \"121\" (100% Target Progress).",
+        "related_id": "34",
+        "is_read": false,
+        "created_at": "2026-08-27T17:11:56+00:00",
+        "updated_at": "2026-08-27T17:11:56+00:00",
+        "goal_id": 34
+    },
+    {
+        "id": "notif-772e495d",
+        "user_id": "emp-102",
+        "type": "performance",
+        "title": "Performance Appraisal Endorsed",
+        "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 3 / 5.0 (Proficient).",
+        "is_read": false,
+        "created_at": "2026-08-27T17:15:38+00:00"
+    },
+    {
+        "id": "notif-8825ff6c",
+        "user_id": "emp-102",
+        "type": "performance",
+        "title": "Performance Appraisal Endorsed",
+        "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 3.5 / 5.0 (Advanced Tier).",
+        "is_read": false,
+        "created_at": "2026-08-27T17:35:45+00:00"
     }
 ]

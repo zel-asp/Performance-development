@@ -2541,15 +2541,7 @@
 
                 <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
                     <button type="button" onclick="closeModal('modal-1on1-minutes-viewer')" class="btn-secondary px-4 py-2 text-xs font-bold">Close</button>
-                    <button id="minutes-modal-btn-calibrate" onclick="closeModal('modal-1on1-minutes-viewer'); open1on1CalibrationModal('emp-101');" class="btn-primary px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-xs flex items-center space-x-1.5">
-                        <i class="fas fa-sliders"></i>
-                        <span>Edit / Calibrate 1-on-1</span>
-                    </button>
-                </div>
-
-                <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                    <button type="button" onclick="closeModal('modal-1on1-minutes-viewer')" class="btn-secondary px-4 py-2 text-xs font-bold">Close</button>
-                    <button id="minutes-modal-btn-calibrate" onclick="closeModal('modal-1on1-minutes-viewer'); open1on1CalibrationModal('emp-101');" class="btn-primary px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-xs flex items-center space-x-1.5">
+                    <button id="minutes-modal-btn-calibrate" onclick="closeModal('modal-1on1-minutes-viewer'); open1on1CalibrationModal(window.selectedEvalEmpId || 'emp-101');" class="btn-primary px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-xs flex items-center space-x-1.5">
                         <i class="fas fa-sliders"></i>
                         <span>Edit / Calibrate 1-on-1</span>
                     </button>
@@ -2618,10 +2610,220 @@
                         <button type="button" onclick="closeModal('modal-pip-action')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
                         <button type="submit" id="btn-submit-pip" class="btn-primary px-5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 border-rose-600 shadow-xs flex items-center space-x-1.5">
                             <i class="fas fa-file-signature"></i>
-                            <span>Lock &amp; Issue PIP Notice</span>
+                            <span>Lock &amp; Issue PIP Notice &rarr;</span>
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- MODAL: VIEW IDP / PIP DEVELOPMENT PLAN MODAL             -->
+        <!-- ======================================================== -->
+        <div id="modal-view-idp-plan" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden transform transition-all animate-scaleUp">
+                
+                <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-emerald-50/60 via-white to-indigo-50/40">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-base shadow-2xs">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Stage 6 Document</span>
+                                <span id="modal-idp-plan-status-pill" class="text-xs text-slate-400 font-medium">Active Development Plan</span>
+                            </div>
+                            <h3 id="modal-idp-plan-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Individual Development Plan (IDP)</h3>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('modal-view-idp-plan')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-5 text-xs">
+                    <!-- Associate & Score Summary Header -->
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-center space-x-3">
+                            <div id="modal-idp-emp-avatar" class="w-10 h-10 rounded-full bg-indigo-700 text-white font-bold text-xs flex items-center justify-center shadow-2xs flex-shrink-0">
+                                EM
+                            </div>
+                            <div>
+                                <p id="modal-idp-emp-name" class="font-bold text-slate-900 text-sm leading-tight">Employee Name</p>
+                                <p id="modal-idp-emp-role" class="text-[11px] text-slate-500">Position · Department</p>
+                            </div>
+                        </div>
+                        <div class="text-left sm:text-right">
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Performance Rating</span>
+                            <span id="modal-idp-emp-rating" class="text-sm font-bold text-indigo-700 font-mono">⭐ 4.50 / 5.0</span>
+                        </div>
+                    </div>
+
+                    <!-- Strengths & Gaps Columns -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 space-y-2">
+                            <span class="font-bold text-emerald-950 text-xs flex items-center">
+                                <i class="fas fa-award mr-1.5 text-emerald-600"></i> Identified Strengths
+                            </span>
+                            <ul id="modal-idp-strengths-list" class="space-y-1.5 text-slate-700">
+                                <!-- Populated dynamically -->
+                            </ul>
+                        </div>
+                        <div class="p-4 bg-amber-50/50 rounded-2xl border border-amber-200 space-y-2">
+                            <span class="font-bold text-amber-950 text-xs flex items-center">
+                                <i class="fas fa-triangle-exclamation mr-1.5 text-amber-600"></i> Development Gaps (&lt; 3.0)
+                            </span>
+                            <ul id="modal-idp-gaps-list" class="space-y-1.5 text-slate-700">
+                                <!-- Populated dynamically -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- 70-20-10 Learning Commitments & Tasks -->
+                    <div class="space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-heading font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center space-x-1.5">
+                                <i class="fas fa-list-check text-indigo-600"></i>
+                                <span>70-20-10 Learning Commitments &amp; Concrete Tasks</span>
+                            </h4>
+                            <button onclick="closeModal('modal-view-idp-plan'); openAddSpecificTaskModal(window.selectedEvalEmpId || 'emp-101')" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center space-x-1">
+                                <i class="fas fa-plus"></i>
+                                <span>Add Specific Task</span>
+                            </button>
+                        </div>
+                        <div id="modal-idp-commitments-list" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                    <button type="button" onclick="closeModal('modal-view-idp-plan')" class="btn-secondary px-4 py-2 text-xs font-bold">Close</button>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="closeModal('modal-view-idp-plan'); openRemedialBooksModal(window.selectedEvalEmpId || 'emp-101')" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1.5">
+                            <i class="fas fa-book-medical"></i>
+                            <span>Prescribe LMS Books</span>
+                        </button>
+                        <button onclick="closeModal('modal-view-idp-plan'); switchSubTab('perf', 'idp'); showIDPDetail(window.selectedEvalEmpId || 'emp-101')" class="btn-primary px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-xs flex items-center space-x-1.5">
+                            <span>Open Stage 6 Workspace &rarr;</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- MODAL: ADD SPECIFIC TASK TO GOAL                         -->
+        <!-- ======================================================== -->
+        <div id="modal-add-specific-task" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden transform transition-all animate-scaleUp">
+                
+                <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-50 via-white to-indigo-50">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-base shadow-2xs">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">Action Plan Task</span>
+                            <h3 id="modal-add-task-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Add Specific Goal Task</h3>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('modal-add-specific-task')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <form id="form-add-specific-task" onsubmit="handleCreateSpecificTaskSubmit(event)" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
+                    <input type="hidden" id="add-task-target-emp-id" value="emp-101">
+                    <input type="hidden" id="add-task-target-goal-id" value="">
+
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">Select Active Goal *</label>
+                        <select id="add-task-goal-select" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">Specific Task Title *</label>
+                        <input type="text" id="add-task-title" required placeholder="e.g. Shadow Senior Front Desk Supervisor on VIP Arrivals" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">Target Completion Date *</label>
+                        <input type="date" id="add-task-target-date" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">Task Instructions &amp; Success Metric</label>
+                        <textarea id="add-task-description" rows="2" placeholder="Detail specific standards, SOP checklists, or supervisor observation criteria..." class="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none custom-scrollbar bg-white"></textarea>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2">
+                        <button type="button" onclick="closeModal('modal-add-specific-task')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
+                        <button type="submit" id="btn-submit-specific-task" class="btn-primary px-5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 border-blue-600 shadow-xs flex items-center space-x-1.5">
+                            <i class="fas fa-check"></i>
+                            <span>Save Task to Database</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- MODAL: REVIEW PLAN & TASKS (STAGE 7 RETRY / RESET)       -->
+        <!-- ======================================================== -->
+        <div id="modal-review-tasks" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden transform transition-all animate-scaleUp">
+                
+                <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-amber-50 via-white to-blue-50">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-base shadow-2xs">
+                            <i class="fas fa-list-check"></i>
+                        </div>
+                        <div>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Stage 7 Review</span>
+                            <h3 id="modal-review-tasks-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Review Plan &amp; Tasks for Re-Execution</h3>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('modal-review-tasks')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
+                    <div class="p-4 bg-amber-50/70 rounded-2xl border border-amber-200 flex items-center justify-between gap-3">
+                        <div class="space-y-0.5">
+                            <p class="font-bold text-amber-950 text-xs">Remediation Task Re-do Protocol</p>
+                            <p class="text-[11px] text-amber-800">Review all action tasks. You can reset completed tasks back to pending for re-execution or delete obsolete tasks before returning to Continuous Monitoring.</p>
+                        </div>
+                        <button onclick="openAddSpecificTaskModal(window.selectedEvalEmpId || 'emp-101')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-xs flex-shrink-0 transition flex items-center space-x-1">
+                            <i class="fas fa-plus"></i>
+                            <span>Add Task</span>
+                        </button>
+                    </div>
+
+                    <!-- Tasks List for Re-Execution -->
+                    <div class="space-y-2">
+                        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center space-x-1.5">
+                            <i class="fas fa-tasks text-amber-600"></i>
+                            <span>Assigned Action Tasks</span>
+                        </h4>
+                        <div id="review-tasks-modal-list" class="space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <button type="button" onclick="closeModal('modal-review-tasks')" class="btn-secondary px-4 py-2 text-xs font-bold">Close</button>
+                    <div id="review-tasks-footer-actions" class="flex items-center space-x-2">
+                        <button id="btn-proceed-to-monitoring" onclick="proceedFromTasksToMonitoring()" class="btn-primary px-5 py-2 text-xs font-bold bg-teal-600 hover:bg-teal-700 border-teal-600 shadow-xs flex items-center space-x-2">
+                            <span>Proceed to Continuous Monitoring (Stage 3)</span>
+                            <i class="fas fa-arrow-right text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 

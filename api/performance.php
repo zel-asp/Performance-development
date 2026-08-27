@@ -106,6 +106,14 @@ try {
             $response = $controller->addSupervisorTaskFeedback($payload);
             break;
 
+        case 'delete_task':
+            $response = $controller->deleteTask($payload);
+            break;
+
+        case 'reset_task':
+            $response = $controller->resetTask($payload);
+            break;
+
         // 10. Evaluation & Multi-Factor Appraisal (Database Driven)
         case 'get_evaluations':
             $response = $controller->getEvaluations($payload);
@@ -126,6 +134,14 @@ try {
 
         case 'calibrate_evaluation':
             $response = $controller->calibrateEvaluation($payload);
+            break;
+
+        case 'increment_retry_count':
+            $response = $controller->incrementRetryCount($payload);
+            break;
+
+        case 'retry_plan':
+            $response = $controller->retryPlan($payload);
             break;
 
         default:

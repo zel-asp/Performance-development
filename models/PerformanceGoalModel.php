@@ -82,7 +82,8 @@ class PerformanceGoalModel extends BaseModel
             'evidence'      => !empty($data['evidence']) ? trim($data['evidence']) : null,
             'status'        => $statusVal,
             'supervisor_id' => !empty($data['supervisor_id']) ? trim($data['supervisor_id']) : null,
-            'supervisor_notes' => !empty($data['supervisor_notes']) ? trim($data['supervisor_notes']) : null
+            'supervisor_notes' => !empty($data['supervisor_notes']) ? trim($data['supervisor_notes']) : null,
+            'retry_count'   => isset($data['retry_count']) ? (int)$data['retry_count'] : 0
         ];
 
         // Direct Supabase insert
@@ -119,6 +120,37 @@ class PerformanceGoalModel extends BaseModel
     }
 
     /**
+     * Increment retry_count for a goal in Supabase
+     */
+    public function incrementRetryCount(string $goalId, int $increment = 1): ?array
+    {
+        $goal = $this->find($goalId);
+        $current = isset($goal['retry_count']) ? (int)$goal['retry_count'] : 0;
+        $newCount = $current + $increment;
+
+        return $this->update($goalId, [
+            'retry_count' => $newCount,
+            'updated_at'  => date('c')
+        ]);
+    }
+
+    /**
+     * Increment retry_count for all active goals of an employee
+     */
+    public function incrementEmployeeGoalsRetryCount(string $empId): array
+    {
+        $goals = $this->getGoalsByEmployee($empId);
+        $updated = [];
+        foreach ($goals as $g) {
+            if (!empty($g['id'])) {
+                $up = $this->incrementRetryCount($g['id']);
+                if ($up) $updated[] = $up;
+            }
+        }
+        return $updated;
+    }
+
+    /**
      * Update full performance goal objective fields in Supabase
      */
     public function updateGoal(string $id, array $data): ?array
@@ -137,6 +169,7 @@ class PerformanceGoalModel extends BaseModel
         if (isset($data['deliverables'])) $update['evidence'] = trim($data['deliverables']);
         if (isset($data['status'])) $update['status'] = trim($data['status']);
         if (isset($data['supervisor_notes'])) $update['supervisor_notes'] = trim($data['supervisor_notes']);
+        if (isset($data['retry_count'])) $update['retry_count'] = (int)$data['retry_count'];
 
         return $this->update($id, $update);
     }

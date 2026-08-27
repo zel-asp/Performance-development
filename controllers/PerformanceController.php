@@ -661,6 +661,58 @@ class PerformanceController
     }
 
     /**
+     * Delete a task from a goal
+     */
+    public function deleteTask(array $payload): array
+    {
+        $taskId = $payload['id'] ?? $payload['task_id'] ?? null;
+        if (empty($taskId)) {
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => 'Task ID is required to delete task.'
+            ];
+        }
+
+        $deleted = $this->taskModel->deleteTask((string)$taskId);
+        return [
+            'success' => $deleted,
+            'data'    => ['id' => $taskId],
+            'message' => $deleted ? 'Task successfully deleted.' : 'Failed to delete task.'
+        ];
+    }
+
+    /**
+     * Reset a task back to pending so employee can re-do it
+     */
+    public function resetTask(array $payload): array
+    {
+        $taskId = $payload['id'] ?? $payload['task_id'] ?? null;
+        if (empty($taskId)) {
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => 'Task ID is required to reset task.'
+            ];
+        }
+
+        $updated = $this->taskModel->resetTask((string)$taskId);
+        if (!$updated) {
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => "Task with ID {$taskId} not found."
+            ];
+        }
+
+        return [
+            'success' => true,
+            'data'    => $updated,
+            'message' => 'Task reset to pending. Employee can now re-execute.'
+        ];
+    }
+
+    /**
      * Log a shift milestone & actual KPI progress for a goal (Stage 3 Monitoring)
      */
     public function logMilestone(array $payload): array
@@ -749,7 +801,7 @@ class PerformanceController
     }
 
     /**
-     * Get dynamic Monitoring Stage Data strictly built from performance_goals, tasks & monitoring
+     * Get dynamic Monitoring Stage Data strictly built from approved performance_goals, tasks & monitoring
      */
     public function getMonitoringData(array $payload = []): array
     {
@@ -759,6 +811,12 @@ class PerformanceController
         $allTasks = $this->taskModel->all();
         $users = $this->authModel->all();
 
+        // Filter ONLY approved/completed goals for Phase 3-7 Monitoring and Evaluation
+        $approvedGoals = array_values(array_filter($enrichedGoals, function ($g) {
+            $st = strtolower(trim($g['status'] ?? ''));
+            return in_array($st, ['approved', 'completed']);
+        }));
+
         // Map users by id and employee_code
         $userMap = [];
         foreach ($users as $u) {
@@ -766,9 +824,9 @@ class PerformanceController
             if (!empty($u['employee_code'])) $userMap[strtolower($u['employee_code'])] = $u;
         }
 
-        // Group goals strictly by employee_id from performance_goals table
+        // Group approved goals strictly by employee_id from performance_goals table
         $empGoalsMap = [];
-        foreach ($enrichedGoals as $g) {
+        foreach ($approvedGoals as $g) {
             $eId = strtolower(trim($g['employee_id'] ?? 'emp-101'));
             if (!isset($empGoalsMap[$eId])) {
                 $empGoalsMap[$eId] = [];
@@ -776,7 +834,7 @@ class PerformanceController
             $empGoalsMap[$eId][] = $g;
         }
 
-        // Build roster dynamically ONLY for employees with performance goals
+        // Build roster dynamically ONLY for employees with approved performance goals
         $roster = [];
         foreach ($empGoalsMap as $eId => $goals) {
             $user = $userMap[$eId] ?? null;
@@ -784,15 +842,11 @@ class PerformanceController
             $pos = $user['title'] ?? ($goals[0]['department'] ?? 'Associate');
             $dept = $goals[0]['department'] ?? ($user['department'] ?? 'Hotel Operations');
             
-            // Calculate dynamic progress directly from task completion ratios
+            // Calculate dynamic progress directly from task completion ratios of approved goals
             $totalGoalProgress = 0;
-            $approvedCount = 0;
+            $approvedCount = count($goals);
 
             foreach ($goals as $g) {
-                $status = $g['status'] ?? 'Pending Approval';
-                if ($status === 'Approved' || $status === 'Completed') {
-                    $approvedCount++;
-                }
                 $totalGoalProgress += ($g['task_progress'] ?? 0);
             }
 
@@ -838,11 +892,11 @@ class PerformanceController
             'data'    => [
                 'roster'          => $roster,
                 'total_employees' => count($roster),
-                'total_goals'     => count($enrichedGoals),
+                'total_goals'     => count($approvedGoals),
                 'tasks'           => $allTasks,
                 'logs'            => $allLogs
             ],
-            'message' => 'Monitoring data dynamically loaded with tasks and live progress calculations.'
+            'message' => 'Monitoring data dynamically loaded with approved goals, tasks and live progress calculations.'
         ];
     }
 
@@ -867,21 +921,25 @@ class PerformanceController
     }
 
     /**
-     * Get single employee evaluation with active goals & criteria
+     * Get single employee evaluation with approved goals & criteria
      */
     public function getEvaluation(array $payload): array
     {
         $empId = $payload['employee_id'] ?? $payload['id'] ?? 'emp-101';
         $evaluation = $this->evaluationModel->getEvaluationByEmployee($empId);
 
-        // Fetch employee's active goals to construct criteria if needed
-        $goals = $this->enrichGoalsWithTasks($this->goalModel->getGoalsByEmployee($empId));
+        // Fetch employee's approved goals to construct criteria
+        $allGoals = $this->enrichGoalsWithTasks($this->goalModel->getGoalsByEmployee($empId));
+        $approvedGoals = array_values(array_filter($allGoals, function ($g) {
+            $st = strtolower(trim($g['status'] ?? ''));
+            return in_array($st, ['approved', 'completed']);
+        }));
 
         return [
             'success' => true,
             'data'    => [
                 'evaluation' => $evaluation,
-                'goals'      => $goals
+                'goals'      => $approvedGoals
             ],
             'message' => "Evaluation for {$empId} retrieved successfully."
         ];
@@ -941,6 +999,75 @@ class PerformanceController
             'success' => true,
             'data'    => $saved,
             'message' => "1-on-1 performance calibration successfully recorded."
+        ];
+    }
+
+    /**
+     * Increment retry_count for a goal or for all goals of an employee
+     */
+    public function incrementRetryCount(array $payload): array
+    {
+        $goalId = $payload['goal_id'] ?? $payload['id'] ?? null;
+        $empId = $payload['employee_id'] ?? null;
+
+        if (!empty($goalId)) {
+            $updated = $this->goalModel->incrementRetryCount($goalId);
+            return [
+                'success' => true,
+                'data'    => $updated,
+                'message' => "Goal retry count incremented."
+            ];
+        }
+
+        if (!empty($empId)) {
+            $updated = $this->goalModel->incrementEmployeeGoalsRetryCount($empId);
+            return [
+                'success' => true,
+                'data'    => $updated,
+                'message' => "Employee active goals retry count incremented."
+            ];
+        }
+
+        return [
+            'success' => false,
+            'data'    => null,
+            'message' => "Goal ID or Employee ID required to increment retry count."
+        ];
+    }
+
+    /**
+     * Execute retry plan: increment retry count and reset completed tasks for re-execution
+     */
+    public function retryPlan(array $payload): array
+    {
+        $empId = $payload['employee_id'] ?? 'emp-101';
+        $goals = $this->goalModel->getGoalsByEmployee($empId);
+
+        $maxRetry = 0;
+        foreach ($goals as $g) {
+            $r = isset($g['retry_count']) ? (int)$g['retry_count'] : 0;
+            if ($r > $maxRetry) $maxRetry = $r;
+        }
+
+        // If retry_count is more than 2 (> 2, i.e. 3 or more), do not allow monitoring loop
+        if ($maxRetry >= 2) {
+            return [
+                'success' => false,
+                'needs_formal_training' => true,
+                'retry_count' => $maxRetry,
+                'message' => "Retry limit exceeded ({$maxRetry}/2). Mandatory formal training required instead of monitoring."
+            ];
+        }
+
+        // Increment retry count on all goals
+        $updatedGoals = $this->goalModel->incrementEmployeeGoalsRetryCount($empId);
+
+        return [
+            'success' => true,
+            'needs_formal_training' => false,
+            'retry_count' => $maxRetry + 1,
+            'data'    => $updatedGoals,
+            'message' => "Plan retried (Attempt " . ($maxRetry + 1) . "). Tasks prepared for re-monitoring."
         ];
     }
 }

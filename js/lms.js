@@ -697,6 +697,24 @@ const lmsTrainingBooks = [
                     item.statusClass = 'bg-red-100 text-red-800 border-red-200';
                 }
 
+                // Synchronize with performance evaluation roster if present
+                const empName = item.empName.toLowerCase();
+                const matchedEmp = (window.perfRoster || []).find(e => e.name.toLowerCase().includes(empName));
+                if (matchedEmp) {
+                    matchedEmp.supervisorRating = newRating;
+                    const evalRec = (window.dbEvaluations || []).find(ev => typeof isSameEmployee === 'function' && isSameEmployee(ev.employee_id, matchedEmp.id));
+                    if (evalRec) {
+                        evalRec.supervisor_rating = newRating;
+                        if (newRating >= 3.0) {
+                            evalRec.calibrated_score = newRating;
+                            evalRec.tier_label = 'Proficient';
+                        }
+                    }
+                    if (typeof showIDPDetail === 'function') {
+                        showIDPDetail(matchedEmp.id);
+                    }
+                }
+
                 renderTnaEnrollments();
                 closeModal('modal-re-evaluate');
                 showToast(`🎉 Re-evaluation saved for ${item.empName}! Quiz Score: ${item.quizScore}/100 pts · Calibrated Rating: ${item.evalRating.toFixed(2)}/5.0`, 'success');
@@ -728,48 +746,71 @@ const lmsTrainingBooks = [
                 }
             };
 
+            window.prescribedBooksPerAssociate = window.prescribedBooksPerAssociate || {
+                maria: ['book_sommelier'],
+                'emp-101': ['book_sommelier']
+            };
+
             let currentRemedialKey = 'maria';
 
             function openRemedialBooksModal(empKey) {
-                if (empKey && remedialAssociates[empKey]) {
-                    currentRemedialKey = empKey;
+                if (empKey) {
+                    const k = empKey.toString().toLowerCase().trim();
+                    if (k === 'emp-101' || k === 'emp-1' || k.includes('maria')) {
+                        currentRemedialKey = 'maria';
+                    } else if (k === 'emp-102' || k === 'emp-2' || k.includes('antonio')) {
+                        currentRemedialKey = 'antonio';
+                    } else if (k.includes('lucas')) {
+                        currentRemedialKey = 'lucas';
+                    } else if (k.includes('chloe')) {
+                        currentRemedialKey = 'chloe';
+                    } else if (remedialAssociates[empKey]) {
+                        currentRemedialKey = empKey;
+                    }
                     const selectEl = document.getElementById('remedial-associate-select');
-                    if (selectEl) selectEl.value = empKey;
+                    if (selectEl) selectEl.value = currentRemedialKey;
                 }
                 updateRemedialAssociate(currentRemedialKey);
                 renderRemedialBooksList();
                 openModal('modal-remedial-books');
             }
+            window.openRemedialBooksModal = openRemedialBooksModal;
 
             function updateRemedialAssociate(empKey) {
                 currentRemedialKey = empKey;
-                const emp = remedialAssociates[empKey] || remedialAssociates['lucas'];
+                const emp = remedialAssociates[empKey] || remedialAssociates['maria'];
                 const nameEl = document.getElementById('remedial-associate-name');
                 const detailEl = document.getElementById('remedial-associate-detail');
                 if (nameEl) nameEl.textContent = emp.name;
                 if (detailEl) detailEl.innerHTML = emp.detail;
                 renderRemedialBooksList();
             }
+            window.updateRemedialAssociate = updateRemedialAssociate;
 
             function renderRemedialBooksList() {
                 const container = document.getElementById('remedial-books-list');
                 if (!container) return;
 
-                const emp = remedialAssociates[currentRemedialKey] || remedialAssociates['lucas'];
+                const emp = remedialAssociates[currentRemedialKey] || remedialAssociates['maria'];
+                const prescribedList = [
+                    ...(window.prescribedBooksPerAssociate?.[currentRemedialKey] || []),
+                    ...(window.prescribedBooksPerAssociate?.['emp-101'] || [])
+                ];
 
                 container.innerHTML = lmsTrainingBooks.map(book => {
                     const isRecommended = book.id === emp.recommendedBookId;
+                    const isAlreadyPrescribed = prescribedList.includes(book.id) || lmsTnaEnrollments.some(e => e.bookId === book.id && e.empName.toLowerCase().includes(emp.name.split('·')[0].toLowerCase().trim()));
 
                     return `
-                        <div class="p-3.5 rounded-2xl border ${isRecommended ? 'border-primary/40 bg-primary-50/30 shadow-xs' : 'border-[#E8DEDC] bg-white hover:bg-[#FAF8F7]'} flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition">
+                        <div class="p-3.5 rounded-2xl border ${isAlreadyPrescribed ? 'border-emerald-200 bg-emerald-50/20' : (isRecommended ? 'border-primary/40 bg-primary-50/30 shadow-xs' : 'border-[#E8DEDC] bg-white hover:bg-[#FAF8F7]')} flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition">
                             <div class="flex items-start space-x-3">
-                                <div class="w-9 h-9 rounded-xl bg-[#FAF8F7] text-primary border border-[#E8DEDC] flex items-center justify-center text-sm shadow-2xs flex-shrink-0">
+                                <div class="w-9 h-9 rounded-xl ${isAlreadyPrescribed ? 'bg-emerald-100 text-emerald-800' : 'bg-[#FAF8F7] text-primary'} border border-[#E8DEDC] flex items-center justify-center text-sm shadow-2xs flex-shrink-0">
                                     <i class="fas ${book.icon}"></i>
                                 </div>
                                 <div class="space-y-0.5">
                                     <div class="flex items-center space-x-2">
                                         <p class="font-bold text-slate-900 text-xs">${book.title}</p>
-                                        ${isRecommended ? '<span class="badge-terracotta text-[9px] uppercase tracking-wider font-extrabold">Gap Match</span>' : ''}
+                                        ${isAlreadyPrescribed ? '<span class="px-2 py-0.2 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">✓ In IDP Plan</span>' : (isRecommended ? '<span class="badge-terracotta text-[9px] uppercase tracking-wider font-extrabold">Gap Match</span>' : '')}
                                     </div>
                                     <p class="text-[11px] text-slate-500">${book.deptName} · ${book.category} · <span class="font-medium text-slate-700">${book.pages}</span></p>
                                 </div>
@@ -779,22 +820,42 @@ const lmsTrainingBooks = [
                                     class="px-3 py-1.5 btn-secondary text-xs font-semibold">
                                     Preview
                                 </button>
-                                <button onclick="assignBookToIdp('${book.id}')"
-                                    class="px-3.5 py-1.5 btn-primary text-xs font-bold transition flex items-center space-x-1">
-                                    <i class="fas fa-plus mr-1"></i>
-                                    <span>Assign to IDP</span>
-                                </button>
+                                ${isAlreadyPrescribed ? `
+                                    <button disabled
+                                        class="px-3.5 py-1.5 bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-xl cursor-not-allowed flex items-center space-x-1 opacity-90 shadow-2xs" title="Already prescribed to associate's development plan">
+                                        <i class="fas fa-check text-emerald-600 mr-1"></i>
+                                        <span>Prescribed</span>
+                                    </button>
+                                ` : `
+                                    <button onclick="assignBookToIdp('${book.id}')"
+                                        class="px-3.5 py-1.5 btn-primary text-xs font-bold transition flex items-center space-x-1 shadow-2xs">
+                                        <i class="fas fa-plus mr-1"></i>
+                                        <span>Assign to IDP</span>
+                                    </button>
+                                `}
                             </div>
                         </div>
                     `;
                 }).join('');
             }
+            window.renderRemedialBooksList = renderRemedialBooksList;
 
             function assignBookToIdp(bookId) {
                 const book = lmsTrainingBooks.find(b => b.id === bookId);
                 if (!book) return;
 
-                const emp = remedialAssociates[currentRemedialKey] || remedialAssociates['lucas'];
+                const emp = remedialAssociates[currentRemedialKey] || remedialAssociates['maria'];
+
+                window.prescribedBooksPerAssociate[currentRemedialKey] = window.prescribedBooksPerAssociate[currentRemedialKey] || [];
+                if (!window.prescribedBooksPerAssociate[currentRemedialKey].includes(bookId)) {
+                    window.prescribedBooksPerAssociate[currentRemedialKey].push(bookId);
+                }
+                if (currentRemedialKey === 'maria') {
+                    window.prescribedBooksPerAssociate['emp-101'] = window.prescribedBooksPerAssociate['emp-101'] || [];
+                    if (!window.prescribedBooksPerAssociate['emp-101'].includes(bookId)) {
+                        window.prescribedBooksPerAssociate['emp-101'].push(bookId);
+                    }
+                }
 
                 // Add card into the IDP commitments container
                 const idpContainer = document.getElementById('idp-perf-commitments-container');
@@ -812,7 +873,7 @@ const lmsTrainingBooks = [
                         </div>
                         <div class="pt-3 border-t border-amber-200 flex items-center justify-between text-xs">
                             <span class="text-amber-800 text-[11px] font-semibold"><i class="fas fa-book-medical mr-1"></i>Prescribed</span>
-                            <span class="text-xs font-bold text-amber-800 bg-amber-100 px-2.5 py-1 rounded-xl border border-amber-300">Enrolled</span>
+                            <span class="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-xl border border-emerald-300">Enrolled</span>
                         </div>
                     `;
                     idpContainer.prepend(newCommitment);
@@ -840,11 +901,15 @@ const lmsTrainingBooks = [
                         attemptCount: 0,
                         notes: 'Mandatory remedial study prescribed to resolve competency rating < 3.0.'
                     });
-                    renderTnaEnrollments();
+                    if (typeof renderTnaEnrollments === 'function') renderTnaEnrollments();
                 }
 
-                closeModal('modal-remedial-books');
+                renderRemedialBooksList();
+                if (typeof showIDPDetail === 'function') {
+                    showIDPDetail(currentRemedialKey);
+                }
                 showToast(`📚 Handbook "${book.title}" prescribed to ${emp.name.split('·')[0].trim()}'s 70-20-10 IDP!`, 'success');
             }
+            window.assignBookToIdp = assignBookToIdp;
 
             // Comprehensive Kudos Staff Directory with Performance Averages

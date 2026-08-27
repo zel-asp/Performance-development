@@ -13,5 +13,35 @@
         "supervisor_notes": null,
         "created_at": "2026-08-27T15:33:39+00:00",
         "updated_at": "2026-08-27T15:33:39+00:00"
+    },
+    {
+        "id": "mon-cb9df274",
+        "goal_id": 34,
+        "employee_id": "emp-102",
+        "milestone_title": "Task Completed: dasds",
+        "actual_metric": "Goal Progress: 100%",
+        "progress": 100,
+        "accomplishments": "asda",
+        "challenges": null,
+        "feedback": "adasd",
+        "supporting_evidence": "Task Checklist Verified",
+        "supervisor_notes": null,
+        "created_at": "2026-08-27T17:11:06+00:00",
+        "updated_at": "2026-08-27T17:11:06+00:00"
+    },
+    {
+        "id": "mon-711f3de5",
+        "goal_id": 34,
+        "employee_id": "emp-102",
+        "milestone_title": "wala",
+        "actual_metric": "121",
+        "progress": 100,
+        "accomplishments": "basta",
+        "challenges": null,
+        "feedback": null,
+        "supporting_evidence": null,
+        "supervisor_notes": null,
+        "created_at": "2026-08-27T17:11:56+00:00",
+        "updated_at": "2026-08-27T17:11:56+00:00"
     }
 ]

@@ -129,6 +129,14 @@ const PerformanceAPI = {
         });
     },
 
+    deleteTask(taskId) {
+        return this.request('delete_task', 'POST', { id: taskId });
+    },
+
+    resetTask(taskId) {
+        return this.request('reset_task', 'POST', { id: taskId });
+    },
+
     // 10. Evaluation & Multi-Factor Appraisal (Database Driven)
     getEvaluations(filters = {}) {
         return this.request('get_evaluations', 'GET', filters);
@@ -148,6 +156,14 @@ const PerformanceAPI = {
 
     calibrateEvaluation(data) {
         return this.request('calibrate_evaluation', 'POST', data);
+    },
+
+    incrementRetryCount(data) {
+        return this.request('increment_retry_count', 'POST', data);
+    },
+
+    retryPlan(data) {
+        return this.request('retry_plan', 'POST', data);
     }
 };
 
@@ -2190,8 +2206,9 @@ function calculateEmployeeProgress(emp) {
     if (emp && emp.goals && emp.goals.length > 0) {
         let totalProgress = 0;
         let countedGoals = 0;
+        const approvedGoals = emp.goals.filter(g => g.status === 'Approved' || g.status === 'Completed');
 
-        emp.goals.forEach(g => {
+        approvedGoals.forEach(g => {
             const tasks = g.tasks || [];
             if (tasks.length > 0) {
                 const completed = tasks.filter(t => t.status === 'completed').length;
@@ -2235,8 +2252,8 @@ function renderMonitoringRosterTable() {
     container.innerHTML = '';
     const deptFilter = document.getElementById('filter-monitoring-dept')?.value || 'all';
 
-    // Only display employees who have active/set performance objectives in the database
-    let list = (window.perfRoster || []).filter(e => (window.dbGoals || []).some(g => g.employee_id === e.id || (e.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')) || (e.id === 'emp-102' && (g.employee_id === 'emp-2' || g.employee_id === 'OXF-SUP-2001'))));
+    // Only display employees who have approved performance objectives in the database (Phase 3-7 requirement)
+    let list = (window.perfRoster || []).filter(e => (window.dbGoals || []).some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, e.id)));
     if (deptFilter !== 'all') {
         list = list.filter(e => e.department.toLowerCase() === deptFilter.toLowerCase());
     }
@@ -2408,13 +2425,13 @@ function renderEmployeeMonitoringStream(emp) {
     if (!container) return;
 
     container.innerHTML = '';
-    const empGoals = emp.goals || [];
+    const empGoals = (emp.goals || []).filter(g => g.status === 'Approved' || g.status === 'Completed');
 
     if (empGoals.length === 0) {
         container.innerHTML = `
             <div class="p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center text-xs text-slate-500">
                 <i class="fas fa-tasks text-slate-400 text-base mb-1 block"></i>
-                No performance objectives assigned to this employee yet.
+                No approved performance objectives found for this employee. Approve goals in Stage 2 to begin monitoring.
             </div>
         `;
         return;
@@ -2848,15 +2865,15 @@ function renderEvaluationRosterTable() {
     if (!container) return;
     container.innerHTML = '';
 
-    // Only show employees who actually have active performance goals in database
-    const rosterWithGoals = (window.perfRoster || []).filter(emp => (window.dbGoals || []).some(g => g.employee_id === emp.id || (emp.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (g.employee_id === 'emp-2' || g.employee_id === 'OXF-SUP-2001'))));
+    // Only show employees who actually have approved performance goals in database
+    const rosterWithGoals = (window.perfRoster || []).filter(emp => (window.dbGoals || []).some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id)));
 
     if (rosterWithGoals.length === 0) {
         container.innerHTML = `
             <tr>
                 <td colspan="6" class="px-5 py-8 text-center text-slate-400 italic bg-slate-50">
                     <i class="fas fa-bullseye text-2xl mb-2 block text-slate-300"></i>
-                    No employees with active performance goals found in the database. Add and approve goals in Stages 1 &amp; 2 before appraisal evaluation.
+                    No employees with approved performance goals found in the database. Add and approve goals in Stages 1 &amp; 2 before appraisal evaluation.
                 </td>
             </tr>
         `;
@@ -2868,8 +2885,8 @@ function renderEvaluationRosterTable() {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
 
-        // Calculate actual task progress for this employee from Database Goals
-        const empGoals = (window.dbGoals || []).filter(g => g.employee_id === emp.id || (emp.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (g.employee_id === 'emp-2' || g.employee_id === 'OXF-SUP-2001')));
+        // Calculate actual task progress for this employee from Database Approved Goals
+        const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
         let totalTasks = 0;
         let completedTasks = 0;
         empGoals.forEach(g => {
@@ -2878,10 +2895,11 @@ function renderEvaluationRosterTable() {
                 if (t.status === 'completed') completedTasks++;
             });
         });
+        const allTasksDone = totalTasks > 0 && completedTasks === totalTasks;
         const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
         
         // Read evaluation record directly from Database / Supabase
-        const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
+        const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id));
         const isRated = evalRec && (evalRec.status === 'Rated' || evalRec.status === 'Calibrated');
         const supervisorRating = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null ? parseFloat(evalRec.supervisor_rating) : (isRated ? (emp.supervisorRating || 0) : 0);
         const isBelowBenchmark = isRated && supervisorRating > 0 && supervisorRating < 3.0;
@@ -2956,9 +2974,19 @@ function renderEvaluationRosterTable() {
                 <button onclick="showEmployeeEvalDetail('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition shadow-2xs" title="View Full Appraisal">
                     <i class="fas fa-eye mr-1"></i>View
                 </button>
-                <button onclick="openAppraisalModal('${emp.id}')" class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-[11px] font-bold shadow-xs transition" title="Open Appraisal Scoring Form">
-                    <i class="fas fa-star-half-stroke mr-1"></i>Evaluate
-                </button>
+                ${!allTasksDone ? `
+                    <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed rounded-lg text-[11px] font-bold shadow-none opacity-60 inline-flex items-center space-x-1" title="Cannot evaluate: Tasks are still not done (${completedTasks}/${totalTasks} completed). Complete all tasks in Stage 3 Continuous Monitoring first.">
+                        <i class="fas fa-lock text-[10px] mr-1"></i><span>Evaluate</span>
+                    </button>
+                ` : (isRated ? `
+                    <button onclick="openAppraisalModal('${emp.id}')" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[11px] font-bold transition shadow-2xs" title="View or Adjust Appraisal Scoring Form">
+                        <i class="fas fa-check text-emerald-600 mr-1"></i>Evaluated
+                    </button>
+                ` : `
+                    <button onclick="openAppraisalModal('${emp.id}')" class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-[11px] font-bold shadow-xs transition" title="Open Appraisal Scoring Form">
+                        <i class="fas fa-star-half-stroke mr-1"></i>Evaluate
+                    </button>
+                `)}
             </td>
         `;
         container.appendChild(tr);
@@ -2968,7 +2996,7 @@ window.renderEvaluationRosterTable = renderEvaluationRosterTable;
 
 function showEmployeeEvalDetail(empId) {
     if (!empId) return;
-    const emp = window.perfRoster.find(e => e.id === empId);
+    const emp = window.perfRoster.find(e => isSameEmployee(e.id, empId));
     if (!emp) return;
     window.selectedEvalEmpId = emp.id;
 
@@ -2977,7 +3005,7 @@ function showEmployeeEvalDetail(empId) {
     if (!detail) return;
 
     // Read DB evaluation record from database store
-    const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
+    const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id));
 
     // Header info
     const titleEl = document.getElementById('eval-detail-emp-title');
@@ -3014,8 +3042,11 @@ function showEmployeeEvalDetail(empId) {
         }
     }
 
-    // Objectives Scorecard from Database
-    const empGoals = (window.dbGoals || []).filter(g => g.employee_id === emp.id || (emp.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (g.employee_id === 'emp-2' || g.employee_id === 'OXF-SUP-2001')));
+    // Approved Objectives Scorecard from Database
+    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+    let totalAllTasks = 0;
+    let completedAllTasks = 0;
+
     const objContainer = document.getElementById('eval-detail-objectives-container');
     if (objContainer) {
         if (empGoals.length === 0) {
@@ -3025,6 +3056,8 @@ function showEmployeeEvalDetail(empId) {
                 const tasks = g.tasks || [];
                 const done = tasks.filter(t => t.status === 'completed').length;
                 const total = tasks.length;
+                totalAllTasks += total;
+                completedAllTasks += done;
                 const pct = total > 0 ? Math.round((done / total) * 100) : (g.status === 'Completed' ? 100 : 0);
                 return `
                     <div class="p-3 bg-white rounded-2xl border border-slate-200 space-y-1.5 text-xs shadow-2xs">
@@ -3045,6 +3078,24 @@ function showEmployeeEvalDetail(empId) {
                     </div>
                 `;
             }).join('');
+        }
+    }
+
+    const allTasksDone = totalAllTasks > 0 && completedAllTasks === totalAllTasks;
+
+    // Enable / Disable Open Appraisal Button depending on task completion
+    const btnOpenAppraisal = document.getElementById('btn-open-eval-appraisal');
+    if (btnOpenAppraisal) {
+        if (!allTasksDone) {
+            btnOpenAppraisal.disabled = true;
+            btnOpenAppraisal.className = 'px-4 py-2 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed rounded-xl text-xs font-bold shadow-none opacity-60 inline-flex items-center space-x-1.5';
+            btnOpenAppraisal.innerHTML = '<i class="fas fa-lock text-[10px]"></i><span>Appraisal Locked (Tasks Incomplete)</span>';
+            btnOpenAppraisal.title = `Associate has incomplete monitoring tasks (${completedAllTasks}/${totalAllTasks} done). Complete all tasks in Stage 3 Continuous Monitoring before appraisal.`;
+        } else {
+            btnOpenAppraisal.disabled = false;
+            btnOpenAppraisal.className = 'btn-primary px-4 py-2 text-xs font-bold shadow-xs inline-flex items-center space-x-1.5';
+            btnOpenAppraisal.innerHTML = '<i class="fas fa-edit mr-1"></i><span>Open Appraisal Form</span>';
+            btnOpenAppraisal.title = 'Open Appraisal Form';
         }
     }
 
@@ -3114,25 +3165,27 @@ window.hideEmployeeEvalDetail = hideEmployeeEvalDetail;
 window.pendingEvalEmpId = null;
 
 function openAppraisalModal(empId) {
-    const emp = window.perfRoster.find(e => e.id === empId) || window.perfRoster[0];
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || (window.perfRoster || [])[0];
     if (!emp) return;
 
     window.selectedEvalEmpId = emp.id;
 
-    // Check if employee has monitoring action tasks in database
-    const empGoals = (window.dbGoals || []).filter(g => g.employee_id === emp.id || (emp.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (g.employee_id === 'emp-2' || g.employee_id === 'OXF-SUP-2001')));
+    // Check if employee has approved goals and all monitoring action tasks are completed
+    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
     let totalTasks = 0;
+    let completedTasks = 0;
     empGoals.forEach(g => {
-        (g.tasks || []).forEach(t => totalTasks++);
+        (g.tasks || []).forEach(t => {
+            totalTasks++;
+            if (t.status === 'completed') completedTasks++;
+        });
     });
 
-    if (totalTasks === 0) {
-        window.pendingEvalEmpId = emp.id;
-        const msgEl = document.getElementById('eval-no-tasks-emp-msg');
-        if (msgEl) {
-            msgEl.textContent = `${emp.name} (${emp.position}) does not have any active or completed monitoring action tasks recorded in the database yet for this review cycle.`;
+    const allTasksDone = totalTasks > 0 && completedTasks === totalTasks;
+    if (!allTasksDone) {
+        if (typeof showToast === 'function') {
+            showToast(`⚠️ Cannot evaluate ${emp.name}: Monitoring tasks are still not done (${completedTasks}/${totalTasks} completed). Complete all tasks in Stage 3 Continuous Monitoring first.`, 'warning');
         }
-        openModal('modal-eval-no-tasks-confirm');
         return;
     }
 
@@ -3161,9 +3214,9 @@ function openAppraisalModalInternal(empId) {
     const criteriaContainer = document.getElementById('appraisal-criteria-container');
     if (!criteriaContainer) return;
 
-    // Load active goals and DB evaluation criteria
-    const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
-    const empGoals = (window.dbGoals || []).filter(g => g.employee_id === emp.id || (emp.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (g.employee_id === 'emp-2' || g.employee_id === 'OXF-SUP-2001')));
+    // Load approved goals and DB evaluation criteria
+    const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id));
+    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
     
     let criteriaList = [];
     if (evalRec && Array.isArray(evalRec.criteria_scores) && evalRec.criteria_scores.length > 0) {
@@ -3289,10 +3342,16 @@ async function handleAppraisalSubmit(e) {
         const finalScore = totalWeight > 0 ? parseFloat((weightedSum / totalWeight).toFixed(2)) : 4.60;
         const supervisorNotes = document.getElementById('eval-supervisor-notes')?.value.trim() || 'Appraisal successfully endorsed with positive hospitality benchmarking.';
 
+        const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, empId));
+        const maxRetry = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
+        const isRetry = maxRetry > 0;
+
         // Save directly to Database via PerformanceAPI
         const saved = await PerformanceAPI.submitAppraisal({
             employee_id: empId,
             supervisor_rating: finalScore,
+            new_supervisor_rating: isRetry ? finalScore : undefined,
+            is_retry: isRetry,
             criteria_scores: criteriaScores,
             supervisor_notes: supervisorNotes
         });
@@ -3302,6 +3361,9 @@ async function handleAppraisalSubmit(e) {
             emp.evaluationStatus = 'Rated';
             emp.supervisorRating = finalScore;
             emp.managerRating = finalScore;
+            if (isRetry) {
+                emp.newSupervisorRating = finalScore;
+            }
             emp.tierLabel = saved.tier_label || (finalScore >= 4.5 ? 'Master Tier' : 'Advanced Tier');
             emp.evaluationRecord = saved;
             emp.reviewStatus = 'Pending Calibration';
@@ -3342,14 +3404,29 @@ async function handleAppraisalSubmit(e) {
 }
 window.handleAppraisalSubmit = handleAppraisalSubmit;
 
+function triggerSendKudosForEmployee(empId) {
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || { id: empId, name: 'Associate' };
+    if (typeof initKudosRosterModal === 'function' && typeof selectedKudosRecipients !== 'undefined') {
+        initKudosRosterModal();
+        selectedKudosRecipients.clear();
+        selectedKudosRecipients.add(emp.id);
+        if (typeof renderKudosRoster === 'function') renderKudosRoster();
+    }
+    openModal('modal-kudos');
+    if (typeof showToast === 'function') {
+        showToast(`👏 Opening Kudos recognition for ${emp.name}...`, 'info');
+    }
+}
+window.triggerSendKudosForEmployee = triggerSendKudosForEmployee;
+
 function renderReviewRosterTable() {
     const container = document.getElementById('review-roster-tbody');
     if (!container) return;
     container.innerHTML = '';
 
-    // ONLY display employees who have active goals in database AND a completed Stage 4 evaluation
+    // ONLY display employees who have approved goals in database AND a completed Stage 4 evaluation
     const evaluatedEmployees = (window.perfRoster || []).filter(emp => {
-        const hasGoal = (window.dbGoals || []).some(g => isSameEmployee(g.employee_id, emp.id));
+        const hasGoal = (window.dbGoals || []).some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
         const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const hasEval = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0;
         return hasGoal && hasEval;
@@ -3363,7 +3440,7 @@ function renderReviewRosterTable() {
                         <i class="fas fa-sliders"></i>
                     </div>
                     <p class="font-bold text-slate-700 mb-0.5">No Calibrations Available</p>
-                    <p class="text-slate-400 text-[11px]">Employees must have active performance goals in the database and completed Stage 4 supervisor evaluations before 1-on-1 calibration can occur.</p>
+                    <p class="text-slate-400 text-[11px]">Employees must have approved performance goals in the database and completed Stage 4 supervisor evaluations before 1-on-1 calibration can occur.</p>
                 </td>
             </tr>
         `;
@@ -3384,6 +3461,7 @@ function renderReviewRosterTable() {
         const calibScore = evalRec && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : (rawSupScore > 0 ? rawSupScore : null);
         const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
         const tierLabel = evalRec?.tier_label || (calibScore ? (calibScore >= 4.5 ? 'Master Tier' : (calibScore >= 3.5 ? 'Advanced Tier' : (calibScore >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)'))) : 'Pending');
+        const effectiveScore = calibScore !== null ? calibScore : rawSupScore;
 
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
@@ -3428,14 +3506,32 @@ function renderReviewRosterTable() {
                         <i class="fas fa-eye text-indigo-600"></i>
                         <span>View</span>
                     </button>
+                    ${effectiveScore >= 3.0 ? `
+                        <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl text-xs border border-amber-200 transition flex items-center space-x-1" title="Send Colleague Kudos">
+                            <i class="fas fa-award text-amber-600"></i>
+                            <span>Send Kudos</span>
+                        </button>
+                    ` : `
+                        <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}');" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold rounded-xl text-xs border border-rose-200 transition flex items-center space-x-1" title="Create Development Plan in Stage 6">
+                            <i class="fas fa-file-pen text-rose-600"></i>
+                            <span>Create Dev Plan</span>
+                        </button>
+                    `}
                     <button onclick="open1on1MinutesModal('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition flex items-center space-x-1" title="View 1-on-1 Discussion Minutes">
                         <i class="fas fa-file-lines text-indigo-600"></i>
                         <span>Minutes</span>
                     </button>
-                    <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="Calibrate and Record 1-on-1 Review">
-                        <i class="fas fa-sliders"></i>
-                        <span>Calibrate</span>
-                    </button>
+                    ${isCalibrated ? `
+                        <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-xl text-xs border border-emerald-200 transition flex items-center space-x-1" title="View or Adjust Calibration">
+                            <i class="fas fa-check text-emerald-600"></i>
+                            <span>Calibrated</span>
+                        </button>
+                    ` : `
+                        <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="Calibrate and Record 1-on-1 Review">
+                            <i class="fas fa-sliders"></i>
+                            <span>Calibrate</span>
+                        </button>
+                    `}
                 </div>
             </td>
         `;
@@ -3492,9 +3588,7 @@ function showCalibrationDetail(empId) {
         return;
     }
 
-    window.selectedCalibEmpId = emp.id;
-
-    const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, emp.id));
+    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
     const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
 
     if (empGoals.length === 0 || !evalRec) {
@@ -3554,29 +3648,32 @@ function showCalibrationDetail(empId) {
         }
     }
 
-    // Dynamic Next Step
+    // Dynamic Next Step: Show Send Colleague Kudos if >= 3.0, or Create Development Plan if < 3.0
     if (nextStepContainer) {
-        if (isCalibrated && calibScore && calibScore >= 3.0) {
+        const effectiveScore = calibScore !== null ? calibScore : rawSupScore;
+        if (effectiveScore >= 3.0) {
             nextStepContainer.innerHTML = `
-                <div class="p-4 bg-indigo-50/70 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-indigo-950">
+                <div class="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-950">
                     <div class="flex items-center space-x-2.5">
-                        <i class="fas fa-circle-check text-emerald-600 text-base"></i>
-                        <span>Associate calibrated score meets proficiency benchmark (⭐ <strong>${calibScore.toFixed(2)} / 5.0</strong>). Proceed to create the Individual Development Plan.</span>
+                        <i class="fas fa-award text-emerald-600 text-base"></i>
+                        <span>Associate rating meets proficiency benchmark (⭐ <strong>${effectiveScore.toFixed(2)} / 5.0</strong>). Send recognition kudos to celebrate their achievement!</span>
                     </div>
-                    <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}');" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs transition flex-shrink-0">
-                        Create Development Plan &rarr;
+                    <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold shadow-xs transition flex-shrink-0 flex items-center space-x-1.5">
+                        <i class="fas fa-award"></i>
+                        <span>Send Colleague Kudos &rarr;</span>
                     </button>
                 </div>
             `;
-        } else if (isCalibrated && calibScore && calibScore < 3.0) {
+        } else if (effectiveScore > 0 && effectiveScore < 3.0) {
             nextStepContainer.innerHTML = `
                 <div class="p-4 bg-rose-50 rounded-2xl border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-950">
                     <div class="flex items-center space-x-2.5">
                         <i class="fas fa-triangle-exclamation text-rose-600 text-base"></i>
-                        <span><strong>Performance Warning:</strong> Associate calibrated score (⭐ <strong>${calibScore.toFixed(2)} / 5.0</strong>) is below 3.0 benchmark. Mandatory Performance Improvement Plan (PIP) required.</span>
+                        <span><strong>Performance Gap Detected:</strong> Score (⭐ <strong>${effectiveScore.toFixed(2)} / 5.0</strong>) is below 3.0 standard. Proceed to Stage 6 to create an Individual Development Plan.</span>
                     </div>
-                    <button onclick="openPIPModal('${emp.id}')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex-shrink-0">
-                        <i class="fas fa-file-shield mr-1"></i> Initiate Performance Improvement Plan (PIP) &rarr;
+                    <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}');" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex-shrink-0 flex items-center space-x-1.5">
+                        <i class="fas fa-file-pen"></i>
+                        <span>Create Development Plan &rarr;</span>
                     </button>
                 </div>
             `;
@@ -3585,7 +3682,7 @@ function showCalibrationDetail(empId) {
                 <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-950">
                     <div class="flex items-center space-x-2.5">
                         <i class="fas fa-sliders text-amber-600 text-base"></i>
-                        <span>Supervisor appraisal complete (⭐ <strong>${rawSupScore.toFixed(2)} / 5.0</strong>). Ready for formal 1-on-1 rating calibration.</span>
+                        <span>Supervisor appraisal complete. Ready for formal 1-on-1 rating calibration.</span>
                     </div>
                     <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition flex-shrink-0">
                         Calibrate 1-on-1 &rarr;
@@ -3736,9 +3833,15 @@ async function handleCalibrationSubmit(e) {
     }
 
     try {
+        const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, empId));
+        const maxRetry = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
+        const isRetry = maxRetry > 0;
+
         const saved = await PerformanceAPI.calibrateEvaluation({
             employee_id: empId,
             calibrated_score: calibratedScore,
+            new_calibrated_score: isRetry ? calibratedScore : undefined,
+            is_retry: isRetry,
             tier_label: tierLabel,
             discussion_minutes: discussionMinutes
         });
@@ -3747,6 +3850,9 @@ async function handleCalibrationSubmit(e) {
         if (emp) {
             emp.reviewStatus = 'Calibrated';
             emp.calibratedScore = calibratedScore;
+            if (isRetry) {
+                emp.newCalibratedScore = calibratedScore;
+            }
             emp.tierLabel = tierLabel;
             emp.evaluationRecord = saved;
         }
@@ -3885,79 +3991,329 @@ function openPIPModal(empId) {
 }
 window.openPIPModal = openPIPModal;
 
-function handlePIPSubmit(e) {
+async function handlePIPSubmit(e) {
     if (e && e.preventDefault) e.preventDefault();
 
     const empId = document.getElementById('pip-target-emp-id')?.value || 'emp-101';
-    const emp = (window.perfRoster || []).find(e => e.id === empId);
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId));
+    const deficiencies = document.getElementById('pip-deficiencies')?.value.trim() || 'Remediation plan initiated.';
+    const milestones = document.getElementById('pip-milestones')?.value.trim() || 'Complete remedial requirements.';
 
-    if (typeof showToast === 'function') {
-        showToast(`⚠️ Performance Improvement Plan (PIP) notice issued & logged for ${emp ? emp.name : 'Employee'}.`, 'warning');
+    try {
+        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, empId));
+        const currentRating = evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 2.50;
+
+        const updatedEval = await PerformanceAPI.calibrateEvaluation({
+            employee_id: empId,
+            calibrated_score: currentRating < 3.0 ? currentRating : 2.50,
+            tier_label: 'Developing (Needs PIP)',
+            discussion_minutes: `[PIP Notice Activated] Deficiencies: ${deficiencies}. Milestones: ${milestones}`
+        });
+
+        if (emp) {
+            emp.supervisorRating = currentRating < 3.0 ? currentRating : 2.50;
+            emp.tierLabel = 'Developing (Needs PIP)';
+            emp.evaluationRecord = updatedEval;
+        }
+
+        const existingIdx = (window.dbEvaluations || []).findIndex(ev => isSameEmployee(ev.employee_id, empId));
+        if (existingIdx >= 0) {
+            window.dbEvaluations[existingIdx] = updatedEval;
+        } else {
+            window.dbEvaluations.push(updatedEval);
+        }
+
+        closeModal('modal-pip-action');
+
+        if (typeof showToast === 'function') {
+            showToast(`⚠️ Performance Improvement Plan (PIP) activated for ${emp ? emp.name : 'Employee'}. Redirecting to Stage 6...`, 'warning');
+        }
+
+        // Redirect to Stage 6: Development Planning (IDP / PIP)
+        if (typeof switchSubTab === 'function') {
+            switchSubTab('perf', 'idp');
+        }
+        showIDPDetail(empId);
+        updateAllPerfStepperBadges();
+
+    } catch (err) {
+        console.error('Error submitting PIP action:', err);
+        closeModal('modal-pip-action');
+        if (typeof switchSubTab === 'function') {
+            switchSubTab('perf', 'idp');
+        }
+        showIDPDetail(empId);
     }
-
-    closeModal('modal-pip-action');
 }
 window.handlePIPSubmit = handlePIPSubmit;
 
-function renderIDPRosterTable() {
-    const container = document.getElementById('idp-roster-tbody');
-    if (!container) return;
-    container.innerHTML = '';
-
-    const roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster : [];
-    if (roster.length === 0) {
-        container.innerHTML = `<tr><td colspan="5" class="px-5 py-6 text-center text-slate-400 italic">No employees found in IDP roster.</td></tr>`;
-        return;
-    }
-
-    roster.forEach(emp => {
-        const evalRec = (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
-        const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
-
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
-        tr.innerHTML = `
-            <td class="px-5 py-4 font-bold text-slate-900">
-                <div class="flex items-center space-x-2.5">
-                    <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs">
-                        ${emp.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                    </div>
-                    <span>${emp.name}</span>
-                </div>
-            </td>
-            <td class="px-5 py-4 text-slate-500">${emp.position} · ${emp.department}</td>
-            <td class="px-5 py-4 font-bold text-slate-800">
-                <span class="px-2 py-0.5 rounded-full text-[10px] ${score < 3.0 && score > 0 ? 'bg-rose-100 text-rose-800' : 'bg-blue-50 text-blue-800'}">
-                    ${score < 3.0 && score > 0 ? 'PIP Remediation' : '70-20-10 Mapped'}
-                </span>
-            </td>
-            <td class="px-5 py-4">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${emp.idpStatus === 'Active IDP' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                    ${emp.idpStatus || 'Active IDP'}
-                </span>
-            </td>
-            <td class="px-5 py-4 text-right">
-                <button onclick="showIDPDetail('${emp.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs">
-                    View IDP Plan
-                </button>
-            </td>
-        `;
-        container.appendChild(tr);
-    });
-
-    if (roster.length > 0) {
-        showIDPDetail(roster[0].id);
-    }
-}
-window.renderIDPRosterTable = renderIDPRosterTable;
-
-function showIDPDetail(empId) {
-    const emp = (window.perfRoster || []).find(e => e.id === empId) || (window.perfRoster || [])[0];
+/**
+ * Open View IDP / PIP Development Plan Modal
+ */
+function openViewIDPPlanModal(empId) {
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || (window.perfRoster || [])[0];
     if (!emp) return;
 
     window.selectedEvalEmpId = emp.id;
 
-    const evalRec = (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
+    const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+
+    const avatarEl = document.getElementById('modal-idp-emp-avatar');
+    const nameEl = document.getElementById('modal-idp-emp-name');
+    const roleEl = document.getElementById('modal-idp-emp-role');
+    const ratingEl = document.getElementById('modal-idp-emp-rating');
+    const titleEl = document.getElementById('modal-idp-plan-title');
+    const statusPill = document.getElementById('modal-idp-plan-status-pill');
+    const strengthsList = document.getElementById('modal-idp-strengths-list');
+    const gapsList = document.getElementById('modal-idp-gaps-list');
+    const commitmentsList = document.getElementById('modal-idp-commitments-list');
+
+    if (avatarEl) avatarEl.textContent = emp.avatar || emp.name.split(' ').map(n => n[0]).join('').substring(0, 2);
+    if (nameEl) nameEl.textContent = emp.name;
+    if (roleEl) roleEl.textContent = `${emp.position} · ${emp.department}`;
+
+    const rawScore = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+    const isPIP = rawScore > 0 && rawScore < 3.0;
+
+    if (ratingEl) {
+        if (rawScore > 0) {
+            ratingEl.innerHTML = `⭐ ${rawScore.toFixed(2)} / 5.0 <span class="text-xs font-semibold ${isPIP ? 'text-rose-600' : 'text-indigo-700'}">(${evalRec?.tier_label || (isPIP ? 'Developing (Needs PIP)' : 'Proficient')})</span>`;
+            ratingEl.className = `text-sm font-bold font-mono ${isPIP ? 'text-rose-600' : 'text-indigo-700'}`;
+        } else {
+            ratingEl.innerHTML = `<span class="text-slate-400 italic text-xs">Pending Rating</span>`;
+        }
+    }
+
+    if (titleEl) titleEl.textContent = isPIP ? `Performance Improvement Plan (PIP): ${emp.name}` : `70-20-10 Individual Development Plan: ${emp.name}`;
+    if (statusPill) {
+        statusPill.textContent = isPIP ? 'Mandatory PIP Active' : '70-20-10 Growth Framework';
+        statusPill.className = `px-2 py-0.5 rounded-full text-[10px] font-bold ${isPIP ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800'}`;
+    }
+
+    const criteria = evalRec && Array.isArray(evalRec.criteria_scores) ? evalRec.criteria_scores : [];
+    const strengths = criteria.filter(c => parseFloat(c.rating || 0) >= 3.5);
+    const gaps = criteria.filter(c => parseFloat(c.rating || 0) < 3.5);
+
+    if (strengthsList) {
+        if (strengths.length > 0) {
+            strengthsList.innerHTML = strengths.map(s => `
+                <li class="p-2 bg-white rounded-lg border border-emerald-100 flex items-center justify-between">
+                    <span class="flex items-center space-x-1.5 font-medium text-slate-800">
+                        <i class="fas fa-check-circle text-emerald-600 text-[10px]"></i>
+                        <span>${s.title}</span>
+                    </span>
+                    <span class="font-bold text-emerald-700 font-mono text-[11px]">⭐ ${parseFloat(s.rating).toFixed(1)}</span>
+                </li>
+            `).join('');
+        } else {
+            strengthsList.innerHTML = `<li class="p-2.5 text-center text-slate-400 italic bg-white rounded-lg border border-emerald-100">No calibrated strengths recorded.</li>`;
+        }
+    }
+
+    if (gapsList) {
+        if (gaps.length > 0) {
+            gapsList.innerHTML = gaps.map(g => `
+                <li class="p-2 bg-white rounded-lg border border-amber-200 flex items-center justify-between">
+                    <span class="flex items-center space-x-1.5 font-medium text-slate-800">
+                        <i class="fas fa-exclamation-triangle ${g.rating < 3.0 ? 'text-rose-600' : 'text-amber-600'} text-[10px]"></i>
+                        <span>${g.title}</span>
+                    </span>
+                    <span class="font-bold ${g.rating < 3.0 ? 'text-rose-600' : 'text-amber-700'} font-mono text-[11px]">⭐ ${parseFloat(g.rating).toFixed(1)}</span>
+                </li>
+            `).join('');
+        } else {
+            gapsList.innerHTML = `<li class="p-2.5 text-center text-slate-400 italic bg-white rounded-lg border border-amber-100">No development gaps identified.</li>`;
+        }
+    }
+
+    if (commitmentsList) {
+        if (empGoals.length > 0) {
+            commitmentsList.innerHTML = empGoals.map((g, idx) => {
+                const tasks = g.tasks || [];
+                return `
+                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold ${idx % 3 === 0 ? 'bg-blue-100 text-blue-800' : (idx % 3 === 1 ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800')} px-2 py-0.5 rounded-full">
+                                ${idx % 3 === 0 ? '70% Experiential Target' : (idx % 3 === 1 ? '20% Mentorship Target' : '10% Formal Learning')}
+                            </span>
+                            <span class="text-[10px] font-bold ${g.status === 'Approved' ? 'text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded' : 'text-amber-700 bg-amber-50 px-2 py-0.5 rounded'}">
+                                ${g.status || 'Active'}
+                            </span>
+                        </div>
+                        <p class="font-bold text-slate-900 text-xs">${g.title}</p>
+                        <p class="text-slate-600 text-[11px]">${g.supervisor_notes || g.evidence || 'Active developmental metric.'}</p>
+                        
+                        <!-- Tasks list under this goal -->
+                        <div class="pt-2 border-t border-slate-200/80 space-y-1">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Assigned Action Tasks (${tasks.length}):</span>
+                            ${tasks.length > 0 ? tasks.map(t => `
+                                <div class="flex items-center justify-between text-[11px] p-1.5 bg-white rounded-lg border border-slate-100">
+                                    <span class="text-slate-700 font-medium">${t.title}</span>
+                                    <span class="text-[10px] font-bold ${t.status === 'completed' ? 'text-emerald-700' : 'text-amber-600'}">
+                                        ${t.status === 'completed' ? '✓ Done' : 'Pending'}
+                                    </span>
+                                </div>
+                            `).join('') : '<p class="text-slate-400 italic text-[10px]">No specific tasks assigned yet.</p>'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            commitmentsList.innerHTML = `<div class="p-6 text-center text-slate-400 italic bg-slate-50 rounded-xl border border-slate-200">No approved commitments or goals assigned in database.</div>`;
+        }
+    }
+
+    openModal('modal-view-idp-plan');
+}
+window.openViewIDPPlanModal = openViewIDPPlanModal;
+
+/**
+ * Open Add Specific Task Modal
+ */
+function openAddSpecificTaskModal(empId, preselectedGoalId = null) {
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || (window.perfRoster || [])[0];
+    if (!emp) return;
+
+    window.selectedEvalEmpId = emp.id;
+
+    const targetEmpInput = document.getElementById('add-task-target-emp-id');
+    const goalSelect = document.getElementById('add-task-goal-select');
+    const targetDateInput = document.getElementById('add-task-target-date');
+    const titleInput = document.getElementById('add-task-title');
+    const descInput = document.getElementById('add-task-description');
+
+    if (targetEmpInput) targetEmpInput.value = emp.id;
+    if (titleInput) titleInput.value = '';
+    if (descInput) descInput.value = '';
+
+    // Default target date: 14 days ahead
+    if (targetDateInput) {
+        const d = new Date();
+        d.setDate(d.getDate() + 14);
+        targetDateInput.value = d.toISOString().split('T')[0];
+    }
+
+    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+    if (goalSelect) {
+        if (empGoals.length > 0) {
+            goalSelect.innerHTML = empGoals.map(g => `
+                <option value="${g.id}" ${preselectedGoalId && g.id == preselectedGoalId ? 'selected' : ''}>
+                    ${g.title} (Target: ${g.target_date || 'Q3 Target'})
+                </option>
+            `).join('');
+        } else {
+            goalSelect.innerHTML = '<option value="">No approved goals found for associate</option>';
+        }
+    }
+
+    openModal('modal-add-specific-task');
+}
+window.openAddSpecificTaskModal = openAddSpecificTaskModal;
+
+/**
+ * Handle Add Specific Task Form Submission
+ */
+async function handleCreateSpecificTaskSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const empId = document.getElementById('add-task-target-emp-id')?.value || window.selectedEvalEmpId || 'emp-101';
+    const goalId = document.getElementById('add-task-goal-select')?.value;
+    const title = document.getElementById('add-task-title')?.value.trim();
+    const targetDate = document.getElementById('add-task-target-date')?.value;
+    const description = document.getElementById('add-task-description')?.value.trim();
+
+    if (!goalId) {
+        if (typeof showToast === 'function') showToast('Please select a target goal.', 'warning');
+        return;
+    }
+    if (!title) {
+        if (typeof showToast === 'function') showToast('Please provide a task title.', 'warning');
+        return;
+    }
+
+    const submitBtn = document.getElementById('btn-submit-specific-task');
+    const origHtml = submitBtn ? submitBtn.innerHTML : '';
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving...';
+    }
+
+    try {
+        await PerformanceAPI.createSpecificTask({
+            goal_id: goalId,
+            employee_id: empId,
+            title: title,
+            target_date: targetDate,
+            description: description
+        });
+
+        if (typeof showToast === 'function') {
+            showToast(`✅ Specific action task "${title}" assigned to associate in database!`, 'success');
+        }
+
+        closeModal('modal-add-specific-task');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origHtml;
+        }
+    }
+}
+window.handleCreateSpecificTaskSubmit = handleCreateSpecificTaskSubmit;
+
+function showEmptyIDPDetail() {
+    const titleEl = document.getElementById('idp-detail-title');
+    const subtitleEl = document.getElementById('idp-detail-subtitle');
+    const strengthsList = document.getElementById('idp-detail-strengths-list');
+    const gapsList = document.getElementById('idp-detail-gaps-list');
+    const strengthsCount = document.getElementById('idp-strengths-count');
+    const gapsCount = document.getElementById('idp-gaps-count');
+    const commitmentsContainer = document.getElementById('idp-perf-commitments-container');
+    const headerActions = document.getElementById('idp-header-actions');
+    const headerLmsAction = document.getElementById('idp-commitments-header-action');
+
+    if (titleEl) titleEl.textContent = '70-20-10 Individual Development Plan (IDP)';
+    if (subtitleEl) subtitleEl.textContent = 'No evaluated associate selected. Complete Stage 4 evaluation and Stage 5 calibration first.';
+    if (strengthsCount) strengthsCount.textContent = '0 Calibrated';
+    if (gapsCount) gapsCount.textContent = '0 Action Needed';
+    if (strengthsList) strengthsList.innerHTML = `<li class="p-3 text-center text-slate-400 italic bg-white rounded-xl border border-emerald-100">No calibrated strengths available.</li>`;
+    if (gapsList) gapsList.innerHTML = `<li class="p-3 text-center text-slate-400 italic bg-white rounded-xl border border-amber-100">No development gaps recorded.</li>`;
+    if (headerActions) headerActions.innerHTML = '';
+    if (headerLmsAction) headerLmsAction.innerHTML = '';
+    if (commitmentsContainer) {
+        commitmentsContainer.innerHTML = `
+            <div class="col-span-3 p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-400 italic space-y-1.5">
+                <i class="fas fa-book-open text-2xl text-slate-300 block"></i>
+                <p class="font-semibold text-slate-600 text-xs">No evaluated IDP commitments available.</p>
+                <p class="text-[11px] text-slate-400">Complete formal evaluations in Stage 4 and calibration in Stage 5 first.</p>
+            </div>
+        `;
+    }
+}
+window.showEmptyIDPDetail = showEmptyIDPDetail;
+
+function showIDPDetail(empId) {
+    if (!empId) {
+        showEmptyIDPDetail();
+        return;
+    }
+
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId));
+    if (!emp) {
+        showEmptyIDPDetail();
+        return;
+    }
+
+    const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+    const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+
+    if (score === 0) {
+        showEmptyIDPDetail();
+        return;
+    }
+
+    window.selectedEvalEmpId = emp.id;
 
     const titleEl = document.getElementById('idp-detail-title');
     const subtitleEl = document.getElementById('idp-detail-subtitle');
@@ -3966,13 +4322,65 @@ function showIDPDetail(empId) {
     const strengthsCount = document.getElementById('idp-strengths-count');
     const gapsCount = document.getElementById('idp-gaps-count');
     const commitmentsContainer = document.getElementById('idp-perf-commitments-container');
+    const headerActions = document.getElementById('idp-header-actions');
+    const headerLmsAction = document.getElementById('idp-commitments-header-action');
 
-    if (titleEl) titleEl.textContent = `70-20-10 Individual Development Plan (IDP): ${emp.name}`;
+    const isPIP = score < 3.0;
+    const hasPassedBenchmark = score >= 3.0;
+
+    if (titleEl) titleEl.textContent = isPIP ? `Performance Improvement Plan (PIP) & IDP: ${emp.name}` : `70-20-10 Individual Development Plan (IDP): ${emp.name}`;
     if (subtitleEl) subtitleEl.textContent = `Position: ${emp.position} · ${emp.department} · Review Cycle ${evalRec?.cycle_period || '2026-Q3'}`;
+
+    if (headerActions) {
+        if (hasPassedBenchmark) {
+            headerActions.innerHTML = `
+                <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition">
+                    <i class="fas fa-award"></i>
+                    <span>Send Colleague Kudos</span>
+                </button>
+            `;
+        } else {
+            headerActions.innerHTML = `
+                <button onclick="openRemedialBooksModal('${emp.id}')" class="px-3.5 py-2 bg-gold hover:bg-gold-dark text-white rounded-xl text-xs font-semibold shadow-xs flex items-center space-x-1.5 transition">
+                    <i class="fas fa-book-medical"></i>
+                    <span>Prescribe LMS Books</span>
+                </button>
+                <button onclick="openModal('modal-ai-feedback')" class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5">
+                    <i class="fas fa-plus"></i>
+                    <span>Add IDP Action</span>
+                </button>
+            `;
+        }
+    }
+
+    if (headerLmsAction) {
+        if (hasPassedBenchmark) {
+            headerLmsAction.innerHTML = `
+                <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="text-xs text-amber-600 font-bold hover:underline flex items-center space-x-1">
+                    <i class="fas fa-award text-[11px]"></i>
+                    <span>Send Colleague Kudos &rarr;</span>
+                </button>
+            `;
+        } else {
+            headerLmsAction.innerHTML = `
+                <button onclick="openRemedialBooksModal('${emp.id}')" class="text-xs text-primary font-bold hover:underline flex items-center space-x-1">
+                    <i class="fas fa-book-bookmark text-[11px]"></i>
+                    <span>Browse All LMS Books &rarr;</span>
+                </button>
+            `;
+        }
+    }
 
     const criteria = evalRec && Array.isArray(evalRec.criteria_scores) ? evalRec.criteria_scores : [];
     const strengths = criteria.filter(c => parseFloat(c.rating || 0) >= 3.5);
     const gaps = criteria.filter(c => parseFloat(c.rating || 0) < 3.5);
+
+    const empKey = isSameEmployee(emp.id, 'emp-101') ? 'maria' : (isSameEmployee(emp.id, 'emp-102') ? 'antonio' : emp.id);
+    const prescribedList = [
+        ...(window.prescribedBooksPerAssociate?.[empKey] || []),
+        ...(window.prescribedBooksPerAssociate?.[emp.id] || [])
+    ];
+    const isTrainingPrescribed = prescribedList.length > 0;
 
     if (strengthsCount) strengthsCount.textContent = `${strengths.length} Identified`;
     if (gapsCount) gapsCount.textContent = `${gaps.length} Action Needed`;
@@ -4004,10 +4412,17 @@ function showIDPDetail(empId) {
                             <p class="text-[10px] ${g.rating < 3.0 ? 'text-rose-600 font-bold' : 'text-amber-700'}">Appraisal Rating: ⭐ ${parseFloat(g.rating).toFixed(1)} / 5.0</p>
                         </div>
                     </div>
-                    <button onclick="openRemedialBooksModal('${emp.id}')" class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1">
-                        <i class="fas fa-book-medical text-[10px]"></i>
-                        <span>Prescribe</span>
-                    </button>
+                    ${!hasPassedBenchmark ? (isTrainingPrescribed ? `
+                        <button onclick="openRemedialBooksModal('${emp.id}')" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1 shadow-2xs" title="Training module assigned to IDP">
+                            <i class="fas fa-check text-emerald-600 text-[9px]"></i>
+                            <span>Prescribed</span>
+                        </button>
+                    ` : `
+                        <button onclick="openRemedialBooksModal('${emp.id}')" class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1">
+                            <i class="fas fa-book-medical text-[10px]"></i>
+                            <span>Prescribe</span>
+                        </button>
+                    `) : ''}
                 </li>
             `).join('');
         } else {
@@ -4015,11 +4430,100 @@ function showIDPDetail(empId) {
         }
     }
 
-    // Populate active commitments from database goals/tasks
     if (commitmentsContainer) {
-        const empGoals = (window.dbGoals || []).filter(g => g.employee_id === emp.id || (emp.id === 'emp-101' && (g.employee_id === 'emp-1' || g.employee_id === 'OXF-EMP-1001')));
-        if (empGoals.length > 0) {
-            commitmentsContainer.innerHTML = empGoals.map((g, idx) => `
+        const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+        let totalAllTasks = 0;
+        let completedAllTasks = 0;
+        empGoals.forEach(g => {
+            (g.tasks || []).forEach(t => {
+                totalAllTasks++;
+                if (t.status === 'completed') completedAllTasks++;
+            });
+        });
+        const allTasksDone = totalAllTasks > 0 && completedAllTasks === totalAllTasks;
+
+        let topBannerHtml = '';
+        if (hasPassedBenchmark) {
+            topBannerHtml = `
+                <div class="col-span-full p-5 bg-emerald-50/80 rounded-2xl border border-emerald-200 space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/70 pb-3">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                                <i class="fas fa-award"></i>
+                            </div>
+                            <div>
+                                <h5 class="font-bold text-emerald-950 text-xs">Proficient Performance Clearance</h5>
+                                <p class="text-[11px] text-emerald-800">Evaluated score meets proficiency standards (⭐ <strong>${score.toFixed(2)} / 5.0</strong>). No remedial tasks required.</p>
+                            </div>
+                        </div>
+                        <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5 self-start sm:self-auto">
+                            <i class="fas fa-award"></i>
+                            <span>Send Colleague Kudos &rarr;</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            topBannerHtml = `
+                <div class="col-span-full p-5 bg-rose-50 rounded-2xl border border-rose-200 space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-rose-200/70 pb-3">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-xs">
+                                <i class="fas fa-triangle-exclamation"></i>
+                            </div>
+                            <div>
+                                <h5 class="font-bold text-rose-950 text-xs">Mandatory Performance Improvement Plan (PIP) Workflow</h5>
+                                <p class="text-[11px] text-rose-800">Current appraisal rating is ⭐ <strong>${score.toFixed(2)} / 5.0</strong>. Manage remediation tasks, complete remedial training, and conduct re-evaluation.</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-200 text-rose-900 self-start sm:self-auto">
+                            Retry Review Active
+                        </span>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+                        <div class="flex items-center space-x-2">
+                            <button onclick="openAddSpecificTaskModal('${emp.id}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5">
+                                <i class="fas fa-plus"></i>
+                                <span>Add Specific Action Task</span>
+                            </button>
+                            ${isTrainingPrescribed ? `
+                                <button onclick="openRemedialBooksModal('${emp.id}')" class="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5" title="View assigned training modules">
+                                    <i class="fas fa-check-circle text-emerald-700"></i>
+                                    <span>Training Prescribed (${prescribedList.length})</span>
+                                </button>
+                            ` : `
+                                <button onclick="openRemedialBooksModal('${emp.id}')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    <span>Put in Remedial Training</span>
+                                </button>
+                            `}
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[11px] text-rose-800 font-semibold bg-rose-100/80 px-2.5 py-1 rounded-lg border border-rose-200 flex items-center space-x-1">
+                                <i class="fas fa-hourglass-half text-rose-600 text-[10px]"></i>
+                                <span>Score (${score.toFixed(2)}/5.0) &lt; 3.0</span>
+                            </span>
+                            ${!allTasksDone ? `
+                                <button disabled class="px-3.5 py-1.5 bg-slate-200 text-slate-400 border border-slate-200 cursor-not-allowed rounded-xl font-bold text-xs shadow-none opacity-60 flex items-center space-x-1.5" title="Cannot re-evaluate: Tasks are still not done (${completedAllTasks}/${totalAllTasks} completed). Complete all tasks in Stage 3 Continuous Monitoring first.">
+                                    <i class="fas fa-lock text-[10px]"></i>
+                                    <span>Re-Evaluate (Tasks Incomplete)</span>
+                                </button>
+                            ` : `
+                                <button onclick="openAppraisalModal('${emp.id}')" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5" title="Re-evaluate associate to submit improved rating">
+                                    <i class="fas fa-star-half-stroke text-[11px]"></i>
+                                    <span>Re-Evaluate Associate</span>
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (empGoals.length > 0 || isPIP || hasPassedBenchmark) {
+            commitmentsContainer.innerHTML = topBannerHtml + empGoals.map((g, idx) => `
                 <div class="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200/80 transition shadow-2xs flex flex-col justify-between space-y-3">
                     <div class="space-y-1.5">
                         <div class="flex items-center justify-between">
@@ -4033,9 +4537,16 @@ function showIDPDetail(empId) {
                     </div>
                     <div class="pt-2.5 border-t border-slate-200/70 flex items-center justify-between text-xs">
                         <span class="text-slate-400 text-[10px]"><i class="fas fa-calendar-check mr-1"></i>${g.target_date || 'Q3 Target'}</span>
-                        <span class="text-[10px] font-bold ${g.status === 'Approved' ? 'text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded' : 'text-amber-700 bg-amber-50 px-2 py-0.5 rounded'}">
-                            ${g.status || 'Active'}
-                        </span>
+                        <div class="flex items-center space-x-1">
+                            ${!hasPassedBenchmark ? `
+                                <button onclick="openAddSpecificTaskModal('${emp.id}', '${g.id}')" class="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-[10px] font-bold transition" title="Add Task to Goal">
+                                    + Task
+                                </button>
+                            ` : ''}
+                            <span class="text-[10px] font-bold ${g.status === 'Approved' ? 'text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded' : 'text-amber-700 bg-amber-50 px-2 py-0.5 rounded'}">
+                                ${g.status || 'Active'}
+                            </span>
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -4044,7 +4555,7 @@ function showIDPDetail(empId) {
                 <div class="col-span-3 p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-400 italic space-y-1.5">
                     <i class="fas fa-book-open text-2xl text-slate-300 block"></i>
                     <p class="font-semibold text-slate-600 text-xs">No active IDP commitments mapped yet in database.</p>
-                    <p class="text-[11px] text-slate-400">Use "Add IDP Action" or "Prescribe LMS Books" above to create tailored commitments.</p>
+                    <p class="text-[11px] text-slate-400">Complete performance evaluations in Stage 4 &amp; 5 first.</p>
                 </div>
             `;
         }
@@ -4052,38 +4563,112 @@ function showIDPDetail(empId) {
 }
 window.showIDPDetail = showIDPDetail;
 
+async function passPIPEmployee(empId) {
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId));
+    if (!emp) return;
+
+    try {
+        const updated = await PerformanceAPI.calibrateEvaluation({
+            employee_id: emp.id,
+            calibrated_score: 3.50,
+            tier_label: 'Proficient',
+            discussion_minutes: `PIP Retry Successful: ${emp.name} has completed corrective requirements, met proficiency benchmarks, and earned full performance clearance.`
+        });
+
+        emp.supervisorRating = 3.50;
+        emp.tierLabel = 'Proficient';
+        emp.evaluationRecord = updated;
+
+        const existingIdx = (window.dbEvaluations || []).findIndex(ev => isSameEmployee(ev.employee_id, emp.id));
+        if (existingIdx >= 0) {
+            window.dbEvaluations[existingIdx] = updated;
+        } else {
+            window.dbEvaluations.push(updated);
+        }
+
+        if (typeof showToast === 'function') {
+            showToast(`🎉 Outstanding! ${emp.name} passed PIP retry (⭐ 3.50 / 5.0). Opening Kudos recognition...`, 'success');
+        }
+
+        triggerSendKudosForEmployee(emp.id);
+
+        if (typeof switchSubTab === 'function') {
+            switchSubTab('perf', 'cycle');
+        }
+        showCycleDetail(emp.id);
+        updateAllPerfStepperBadges();
+
+    } catch (err) {
+        console.error('Error passing PIP:', err);
+        if (typeof showToast === 'function') showToast('Failed to update PIP status.', 'error');
+    }
+}
+window.passPIPEmployee = passPIPEmployee;
+
+function showEmptyCycleDetail() {
+    const titleEl = document.getElementById('cycle-detail-title');
+    const transitionCard = document.getElementById('cycle-detail-transition-card');
+
+    if (titleEl) titleEl.textContent = 'Development Monitoring & Next Cycle Initiation';
+    if (transitionCard) {
+        transitionCard.innerHTML = `
+            <div class="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-400 italic space-y-1.5">
+                <i class="fas fa-rotate text-2xl text-slate-300 block"></i>
+                <p class="font-semibold text-slate-600 text-xs">No evaluated associates available for next cycle transition.</p>
+                <p class="text-[11px] text-slate-400">Complete performance appraisals in Stage 4, 1-on-1 calibration in Stage 5, and IDP development plans in Stage 6 first.</p>
+            </div>
+        `;
+    }
+}
+window.showEmptyCycleDetail = showEmptyCycleDetail;
+
 function renderCycleRosterTable() {
     const container = document.getElementById('cycle-roster-tbody');
     if (!container) return;
     container.innerHTML = '';
 
-    const roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster : [];
+    const roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster.filter(emp => {
+        const hasGoal = (window.dbGoals || []).some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+        return hasGoal && score > 0;
+    }) : [];
+
     if (roster.length === 0) {
-        container.innerHTML = `<tr><td colspan="5" class="px-5 py-6 text-center text-slate-400 italic">No employees found in cycle transition roster.</td></tr>`;
+        container.innerHTML = `<tr><td colspan="5" class="px-5 py-6 text-center text-slate-400 italic">No evaluated employees found in next cycle transition roster. Complete Stage 4-6 evaluations and IDP first.</td></tr>`;
+        showEmptyCycleDetail();
         return;
     }
 
     roster.forEach(emp => {
-        const evalRec = (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
-        const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined));
+        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
         const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+        const hasPassed = score >= 3.0;
 
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
         tr.innerHTML = `
-            <td class="px-5 py-4 font-bold text-slate-900">${emp.name}</td>
+            <td class="px-5 py-4 font-bold text-slate-900">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-7 h-7 rounded-full bg-teal-100 text-teal-800 font-bold flex items-center justify-center text-xs">
+                        ${emp.avatar || (emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0, 2) : 'EM')}
+                    </div>
+                    <span>${emp.name}</span>
+                </div>
+            </td>
             <td class="px-5 py-4 text-slate-500">${emp.department}</td>
-            <td class="px-5 py-4 font-bold ${isCalibrated ? 'text-emerald-700' : 'text-slate-400 font-normal italic'}">
-                ${isCalibrated ? `⭐ ${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || 'Calibrated'})` : 'Pending Review'}
+            <td class="px-5 py-4 font-bold ${isCalibrated ? (hasPassed ? 'text-emerald-700' : 'text-rose-600') : 'text-slate-400 font-normal italic'}">
+                ${isCalibrated ? `${hasPassed ? '⭐' : '⚠️'} ${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || (hasPassed ? 'Calibrated' : 'Needs PIP')})` : 'Pending Review'}
             </td>
             <td class="px-5 py-4">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isCalibrated ? 'bg-teal-100 text-teal-800' : 'bg-amber-100 text-amber-800'}">
-                    ${isCalibrated ? 'Ready for Q4 Baseline' : 'Pending Cycle 3 Completion'}
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${hasPassed ? 'bg-teal-100 text-teal-800' : 'bg-rose-100 text-rose-800'}">
+                    ${hasPassed ? '✓ Qualified for Next Cycle' : 'Action Plan Incomplete'}
                 </span>
             </td>
             <td class="px-5 py-4 text-right">
-                <button onclick="showCycleDetail('${emp.id}')" class="px-3.5 py-1.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-xs shadow-xs transition">
-                    View Rollover
+                <button onclick="showCycleDetail('${emp.id}')" class="px-3.5 py-1.5 ${hasPassed ? 'bg-primary hover:bg-primary-dark text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'} font-bold rounded-xl text-xs shadow-xs transition">
+                    ${hasPassed ? 'View Rollover' : 'Review Plan'}
                 </button>
             </td>
         `;
@@ -4091,20 +4676,44 @@ function renderCycleRosterTable() {
     });
 
     if (roster.length > 0) {
-        showCycleDetail(roster[0].id);
+        if (!window.selectedEvalEmpId || !roster.some(e => isSameEmployee(e.id, window.selectedEvalEmpId))) {
+            window.selectedEvalEmpId = roster[0].id;
+        }
+        showCycleDetail(window.selectedEvalEmpId);
     }
 }
 window.renderCycleRosterTable = renderCycleRosterTable;
 
 function showCycleDetail(empId) {
-    const emp = (window.perfRoster || []).find(e => e.id === empId) || (window.perfRoster || [])[0];
-    if (!emp) return;
+    if (!empId) {
+        showEmptyCycleDetail();
+        return;
+    }
+
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId));
+    if (!emp) {
+        showEmptyCycleDetail();
+        return;
+    }
+
+    const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+    const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+
+    if (score === 0) {
+        showEmptyCycleDetail();
+        return;
+    }
 
     window.selectedEvalEmpId = emp.id;
 
-    const evalRec = (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
-    const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined));
-    const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+    const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
+    const effectiveScore = (evalRec?.new_calibrated_score && parseFloat(evalRec.new_calibrated_score) > 0)
+        ? parseFloat(evalRec.new_calibrated_score)
+        : (evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.new_supervisor_rating ? parseFloat(evalRec.new_supervisor_rating) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0)));
+    const hasPassed = effectiveScore >= 3.0;
+
+    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+    const retryCount = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
 
     const titleEl = document.getElementById('cycle-detail-title');
     const transitionCard = document.getElementById('cycle-detail-transition-card');
@@ -4112,14 +4721,14 @@ function showCycleDetail(empId) {
     if (titleEl) titleEl.textContent = `Development Monitoring & Next Cycle Initiation: ${emp.name}`;
 
     if (transitionCard) {
-        if (isCalibrated) {
+        if (isCalibrated && hasPassed) {
             transitionCard.innerHTML = `
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <div>
                         <span class="badge-sage">Continuous Growth Metric</span>
                         <h4 class="font-heading font-bold text-lg text-slate-900 mt-1">Development to Performance Transfer: ${emp.name}</h4>
                     </div>
-                    <span class="text-2xl font-bold text-sage-dark font-heading font-mono">⭐ ${score.toFixed(2)} / 5.0</span>
+                    <span class="text-2xl font-bold text-sage-dark font-heading font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.0</span>
                 </div>
                 <p class="text-xs text-slate-600 leading-relaxed">
                     By completing the 2026 Q3 performance evaluation and IDP commitments, <strong>${emp.name}</strong> achieved a <strong>${evalRec?.tier_label || 'Calibrated'}</strong> rating. These validated competencies will form the elevated baseline for the upcoming <strong>2026 Q4 Cycle</strong>.
@@ -4132,6 +4741,66 @@ function showCycleDetail(empId) {
                     </button>
                 </div>
             `;
+        } else if (isCalibrated && !hasPassed) {
+            if (retryCount > 2) {
+                transitionCard.innerHTML = `
+                    <div class="p-6 bg-rose-50 rounded-2xl border border-rose-300 space-y-4 text-xs">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <div class="flex items-center space-x-2.5">
+                                <div class="w-10 h-10 rounded-2xl bg-rose-200 text-rose-800 flex items-center justify-center font-bold text-base shadow-2xs">
+                                    <i class="fas fa-ban"></i>
+                                </div>
+                                <div>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-200 text-rose-900 border border-rose-300">
+                                        ⚠️ Need Training (Retry Attempts Exceeded: ${retryCount} Retries)
+                                    </span>
+                                    <h4 class="font-heading font-bold text-base text-slate-900 mt-0.5">Mandatory Departmental Training Required: ${emp.name}</h4>
+                                </div>
+                            </div>
+                            <span class="text-xl font-bold text-rose-700 font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.0</span>
+                        </div>
+                        <p class="text-slate-700 leading-relaxed text-xs">
+                            Associate has completed <strong>${retryCount} retry attempts</strong> without meeting the minimum 3.0 benchmark. <strong>Stage 3 re-monitoring loop is suspended.</strong> The associate must be assigned to mandatory formal training curriculum and intensive re-skilling.
+                        </p>
+                        <div class="pt-3 border-t border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <span class="text-xs text-rose-800 font-bold"><i class="fas fa-graduation-cap mr-1 text-rose-600"></i> Action required: Mandatory Training enrollment</span>
+                            <button onclick="openRemedialBooksModal('${emp.id}')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span>Need Training &rarr; Assign Formal Curriculum</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                transitionCard.innerHTML = `
+                    <div class="p-6 bg-rose-50 rounded-2xl border border-rose-200 space-y-4 text-xs">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <div class="flex items-center space-x-2.5">
+                                <div class="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-base shadow-2xs">
+                                    <i class="fas fa-triangle-exclamation"></i>
+                                </div>
+                                <div>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-200 text-rose-900">
+                                        Performance Standard Incomplete (Retried ${retryCount}/2)
+                                    </span>
+                                    <h4 class="font-heading font-bold text-base text-slate-900 mt-0.5">Corrective Action Plan Required: ${emp.name}</h4>
+                                </div>
+                            </div>
+                            <span class="text-xl font-bold text-rose-700 font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.0</span>
+                        </div>
+                        <p class="text-slate-700 leading-relaxed text-xs">
+                            Associate score is below the required 3.0 benchmark. To ensure standard compliance before rollover, review assigned action tasks, reset completed items for employee re-execution, and proceed to continuous monitoring.
+                        </p>
+                        <div class="pt-3 border-t border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <span class="text-xs text-rose-800 font-semibold"><i class="fas fa-rotate mr-1 text-rose-600"></i> Retry count: ${retryCount} · Tasks can be reset for employee to re-do in Stage 3 Monitoring</span>
+                            <button onclick="openReviewTasksModal('${emp.id}')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
+                                <i class="fas fa-list-check"></i>
+                                <span>Review Plan &amp; Tasks &rarr;</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
         } else {
             transitionCard.innerHTML = `
                 <div class="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-400 italic space-y-2">
@@ -4143,7 +4812,175 @@ function showCycleDetail(empId) {
         }
     }
 }
-window.showCycleDetail = showCycleDetail;
+function openReviewTasksModal(empId) {
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || (window.perfRoster || [])[0];
+    if (!emp) return;
+
+    window.selectedEvalEmpId = emp.id;
+
+    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+    const retryCount = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
+
+    const titleEl = document.getElementById('modal-review-tasks-title');
+    const listEl = document.getElementById('review-tasks-modal-list');
+    const footerActions = document.getElementById('review-tasks-footer-actions');
+
+    if (titleEl) {
+        titleEl.innerHTML = `Review Plan &amp; Tasks: ${emp.name} <span class="ml-2 text-xs font-mono font-normal px-2 py-0.5 rounded-full ${retryCount > 2 ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">Retry ${retryCount}/2</span>`;
+    }
+
+    const allTasks = [];
+    empGoals.forEach(g => {
+        (g.tasks || []).forEach(t => {
+            allTasks.push({ ...t, goal_title: g.title });
+        });
+    });
+
+    if (listEl) {
+        if (allTasks.length > 0) {
+            listEl.innerHTML = allTasks.map(t => {
+                const isDone = t.status === 'completed';
+                return `
+                    <div class="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isDone ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                                    ${isDone ? '✓ Completed' : 'Pending'}
+                                </span>
+                                <span class="text-[10px] text-slate-400 font-mono">${t.target_date || 'Due Soon'}</span>
+                            </div>
+                            <p class="font-bold text-slate-900">${t.title}</p>
+                            <p class="text-[10px] text-slate-500">Goal: ${t.goal_title}</p>
+                            ${t.employee_learnings ? `<p class="text-[10px] text-slate-600 italic bg-slate-50 p-1.5 rounded">Learnings: "${t.employee_learnings}"</p>` : ''}
+                        </div>
+
+                        <div class="flex items-center space-x-2 flex-shrink-0 self-end sm:self-auto">
+                            ${isDone ? `
+                                <button onclick="resetTaskForGoal('${t.id}', '${emp.id}')" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl text-xs border border-amber-200 transition flex items-center space-x-1" title="Reset to pending so employee can re-do task">
+                                    <i class="fas fa-rotate-left"></i>
+                                    <span>Reset to Re-Do</span>
+                                </button>
+                            ` : ''}
+                            <button onclick="deleteTaskFromGoal('${t.id}', '${emp.id}')" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs border border-rose-200 transition" title="Delete obsolete task">
+                                <i class="fas fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            listEl.innerHTML = `
+                <div class="p-6 text-center text-slate-400 italic bg-slate-50 rounded-2xl border border-slate-200">
+                    No active tasks assigned yet. Use "+ Add Task" to establish specific action tasks.
+                </div>
+            `;
+        }
+    }
+
+    if (footerActions) {
+        if (retryCount > 2) {
+            footerActions.innerHTML = `
+                <button onclick="closeModal('modal-review-tasks'); openRemedialBooksModal('${emp.id}');" class="btn-primary px-5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 border-rose-600 shadow-xs flex items-center space-x-2">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Need Training &rarr; Assign Formal Program</span>
+                </button>
+            `;
+        } else {
+            footerActions.innerHTML = `
+                <button id="btn-proceed-to-monitoring" onclick="proceedFromTasksToMonitoring()" class="btn-primary px-5 py-2 text-xs font-bold bg-teal-600 hover:bg-teal-700 border-teal-600 shadow-xs flex items-center space-x-2">
+                    <span>Proceed to Continuous Monitoring (Stage 3)</span>
+                    <i class="fas fa-arrow-right text-[10px]"></i>
+                </button>
+            `;
+        }
+    }
+
+    openModal('modal-review-tasks');
+}
+window.openReviewTasksModal = openReviewTasksModal;
+
+/**
+ * Reset a task back to pending for employee re-execution
+ */
+async function resetTaskForGoal(taskId, empId) {
+    try {
+        await PerformanceAPI.resetTask(taskId);
+        if (typeof showToast === 'function') {
+            showToast('Task successfully reset to pending for employee re-execution.', 'info');
+        }
+        if (typeof loadAndRenderPlanningGoals === 'function') {
+            await loadAndRenderPlanningGoals();
+        }
+        openReviewTasksModal(empId);
+    } catch (err) {
+        console.error('Error resetting task:', err);
+        if (typeof showToast === 'function') showToast('Failed to reset task.', 'error');
+    }
+}
+window.resetTaskForGoal = resetTaskForGoal;
+
+/**
+ * Delete an action task from a goal
+ */
+async function deleteTaskFromGoal(taskId, empId) {
+    if (!confirm('Are you sure you want to delete this action task?')) return;
+
+    try {
+        await PerformanceAPI.deleteTask(taskId);
+        if (typeof showToast === 'function') {
+            showToast('Task successfully deleted from goal.', 'success');
+        }
+        if (typeof loadAndRenderPlanningGoals === 'function') {
+            await loadAndRenderPlanningGoals();
+        }
+        openReviewTasksModal(empId);
+    } catch (err) {
+        console.error('Error deleting task:', err);
+        if (typeof showToast === 'function') showToast('Failed to delete task.', 'error');
+    }
+}
+window.deleteTaskFromGoal = deleteTaskFromGoal;
+
+/**
+ * Proceed from Stage 7 review tasks directly to Stage 3 Continuous Monitoring
+ */
+async function proceedFromTasksToMonitoring() {
+    const empId = window.selectedEvalEmpId || 'emp-101';
+    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, empId));
+    const currentRetry = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
+
+    if (currentRetry > 2) {
+        closeModal('modal-review-tasks');
+        if (typeof showToast === 'function') {
+            showToast('⚠️ Maximum retry limit reached (more than 2 retries). Associate requires formal training curriculum.', 'error');
+        }
+        if (typeof showCycleDetail === 'function') {
+            showCycleDetail(empId);
+        }
+        return;
+    }
+
+    try {
+        await PerformanceAPI.retryPlan({ employee_id: empId });
+        if (typeof loadAndRenderPlanningGoals === 'function') {
+            await loadAndRenderPlanningGoals();
+        }
+        closeModal('modal-review-tasks');
+        if (typeof switchSubTab === 'function') {
+            switchSubTab('perf', 'monitor');
+        }
+        if (typeof showToast === 'function') {
+            showToast(`🔄 Plan retry registered (Retry Attempt ${currentRetry + 1}). Returned to Stage 3 Continuous Monitoring.`, 'info');
+        }
+    } catch (err) {
+        console.error('Error retrying plan:', err);
+        closeModal('modal-review-tasks');
+        if (typeof switchSubTab === 'function') {
+            switchSubTab('perf', 'monitor');
+        }
+    }
+}
+window.proceedFromTasksToMonitoring = proceedFromTasksToMonitoring;
 
 /**
  * -------------------------------------------------------------
@@ -4216,10 +5053,16 @@ function getPerformanceStageStatus(stageKey) {
         }
     }
 
-    // 3: Continuous Monitoring & KPI Tracking
+    // Approved goals set (Phases 3-7 requirement)
+    const approvedGoals = goals.filter(g => {
+        const s = (g.status || '').toLowerCase().trim();
+        return s === 'approved' || s === 'completed';
+    });
+
+    // 3: Continuous Monitoring & KPI Tracking (Evaluated only on approved goals)
     let totalTasks = 0;
     let completedTasks = 0;
-    goals.forEach(g => {
+    approvedGoals.forEach(g => {
         (g.tasks || []).forEach(t => {
             totalTasks++;
             if (t.status === 'completed') completedTasks++;
@@ -4233,23 +5076,23 @@ function getPerformanceStageStatus(stageKey) {
         if (isPhase3_Complete) {
             return { isComplete: true, pendingCount: 0, isNeutral: false };
         } else {
-            const pendingCount = totalTasks === 0 ? goals.length : incompletedTasks;
+            const pendingCount = totalTasks === 0 ? approvedGoals.length : incompletedTasks;
             return { isComplete: false, pendingCount: pendingCount, isNeutral: false };
         }
     }
 
     // 4: Employee Appraisal / Evaluation
-    // Complete if all employees with active goals have recorded data in performance_evaluations
-    const employeesWithGoals = [];
-    goals.forEach(g => {
+    // Complete if all employees with approved goals have recorded data in performance_evaluations
+    const employeesWithApprovedGoals = [];
+    approvedGoals.forEach(g => {
         const eId = (g.employee_id || '').toLowerCase().trim();
-        if (eId && !employeesWithGoals.some(existing => isSameEmployee(existing, eId))) {
-            employeesWithGoals.push(g.employee_id);
+        if (eId && !employeesWithApprovedGoals.some(existing => isSameEmployee(existing, eId))) {
+            employeesWithApprovedGoals.push(g.employee_id);
         }
     });
 
     let pendingEvalsCount = 0;
-    employeesWithGoals.forEach(empId => {
+    employeesWithApprovedGoals.forEach(empId => {
         const ev = getEvalForEmployee(empId);
         const hasEval = ev && typeof ev.supervisor_rating !== 'undefined' && ev.supervisor_rating !== null && parseFloat(ev.supervisor_rating) > 0;
         if (!hasEval) {
@@ -4257,7 +5100,7 @@ function getPerformanceStageStatus(stageKey) {
         }
     });
 
-    const isPhase4_Complete = employeesWithGoals.length > 0 && pendingEvalsCount === 0;
+    const isPhase4_Complete = employeesWithApprovedGoals.length > 0 && pendingEvalsCount === 0;
 
     if (stageKey === 'eval') {
         if (isPhase4_Complete) {
@@ -4268,8 +5111,8 @@ function getPerformanceStageStatus(stageKey) {
     }
 
     // 5: 1-on-1 Review & Calibration
-    // Complete if all evaluated employees in performance_evaluations are calibrated
-    const evaluatedEmployees = employeesWithGoals.filter(empId => {
+    // Complete if all evaluated employees with approved goals in performance_evaluations are calibrated
+    const evaluatedEmployees = employeesWithApprovedGoals.filter(empId => {
         const ev = getEvalForEmployee(empId);
         return ev && typeof ev.supervisor_rating !== 'undefined' && ev.supervisor_rating !== null && parseFloat(ev.supervisor_rating) > 0;
     });

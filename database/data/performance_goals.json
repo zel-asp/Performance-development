@@ -15,5 +15,41 @@
         "supervisor_notes": null,
         "created_at": "2026-08-27T15:22:14.378649",
         "updated_at": "2026-08-27T15:33:07"
+    },
+    {
+        "id": 35,
+        "employee_id": "emp-101",
+        "role": "employee",
+        "target_scope": "single",
+        "title": "HACCP Food Safety, Cold-Chain Logging & Zero Non-Conformance",
+        "department": "Culinary & Kitchen Brigade",
+        "target_date": "2026-09-30",
+        "target_metric": "100% Audit Pass Score (Zero Violations)",
+        "weight": "High Priority (35% Weight - Core Role Objective)",
+        "evidence": "Daily digital temperature walk-in logs.",
+        "status": "Approved",
+        "supervisor_id": null,
+        "supervisor_notes": null,
+        "created_at": "2026-08-27T17:03:58.604526",
+        "updated_at": "2026-08-27T17:10:45",
+        "retry_count": 0
+    },
+    {
+        "id": 34,
+        "employee_id": "emp-102",
+        "role": "supervisor",
+        "target_scope": "single",
+        "title": "Elevate VIP Guest Check-in Experience & NPS Loyalty Index",
+        "department": "Front Office & Guest Experience",
+        "target_date": "2026-09-30",
+        "target_metric": "Net Promoter Score (NPS) >= +92 Score",
+        "weight": "High Priority (35% Weight - Core Role Objective)",
+        "evidence": "Monthly Medallia guest ratings and Opera PMS check-in speed logs.\n\u2022 Milestone: wala | Actual: 121 | Accomplishment: basta",
+        "status": "Completed",
+        "supervisor_id": null,
+        "supervisor_notes": null,
+        "created_at": "2026-08-27T17:03:46.854872",
+        "updated_at": "2026-08-27T17:11:55",
+        "retry_count": 0
     }
 ]

@@ -206,6 +206,29 @@ class PerformanceTaskModel extends BaseModel
     }
 
     /**
+     * Reset a completed task back to pending so the associate can re-do it
+     */
+    public function resetTask(string $taskId): ?array
+    {
+        $update = [
+            'status'             => 'pending',
+            'completed_at'       => null,
+            'employee_learnings' => null,
+            'employee_feedback'  => null,
+            'updated_at'         => date('c')
+        ];
+        return $this->update($taskId, $update);
+    }
+
+    /**
+     * Delete a task from database
+     */
+    public function deleteTask(string $taskId): bool
+    {
+        return $this->delete($taskId);
+    }
+
+    /**
      * Calculate goal progress percentage dynamically strictly from assigned tasks
      */
     public function calculateGoalProgress(string|int $goalId): int
