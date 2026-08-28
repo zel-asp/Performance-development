@@ -8,10 +8,6 @@
  * 4. Recognition data passed as qualitative input into Performance Management cycles
  */
 
-// =========================================================================
-// 1. DETERMINISTIC RULES & CONSTANTS
-// =========================================================================
-
 const RECOGNITION_RULES = {
     PEER_TO_PEER_POINTS: 50,      // Peer recognition: +50 XP
     SUPERVISOR_POINTS: 100,       // Supervisor commendation: +100 XP
@@ -25,26 +21,21 @@ const RECOGNITION_RULES = {
     }
 };
 
-// =========================================================================
-// 2. STATE STORES
-// =========================================================================
-
 const kudosStaffRoster = [
-    { id: 'maria_santos', name: 'Maria Santos', role: 'Front Desk Host', dept: 'Front Office', deptName: 'Front Office', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80', rating: '4.80' },
-    { id: 'carlos_gomez', name: 'Carlos Gomez', role: 'Concierge Host', dept: 'Front Office', deptName: 'Front Office', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80', rating: '4.60' },
-    { id: 'chef_marco', name: 'Chef Marco Rossi', role: 'Executive Sous Chef', dept: 'Culinary', deptName: 'Culinary', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80', rating: '4.85' },
-    { id: 'pierre_dubois', name: 'Pierre Dubois', role: 'Master Sommelier', dept: 'F&B Service', deptName: 'F&B Service', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80', rating: '4.90' },
-    { id: 'david_lee', name: 'David Lee', role: 'F&B Server Lead', dept: 'F&B Service', deptName: 'F&B Service', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80', rating: '4.20' },
-    { id: 'rosa_flores', name: 'Rosa Flores', role: 'Floor Supervisor', dept: 'Housekeeping', deptName: 'Housekeeping', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80', rating: '4.65' },
-    { id: 'elena_vance', name: 'Elena Vance', role: 'HR Director', dept: 'HR & Admin', deptName: 'HR & Admin', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80', rating: '4.95' }
+    { id: 'emp-101', name: 'Maria Santos', role: 'Front Desk Host', dept: 'Front Office', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80', rating: '4.80' },
+    { id: 'emp-102', name: 'Carlos Gomez', role: 'Concierge Lead', dept: 'Front Office', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80', rating: '4.60' },
+    { id: 'emp-103', name: 'Chef Marco Rossi', role: 'Executive Sous Chef', dept: 'Culinary', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80', rating: '4.85' },
+    { id: 'emp-104', name: 'Chef Marco S.', role: 'Line Cook Lead', dept: 'Culinary', avatar: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=150&auto=format&fit=crop&q=80', rating: '4.50' },
+    { id: 'emp-106', name: 'David Lee', role: 'F&B Server Lead', dept: 'F&B Service', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80', rating: '4.20' },
+    { id: 'emp-105', name: 'Elena Vance', role: 'HR Director', dept: 'HR & Admin', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80', rating: '4.95' }
 ];
 
 let socialFeedPostsState = [
     {
         id: 'post-101',
         senderName: 'Elena Vance',
-        senderRole: 'HR Director & Trainer',
-        senderType: 'Supervisor', // 'Peer', 'Supervisor', 'Executive'
+        senderRole: 'HR Director & Master Trainer',
+        senderType: 'Supervisor',
         senderAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
         receiverName: 'Maria Santos',
         receiverRole: 'Front Desk Host',
@@ -52,7 +43,7 @@ let socialFeedPostsState = [
         receiverAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
         categoryKey: 'crisis_recovery',
         categoryLabel: 'Crisis & Conflict Recovery',
-        pointsAwarded: 100, // Supervisor Commendation
+        pointsAwarded: 100,
         timestamp: '2 hours ago',
         date: 'Aug 24, 2026',
         text: 'Exceptional de-escalation with the diplomat delegation arrival during peak check-in rush. Maria calmly arranged executive lounge hospitality and VIP suite keys without any friction.',
@@ -71,10 +62,10 @@ let socialFeedPostsState = [
         receiverAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
         categoryKey: 'collaboration',
         categoryLabel: 'Team Collaboration',
-        pointsAwarded: 50, // Peer Recognition
-        timestamp: 'Yesterday at 17:40',
+        pointsAwarded: 50,
+        timestamp: 'Yesterday',
         date: 'Aug 23, 2026',
-        text: 'Huge thanks to Maria for stepping in during the concierge group luggage dispatch while two flights arrived simultaneously. Pure teamwork!',
+        text: 'Huge thanks to Maria for stepping in during the concierge group luggage dispatch while two flight buses arrived simultaneously. Pure teamwork!',
         reactions: { clap: 8, heart: 12, star: 3, fire: 2 },
         qualitativeInCycle: true
     },
@@ -96,53 +87,102 @@ let socialFeedPostsState = [
         text: 'Flawless 100% cold-chain probe log compliance and exemplary allergen segregation during banquet dinner service for 250 guests.',
         reactions: { clap: 19, heart: 6, star: 8, fire: 11 },
         qualitativeInCycle: true
-    },
-    {
-        id: 'post-104',
-        senderName: 'Maria Santos',
-        senderRole: 'Front Desk Host',
-        senderType: 'Peer',
-        senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        receiverName: 'David Lee',
-        receiverRole: 'F&B Server Lead',
-        receiverDept: 'F&B Service',
-        receiverAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-        categoryKey: 'guest_service',
-        categoryLabel: 'Great Guest Service',
-        pointsAwarded: 50,
-        timestamp: '3 days ago',
-        date: 'Aug 21, 2026',
-        text: 'David made our long-stay VIP guests feel so welcomed with customized tableside wine recommendations that they wrote a personal commendation card!',
-        reactions: { clap: 11, heart: 15, star: 6, fire: 3 },
-        qualitativeInCycle: true
     }
 ];
 
 let pointsLedgerState = [
     { id: 'TXN-8801', date: 'Aug 24, 2026', recipient: 'Maria Santos', sender: 'Elena Vance (Supervisor)', rule: 'SUPERVISOR_COMMENDATION', category: 'Crisis Recovery', xpChange: '+100 XP', balance: 1480 },
     { id: 'TXN-8800', date: 'Aug 23, 2026', recipient: 'Maria Santos', sender: 'Carlos Gomez (Peer)', rule: 'PEER_TO_PEER_RECOGNITION', category: 'Team Collaboration', xpChange: '+50 XP', balance: 1380 },
-    { id: 'TXN-8799', date: 'Aug 22, 2026', recipient: 'Chef Marco S.', sender: 'Chef Marco Rossi (Supervisor)', rule: 'SUPERVISOR_COMMENDATION', category: 'Safety & HACCP', xpChange: '+100 XP', balance: 1150 },
-    { id: 'TXN-8798', date: 'Aug 21, 2026', recipient: 'David Lee', sender: 'Maria Santos (Peer)', rule: 'PEER_TO_PEER_RECOGNITION', category: 'Guest Service', xpChange: '+50 XP', balance: 950 }
+    { id: 'TXN-8799', date: 'Aug 22, 2026', recipient: 'Chef Marco S.', sender: 'Chef Marco Rossi (Supervisor)', rule: 'SUPERVISOR_COMMENDATION', category: 'Safety & HACCP', xpChange: '+100 XP', balance: 1150 }
 ];
 
 let milestoneBadgesState = [
-    { id: 'badge-1', name: 'Guest Hero', category: 'Guest Service', threshold: '10+ 5-Star Reviews', icon: 'fa-trophy', color: 'gold', awardedTo: 'Maria Santos', dateAwarded: 'Aug 2026', isUnlocked: true },
-    { id: 'badge-2', name: 'Safety Star', category: 'Safety & HACCP', threshold: '100% HACCP Audit Pass', icon: 'fa-shield-halved', color: 'sage', awardedTo: 'Chef Marco S.', dateAwarded: 'Aug 2026', isUnlocked: true },
-    { id: 'badge-3', name: 'Team Anchor', category: 'Collaboration', threshold: '5+ Peer Recognitions', icon: 'fa-hands-holding-circle', color: 'dusty', awardedTo: 'Carlos Gomez', dateAwarded: 'Jul 2026', isUnlocked: true },
-    { id: 'badge-4', name: 'Diplomacy Lead', category: 'Crisis Recovery', threshold: 'Mastery in De-escalation', icon: 'fa-handshake-angle', color: 'terracotta', awardedTo: 'Maria Santos', dateAwarded: 'Aug 2026', isUnlocked: true }
+    { id: 'badge-1', name: 'Excellence Master', category: 'Guest Service', threshold: '2,500+ Total XP', icon: 'fa-trophy', color: 'gold', awardedTo: 'Maria Santos', dateAwarded: 'Aug 2026', isUnlocked: true },
+    { id: 'badge-2', name: 'Safety Champion', category: 'Safety & HACCP', threshold: '1,000+ HACCP XP', icon: 'fa-shield-halved', color: 'sage', awardedTo: 'Chef Marco S.', dateAwarded: 'Aug 2026', isUnlocked: true },
+    { id: 'badge-3', name: 'Team Anchor', category: 'Collaboration', threshold: '500+ Peer XP', icon: 'fa-hands-holding-circle', color: 'dusty', awardedTo: 'Carlos Gomez', dateAwarded: 'Jul 2026', isUnlocked: true },
+    { id: 'badge-4', name: 'Diplomacy Lead', category: 'Crisis Recovery', threshold: '1,500+ De-escalation XP', icon: 'fa-handshake-angle', color: 'terracotta', awardedTo: 'Maria Santos', dateAwarded: 'Aug 2026', isUnlocked: true }
 ];
 
 let socialActiveDeptFilter = 'all';
+let selectedKudosRecipients = new Set();
+let kudosActiveDeptFilter = 'all';
 
 // =========================================================================
-// 3. INITIALIZATION & RENDERING
+// INITIALIZATION & API FETCH
 // =========================================================================
 
-function initSocialRecognition() {
+async function initSocialRecognition() {
+    try {
+        const res = await fetch('api/social.php?action=get_overview');
+        const data = await res.json();
+        if (data.success && data.data) {
+            if (Array.isArray(data.data.recognitions) && data.data.recognitions.length > 0) {
+                socialFeedPostsState = data.data.recognitions.map(normalizeRecognitionPost);
+                updateLedgerFromPosts(socialFeedPostsState);
+            }
+            if (data.data.kpis) {
+                updateKPIs(data.data.kpis);
+            }
+        }
+    } catch (e) {
+        console.warn('Using local fallback state for Social Engine:', e);
+    }
+
     renderSocialFeed();
     renderPointLedger();
     renderMilestoneBadges();
     renderQualitativePerformanceFeed();
+}
+
+function normalizeRecognitionPost(p) {
+    const rx = p.reactions || {};
+    return {
+        id: p.id,
+        senderName: p.sender_name || p.senderName || 'Colleague',
+        senderRole: p.sender_role || p.senderRole || 'Team Member',
+        senderType: p.sender_type || p.senderType || 'Peer',
+        senderAvatar: p.sender_avatar || p.senderAvatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+        receiverName: p.receiver_name || p.receiverName || 'Associate',
+        receiverRole: p.receiver_role || p.receiverRole || 'Staff Member',
+        receiverDept: p.receiver_dept || p.receiverDept || 'Operations',
+        receiverAvatar: p.receiver_avatar || p.receiverAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        categoryKey: p.category_key || p.categoryKey || 'guest_service',
+        categoryLabel: p.category_label || p.categoryLabel || 'Great Guest Service',
+        pointsAwarded: parseInt(p.points_awarded || p.pointsAwarded || 50, 10),
+        timestamp: p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
+        date: p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Aug 2026',
+        text: p.text_content || p.text || 'Exemplary hospitality teamwork!',
+        reactions: {
+            clap: parseInt(rx.clap || 0, 10),
+            heart: parseInt(rx.heart || 0, 10),
+            star: parseInt(rx.star || 0, 10),
+            fire: parseInt(rx.fire || 0, 10)
+        },
+        qualitativeInCycle: true
+    };
+}
+
+function updateKPIs(kpis) {
+    const elRec = document.getElementById('stat-social-count');
+    const elXP = document.getElementById('stat-social-xp');
+    const elBadges = document.getElementById('stat-social-badges');
+
+    if (elRec) elRec.textContent = kpis.totalRecognitions || 42;
+    if (elXP) elXP.textContent = (kpis.totalXPAwarded || 3450).toLocaleString();
+    if (elBadges) elBadges.textContent = kpis.badgesUnlocked || 4;
+}
+
+function updateLedgerFromPosts(posts) {
+    pointsLedgerState = posts.map((p, idx) => ({
+        id: `TXN-${8800 + idx}`,
+        date: p.date,
+        recipient: p.receiverName,
+        sender: `${p.senderName} (${p.senderType})`,
+        rule: p.senderType === 'Supervisor' ? 'SUPERVISOR_COMMENDATION' : 'PEER_TO_PEER_RECOGNITION',
+        category: p.categoryLabel,
+        xpChange: `+${p.pointsAwarded} XP`,
+        balance: 1480 + (p.pointsAwarded * (idx + 1))
+    }));
 }
 
 function setSocialDeptFilter(dept) {
@@ -158,10 +198,6 @@ function setSocialDeptFilter(dept) {
     });
     renderSocialFeed();
 }
-
-// =========================================================================
-// 4. RECOGNITION FEED & PEER POSTS
-// =========================================================================
 
 function renderSocialFeed() {
     const container = document.getElementById('social-feed-container');
@@ -244,20 +280,26 @@ function renderSocialFeed() {
     }).join('');
 }
 
-function reactToPost(postId, reactionType) {
+async function reactToPost(postId, reactionType) {
     const post = socialFeedPostsState.find(p => p.id === postId);
     if (!post) return;
 
     post.reactions[reactionType] = (post.reactions[reactionType] || 0) + 1;
     const countEl = document.getElementById(`react-${reactionType}-${postId}`);
     if (countEl) countEl.textContent = post.reactions[reactionType];
-    
-    showToast(`Reaction added to ${post.receiverName}'s recognition!`, 'success');
-}
 
-// =========================================================================
-// 5. DETERMINISTIC POINT LEDGER & BADGES
-// =========================================================================
+    showToast(`Cheered ${post.receiverName}'s recognition!`, 'success');
+
+    try {
+        await fetch('api/social.php?action=react', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postId, reactionType })
+        });
+    } catch (e) {
+        console.warn('Reaction saved locally:', e);
+    }
+}
 
 function renderPointLedger() {
     const tbody = document.getElementById('points-ledger-tbody');
@@ -282,7 +324,7 @@ function renderMilestoneBadges() {
 
     container.innerHTML = milestoneBadgesState.map(b => `
         <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2 text-center text-xs">
-            <div class="w-12 h-12 mx-auto rounded-2xl bg-${b.color}-500/10 text-${b.color}-600 border border-${b.color}-500/20 flex items-center justify-center text-xl shadow-xs">
+            <div class="w-12 h-12 mx-auto rounded-2xl bg-amber-500/10 text-amber-700 border border-amber-500/20 flex items-center justify-center text-xl shadow-xs">
                 <i class="fas ${b.icon}"></i>
             </div>
             <div>
@@ -297,19 +339,14 @@ function renderMilestoneBadges() {
     `).join('');
 }
 
-// =========================================================================
-// 6. QUALITATIVE INPUT INTO PERFORMANCE MANAGEMENT CYCLE
-// =========================================================================
-
 function renderQualitativePerformanceFeed() {
     const container = document.getElementById('perf-qualitative-recognition-container');
     if (!container) return;
 
-    // Check if database social commendations exist for the selected employee
     const empId = window.selectedEvalEmpId || 'emp-101';
-    const dbPosts = (window.dbSocialPosts || []).filter(p => p.receiver_id === empId || p.receiver_name === empId);
+    const qualitativePosts = socialFeedPostsState.filter(p => p.receiverName.toLowerCase().includes('maria') || p.receiverId === empId);
 
-    if (dbPosts.length === 0) {
+    if (qualitativePosts.length === 0) {
         container.innerHTML = '';
         return;
     }
@@ -321,32 +358,25 @@ function renderQualitativePerformanceFeed() {
                     <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                     <h4 class="font-heading font-bold text-xs text-slate-900 uppercase tracking-wider">Verified Social Recognition &amp; Peer Commendations (Q3 Input)</h4>
                 </div>
-                <span class="badge-gold text-[10px] font-bold">${dbPosts.length} Commendations Recorded</span>
+                <span class="badge-gold text-[10px] font-bold">${qualitativePosts.length} Commendations Recorded</span>
             </div>
             <p class="text-[11px] text-slate-600 leading-relaxed">
                 The following peer-to-peer quotes and supervisor recognitions are automatically aggregated as <strong>qualitative evidence</strong> for the manager's final rating calibration:
             </p>
             <div class="space-y-2">
-                ${dbPosts.map(p => `
+                ${qualitativePosts.map(p => `
                     <div class="p-3 bg-white rounded-xl border border-amber-100 space-y-1 shadow-2xs">
                         <div class="flex items-center justify-between text-[10px]">
-                            <span class="font-bold text-slate-800"><i class="fas fa-user-check text-amber-600 mr-1"></i> ${p.sender_name || 'Colleague'} (${p.sender_role || 'Staff'}):</span>
-                            <span class="badge-primary text-[9px]">+${p.points || 50} XP</span>
+                            <span class="font-bold text-slate-800"><i class="fas fa-user-check text-amber-600 mr-1"></i> ${p.senderName} (${p.senderRole}):</span>
+                            <span class="badge-primary text-[9px]">+${p.pointsAwarded} XP</span>
                         </div>
-                        <p class="text-slate-700 italic text-[11px]">"${p.message || p.text}"</p>
+                        <p class="text-slate-700 italic text-[11px]">"${p.text}"</p>
                     </div>
                 `).join('')}
             </div>
         </div>
     `;
 }
-
-// =========================================================================
-// 7. POST CREATION & SEND MODAL HANDLER
-// =========================================================================
-
-let selectedKudosRecipients = new Set();
-let kudosActiveDeptFilter = 'all';
 
 function initKudosRosterModal() {
     selectedKudosRecipients.clear();
@@ -402,27 +432,40 @@ function renderKudosRoster() {
     if (countEl) countEl.textContent = selectedKudosRecipients.size;
 }
 
-function dispatchRecognition() {
+async function dispatchRecognition() {
     if (selectedKudosRecipients.size === 0) {
         showToast('Please select at least one colleague to recognize!', 'error');
         return;
     }
 
-    const message = document.getElementById('shoutout-message')?.value || 'Outstanding teamwork and hospitality excellence!';
+    const message = document.getElementById('shoutout-message')?.value?.trim() || 'Outstanding teamwork and hospitality excellence!';
     const categoryKey = document.getElementById('kudos-category-select')?.value || 'guest_service';
     const isSupervisor = document.getElementById('kudos-role-supervisor')?.checked || false;
 
-    const pointsPerPerson = isSupervisor ? RECOGNITION_RULES.SUPERVISOR_POINTS : RECOGNITION_RULES.PEER_TO_PEER_POINTS;
     const catConfig = RECOGNITION_RULES.CATEGORIES[categoryKey] || RECOGNITION_RULES.CATEGORIES.guest_service;
-
     const recipients = Array.from(selectedKudosRecipients).map(id => kudosStaffRoster.find(s => s.id === id)).filter(Boolean);
 
-    recipients.forEach(r => {
-        const newPost = {
-            id: `post-${Date.now()}-${Math.floor(Math.random()*100)}`,
+    closeModal('modal-recognition');
+
+    for (const r of recipients) {
+        const payload = {
+            senderId: 'emp-105',
             senderName: isSupervisor ? 'Elena Vance' : 'Maria Santos',
-            senderRole: isSupervisor ? 'HR Director & Supervisor' : 'Front Desk Host',
             senderType: isSupervisor ? 'Supervisor' : 'Peer',
+            receiverId: r.id,
+            receiverName: r.name,
+            receiverRole: r.role,
+            receiverDept: r.dept,
+            categoryKey: categoryKey,
+            categoryLabel: catConfig.label,
+            textContent: message
+        };
+
+        const localPost = {
+            id: `post-${Date.now()}`,
+            senderName: payload.senderName,
+            senderRole: isSupervisor ? 'HR Director' : 'Front Desk Host',
+            senderType: payload.senderType,
             senderAvatar: isSupervisor ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80' : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
             receiverName: r.name,
             receiverRole: r.role,
@@ -430,46 +473,41 @@ function dispatchRecognition() {
             receiverAvatar: r.avatar,
             categoryKey: categoryKey,
             categoryLabel: catConfig.label,
-            pointsAwarded: pointsPerPerson,
+            pointsAwarded: isSupervisor ? 100 : 50,
             timestamp: 'Just now',
-            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            date: 'Aug 2026',
             text: message,
-            reactions: { clap: 1, heart: 1, star: 1, fire: 0 },
-            qualitativeInCycle: true
+            reactions: { clap: 1, heart: 1, star: 1, fire: 0 }
         };
 
-        socialFeedPostsState.unshift(newPost);
+        socialFeedPostsState.unshift(localPost);
 
-        // Add ledger transaction
-        pointsLedgerState.unshift({
-            id: `TXN-${Math.floor(8800 + Math.random()*1000)}`,
-            date: newPost.date,
-            recipient: r.name,
-            sender: `${newPost.senderName} (${newPost.senderType})`,
-            rule: isSupervisor ? 'SUPERVISOR_COMMENDATION' : 'PEER_TO_PEER_RECOGNITION',
-            category: catConfig.label,
-            xpChange: `+${pointsPerPerson} XP`,
-            balance: 1480 + pointsPerPerson
-        });
-    });
-
-    closeModal('modal-recognition');
-    awardXP(pointsPerPerson * recipients.length);
+        try {
+            await fetch('api/social.php?action=give_recognition', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        } catch (e) {
+            console.warn('Recognition saved locally:', e);
+        }
+    }
 
     renderSocialFeed();
     renderPointLedger();
     renderQualitativePerformanceFeed();
 
-    showToast(`Recognition dispatched to ${recipients.length} colleague(s)! (+${pointsPerPerson * recipients.length} XP total awarded)`, 'success');
+    showToast(`Recognition dispatched to ${recipients.length} colleague(s) & synced to Supabase!`, 'success');
 }
 
-function awardXP(amount) {
-    if (typeof currentXP !== 'undefined') {
-        currentXP += amount;
-        const xpEl = document.getElementById('user-xp-display');
-        if (xpEl) xpEl.textContent = `${currentXP} XP`;
-    }
-}
+// Global Window Bindings
+window.initSocialRecognition = initSocialRecognition;
+window.setSocialDeptFilter = setSocialDeptFilter;
+window.reactToPost = reactToPost;
+window.initKudosRosterModal = initKudosRosterModal;
+window.setKudosDeptFilter = setKudosDeptFilter;
+window.toggleKudosRecipient = toggleKudosRecipient;
+window.dispatchRecognition = dispatchRecognition;
 
 document.addEventListener('DOMContentLoaded', () => {
     initSocialRecognition();

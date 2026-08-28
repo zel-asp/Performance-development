@@ -366,7 +366,7 @@ async function loadAndRenderPlanningGoals() {
         goals.forEach(g => {
             const empId = g.employee_id || 'emp-101';
             let emp = window.perfRoster.find(e => e.id === empId || e.id === ('emp-' + empId) || (e.id === 'emp-101' && (empId === 'emp-1' || empId === 'OXF-EMP-1001')) || (e.id === 'emp-102' && (empId === 'emp-2' || empId === 'OXF-SUP-2001')));
-            
+
             if (!emp) {
                 const isSup = (g.role === 'Supervisor' || g.role === 'supervisor');
                 emp = {
@@ -484,7 +484,7 @@ function renderEmployeePulseGoals(goals) {
     const currentUserId = (userObj.id || userObj.employee_code || (typeof activePersonaKey !== 'undefined' && activePersonaKey === 'supervisor' ? 'emp-102' : 'emp-101')).toLowerCase().trim();
     const currentRole = window.activePersonaRole || userObj.role || 'Associate';
     const isAssociate = (currentRole.toLowerCase() === 'associate' || currentRole.toLowerCase() === 'employee' || (typeof activePersonaKey !== 'undefined' && (activePersonaKey === 'associate' || activePersonaKey === 'employee')));
-    
+
     let empGoals = allGoals.filter(g => {
         const goalEmpId = (g.employee_id || '').toLowerCase().trim();
         if (currentUserId === 'emp-101') {
@@ -596,9 +596,9 @@ function renderEmployeePulseGoals(goals) {
                             </div>
                             <div class="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-0.5">
                                 ${generalTasks.length > 0 ? generalTasks.map(t => {
-                                    const isDone = t.status === 'completed';
-                                    const completedDateStr = t.completed_at ? new Date(t.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-                                    return `
+            const isDone = t.status === 'completed';
+            const completedDateStr = t.completed_at ? new Date(t.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+            return `
                                         <div class="p-2.5 rounded-xl border ${isDone ? 'bg-emerald-50/60 border-emerald-200/90 text-emerald-950 shadow-2xs' : 'bg-white border-slate-200 text-slate-800 hover:border-emerald-300'} text-[11px] space-y-1.5 transition">
                                             <div class="flex items-start justify-between gap-2">
                                                 <label class="flex items-start space-x-2.5 cursor-pointer flex-1 select-none">
@@ -631,7 +631,7 @@ function renderEmployeePulseGoals(goals) {
                                             ` : ''}
                                         </div>
                                     `;
-                                }).join('') : `<p class="text-[10px] text-slate-400 italic py-1">No general checklist assigned.</p>`}
+        }).join('') : `<p class="text-[10px] text-slate-400 italic py-1">No general checklist assigned.</p>`}
                             </div>
                         </div>                        <!-- Specific Tasks Checklist -->
                         <div class="space-y-1 pt-1">
@@ -643,9 +643,9 @@ function renderEmployeePulseGoals(goals) {
                             </div>
                             <div class="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-0.5">
                                 ${specificTasks.length > 0 ? specificTasks.map(t => {
-                                    const isDone = t.status === 'completed';
-                                    const completedDateStr = t.completed_at ? new Date(t.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-                                    return `
+            const isDone = t.status === 'completed';
+            const completedDateStr = t.completed_at ? new Date(t.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+            return `
                                         <div class="p-2.5 rounded-xl border ${isDone ? 'bg-emerald-50/60 border-emerald-200/90 text-emerald-950 shadow-2xs' : 'bg-purple-50/30 border-purple-200 text-slate-800 hover:border-purple-300'} text-[11px] space-y-1.5 transition">
                                             <div class="flex items-start justify-between gap-2">
                                                 <label class="flex items-start space-x-2.5 cursor-pointer flex-1 select-none">
@@ -678,7 +678,7 @@ function renderEmployeePulseGoals(goals) {
                                             ` : ''}
                                         </div>
                                     `;
-                                }).join('') : `<p class="text-[10px] text-slate-400 italic py-1">No specific tasks created yet.</p>`}
+        }).join('') : `<p class="text-[10px] text-slate-400 italic py-1">No specific tasks created yet.</p>`}
                             </div>
                         </div>
                     </div>
@@ -1244,7 +1244,7 @@ function openCreateSpecificTaskModal(goalId, empId) {
 
     document.getElementById('specific-task-goal-title-display').textContent = goal.title;
     document.getElementById('specific-task-goal-date-display').textContent = goal.target_date || 'Q3 2026';
-    
+
     const emp = (window.perfRoster || []).find(e => e.id === goal.employee_id);
     document.getElementById('specific-task-emp-name-display').textContent = emp ? emp.name : 'Associate';
 
@@ -1270,7 +1270,7 @@ async function handleSpecificTaskSubmit(e) {
 
     const container = document.getElementById('specific-tasks-rows-container');
     const rows = container?.querySelectorAll('.specific-task-item-row') || [];
-    
+
     const tasks = [];
     rows.forEach(r => {
         const title = r.querySelector('.task-row-title')?.value.trim();
@@ -1394,7 +1394,7 @@ function openCompleteTaskModal(taskId, goalId) {
     const dateFormatted = now.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
     const timeFormatted = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const detectedStr = `${dateFormatted} at ${timeFormatted} (Auto-Detected)`;
-    
+
     const timeEl = document.getElementById('complete-task-detected-time');
     const isoEl = document.getElementById('complete-task-iso-timestamp');
     if (timeEl) timeEl.textContent = detectedStr;
@@ -1695,7 +1695,7 @@ function approveEmployeeGoals(empId) {
         emp.planningStatus = 'Approved';
         emp.approvalStatus = 'Approved';
         emp.goals.forEach(g => g.status = 'Approved');
-        
+
         renderPlanningRosterTable();
         renderApprovalRosterTable();
         updateAllPerfStepperBadges();
@@ -1814,8 +1814,8 @@ function openViewGoalModal(targetId) {
                     </div>
                     <div class="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar">
                         ${tasks.length > 0 ? tasks.map(t => {
-                            const isDone = t.status === 'completed';
-                            return `
+                const isDone = t.status === 'completed';
+                return `
                                 <div class="p-2.5 rounded-xl border ${isDone ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-white border-slate-200 text-slate-800'} text-[11px] flex items-start justify-between gap-2">
                                     <div class="space-y-0.5">
                                         <div class="flex items-center space-x-1.5">
@@ -1832,7 +1832,7 @@ function openViewGoalModal(targetId) {
                                     </div>
                                 </div>
                             `;
-                        }).join('') : `<p class="text-[10px] text-slate-400 italic py-1">No action tasks assigned to this objective yet.</p>`}
+            }).join('') : `<p class="text-[10px] text-slate-400 italic py-1">No action tasks assigned to this objective yet.</p>`}
                     </div>
                 </div>
             `;
@@ -1872,7 +1872,7 @@ function openReviseGoalModal(targetId) {
     if (goalIdField) goalIdField.value = targetGoal.id || targetId;
     if (nameEl) nameEl.innerText = emp?.name || targetGoal.employee_name || 'Maria Santos';
     if (posEl) posEl.innerText = `${emp?.position || 'Associate'} · ${targetGoal.department || 'Front Office'}`;
-    
+
     if (titleField) titleField.value = targetGoal.title || '';
     if (catField && targetGoal.department) catField.value = targetGoal.department;
     if (dateField && targetGoal.target_date) dateField.value = targetGoal.target_date;
@@ -2065,9 +2065,9 @@ function renderApprovalRosterTable() {
             <div class="space-y-2 text-xs">
                 <span class="font-bold text-slate-800 text-[11px] block">Proposed Objectives (${emp.goalsCount || 0}):</span>
                 ${emp.goals.map(g => {
-                    const isRevised = !!g.supervisor_notes || (g.updated_at && g.created_at && g.updated_at !== g.created_at);
-                    const isApproved = (g.status === 'Approved');
-                    return `
+            const isRevised = !!g.supervisor_notes || (g.updated_at && g.created_at && g.updated_at !== g.created_at);
+            const isApproved = (g.status === 'Approved');
+            return `
                         <div class="p-2.5 bg-slate-50/90 rounded-xl text-[11px] space-y-1.5 border border-slate-200/70">
                             <div class="flex justify-between items-center gap-2">
                                 <div class="flex items-center space-x-1.5 truncate">
@@ -2094,7 +2094,7 @@ function renderApprovalRosterTable() {
                             ` : ''}
                         </div>
                     `;
-                }).join('')}
+        }).join('')}
             </div>
 
             <div class="pt-2 flex items-center justify-end space-x-2 border-t border-slate-100">
@@ -2375,17 +2375,22 @@ function toggleEmployeeMonitoringDetail(empId) {
     const emp = window.perfRoster.find(e => e.id === empId);
     if (!emp) return;
     window.selectedEmployeeContext = emp;
-    
     const nameEl = document.getElementById('mon-modal-emp-name') || document.getElementById('mon-detail-name');
     const posEl = document.getElementById('mon-modal-emp-pos') || document.getElementById('mon-detail-pos');
     if (nameEl) nameEl.innerText = `${emp.name} — Shift Monitoring Stream`;
     if (posEl) posEl.innerText = `${emp.position} · ${emp.department}`;
-    
+
+    const detailBox = document.getElementById('monitoring-employee-detail-card');
+    if (detailBox) {
+        detailBox.classList.remove('hidden');
+    }
+
     // Render dynamic task accomplishments and activity stream
     renderEmployeeMonitoringStream(emp);
 
     // Open dedicated Monitoring Stream modal
     openModal('modal-monitoring-stream');
+
 
     if (typeof showToast === 'function') {
         showToast(`Loaded continuous shift stream for ${emp.name}`, 'info');
@@ -2443,7 +2448,7 @@ function renderEmployeeMonitoringStream(emp) {
 
     empGoals.forEach(goal => {
         const allTasks = goal.tasks || [];
-        
+
         // Filter tasks according to filter & search
         const filteredTasks = allTasks.filter(t => {
             if (monitoringStreamFilter === 'pending' && t.status === 'completed') return false;
@@ -2504,10 +2509,10 @@ function renderEmployeeMonitoringStream(emp) {
                         ${allTasks.length === 0 ? 'No tasks assigned to this objective yet.' : 'No tasks matching the selected filter.'}
                     </p>
                 ` : filteredTasks.map(task => {
-                    const isDone = task.status === 'completed';
-                    const dateStr = task.completed_at ? new Date(task.completed_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : `Target: ${task.target_date}`;
+            const isDone = task.status === 'completed';
+            const dateStr = task.completed_at ? new Date(task.completed_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : `Target: ${task.target_date}`;
 
-                    return `
+            return `
                         <div class="p-3 rounded-xl border ${isDone ? 'bg-emerald-50/40 border-emerald-200/70' : 'bg-slate-50 border-slate-200/70'} space-y-2 text-xs transition">
                             <div class="flex items-center justify-between flex-wrap gap-1.5">
                                 <div class="flex items-center space-x-2">
@@ -2570,7 +2575,7 @@ function renderEmployeeMonitoringStream(emp) {
                             </div>
                         </div>
                     `;
-                }).join('')}
+        }).join('')}
             </div>
         `;
 
@@ -2602,7 +2607,7 @@ function openLogMilestoneModal(empId) {
             opt.value = g.id || idx;
             opt.textContent = `${idx + 1}. ${g.title} (${g.target_metric || g.kpi || 'Key Metric'})`;
             opt.dataset.kpi = g.target_metric || g.kpi || '';
-            
+
             // Calculate goal's individual real progress
             const tasks = g.tasks || [];
             const done = tasks.filter(t => t.status === 'completed').length;
@@ -2899,7 +2904,7 @@ function renderEvaluationRosterTable() {
         });
         const allTasksDone = totalTasks > 0 && completedTasks === totalTasks;
         const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-        
+
         // Read evaluation record directly from Database / Supabase
         const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id));
         const isRated = evalRec && (evalRec.status === 'Rated' || evalRec.status === 'Calibrated');
@@ -3014,7 +3019,7 @@ function showEmployeeEvalDetail(empId, openModalImmediately = false) {
     const subEl = document.getElementById('eval-modal-emp-subtitle') || document.getElementById('eval-detail-emp-subtitle');
     if (titleEl) titleEl.innerText = `${emp.name} — Formal Supervisor Appraisal`;
     if (subEl) subEl.innerText = `${emp.position} · ${emp.department}`;
-    
+
     const isRated = evalRec && (evalRec.status === 'Rated' || evalRec.status === 'Calibrated');
     const superScore = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null ? parseFloat(evalRec.supervisor_rating) : 0;
     const isBelowBenchmark = isRated && superScore > 0 && superScore < 3.0;
@@ -3219,7 +3224,7 @@ function openAppraisalModalInternal(empId) {
     // Load approved goals and DB evaluation criteria
     const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id));
     const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
-    
+
     let criteriaList = [];
     if (evalRec && Array.isArray(evalRec.criteria_scores) && evalRec.criteria_scores.length > 0) {
         criteriaList = evalRec.criteria_scores.map(c => ({
@@ -3460,7 +3465,7 @@ function renderReviewRosterTable() {
 
     evaluatedEmployees.forEach(emp => {
         const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
-        
+
         const rawSupScore = evalRec ? parseFloat(evalRec.supervisor_rating || 0) : (parseFloat(emp.supervisorRating || emp.managerRating || 0));
         const calibScore = evalRec && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : (rawSupScore > 0 ? rawSupScore : null);
         const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
@@ -3711,7 +3716,86 @@ function showCalibrationDetail(empId, openModalImmediately = false) {
         openModal('modal-view-calibration');
     }
 }
+
 window.showCalibrationDetail = showCalibrationDetail;
+
+function renderIDPRosterTable() {
+    const container = document.getElementById('idp-roster-tbody');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const evaluatedEmployees = (window.perfRoster || []).filter(emp => {
+        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+        return score > 0;
+    });
+
+    if (evaluatedEmployees.length === 0) {
+        container.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-5 py-8 text-center text-slate-400 italic bg-slate-50">
+                    <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2 text-base">
+                        <i class="fas fa-id-card"></i>
+                    </div>
+                    <p class="font-bold text-slate-700 mb-0.5">No Calibrated IDPs Available</p>
+                    <p class="text-slate-400 text-[11px]">Employees must complete Stage 4 supervisor evaluations and Stage 5 1-on-1 calibrations before 70-20-10 IDP plans are generated.</p>
+                </td>
+            </tr>
+        `;
+        showEmptyIDPDetail();
+        return;
+    }
+
+    if (!window.selectedEvalEmpId || !evaluatedEmployees.some(e => isSameEmployee(e.id, window.selectedEvalEmpId))) {
+        window.selectedEvalEmpId = evaluatedEmployees[0].id;
+    }
+    showIDPDetail(window.selectedEvalEmpId);
+
+    evaluatedEmployees.forEach(emp => {
+        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+        const isPIP = score < 3.0;
+        const isSelected = isSameEmployee(emp.id, window.selectedEvalEmpId);
+
+        const tr = document.createElement('tr');
+        tr.className = `hover:bg-slate-50 transition text-xs border-b border-slate-100 cursor-pointer ${isSelected ? 'bg-indigo-50/50' : ''}`;
+        tr.onclick = () => {
+            window.selectedEvalEmpId = emp.id;
+            renderIDPRosterTable();
+        };
+
+        tr.innerHTML = `
+            <td class="px-5 py-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-800 font-bold flex items-center justify-center text-xs">
+                        ${emp.avatar || (emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0, 2) : 'EM')}
+                    </div>
+                    <div>
+                        <p class="font-bold text-slate-900 leading-tight">${emp.name}</p>
+                        <p class="text-[10px] text-slate-400">${emp.position}</p>
+                    </div>
+                </div>
+            </td>
+            <td class="px-5 py-4 text-slate-600 font-medium">${emp.department}</td>
+            <td class="px-5 py-4 font-mono font-bold ${isPIP ? 'text-rose-600' : 'text-emerald-600'}">
+                ⭐ ${score.toFixed(2)} / 5.0
+            </td>
+            <td class="px-5 py-4">
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${isPIP ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
+                    ${isPIP ? '⚠️ PIP Active (Remediation)' : '🟢 70-20-10 IDP Plan Active'}
+                </span>
+            </td>
+            <td class="px-5 py-4 text-right">
+                <button onclick="event.stopPropagation(); openViewIDPPlanModal('${emp.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1 ml-auto">
+                    <i class="fas fa-eye"></i>
+                    <span>View Plan</span>
+                </button>
+            </td>
+        `;
+        container.appendChild(tr);
+    });
+}
+window.renderIDPRosterTable = renderIDPRosterTable;
 
 function open1on1CalibrationModal(empId) {
     if (!empId) {
@@ -5340,7 +5424,7 @@ function getStagePendingCount(stageKey) {
 /**
  * Tab Switch Function - Unrestricted navigation across all 7 stages anytime
  */
-window.canSwitchSubTabWithGuard = function(currentStageKey, targetStageKey) {
+window.canSwitchSubTabWithGuard = function (currentStageKey, targetStageKey) {
     return true;
 };
 

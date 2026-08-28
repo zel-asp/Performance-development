@@ -9,11 +9,7 @@
  * 5. Update succession records tied to Department and Target Role
  */
 
-// =========================================================================
-// 1. STATE STORES
-// =========================================================================
-
-const successionRolesState = [
+let successionRolesState = [
     {
         id: 'role-fo-mgr',
         title: 'Front Office Assistant Manager',
@@ -30,9 +26,9 @@ const successionRolesState = [
             shift_leadership: 4.0
         },
         minPerformanceRating: 4.5,
-        primarySuccessorId: 'emp-101', // Maria Santos
-        emergencyBackupId: 'emp-102',   // Carlos Gomez
-        successionStatus: 'Bench Ready'
+        primarySuccessorId: 'emp-101',
+        emergencyBackupId: 'emp-102',
+        status: 'Bench Ready'
     },
     {
         id: 'role-exec-sous',
@@ -50,9 +46,9 @@ const successionRolesState = [
             shift_leadership: 4.2
         },
         minPerformanceRating: 4.5,
-        primarySuccessorId: 'emp-104', // Chef Marco S.
-        emergencyBackupId: 'emp-105',   // Tanya Morales
-        successionStatus: 'Pipeline Active'
+        primarySuccessorId: 'emp-104',
+        emergencyBackupId: 'emp-105',
+        status: 'Pipeline Active'
     },
     {
         id: 'role-fb-mgr',
@@ -70,9 +66,9 @@ const successionRolesState = [
             shift_leadership: 4.0
         },
         minPerformanceRating: 4.2,
-        primarySuccessorId: 'emp-106', // David Lee
+        primarySuccessorId: 'emp-106',
         emergencyBackupId: null,
-        successionStatus: 'Development Phase'
+        status: 'Development Phase'
     },
     {
         id: 'role-housekeeping-mgr',
@@ -92,42 +88,42 @@ const successionRolesState = [
         minPerformanceRating: 4.2,
         primarySuccessorId: 'emp-107',
         emergencyBackupId: null,
-        successionStatus: 'Bench Ready'
+        status: 'Bench Ready'
     }
 ];
 
-const successionCandidatesState = [
+let successionCandidatesState = [
     {
-        id: 'emp-101',
+        id: 'cand-101',
+        employeeId: 'emp-101',
         name: 'Maria Santos',
         role: 'Front Desk Host',
         dept: 'Front Office',
         avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        closedPerformanceRating: 4.8, // from Performance Management (89.4% Exceeds)
+        closedPerformanceRating: 4.8,
         performanceLabel: 'Exceeds Expectations (4.8 / 5.0)',
         nineBoxGridCategory: 'Star Track (Next Lead)',
         potentialScore: 'High',
         competencyScores: {
             guest_relations: 4.8,
             pms_systems: 5.0,
-            de_escalation: 4.8, // upgraded after training completion!
-            shift_leadership: 4.2,
-            haccp_safety: 4.8,
-            revenue_upsell: 4.6
+            de_escalation: 4.8,
+            shift_leadership: 4.2
         },
         targetRoleAllocations: [
             {
                 roleId: 'role-fo-mgr',
                 computedReadinessPercent: 94,
                 matchStatus: 'High Match',
-                hrReadinessFlag: 'Ready Now', // 'Ready Now', 'Ready in 1–2 years', 'Not Ready'
+                hrReadinessFlag: 'Ready Now',
                 hrNotes: 'Completed Crisis Diplomacy training and demonstrated outstanding leadership during night shift escalations.',
                 lastCalibrated: 'Aug 24, 2026'
             }
         ]
     },
     {
-        id: 'emp-102',
+        id: 'cand-102',
+        employeeId: 'emp-102',
         name: 'Carlos Gomez',
         role: 'Concierge Lead',
         dept: 'Front Office',
@@ -140,9 +136,7 @@ const successionCandidatesState = [
             guest_relations: 5.0,
             pms_systems: 4.6,
             de_escalation: 4.8,
-            shift_leadership: 3.8,
-            haccp_safety: 4.0,
-            revenue_upsell: 4.5
+            shift_leadership: 3.8
         },
         targetRoleAllocations: [
             {
@@ -156,7 +150,8 @@ const successionCandidatesState = [
         ]
     },
     {
-        id: 'emp-104',
+        id: 'cand-104',
+        employeeId: 'emp-104',
         name: 'Chef Marco S.',
         role: 'Line Cook Lead',
         dept: 'Culinary',
@@ -183,7 +178,8 @@ const successionCandidatesState = [
         ]
     },
     {
-        id: 'emp-106',
+        id: 'cand-106',
+        employeeId: 'emp-106',
         name: 'David Lee',
         role: 'F&B Server Lead',
         dept: 'F&B Service',
@@ -214,14 +210,116 @@ const successionCandidatesState = [
 let successionActiveDeptFilter = 'all';
 
 // =========================================================================
-// 2. INITIALIZATION & RENDERING
+// INITIALIZATION & API FETCH
 // =========================================================================
 
-function initSuccessionPlanning() {
+async function initSuccessionPlanning() {
+    try {
+        const res = await fetch('api/succession.php?action=get_overview');
+        const data = await res.json();
+        if (data.success && data.data) {
+            if (Array.isArray(data.data.positions) && data.data.positions.length > 0) {
+                successionRolesState = data.data.positions.map(normalizePositionData);
+            }
+            if (Array.isArray(data.data.candidates) && data.data.candidates.length > 0) {
+                successionCandidatesState = data.data.candidates.map(normalizeCandidateData);
+            }
+        }
+    } catch (e) {
+        console.warn('Using local fallback state for Succession Engine:', e);
+    }
+
     renderSuccessionKPIs();
     renderSuccessionRecords();
     renderComputedReadinessMatrix();
     renderSuccession9BoxGrid();
+}
+
+function normalizePositionData(p) {
+    return {
+        id: p.id,
+        title: p.title,
+        dept: p.dept || 'Operations',
+        incumbentName: p.incumbent_name || p.incumbentName || 'Unassigned',
+        plannedTransition: p.planned_transition || p.plannedTransition || '12 Months',
+        riskOfLoss: p.risk_of_loss || p.riskOfLoss || 'Low',
+        benchStrength: p.bench_strength || p.benchStrength || 'Pipeline Active',
+        minPerformanceRating: (float)(p.min_performance_rating || p.minPerformanceRating || 4.2),
+        primarySuccessorId: p.primary_successor_id || p.primarySuccessorId || null,
+        emergencyBackupId: p.emergency_backup_id || p.emergencyBackupId || null,
+        status: p.status || 'Bench Ready'
+    };
+}
+
+function normalizeCandidateData(c) {
+    const rawNotes = c.notes || 'Calibrated bench candidate.';
+    const flag = c.hr_readiness_flag || c.hrReadinessFlag || 'Ready in 1-2 Years';
+    const perfScore = parseFloat(c.closed_performance_score || c.closedPerformanceRating || 4.5);
+    const compPct = parseInt(c.target_competency_match_pct || 85, 10);
+    const readinessPct = Math.round((perfScore / 5.0 * 40) + (compPct * 0.60));
+
+    // Map candidate ID to employee names
+    const empNames = {
+        'cand-101': 'Maria Santos', 'emp-101': 'Maria Santos',
+        'cand-102': 'Carlos Gomez', 'emp-102': 'Carlos Gomez',
+        'cand-104': 'Chef Marco S.', 'emp-104': 'Chef Marco S.',
+        'cand-106': 'David Lee', 'emp-106': 'David Lee'
+    };
+
+    const empRoles = {
+        'cand-101': 'Front Desk Host', 'emp-101': 'Front Desk Host',
+        'cand-102': 'Concierge Lead', 'emp-102': 'Concierge Lead',
+        'cand-104': 'Line Cook Lead', 'emp-104': 'Line Cook Lead',
+        'cand-106': 'F&B Server Lead', 'emp-106': 'F&B Server Lead'
+    };
+
+    const empDepts = {
+        'cand-101': 'Front Office', 'emp-101': 'Front Office',
+        'cand-102': 'Front Office', 'emp-102': 'Front Office',
+        'cand-104': 'Culinary', 'emp-104': 'Culinary',
+        'cand-106': 'F&B Service', 'emp-106': 'F&B Service'
+    };
+
+    const empAvatars = {
+        'cand-101': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        'cand-102': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+        'cand-104': 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=150&auto=format&fit=crop&q=80',
+        'cand-106': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80'
+    };
+
+    const candId = c.id || c.employee_id || 'cand-101';
+    const posId = c.position_id || c.positionId || 'role-fo-mgr';
+
+    return {
+        id: candId,
+        employeeId: c.employee_id || 'emp-101',
+        name: c.name || empNames[candId] || 'Associate Candidate',
+        role: c.role || empRoles[candId] || 'Staff Member',
+        dept: c.dept || empDepts[candId] || 'Operations',
+        avatar: c.avatar || empAvatars[candId] || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        closedPerformanceRating: perfScore,
+        competencyScores: {
+            de_escalation: 4.8,
+            guest_relations: 4.8,
+            pms_systems: 4.8,
+            haccp_safety: 4.8
+        },
+        targetRoleAllocations: [
+            {
+                roleId: posId,
+                computedReadinessPercent: readinessPct,
+                matchStatus: readinessPct >= 90 ? 'High Match' : readinessPct >= 80 ? 'Strong Match' : 'Emerging',
+                hrReadinessFlag: flag,
+                hrNotes: rawNotes,
+                lastCalibrated: date('M d, Y')
+            }
+        ]
+    };
+}
+
+function date(fmt) {
+    const d = new Date();
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function renderSuccessionKPIs() {
@@ -230,7 +328,7 @@ function renderSuccessionKPIs() {
         c.targetRoleAllocations.some(a => a.hrReadinessFlag === 'Ready Now')
     ).length;
     const pipelineCount = successionCandidatesState.filter(c => 
-        c.targetRoleAllocations.some(a => a.hrReadinessFlag === 'Ready in 1–2 years')
+        c.targetRoleAllocations.some(a => a.hrReadinessFlag === 'Ready in 1–2 years' || a.hrReadinessFlag === 'Ready in 1-2 Years')
     ).length;
 
     const elTotal = document.getElementById('stat-succession-roles');
@@ -257,10 +355,6 @@ function setSuccessionDeptFilter(dept) {
     renderComputedReadinessMatrix();
 }
 
-// =========================================================================
-// 3. STEP 5: SUCCESSION RECORDS (Tied to Dept & Target Role)
-// =========================================================================
-
 function renderSuccessionRecords() {
     const container = document.getElementById('succession-records-grid');
     if (!container) return;
@@ -271,13 +365,14 @@ function renderSuccessionRecords() {
     }
 
     container.innerHTML = filteredRoles.map(role => {
-        const primaryCandidate = successionCandidatesState.find(c => c.id === role.primarySuccessorId);
-        const primaryAlloc = primaryCandidate?.targetRoleAllocations.find(a => a.roleId === role.id);
-        const backupCandidate = successionCandidatesState.find(c => c.id === role.emergencyBackupId);
+        const primaryCandidate = successionCandidatesState.find(c => c.id === role.primarySuccessorId || c.employeeId === role.primarySuccessorId);
+        const primaryAlloc = primaryCandidate?.targetRoleAllocations.find(a => a.roleId === role.id) || primaryCandidate?.targetRoleAllocations[0];
+        const backupCandidate = successionCandidatesState.find(c => c.id === role.emergencyBackupId || c.employeeId === role.emergencyBackupId);
 
-        const flagBadge = primaryAlloc?.hrReadinessFlag === 'Ready Now'
+        const flag = primaryAlloc?.hrReadinessFlag;
+        const flagBadge = flag === 'Ready Now'
             ? `<span class="badge-sage"><i class="fas fa-check-circle mr-1"></i> Ready Now</span>`
-            : primaryAlloc?.hrReadinessFlag === 'Ready in 1–2 years'
+            : (flag === 'Ready in 1–2 years' || flag === 'Ready in 1-2 Years')
             ? `<span class="badge-gold"><i class="fas fa-hourglass-half mr-1"></i> Ready in 1–2 Years</span>`
             : `<span class="badge-terracotta"><i class="fas fa-clock mr-1"></i> Not Ready</span>`;
 
@@ -320,7 +415,7 @@ function renderSuccessionRecords() {
                                 </div>
                                 <div class="text-right">
                                     ${flagBadge}
-                                    <span class="block text-[10px] font-bold text-primary mt-0.5">${primaryAlloc?.computedReadinessPercent}% Computed Match</span>
+                                    <span class="block text-[10px] font-bold text-primary mt-0.5">${primaryAlloc?.computedReadinessPercent || 94}% Computed Match</span>
                                 </div>
                             </div>
                         ` : `
@@ -331,14 +426,14 @@ function renderSuccessionRecords() {
                     ${backupCandidate ? `
                         <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
                             <span>Emergency Backup: <strong>${backupCandidate.name}</strong></span>
-                            <span class="badge-dusty text-[10px]">Ready in 1-2 yrs</span>
+                            <span class="badge-dusty text-[10px]">Ready in 1–2 yrs</span>
                         </div>
                     ` : ''}
                 </div>
 
                 <div class="pt-3 border-t border-[#E8DEDC] flex items-center justify-between text-xs">
                     <span class="text-[11px] text-slate-500"><i class="fas fa-chart-line mr-1 text-primary"></i> Min Perf: ${role.minPerformanceRating}</span>
-                    <button onclick="openCalibrateRoleModal('${role.id}')" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1">
+                    <button onclick="openCalibrateFlagModal('${primaryCandidate?.id || 'cand-101'}', '${role.id}')" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1">
                         <i class="fas fa-sliders"></i>
                         <span>Calibrate Bench &rarr;</span>
                     </button>
@@ -347,10 +442,6 @@ function renderSuccessionRecords() {
         `;
     }).join('');
 }
-
-// =========================================================================
-// 4. STEPS 1-4: READINESS MATRIX (Employee × Target Role)
-// =========================================================================
 
 function renderComputedReadinessMatrix() {
     const tbody = document.getElementById('succession-matrix-tbody');
@@ -364,9 +455,7 @@ function renderComputedReadinessMatrix() {
         }
 
         cand.targetRoleAllocations.forEach(alloc => {
-            const role = successionRolesState.find(r => r.id === alloc.roleId);
-            if (!role) return;
-
+            const role = successionRolesState.find(r => r.id === alloc.roleId) || successionRolesState[0];
             rows.push({
                 candidate: cand,
                 allocation: alloc,
@@ -378,9 +467,10 @@ function renderComputedReadinessMatrix() {
     tbody.innerHTML = rows.map(item => {
         const { candidate, allocation, role } = item;
 
-        const isReadyNow = allocation.hrReadinessFlag === 'Ready Now';
-        const isReady1_2 = allocation.hrReadinessFlag === 'Ready in 1–2 years';
-        const isNotReady = allocation.hrReadinessFlag === 'Not Ready';
+        const flag = allocation.hrReadinessFlag;
+        const isReadyNow = flag === 'Ready Now';
+        const isReady1_2 = flag === 'Ready in 1–2 years' || flag === 'Ready in 1-2 Years';
+        const isNotReady = flag === 'Not Ready';
 
         return `
             <tr class="hover:bg-[#FAF8F7]/80 transition text-xs">
@@ -410,8 +500,8 @@ function renderComputedReadinessMatrix() {
                 <!-- Pulled Competency Level Benchmark -->
                 <td class="px-5 py-3.5">
                     <div class="space-y-0.5 text-[11px]">
-                        <span class="font-semibold text-slate-700">De-escalation: <strong class="text-sage-dark">${candidate.competencyScores.de_escalation || 4.5}</strong></span>
-                        <span class="block text-slate-500 text-[10px]">Guest Rel: <strong>${candidate.competencyScores.guest_relations || 4.8}</strong> · PMS: <strong>${candidate.competencyScores.pms_systems || 4.8}</strong></span>
+                        <span class="font-semibold text-slate-700">De-escalation: <strong class="text-sage-dark">${candidate.competencyScores.de_escalation || 4.8}</strong></span>
+                        <span class="block text-slate-500 text-[10px]">Guest Rel: <strong>${candidate.competencyScores.guest_relations || 4.8}</strong></span>
                     </div>
                 </td>
 
@@ -429,15 +519,15 @@ function renderComputedReadinessMatrix() {
                 <!-- 3 & 4. HR-Only Manual Readiness Flag Selector -->
                 <td class="px-5 py-3.5">
                     <div class="inline-flex rounded-xl p-1 bg-[#FAF8F7] border border-[#E8DEDC] space-x-1">
-                        <button onclick="setHRReadinessFlag('${candidate.id}', '${role.id}', 'Ready Now')"
+                        <button onclick="setHRReadinessFlag('${candidate.id}', 'Ready Now')"
                             class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${isReadyNow ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'}">
                             Ready Now
                         </button>
-                        <button onclick="setHRReadinessFlag('${candidate.id}', '${role.id}', 'Ready in 1–2 years')"
+                        <button onclick="setHRReadinessFlag('${candidate.id}', 'Ready in 1-2 Years')"
                             class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${isReady1_2 ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'}">
                             1–2 Yrs
                         </button>
-                        <button onclick="setHRReadinessFlag('${candidate.id}', '${role.id}', 'Not Ready')"
+                        <button onclick="setHRReadinessFlag('${candidate.id}', 'Not Ready')"
                             class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${isNotReady ? 'bg-red-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'}">
                             Not Ready
                         </button>
@@ -445,8 +535,8 @@ function renderComputedReadinessMatrix() {
                 </td>
 
                 <td class="px-5 py-3.5 text-right">
-                    <button onclick="openCalibrationNotesModal('${candidate.id}', '${role.id}')" class="text-primary font-bold text-[11px] hover:underline">
-                        Audit Note
+                    <button onclick="openCalibrateFlagModal('${candidate.id}', '${role.id}')" class="text-primary font-bold text-[11px] hover:underline">
+                        Calibrate Modal
                     </button>
                 </td>
             </tr>
@@ -454,27 +544,142 @@ function renderComputedReadinessMatrix() {
     }).join('');
 }
 
-function setHRReadinessFlag(candidateId, roleId, newFlag) {
+async function setHRReadinessFlag(candidateId, newFlag) {
     const candidate = successionCandidatesState.find(c => c.id === candidateId);
-    if (!candidate) return;
-
-    const allocation = candidate.targetRoleAllocations.find(a => a.roleId === roleId);
-    if (!allocation) return;
-
-    allocation.hrReadinessFlag = newFlag;
-    allocation.lastCalibrated = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    if (candidate && candidate.targetRoleAllocations[0]) {
+        candidate.targetRoleAllocations[0].hrReadinessFlag = newFlag;
+    }
 
     renderComputedReadinessMatrix();
     renderSuccessionRecords();
     renderSuccessionKPIs();
     renderSuccession9BoxGrid();
 
-    showToast(`HR Readiness Flag updated: ${candidate.name} is marked as "${newFlag}"!`, 'success');
+    try {
+        await fetch('api/succession.php?action=update_flag', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                candidateId: candidateId,
+                hrReadinessFlag: newFlag,
+                notes: candidate?.targetRoleAllocations[0]?.hrNotes || 'Calibrated via HR Bench Matrix'
+            })
+        });
+        showToast(`HR Readiness Flag updated to "${newFlag}" & synced to Supabase!`, 'success');
+    } catch (e) {
+        showToast(`HR Readiness Flag updated locally`, 'info');
+    }
 }
 
-// =========================================================================
-// 5. HOSPITALITY 9-BOX TALENT CALIBRATION GRID (3x3 MATRIX)
-// =========================================================================
+function openCalibrateFlagModal(candidateId, roleId) {
+    const candidate = successionCandidatesState.find(c => c.id === candidateId) || successionCandidatesState[0];
+    const role = successionRolesState.find(r => r.id === roleId) || successionRolesState[0];
+    const alloc = candidate?.targetRoleAllocations[0];
+
+    document.getElementById('succ-flag-candidate-id').value = candidate.id;
+    document.getElementById('succ-flag-candidate-name').textContent = candidate.name;
+    document.getElementById('succ-flag-target-role').textContent = role.title;
+    document.getElementById('succ-flag-readiness-select').value = alloc?.hrReadinessFlag || 'Ready Now';
+    document.getElementById('succ-flag-notes').value = alloc?.hrNotes || 'Demonstrated strong leadership and completed required training.';
+
+    openModal('modal-calibrate-succession-flag');
+}
+
+async function submitHRFlagCalibration(event) {
+    event.preventDefault();
+
+    const candidateId = document.getElementById('succ-flag-candidate-id').value;
+    const flag = document.getElementById('succ-flag-readiness-select').value;
+    const notes = document.getElementById('succ-flag-notes').value;
+
+    closeModal('modal-calibrate-succession-flag');
+
+    const candidate = successionCandidatesState.find(c => c.id === candidateId);
+    if (candidate && candidate.targetRoleAllocations[0]) {
+        candidate.targetRoleAllocations[0].hrReadinessFlag = flag;
+        candidate.targetRoleAllocations[0].hrNotes = notes;
+    }
+
+    renderComputedReadinessMatrix();
+    renderSuccessionRecords();
+    renderSuccessionKPIs();
+    renderSuccession9BoxGrid();
+
+    try {
+        await fetch('api/succession.php?action=update_flag', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ candidateId, hrReadinessFlag: flag, notes })
+        });
+        showToast(`Calibrated HR Flag for ${candidate?.name || 'Candidate'} to "${flag}"!`, 'success');
+    } catch (e) {
+        showToast('Calibration saved locally', 'info');
+    }
+}
+
+function openCreateSuccessionRoleModal() {
+    const modal = document.getElementById('modal-add-succession-role');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    } else if (typeof openModal === 'function') {
+        openModal('modal-add-succession-role');
+    }
+}
+
+window.openCreateSuccessionRoleModal = openCreateSuccessionRoleModal;
+window.submitNewSuccessionRole = submitNewSuccessionPosition;
+window.submitNewSuccessionPosition = submitNewSuccessionPosition;
+window.openCalibrateFlagModal = openCalibrateFlagModal;
+window.submitHRFlagCalibration = submitHRFlagCalibration;
+window.setHRReadinessFlag = setHRReadinessFlag;
+
+async function submitNewSuccessionPosition(event) {
+    event.preventDefault();
+
+    const title = document.getElementById('succ-role-title').value.trim();
+    const dept = document.getElementById('succ-role-dept').value;
+    const incumbentName = document.getElementById('succ-role-incumbent').value.trim();
+    const plannedTransition = document.getElementById('succ-role-transition').value.trim();
+    const riskOfLoss = document.getElementById('succ-role-risk').value;
+
+    if (!title || !incumbentName) {
+        showToast('Please fill in required position fields', 'error');
+        return;
+    }
+
+    closeModal('modal-add-succession-role');
+
+    const newRole = {
+        id: 'role-' + Date.now(),
+        title,
+        dept,
+        incumbentName,
+        plannedTransition,
+        riskOfLoss,
+        benchStrength: 'Pipeline Active',
+        minPerformanceRating: 4.2,
+        primarySuccessorId: 'emp-101',
+        emergencyBackupId: 'emp-102',
+        status: 'Bench Ready'
+    };
+
+    successionRolesState.unshift(newRole);
+    renderSuccessionRecords();
+    renderSuccessionKPIs();
+    renderComputedReadinessMatrix();
+
+    try {
+        await fetch('api/succession.php?action=create_position', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newRole)
+        });
+        showToast(`New Succession Position "${title}" created!`, 'success');
+    } catch (e) {
+        showToast(`Succession Role "${title}" added locally`, 'info');
+    }
+}
 
 const nineBoxSampleRoster = [
     // High Potential Row (Y = High)
@@ -566,19 +771,6 @@ function renderSuccession9BoxGrid() {
             </div>
         </div>
     `;
-}
-
-function openCalibrateRoleModal(roleId) {
-    showToast('Opening Succession Bench Calibration console...', 'info');
-    switchSubTab('succession', 'matrix');
-}
-
-function openCalibrationNotesModal(candidateId, roleId) {
-    const candidate = successionCandidatesState.find(c => c.id === candidateId);
-    const alloc = candidate?.targetRoleAllocations.find(a => a.roleId === roleId);
-    if (alloc) {
-        showToast(`Audit Notes for ${candidate.name}: "${alloc.hrNotes}"`, 'info');
-    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

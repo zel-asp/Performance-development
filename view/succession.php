@@ -107,7 +107,7 @@
                 <h4 class="font-heading font-bold text-sm text-slate-900">Hotel Leadership Succession Records</h4>
                 <p class="text-slate-500 text-xs">Key leadership roles tied to Department, Incumbent transition horizon, Primary successor, and Emergency backup</p>
             </div>
-            <button onclick="showToast('Initiating new leadership succession pipeline record...', 'info')" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1">
+            <button onclick="openCreateSuccessionRoleModal()" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1">
                 <i class="fas fa-plus"></i>
                 <span>+ Add Succession Role</span>
             </button>

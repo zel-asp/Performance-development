@@ -1852,21 +1852,13 @@
                     </div>
 
                     <!-- Participant Registration Roster -->
-                    <div class="p-3 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2">
-                        <span class="block text-[11px] font-bold text-slate-700 uppercase">Enrolled Participants (Auto-populated from Need Gaps)</span>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-white border border-[#E8DEDC] text-slate-800 flex items-center space-x-1">
-                                <span>Maria Santos (Front Desk)</span>
-                                <i class="fas fa-check text-emerald-600 text-[10px] ml-1"></i>
-                            </span>
-                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-white border border-[#E8DEDC] text-slate-800 flex items-center space-x-1">
-                                <span>Carlos Gomez (Concierge)</span>
-                                <i class="fas fa-check text-emerald-600 text-[10px] ml-1"></i>
-                            </span>
-                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-white border border-[#E8DEDC] text-slate-800 flex items-center space-x-1">
-                                <span>Angela Reyes (Guest Relations)</span>
-                                <i class="fas fa-check text-emerald-600 text-[10px] ml-1"></i>
-                            </span>
+                    <div class="p-3.5 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <span class="block text-[11px] font-bold text-slate-700 uppercase">Enrolled Participants (Auto-populated from Need Gaps)</span>
+                            <span id="sched-modal-roster-count" class="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">0 Selected</span>
+                        </div>
+                        <div id="sched-modal-roster-container" class="space-y-1.5 max-h-44 overflow-y-auto custom-scrollbar pr-1">
+                            <!-- Populated dynamically by openScheduleModal() in js/training.js -->
                         </div>
                     </div>
                 </div>
@@ -1909,9 +1901,9 @@
                         <div class="flex items-center justify-between">
                             <h4 class="font-heading font-bold text-sm text-slate-900 flex items-center space-x-1.5">
                                 <span class="w-2 h-2 rounded-full bg-primary"></span>
-                                <span>Part A: Practical Knowledge Questions (4 Questions)</span>
+                                <span>Part A: Practical Knowledge Assessment (5 Questions · 20 Points Each)</span>
                             </h4>
-                            <span class="badge-sage text-[10px]">Passing &ge; 80%</span>
+                            <span class="badge-sage text-[10px]">Passing Threshold &ge; 80% (4/5)</span>
                         </div>
 
                         <!-- Dynamic Questions Container -->
@@ -2495,8 +2487,9 @@
 
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2">
                         <button type="button" onclick="closeModal('modal-supervisor-task-feedback')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
-                        <button type="submit" id="btn-save-super-feedback" class="btn-primary px-5 py-2 text-xs font-bold bg-amber-600 hover:bg-amber-700 border-amber-600 shadow-xs">
-                            <i class="fas fa-save mr-1.5"></i> Save Feedback to Monitoring
+                        <button type="submit" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-sm">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Save Feedback &amp; Complete</span>
                         </button>
                     </div>
                 </form>
@@ -2936,7 +2929,6 @@
                 </div>
             </div>
         </div>
-
 <!-- Modal: Stage 6 Individual Development Plan (IDP) Detail Modal -->
 <div id="modal-idp-detail" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-4xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
@@ -3317,7 +3309,122 @@
     </div>
 </div>
 
+        <!-- ======================================================== -->
+        <!-- MODAL: CALIBRATE HR READINESS FLAG                        -->
+        <!-- ======================================================== -->
+        <div id="modal-calibrate-succession-flag" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-lg w-full bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
+                <div class="p-4 border-b border-[#E8DEDC] flex items-center justify-between bg-[#FAF8F7]">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-sliders text-primary"></i>
+                        <h4 class="font-heading font-bold text-sm text-slate-900">HR Readiness Bench Calibration</h4>
+                    </div>
+                    <button type="button" onclick="closeModal('modal-calibrate-succession-flag')" class="w-7 h-7 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition border border-[#E8DEDC]">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
 
+                <form onsubmit="submitHRFlagCalibration(event)" class="p-5 space-y-4 text-xs">
+                    <input type="hidden" id="succ-flag-candidate-id" value="">
 
+                    <div class="p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] space-y-1">
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-slate-500 font-semibold">Candidate:</span>
+                            <strong id="succ-flag-candidate-name" class="text-slate-900 font-bold">Maria Santos</strong>
+                        </div>
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-slate-500 font-semibold">Target Leadership Role:</span>
+                            <strong id="succ-flag-target-role" class="text-primary font-bold">Front Office Assistant Manager</strong>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">Formal HR Readiness Flag *</label>
+                        <select id="succ-flag-readiness-select" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            <option value="Ready Now">Ready Now (0–6 Months Horizon)</option>
+                            <option value="Ready in 1-2 Years">Ready in 1–2 Years (Pipeline Developing)</option>
+                            <option value="Not Ready">Not Ready (Skill / Tenure Gap)</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">HR Calibration Rationale &amp; Audit Notes *</label>
+                        <textarea id="succ-flag-notes" required rows="3" class="w-full p-3 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] text-slate-800 font-medium focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar" placeholder="Enter leadership readiness assessment notes, completed milestones, or remaining development gaps..."></textarea>
+                    </div>
+
+                    <div class="pt-3 border-t border-[#E8DEDC] flex items-center justify-end space-x-2">
+                        <button type="button" onclick="closeModal('modal-calibrate-succession-flag')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
+                        <button type="submit" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-sm">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Calibrate &amp; Sync Flag</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- MODAL: ADD SUCCESSION TARGET ROLE                         -->
+        <!-- ======================================================== -->
+        <div id="modal-add-succession-role" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-lg w-full bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
+                <div class="p-4 border-b border-[#E8DEDC] flex items-center justify-between bg-[#FAF8F7]">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-sitemap text-primary"></i>
+                        <h4 class="font-heading font-bold text-sm text-slate-900">Define Key Leadership Succession Position</h4>
+                    </div>
+                    <button type="button" onclick="closeModal('modal-add-succession-role')" class="w-7 h-7 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition border border-[#E8DEDC]">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <form onsubmit="submitNewSuccessionRole(event)" class="p-5 space-y-4 text-xs">
+                    <div class="space-y-1">
+                        <label class="font-bold text-slate-800 text-[11px]">Position Title *</label>
+                        <input id="succ-role-title" type="text" required placeholder="e.g., Executive Housekeeper / F&B Director" class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label class="font-bold text-slate-800 text-[11px]">Department *</label>
+                            <select id="succ-role-dept" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                <option value="Front Office">Front Office</option>
+                                <option value="Culinary">Culinary</option>
+                                <option value="F&B Service">F&B Service</option>
+                                <option value="Housekeeping">Housekeeping</option>
+                                <option value="Engineering">Engineering</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="font-bold text-slate-800 text-[11px]">Current Incumbent *</label>
+                            <input id="succ-role-incumbent" type="text" required placeholder="e.g., John Marco" class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label class="font-bold text-slate-800 text-[11px]">Planned Transition *</label>
+                            <input id="succ-role-transition" type="text" required placeholder="e.g., Q2 2027 (12 Months)" class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="font-bold text-slate-800 text-[11px]">Risk of Loss *</label>
+                            <select id="succ-role-risk" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                <option value="Low">Low Risk</option>
+                                <option value="Medium">Medium Risk</option>
+                                <option value="High">High Risk</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-[#E8DEDC] flex items-center justify-end space-x-2">
+                        <button type="button" onclick="closeModal('modal-add-succession-role')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
+                        <button type="submit" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-sm">
+                            <i class="fas fa-plus"></i>
+                            <span>Create Position</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
 

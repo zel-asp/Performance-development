@@ -13,45 +13,58 @@
         "status": "In Progress",
         "roster": [
             {
-                "associateId": "emp-101",
+                "dept": "Front Office",
                 "name": "Maria Santos",
                 "role": "Front Desk Host",
-                "dept": "Front Office",
+                "score": 100,
                 "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-                "attendanceStatus": "Attended",
-                "attendanceRate": 100,
+                "resultId": "res-5a443a",
+                "associateId": "emp-101",
                 "checkInTime": "13:52",
-                "evaluationStatus": "Pending",
-                "score": null,
-                "resultId": null
+                "attendanceRate": 100,
+                "attendanceStatus": "Completed",
+                "evaluationStatus": "Completed"
             },
             {
-                "associateId": "emp-102",
+                "dept": "Front Office",
                 "name": "Carlos Gomez",
                 "role": "Concierge Lead",
-                "dept": "Front Office",
-                "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-                "attendanceStatus": "Completed",
-                "attendanceRate": 100,
-                "checkInTime": "13:58",
-                "evaluationStatus": "Completed",
                 "score": 95,
-                "resultId": "res-901"
+                "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+                "resultId": "res-901",
+                "associateId": "emp-102",
+                "checkInTime": "13:58",
+                "attendanceRate": 100,
+                "attendanceStatus": "Completed",
+                "evaluationStatus": "Completed"
             },
             {
-                "associateId": "emp-103",
+                "dept": "Front Office",
                 "name": "Angela Reyes",
                 "role": "Guest Relations Officer",
-                "dept": "Front Office",
-                "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
-                "attendanceStatus": "Attended",
-                "attendanceRate": 100,
-                "checkInTime": "14:01",
-                "evaluationStatus": "Pending",
                 "score": null,
-                "resultId": null
+                "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+                "resultId": null,
+                "associateId": "emp-103",
+                "checkInTime": "14:01",
+                "attendanceRate": 100,
+                "attendanceStatus": "Attended",
+                "evaluationStatus": "Pending"
             }
-        ]
+        ],
+        "session_date": "Aug 26, 2026",
+        "time_slot": "14:00 - 17:30",
+        "sessionDate": "Aug 26, 2026",
+        "timeSlot": "14:00 - 17:30",
+        "program_id": "prog-1",
+        "trainer_name": "Elena Vance & FOM John Marco",
+        "trainer_title": "Internal Master Hospitality Trainer",
+        "trainer_avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+        "capacity": 20,
+        "created_at": "2026-08-27T14:44:32.463608+00:00",
+        "updated_at": "2026-08-27T14:47:28+00:00",
+        "createdAt": "2026-08-27T14:44:32.463608+00:00",
+        "updatedAt": "2026-08-27T14:47:28+00:00"
     },
     {
         "id": "sess-102",
@@ -92,7 +105,11 @@
                 "score": null,
                 "resultId": null
             }
-        ]
+        ],
+        "session_date": "Aug 27, 2026",
+        "time_slot": "09:00 - 13:00",
+        "sessionDate": "Aug 27, 2026",
+        "timeSlot": "09:00 - 13:00"
     },
     {
         "id": "sess-103",
@@ -120,6 +137,101 @@
                 "score": null,
                 "resultId": null
             }
-        ]
+        ],
+        "session_date": "Aug 28, 2026",
+        "time_slot": "15:00 - 18:00",
+        "sessionDate": "Aug 28, 2026",
+        "timeSlot": "15:00 - 18:00"
+    },
+    {
+        "id": "sess-1787680832815",
+        "program_id": "prog-1787680527024",
+        "title": "VIP2027 - Cohort B",
+        "dept": "Front Office",
+        "trainer_name": "Elena Vance & FOM John Marco",
+        "trainer_title": "Assigned Senior Trainer",
+        "trainer_avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+        "location": "Executive Boardroom & Front Desk Mockup",
+        "session_date": "Aug 25, 2026",
+        "time_slot": "09:00 AM - 12:00 PM",
+        "capacity": 20,
+        "status": "Scheduled",
+        "roster": [
+            {
+                "dept": "Front Office",
+                "name": "Maria Santos",
+                "role": "Front Desk Host",
+                "score": 100,
+                "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+                "resultId": "res-9f5c7b",
+                "associateId": "emp-101",
+                "checkInTime": "20:58",
+                "attendanceRate": 100,
+                "attendanceStatus": "Completed",
+                "evaluationStatus": "Completed"
+            },
+            {
+                "dept": "Front Office",
+                "name": "Carlos Gomez",
+                "role": "Concierge Lead",
+                "score": null,
+                "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+                "resultId": null,
+                "associateId": "emp-102",
+                "checkInTime": "13:55",
+                "attendanceRate": 100,
+                "attendanceStatus": "Attended",
+                "evaluationStatus": "Pending"
+            }
+        ],
+        "created_at": "2026-08-25T18:00:32+00:00",
+        "updated_at": "2026-08-27T13:26:13+00:00",
+        "programId": "prog-1787680527024",
+        "trainerName": "Elena Vance & FOM John Marco",
+        "trainerTitle": "Assigned Senior Trainer",
+        "trainerAvatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+        "sessionDate": "Aug 25, 2026",
+        "timeSlot": "09:00 AM - 12:00 PM",
+        "createdAt": "2026-08-25T18:00:32+00:00",
+        "updatedAt": "2026-08-27T13:26:13+00:00",
+        "date": "Aug 25, 2026",
+        "time": "09:00 AM - 12:00 PM"
+    },
+    {
+        "id": "sess-test-1787840975",
+        "programId": "prog-2",
+        "title": "HACCP Food Safety Level 3 - Cohort Test",
+        "dept": "Culinary",
+        "trainerName": "Chef Marco Rossi",
+        "trainerTitle": "Exec Sous Chef",
+        "trainerAvatar": "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=150&auto=format&fit=crop&q=80",
+        "location": "Main Culinary Kitchen",
+        "date": "Aug 30, 2026",
+        "time": "14:00 - 17:00",
+        "status": "Scheduled",
+        "roster": [
+            {
+                "associateId": "emp-102",
+                "name": "Carlos Gomez",
+                "role": "Concierge Lead",
+                "dept": "Front Office",
+                "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+                "attendanceStatus": "Attended",
+                "attendanceRate": 100,
+                "checkInTime": "14:05"
+            }
+        ],
+        "session_date": "Aug 30, 2026",
+        "time_slot": "14:00 - 17:00",
+        "program_id": "prog-2",
+        "trainer_name": "Chef Marco Rossi",
+        "trainer_title": "Exec Sous Chef",
+        "trainer_avatar": "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=150&auto=format&fit=crop&q=80",
+        "created_at": "2026-08-27T14:29:35+00:00",
+        "sessionDate": "Aug 30, 2026",
+        "timeSlot": "14:00 - 17:00",
+        "createdAt": "2026-08-27T14:29:35+00:00",
+        "updated_at": "2026-08-27T14:29:36+00:00",
+        "updatedAt": "2026-08-27T14:29:36+00:00"
     }
 ]

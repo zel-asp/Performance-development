@@ -22,23 +22,32 @@ class BaseModel
      */
     public function all(array $filters = []): array
     {
-        // 1. Try Supabase REST
+        // 1. Filter out API-specific routing parameters
+        $ignoredParams = ['action', 'controller', 'csrf_token', '_', 'apiKey'];
+        $cleanFilters = array_diff_key($filters, array_flip($ignoredParams));
+
+        // 2. Try Supabase REST
         $queryStr = $this->table;
-        if (!empty($filters)) {
+        if (!empty($cleanFilters)) {
             $params = [];
-            foreach ($filters as $key => $val) {
-                $params[] = urlencode($key) . '=eq.' . urlencode($val);
+            foreach ($cleanFilters as $key => $val) {
+                if ($val !== null && $val !== '') {
+                    $snakeKey = strtolower(preg_replace('/([a-z\d])([A-Z])/', '$1_$2', (string)$key));
+                    $params[] = urlencode($snakeKey) . '=eq.' . urlencode($val);
+                }
             }
-            $queryStr .= '?' . implode('&', $params);
+            if (!empty($params)) {
+                $queryStr .= '?' . implode('&', $params);
+            }
         }
 
         $res = supabaseRequest($queryStr, 'GET', null, true);
         if ($res['status'] === 200 && is_array($res['data'])) {
-            return $res['data'];
+            return array_map([$this, 'normalizeRecord'], $res['data']);
         }
 
-        // 2. Fallback to Local Seed/Data Store
-        return $this->getLocalData($filters);
+        // 3. Fallback to Local Seed/Data Store
+        return $this->getLocalData($cleanFilters);
     }
 
     /**
@@ -48,13 +57,13 @@ class BaseModel
     {
         $res = supabaseRequest($this->table . '?id=eq.' . urlencode($id), 'GET', null, true);
         if ($res['status'] === 200 && !empty($res['data'][0])) {
-            return $res['data'][0];
+            return $this->normalizeRecord($res['data'][0]);
         }
 
         $all = $this->getLocalData();
         foreach ($all as $item) {
             if (($item['id'] ?? '') === $id) {
-                return $item;
+                return $this->normalizeRecord($item);
             }
         }
         return null;
@@ -72,15 +81,16 @@ class BaseModel
             $data['created_at'] = date('c');
         }
 
-        // Attempt write to Supabase
-        supabaseRequest($this->table, 'POST', $data, true);
+        // Attempt write to Supabase with snake_case keys
+        $supabasePayload = $this->toSnakeCaseKeys($data);
+        supabaseRequest($this->table, 'POST', $supabasePayload, true);
 
         // Always sync with local data store
         $all = $this->getLocalData();
         $all[] = $data;
         $this->saveLocalData($all);
 
-        return $data;
+        return $this->normalizeRecord($data);
     }
 
     /**
@@ -90,10 +100,12 @@ class BaseModel
     {
         $data['updated_at'] = date('c');
 
-        // Attempt update on Supabase
-        $res = supabaseRequest($this->table . '?id=eq.' . urlencode($id), 'PATCH', $data, true);
+        // Attempt update on Supabase with snake_case keys
+        $supabasePayload = $this->toSnakeCaseKeys($data);
+        $res = supabaseRequest($this->table . '?id=eq.' . urlencode($id), 'PATCH', $supabasePayload, true);
         if ($res['status'] >= 200 && $res['status'] < 300 && !empty($res['data'])) {
-            $updatedItem = is_array($res['data']) && isset($res['data'][0]) ? $res['data'][0] : $res['data'];
+            $rawUpdated = is_array($res['data']) && isset($res['data'][0]) ? $res['data'][0] : $res['data'];
+            $updatedItem = $this->normalizeRecord($rawUpdated);
             // Sync with local store
             $all = $this->getLocalData();
             $found = false;
@@ -147,7 +159,7 @@ class BaseModel
         foreach ($all as &$item) {
             if ((string)($item['id'] ?? '') === (string)$id) {
                 $item = array_merge($item, $data);
-                $updatedItem = $item;
+                $updatedItem = $this->normalizeRecord($item);
                 break;
             }
         }
@@ -175,9 +187,60 @@ class BaseModel
      */
     public function seedIfEmpty(array $initialData): void
     {
+        $res = supabaseRequest($this->table . '?select=id&limit=1', 'GET', null, true);
+        if ($res['status'] === 200 && empty($res['data'])) {
+            foreach ($initialData as $item) {
+                $payload = $this->toSnakeCaseKeys($item);
+                supabaseRequest($this->table, 'POST', $payload, true);
+            }
+        }
+
         if (!file_exists($this->dataFile) || filesize($this->dataFile) === 0) {
             $this->saveLocalData($initialData);
         }
+    }
+
+    /**
+     * Convert camelCase keys to snake_case for Supabase PostgreSQL
+     */
+    protected function toSnakeCaseKeys(array $data): array
+    {
+        $ignored = ['action', 'controller', 'csrf_token', '_', 'apiKey', 'createdAt', 'updatedAt'];
+        $clean = array_diff_key($data, array_flip($ignored));
+
+        $result = [];
+        foreach ($clean as $key => $value) {
+            $snakeKey = strtolower(preg_replace('/([a-z\d])([A-Z])/', '$1_$2', (string)$key));
+            $result[$snakeKey] = $value;
+        }
+        return $result;
+    }
+
+    /**
+     * Normalize record ensuring both camelCase and snake_case properties are accessible
+     */
+    public function normalizeRecord(array $row): array
+    {
+        $normalized = $row;
+        foreach ($row as $key => $value) {
+            $camelKey = lcfirst(str_replace(' ', '', ucwords(str_replace('_', ' ', (string)$key))));
+            if (!array_key_exists($camelKey, $normalized)) {
+                $normalized[$camelKey] = $value;
+            }
+        }
+        if (isset($row['session_date']) && !isset($normalized['date'])) {
+            $normalized['date'] = $row['session_date'];
+        }
+        if (isset($row['time_slot']) && !isset($normalized['time'])) {
+            $normalized['time'] = $row['time_slot'];
+        }
+        if (isset($row['date']) && !isset($normalized['session_date'])) {
+            $normalized['session_date'] = $row['date'];
+        }
+        if (isset($row['time']) && !isset($normalized['time_slot'])) {
+            $normalized['time_slot'] = $row['time'];
+        }
+        return $normalized;
     }
 
     /**
@@ -195,10 +258,10 @@ class BaseModel
         }
 
         if (empty($filters)) {
-            return $data;
+            return array_map([$this, 'normalizeRecord'], $data);
         }
 
-        return array_values(array_filter($data, function ($item) use ($filters) {
+        $filtered = array_values(array_filter($data, function ($item) use ($filters) {
             foreach ($filters as $k => $v) {
                 if (!isset($item[$k]) || (string)$item[$k] !== (string)$v) {
                     return false;
@@ -206,6 +269,8 @@ class BaseModel
             }
             return true;
         }));
+
+        return array_map([$this, 'normalizeRecord'], $filtered);
     }
 
     /**

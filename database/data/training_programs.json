@@ -153,5 +153,22 @@
                 "correct": 1
             }
         ]
+    },
+    {
+        "title": "Concierge VIP Manila Tour & Dining Advisory",
+        "category": "Skill Gap: Guest Experience",
+        "categoryType": "skill_gap",
+        "dept": "Front Office",
+        "targetCompetency": "VIP Concierge & Local Advisory",
+        "competencyKey": "guest_relations",
+        "duration": "3.0 Hours",
+        "format": "Roleplay & Case Study",
+        "trainerType": "Internal Master Trainer",
+        "passingScore": 80,
+        "xpAward": 150,
+        "badgeColor": "gold",
+        "description": "Fine dining recommendations, VIP private transport logistics, and cultural tour curation.",
+        "id": "prog-09bc36",
+        "created_at": "2026-08-27T13:56:46+00:00"
     }
 ]

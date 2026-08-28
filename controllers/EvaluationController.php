@@ -72,8 +72,12 @@ class EvaluationController
         }
 
         // 2. Auto-Grade Quiz Questions
-        $quizQuestions = $program['quizQuestions'] ?? [];
-        $totalQuestions = count($quizQuestions);
+        $quizQuestions = $program['quizQuestions'] ?? $program['quiz_questions'] ?? [];
+        if (is_string($quizQuestions)) {
+            $quizQuestions = json_decode($quizQuestions, true) ?: [];
+        }
+
+        $totalQuestions = is_array($quizQuestions) ? count($quizQuestions) : 0;
         $correctCount = 0;
 
         if ($totalQuestions > 0) {

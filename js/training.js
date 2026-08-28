@@ -17,7 +17,7 @@ const TrainingAPI = {
     baseUrl: 'api/training.php',
 
     async request(action, method = 'GET', payload = null) {
-        const url = method === 'GET' && payload 
+        const url = method === 'GET' && payload
             ? `${this.baseUrl}?action=${action}&${new URLSearchParams(payload)}`
             : `${this.baseUrl}?action=${action}`;
 
@@ -186,19 +186,19 @@ let trainingProgramsState = [
         ],
         quizQuestions: [
             {
-                q: 'What does the "A" in the LAST hospitality recovery framework represent?',
+                q: '1. What does the "A" in the LAST hospitality recovery framework represent?',
                 options: [
-                    'Argue the policy diplomatically',
+                    'Argue the hotel policy diplomatically',
                     'Apologize sincerely for the guest\'s distress without assigning blame',
                     'Ask the manager to intervene immediately',
-                    'Assess the financial liability'
+                    'Assess the financial liability of the hotel'
                 ],
                 correct: 1
             },
             {
-                q: 'When an agitated guest raises their voice in the lobby, the recommended verbal pace is:',
+                q: '2. When an agitated guest raises their voice in the lobby, the recommended verbal pace is:',
                 options: [
-                    'Match their volume and pace so you are heard',
+                    'Match their volume and pace so you are heard clearly',
                     'Lower your tone, speak 15% slower, and maintain calm open body posture',
                     'Remain completely silent until they finish shouting',
                     'Immediately step backwards behind the security desk'
@@ -206,7 +206,7 @@ let trainingProgramsState = [
                 correct: 1
             },
             {
-                q: 'What is the maximum instant amenity voucher a Front Desk Host may authorize without GM signoff?',
+                q: '3. What is the maximum instant amenity voucher a Front Desk Host may authorize without GM signoff?',
                 options: [
                     '₱500 Dining Credit',
                     '₱2,500 F&B or Spa Voucher + Room Category Upgrade',
@@ -216,7 +216,7 @@ let trainingProgramsState = [
                 correct: 1
             },
             {
-                q: 'During de-escalation, which phrase should ALWAYS be avoided?',
+                q: '4. During de-escalation, which phrase should ALWAYS be avoided?',
                 options: [
                     '"I completely understand your frustration and I will personally solve this."',
                     '"That\'s not our hotel policy and there is nothing I can do."',
@@ -224,6 +224,16 @@ let trainingProgramsState = [
                     '"Thank you for bringing this to our attention right away."'
                 ],
                 correct: 1
+            },
+            {
+                q: '5. What documentation must be logged immediately after a de-escalation incident is resolved?',
+                options: [
+                    'Duty Manager Shift Friction Log with guest name, room number, root cause, and recovery voucher issued',
+                    'No logging is required if the guest stopped complaining',
+                    'Send a private WhatsApp message to coworkers',
+                    'Write a handwritten note and discard it at end of shift'
+                ],
+                correct: 0
             }
         ]
     },
@@ -238,7 +248,7 @@ let trainingProgramsState = [
         duration: '4.0 Hours',
         format: 'Hygiene Lab & Inspection Walk',
         trainerType: 'Certified External Auditor',
-        passingScore: 85,
+        passingScore: 80,
         xpAward: 150,
         icon: 'fa-utensils',
         badgeColor: 'sage',
@@ -251,13 +261,53 @@ let trainingProgramsState = [
         ],
         quizQuestions: [
             {
-                q: 'What is the mandatory temperature range for hotel walk-in meat chillers?',
-                options: ['0°C to 1°C', '2°C to 4°C', '5°C to 8°C', '-5°C to 0°C'],
+                q: '1. What is the mandatory minimum internal core temperature for cooked poultry?',
+                options: [
+                    '63°C (145°F)',
+                    '74°C (165°F) for at least 15 seconds',
+                    '55°C (130°F)',
+                    '85°C (185°F)'
+                ],
                 correct: 1
             },
             {
-                q: 'Which cutting board color is strictly reserved for raw poultry?',
-                options: ['Blue', 'Yellow', 'Red', 'Green'],
+                q: '2. The Temperature Danger Zone for rapid bacterial growth in food is between:',
+                options: [
+                    '0°C and 4°C',
+                    '5°C and 60°C (41°F and 140°F)',
+                    '60°C and 100°C',
+                    '-18°C and 0°C'
+                ],
+                correct: 1
+            },
+            {
+                q: '3. How often must walk-in chiller temperatures be manually logged in the HACCP register?',
+                options: [
+                    'Once a week',
+                    'Every 4 hours during shift operations',
+                    'Only during annual audits',
+                    'Once at the end of the month'
+                ],
+                correct: 1
+            },
+            {
+                q: '4. Which cutting board color is strictly reserved for raw poultry in commercial kitchens?',
+                options: [
+                    'Blue',
+                    'Yellow',
+                    'Red',
+                    'Green'
+                ],
+                correct: 1
+            },
+            {
+                q: '5. What is the maximum time hot food can be held on a buffet line before mandatory re-check or disposal?',
+                options: [
+                    '1 Hour',
+                    '4 Hours at ≥ 60°C',
+                    '8 Hours',
+                    '12 Hours'
+                ],
                 correct: 1
             }
         ]
@@ -286,13 +336,53 @@ let trainingProgramsState = [
         ],
         quizQuestions: [
             {
-                q: 'What is the correct tableside tasting pour volume when presenting wine to the host?',
-                options: ['10ml', '30ml (1 oz)', '75ml', '150ml'],
+                q: '1. Which wine classification represents the highest statutory quality tier in Bordeaux, France?',
+                options: [
+                    'Vin de Pays',
+                    'Grand Cru Classé (1855 Classification)',
+                    'AOP Regional',
+                    'Table Wine'
+                ],
                 correct: 1
             },
             {
-                q: 'Where should the wine bottle label face during pouring?',
-                options: ['Towards the floor', 'Facing directly towards the guest being served', 'Facing the sommelier', 'Covered with a napkin'],
+                q: '2. What ideal serving temperature should be maintained for full-bodied vintage Cabernet Sauvignon?',
+                options: [
+                    '4°C to 6°C',
+                    '16°C to 18°C (60°F to 65°F)',
+                    '22°C to 25°C',
+                    '0°C'
+                ],
+                correct: 1
+            },
+            {
+                q: '3. Which grape variety is the primary constituent of authentic Barolo wines from Piedmont, Italy?',
+                options: [
+                    'Sangiovese',
+                    'Nebbiolo',
+                    'Merlot',
+                    'Pinot Noir'
+                ],
+                correct: 1
+            },
+            {
+                q: '4. When pairing wine with rich Wagyu Ribeye steak, what structural wine characteristic balances the marbling fat?',
+                options: [
+                    'High residual sugar',
+                    'High tannin and robust acidity',
+                    'Low alcohol content',
+                    'Effervescence'
+                ],
+                correct: 1
+            },
+            {
+                q: '5. What is the primary purpose of decanting an aged vintage red wine before service?',
+                options: [
+                    'Chilling the wine quickly',
+                    'Separate sediment and aerate the wine to open complex aromas',
+                    'Dilute the alcohol concentration',
+                    'Change the wine color'
+                ],
                 correct: 1
             }
         ]
@@ -497,6 +587,108 @@ let currentEvaluationContext = {
 // 2. INITIALIZATION
 // =========================================================================
 
+function normalizeTrainingNeed(need) {
+    if (!need) return {};
+    const currentScore = need.currentScore ?? need.current_score ?? 3.5;
+    const requiredScore = need.requiredScore ?? need.required_score ?? 5.0;
+    const gap = need.gap ?? Number((currentScore - requiredScore).toFixed(1));
+    return {
+        ...need,
+        id: need.id,
+        title: need.title || 'Operational Training Need',
+        associateName: need.associateName || need.associate_name || 'Associate',
+        associateRole: need.associateRole || need.associate_role || 'Staff',
+        associateAvatar: need.associateAvatar || need.associate_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        sourceType: need.sourceType || need.source_type || 'competency_gap',
+        sourceLabel: need.sourceLabel || need.source_label || ((need.source_type === 'compliance' || need.sourceType === 'compliance') ? 'Mandatory Compliance' : 'Skill Gap'),
+        category: need.category || 'Service Excellence',
+        dept: need.dept || 'Front Office',
+        targetCompetency: need.targetCompetency || need.target_competency || 'Service Excellence',
+        competencyKey: need.competencyKey || need.competency_key || 'general',
+        currentScore: currentScore,
+        requiredScore: requiredScore,
+        gap: gap,
+        urgency: need.urgency || 'High',
+        status: need.status || 'Identified',
+        linkedProgramId: need.linkedProgramId || need.linked_program_id || 'prog-1',
+        dateIdentified: need.dateIdentified || need.date_identified || 'Aug 18, 2026',
+        notes: need.notes || need.diagnosis_note || 'Identified during supervisor performance audit.'
+    };
+}
+
+function normalizeTrainingProgram(prog) {
+    if (!prog) return {};
+    return {
+        ...prog,
+        id: prog.id,
+        title: prog.title || 'Training Program',
+        category: prog.category || 'General',
+        categoryType: prog.categoryType || prog.category_type || 'skill_gap',
+        dept: prog.dept || 'Front Office',
+        targetCompetency: prog.targetCompetency || prog.target_competency || 'Core Hospitality',
+        competencyKey: prog.competencyKey || prog.competency_key || 'general',
+        duration: prog.duration || '3 Hours',
+        format: prog.format || 'Workshop',
+        trainerType: prog.trainerType || prog.trainer_type || 'Internal Master Trainer',
+        passingScore: prog.passingScore ?? prog.passing_score ?? 80,
+        xpAward: prog.xpAward ?? prog.xp_award ?? 150,
+        icon: prog.icon || 'fa-award',
+        badgeColor: prog.badgeColor || prog.badge_color || 'primary',
+        description: prog.description || '',
+        modules: Array.isArray(prog.modules) ? prog.modules : [],
+        quizQuestions: Array.isArray(prog.quizQuestions) ? prog.quizQuestions : (Array.isArray(prog.quiz_questions) ? prog.quiz_questions : [])
+    };
+}
+
+function normalizeTrainingSession(sess) {
+    if (!sess) return {};
+    return {
+        ...sess,
+        id: sess.id,
+        programId: sess.programId || sess.program_id || 'prog-1',
+        title: sess.title || 'Training Session',
+        dept: sess.dept || 'Front Office',
+        trainerName: sess.trainerName || sess.trainer_name || 'Assigned Trainer',
+        trainerTitle: sess.trainerTitle || sess.trainer_title || 'Senior Trainer',
+        trainerAvatar: sess.trainerAvatar || sess.trainer_avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+        location: sess.location || 'Training Room',
+        date: sess.date || sess.session_date || 'Aug 26, 2026',
+        time: sess.time || sess.time_slot || '14:00 - 17:00',
+        status: sess.status || 'Scheduled',
+        roster: Array.isArray(sess.roster) ? sess.roster : []
+    };
+}
+
+function normalizeTrainingResult(res) {
+    if (!res) return {};
+    return {
+        ...res,
+        id: res.id,
+        sessionId: res.sessionId || res.session_id || 'sess-101',
+        programId: res.programId || res.program_id || 'prog-1',
+        programTitle: res.programTitle || res.program_title || 'Training Program',
+        category: res.category || 'Service',
+        dept: res.dept || 'Front Office',
+        associateId: res.associateId || res.associate_id || 'emp-101',
+        associateName: res.associateName || res.associate_name || 'Associate',
+        associateRole: res.associateRole || res.associate_role || 'Staff',
+        associateAvatar: res.associateAvatar || res.associate_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        trainerName: res.trainerName || res.trainer_name || 'Trainer',
+        completionDate: res.completionDate || res.completion_date || 'Aug 24, 2026',
+        attendanceRate: res.attendanceRate || res.attendance_rate || '100%',
+        quizScore: res.quizScore ?? res.quiz_score ?? 95,
+        passingThreshold: res.passingThreshold ?? res.passing_threshold ?? 80,
+        resultStatus: res.resultStatus || res.result_status || 'Passed & Certified',
+        feedbackRating: res.feedbackRating ?? res.feedback_rating ?? 5.0,
+        certificateReference: res.certificateReference || res.certificate_reference || 'OXF-CERT-2026-0001',
+        competencyTarget: res.competencyTarget || res.competency_target || 'Service',
+        competencyKey: res.competencyKey || res.competency_key || 'service',
+        competencyScoreBefore: res.competencyScoreBefore ?? res.competency_score_before ?? 3.5,
+        competencyScoreAfter: res.competencyScoreAfter ?? res.competency_score_after ?? 4.8,
+        xpAwarded: res.xpAwarded ?? res.xp_awarded ?? 150
+    };
+}
+
 async function initTrainingManagement() {
     // 1. Initial Synchronous Render with Local State
     renderTrainingNeeds();
@@ -512,10 +704,10 @@ async function initTrainingManagement() {
     try {
         const bootstrapData = await TrainingAPI.bootstrap();
         if (bootstrapData) {
-            if (Array.isArray(bootstrapData.needs)) trainingNeedsState = bootstrapData.needs;
-            if (Array.isArray(bootstrapData.programs)) trainingProgramsState = bootstrapData.programs;
-            if (Array.isArray(bootstrapData.sessions)) trainingSessionsState = bootstrapData.sessions;
-            if (Array.isArray(bootstrapData.results)) trainingResultsState = bootstrapData.results;
+            if (Array.isArray(bootstrapData.needs)) trainingNeedsState = bootstrapData.needs.map(normalizeTrainingNeed);
+            if (Array.isArray(bootstrapData.programs)) trainingProgramsState = bootstrapData.programs.map(normalizeTrainingProgram);
+            if (Array.isArray(bootstrapData.sessions)) trainingSessionsState = bootstrapData.sessions.map(normalizeTrainingSession);
+            if (Array.isArray(bootstrapData.results)) trainingResultsState = bootstrapData.results.map(normalizeTrainingResult);
 
             // Re-render UI with synchronized server state
             renderTrainingNeeds();
@@ -534,23 +726,13 @@ async function initTrainingManagement() {
 
 function switchTrainingStage(stageSubTab) {
     switchSubTab('training', stageSubTab);
-    
-    document.querySelectorAll('.training-stage-step').forEach(step => {
-        if (step.dataset.stage === stageSubTab) {
-            step.classList.add('border-primary', 'bg-primary/10', 'text-primary');
-            step.classList.remove('border-[#E8DEDC]', 'bg-[#FAF8F7]', 'text-slate-600');
-        } else {
-            step.classList.remove('border-primary', 'bg-primary/10', 'text-primary');
-            step.classList.add('border-[#E8DEDC]', 'bg-[#FAF8F7]', 'text-slate-600');
-        }
-    });
 }
 
 function updateTrainingStats() {
-    const identifiedCount = trainingNeedsState.filter(n => n.status !== 'Resolved').length;
+    const identifiedCount = trainingNeedsState.filter(n => n.status !== 'Resolved' && n.status !== 'Completed').length;
     const programsCount = trainingProgramsState.length;
     const activeSessionsCount = trainingSessionsState.filter(s => s.status !== 'Completed').length;
-    const certifiedCount = trainingResultsState.filter(r => r.resultStatus.includes('Passed')).length;
+    const certifiedCount = trainingResultsState.filter(r => (r.resultStatus || '').includes('Passed')).length;
 
     const elNeeds = document.getElementById('stat-training-needs');
     const elPrograms = document.getElementById('stat-training-programs');
@@ -563,66 +745,165 @@ function updateTrainingStats() {
     if (elCertified) elCertified.textContent = certifiedCount;
 }
 
-// =========================================================================
-// 3. MODULE 1: PROGRAM CREATION & NEEDS (Gaps / Compliance)
-// =========================================================================
+let needsActiveFilterTab = 'active';
+
+function setNeedsFilter(filter) {
+    needsActiveFilterTab = filter;
+
+    const filterBtns = ['active', 'resolved', 'all'];
+    filterBtns.forEach(f => {
+        const btn = document.getElementById(`btn-needs-filter-${f}`);
+        if (btn) {
+            if (f === filter) {
+                btn.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-primary text-white transition shadow-sm';
+            } else {
+                btn.className = 'px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition';
+            }
+        }
+    });
+
+    const badge = document.getElementById('needs-filter-count-badge');
+    if (badge) {
+        badge.textContent = filter === 'active' ? 'Showing Active Deficits' : filter === 'resolved' ? 'Showing Resolved History' : 'Showing All Audit Triggers';
+    }
+
+    renderTrainingNeeds();
+}
 
 function renderTrainingNeeds() {
     const container = document.getElementById('training-needs-list');
     if (!container) return;
 
-    container.innerHTML = trainingNeedsState.map(need => {
-        const isResolved = need.status === 'Resolved';
-        const typeBadge = need.sourceType === 'competency_gap'
+    let filteredNeeds = trainingNeedsState.map(normalizeTrainingNeed);
+    if (needsActiveFilterTab === 'active') {
+        filteredNeeds = filteredNeeds.filter(n => n.status !== 'Resolved' && n.status !== 'Completed');
+    } else if (needsActiveFilterTab === 'resolved') {
+        filteredNeeds = filteredNeeds.filter(n => n.status === 'Resolved' || n.status === 'Completed');
+    }
+
+    if (filteredNeeds.length === 0) {
+        const emptyMsg = needsActiveFilterTab === 'resolved'
+            ? 'No resolved training history recorded yet.'
+            : 'No active skill gap deficits or compliance requirements pending in the queue.';
+
+        container.innerHTML = `
+            <div class="card-clean p-8 bg-white border border-[#E8DEDC] text-center space-y-3">
+                <div class="w-12 h-12 rounded-full bg-[#FAF8F7] border border-[#E8DEDC] text-slate-400 flex items-center justify-center mx-auto">
+                    <i class="fas fa-check-double text-lg text-emerald-600"></i>
+                </div>
+                <h4 class="font-bold text-slate-800 text-sm">${needsActiveFilterTab === 'resolved' ? 'No Resolved Items' : 'All Associate Competencies at Benchmark'}</h4>
+                <p class="text-slate-500 text-xs">${emptyMsg}</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = filteredNeeds.map(need => {
+        const isResolved = need.status === 'Resolved' || need.status === 'Completed';
+        const isScheduled = need.status === 'Scheduled';
+        const isSkillGap = need.sourceType === 'competency_gap';
+
+        // Calculate progress percentage on 5.0 scale
+        const currentPct = Math.min(100, Math.max(10, Math.round((need.currentScore / 5.0) * 100)));
+        const targetPct = Math.min(100, Math.max(10, Math.round((need.requiredScore / 5.0) * 100)));
+
+        const urgencyBadge = need.urgency === 'Critical'
+            ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-red-100 text-red-700 border border-red-200 uppercase tracking-wider"><i class="fas fa-fire mr-1"></i> Critical Urgency</span>`
+            : need.urgency === 'High'
+                ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200"><i class="fas fa-clock mr-1"></i> High Priority</span>`
+                : `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">Standard</span>`;
+
+        const typeBadge = isSkillGap
             ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20"><i class="fas fa-chart-radar mr-1"></i> Skill Gap: ${need.targetCompetency}</span>`
-            : `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20"><i class="fas fa-shield-check mr-1"></i> Mandatory Compliance: ${need.category}</span>`;
+            : `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-800 border border-amber-500/20"><i class="fas fa-shield-halved mr-1"></i> Mandatory Compliance</span>`;
+
+        const statusPill = isResolved
+            ? `<span class="badge-sage font-bold"><i class="fas fa-check-circle mr-1"></i> Resolved &amp; Synced (4.8 Score)</span>`
+            : isScheduled
+                ? `<span class="badge-dusty font-bold"><i class="fas fa-calendar-check mr-1"></i> Session Scheduled</span>`
+                : `<span class="badge-terracotta font-bold"><i class="fas fa-bolt mr-1"></i> Deficit Active</span>`;
 
         return `
-            <div class="card-clean p-5 hover:shadow-md transition space-y-3.5 border ${isResolved ? 'bg-emerald-50/30 border-emerald-200' : 'bg-white border-[#E8DEDC]'}">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div class="flex items-center space-x-3">
-                        <img src="${need.associateAvatar}" alt="${need.associateName}" class="w-10 h-10 rounded-full object-cover border border-[#E8DEDC] shadow-sm flex-shrink-0">
+            <div class="card-clean p-5 hover:shadow-md transition space-y-4 border ${isResolved ? 'bg-emerald-50/20 border-emerald-200' : 'bg-white border-[#E8DEDC]'}">
+                <!-- Top Row: Associate & Need Status -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center space-x-3.5">
+                        <img src="${need.associateAvatar}" alt="${need.associateName}" class="w-11 h-11 rounded-full object-cover border border-[#E8DEDC] shadow-sm flex-shrink-0">
                         <div>
-                            <div class="flex items-center space-x-2">
-                                <h4 class="font-bold text-sm text-slate-900">${need.title}</h4>
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <h4 class="font-bold text-sm text-slate-900 leading-snug">${need.title}</h4>
                                 ${typeBadge}
+                                ${urgencyBadge}
                             </div>
-                            <p class="text-xs text-slate-500 font-medium">Associate: <strong class="text-slate-800">${need.associateName}</strong> (${need.associateRole}) · Dept: <strong>${need.dept}</strong></p>
+                            <p class="text-xs text-slate-500 font-medium mt-0.5">
+                                Associate: <strong class="text-slate-800">${need.associateName}</strong> (${need.associateRole}) · Dept: <strong class="text-slate-700">${need.dept}</strong>
+                            </p>
                         </div>
                     </div>
-                    <div>
-                        ${isResolved 
-                            ? `<span class="badge-sage"><i class="fas fa-check-circle mr-1"></i> Resolved &amp; Synced</span>`
-                            : `<span class="badge-terracotta"><i class="fas fa-bolt mr-1"></i> Need Active</span>`
-                        }
+                    <div class="flex-shrink-0">
+                        ${statusPill}
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] text-xs">
-                    <div>
-                        <span class="text-slate-400 block text-[10px] uppercase font-bold">Category Link</span>
-                        <span class="font-bold text-slate-800">${need.category}</span>
+                <!-- Middle Row: Benchmark Comparison & Diagnosis -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 p-3.5 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] text-xs items-center">
+                    
+                    <!-- Score & Gap Progress Visualizer (5 Cols) -->
+                    <div class="lg:col-span-5 space-y-1.5">
+                        <div class="flex justify-between items-center text-[11px]">
+                            <span class="text-slate-500 font-semibold">Current vs Target Benchmark:</span>
+                            <span class="font-black text-slate-800">
+                                <span class="${need.currentScore < need.requiredScore ? 'text-terracotta-dark' : 'text-emerald-700'} font-bold">${need.currentScore}</span>
+                                <span class="text-slate-400 font-normal"> / 5.0</span>
+                                <span class="text-slate-400 mx-1">vs</span>
+                                <span class="text-slate-900">${need.requiredScore}</span>
+                                <span class="ml-1 px-1.5 py-0.2 rounded text-[10px] font-bold ${need.gap < 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}">
+                                    ${need.gap < 0 ? need.gap : '+' + need.gap} Gap
+                                </span>
+                            </span>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="w-full bg-slate-200/80 rounded-full h-2.5 relative overflow-hidden flex">
+                            <div class="h-2.5 rounded-full ${need.currentScore < 4.0 ? 'bg-terracotta' : 'bg-amber-500'} transition-all duration-500" style="width: ${currentPct}%;"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-slate-400 font-medium">
+                            <span>Evaluated Rating (${need.currentScore})</span>
+                            <span>Target Level (${need.requiredScore})</span>
+                        </div>
                     </div>
-                    <div>
-                        <span class="text-slate-400 block text-[10px] uppercase font-bold">Current vs Target Benchmark</span>
-                        <span class="font-bold text-slate-800">${need.currentScore} / 5.0 <span class="text-slate-400">vs</span> ${need.requiredScore} <span class="text-terracotta-dark font-bold">(${need.gap})</span></span>
-                    </div>
-                    <div>
-                        <span class="text-slate-400 block text-[10px] uppercase font-bold">Diagnosis Note</span>
-                        <span class="text-slate-600 line-clamp-1">${need.notes}</span>
+
+                    <!-- Diagnosis Note (7 Cols) -->
+                    <div class="lg:col-span-7 lg:pl-3 lg:border-l border-slate-200 space-y-1">
+                        <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Diagnosis Audit Note &amp; Trigger Context:</span>
+                        <p class="text-slate-700 leading-relaxed">${need.notes}</p>
+                        <div class="flex items-center space-x-3 text-[11px] text-slate-400 pt-0.5">
+                            <span><i class="fas fa-calendar-check mr-1 text-slate-400"></i> Identified: <strong class="text-slate-600">${need.dateIdentified}</strong></span>
+                            <span><i class="fas fa-link mr-1 text-primary"></i> Linked Syllabus: <strong class="text-primary font-bold">${need.category}</strong></span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between pt-1 text-xs">
-                    <span class="text-[11px] text-slate-500">Urgency: <strong class="${need.urgency === 'Critical' ? 'text-red-600' : 'text-slate-700'}">${need.urgency}</strong></span>
-                    ${!isResolved ? `
-                        <button onclick="scheduleFromNeed('${need.id}')" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1.5">
-                            <i class="fas fa-calendar-plus"></i>
-                            <span>Schedule Training Session &rarr;</span>
-                        </button>
-                    ` : `
-                        <span class="text-xs font-bold text-emerald-700"><i class="fas fa-check mr-1"></i> Profile Upgraded to 4.8 Master</span>
-                    `}
+                <!-- Bottom Row: Action Trigger -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-xs">
+                    <div class="flex items-center space-x-2 text-slate-500">
+                        <i class="fas fa-lightbulb text-amber-500"></i>
+                        <span class="text-[11px]">Recommended Action: <strong>Schedule targeted cohort session before next shift audit.</strong></span>
+                    </div>
+
+                    <div>
+                        ${!isResolved ? `
+                            <button onclick="scheduleFromNeed('${need.id}')" class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-2 shadow-sm">
+                                <i class="fas fa-calendar-plus"></i>
+                                <span>Schedule Training Session &rarr;</span>
+                            </button>
+                        ` : `
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 text-xs font-bold">
+                                <i class="fas fa-award mr-1.5 text-emerald-600"></i>
+                                <span>Competency Upgraded to 4.8 Master Level</span>
+                            </span>
+                        `}
+                    </div>
                 </div>
             </div>
         `;
@@ -697,8 +978,8 @@ function renderTrainingSessions() {
         const statusBadge = isLive
             ? `<span class="badge-terracotta animate-pulse"><i class="fas fa-satellite-dish mr-1"></i> In Progress</span>`
             : isCompleted
-            ? `<span class="badge-sage"><i class="fas fa-check-circle mr-1"></i> Completed</span>`
-            : `<span class="badge-dusty"><i class="fas fa-calendar-clock mr-1"></i> Scheduled</span>`;
+                ? `<span class="badge-sage"><i class="fas fa-check-circle mr-1"></i> Completed</span>`
+                : `<span class="badge-dusty"><i class="fas fa-calendar-clock mr-1"></i> Scheduled</span>`;
 
         return `
             <div class="card-clean p-6 hover:shadow-md transition space-y-4 border ${isLive ? 'border-terracotta/40 bg-terracotta-50/10' : 'border-[#E8DEDC] bg-white'}">
@@ -787,13 +1068,13 @@ function renderAttendanceConsole() {
     tbody.innerHTML = session.roster.map(member => {
         const isAttended = member.attendanceStatus === 'Attended';
         const isAbsent = member.attendanceStatus === 'Absent';
-        const isCompleted = member.attendanceStatus === 'Completed';
+        const isCompleted = member.attendanceStatus === 'Completed' || member.evaluationStatus === 'Completed';
 
         const statusBadge = isCompleted
-            ? `<span class="badge-sage"><i class="fas fa-check-double mr-1"></i> Completed (100%)</span>`
+            ? `<span class="badge-sage font-bold"><i class="fas fa-check-double mr-1"></i> Completed (Passed 80%+)</span>`
             : isAttended
-            ? `<span class="badge-dusty"><i class="fas fa-user-check mr-1"></i> Attended (100%)</span>`
-            : `<span class="badge-terracotta"><i class="fas fa-xmark mr-1"></i> Absent (0%)</span>`;
+                ? `<span class="badge-dusty"><i class="fas fa-user-check mr-1"></i> Attended (Pending Quiz)</span>`
+                : `<span class="badge-terracotta"><i class="fas fa-xmark mr-1"></i> Absent (0%)</span>`;
 
         return `
             <tr class="hover:bg-[#FAF8F7]/80 transition">
@@ -811,28 +1092,24 @@ function renderAttendanceConsole() {
                 <td class="px-5 py-3.5">
                     <div class="flex items-center space-x-1.5">
                         <button onclick="setAssociateAttendance('${session.id}', '${member.associateId}', 'Attended')" 
-                            class="px-2.5 py-1 rounded-lg text-xs font-bold ${isAttended ? 'bg-dusty-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-                            Attended
+                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${isAttended || isCompleted ? 'bg-dusty-dark text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                            <i class="fas fa-check mr-1 text-[10px]"></i> Attended
                         </button>
                         <button onclick="setAssociateAttendance('${session.id}', '${member.associateId}', 'Absent')" 
-                            class="px-2.5 py-1 rounded-lg text-xs font-bold ${isAbsent ? 'bg-red-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-                            Absent
-                        </button>
-                        <button onclick="setAssociateAttendance('${session.id}', '${member.associateId}', 'Completed')" 
-                            class="px-2.5 py-1 rounded-lg text-xs font-bold ${isCompleted ? 'bg-sage-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-                            Completed
+                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${isAbsent ? 'bg-red-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                            <i class="fas fa-xmark mr-1 text-[10px]"></i> Absent
                         </button>
                     </div>
                 </td>
                 <td class="px-5 py-3.5 text-right">
                     ${isAttended || isCompleted ? `
                         <button onclick="startSessionEvaluation('${session.id}', '${member.associateId}')" 
-                            class="btn-primary px-3 py-1 text-[11px] font-bold inline-flex items-center space-x-1">
+                            class="btn-primary px-3 py-1.5 text-[11px] font-bold inline-flex items-center space-x-1 shadow-xs">
                             <i class="fas fa-pen-to-square"></i>
-                            <span>${member.evaluationStatus === 'Completed' ? 'Re-Evaluate' : 'Fill Evaluation Form'}</span>
+                            <span>${isCompleted ? 'Re-Evaluate Quiz' : 'Take Evaluation Quiz →'}</span>
                         </button>
                     ` : `
-                        <span class="text-slate-400 text-[11px] italic">Attendance Required</span>
+                        <span class="text-slate-400 text-[11px] italic font-medium">Mark Attended First</span>
                     `}
                 </td>
             </tr>
@@ -853,7 +1130,7 @@ async function setAssociateAttendance(sessionId, associateId, status) {
     // 1. Optimistic UI update
     member.attendanceStatus = status;
     member.attendanceRate = status === 'Absent' ? 0 : 100;
-    
+
     const now = new Date();
     const checkInTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     member.checkInTime = checkInTime;
@@ -895,7 +1172,7 @@ async function markAllSessionPresent() {
 
     // Persist all via AJAX
     try {
-        await Promise.all(session.roster.map(m => 
+        await Promise.all(session.roster.map(m =>
             TrainingAPI.updateAttendance(session.id, m.associateId, 'Attended', timeStr)
         ));
     } catch (err) {
@@ -952,12 +1229,20 @@ function startSessionEvaluation(sessionId, associateId) {
     if (modalSubtitle) modalSubtitle.textContent = `Associate: ${member.name} (${member.role}) · Trainer: ${session.trainerName} · Passing: ${program.passingScore}%`;
 
     if (questionsContainer) {
-        questionsContainer.innerHTML = program.quizQuestions.map((q, qIndex) => {
+        let questionsList = program.quizQuestions || program.quiz_questions || [];
+        if (typeof questionsList === 'string') {
+            try { questionsList = JSON.parse(questionsList); } catch (e) { questionsList = []; }
+        }
+
+        questionsContainer.innerHTML = questionsList.map((q, qIndex) => {
+            const questionText = q.q || q.question || `Question ${qIndex + 1}`;
+            const options = Array.isArray(q.options) ? q.options : [];
+
             return `
                 <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-3 text-xs">
-                    <p class="font-bold text-slate-900 leading-snug"><span class="text-primary font-bold">Q${qIndex + 1}:</span> ${q.q}</p>
+                    <p class="font-bold text-slate-900 leading-snug"><span class="text-primary font-bold">Q${qIndex + 1}:</span> ${questionText}</p>
                     <div class="space-y-2">
-                        ${q.options.map((opt, optIndex) => `
+                        ${options.map((opt, optIndex) => `
                             <label class="flex items-center space-x-2.5 p-2 rounded-xl border border-transparent hover:bg-white hover:border-[#E8DEDC] cursor-pointer transition">
                                 <input type="radio" name="eval_q_${qIndex}" value="${optIndex}" onchange="recordEvalAnswer(${qIndex}, ${optIndex})" class="text-primary focus:ring-primary h-4 w-4">
                                 <span class="text-slate-700 font-medium">${opt}</span>
@@ -1021,25 +1306,28 @@ async function submitTrainingEvaluation() {
             kirkpatrickFeedback: kirkpatrickFeedback
         };
 
-        const resData = await TrainingAPI.submitEvaluation(payload);
+        const res = await TrainingAPI.submitEvaluation(payload);
+        const resData = res?.data || res;
 
-        if (resData && resData.evaluation) {
-            const evalRecord = resData.evaluation;
-            trainingResultsState.unshift(evalRecord);
+        if (resData && (resData.evaluation || resData.id)) {
+            const evalRecord = resData.evaluation || resData;
+            trainingResultsState.unshift(normalizeTrainingResult(evalRecord));
 
             member.evaluationStatus = 'Completed';
             member.attendanceStatus = 'Completed';
             member.score = evalRecord.quizScore;
             member.resultId = evalRecord.id;
 
-            if (resData.isPassed) {
+            if (resData.isPassed || evalRecord.resultStatus?.includes('Passed')) {
                 feedResultsIntoCompetency(evalRecord);
-                showToast(`Evaluation Passed (${evalRecord.quizScore}%)! Cert: ${resData.certificateNumber} generated & +150 XP awarded!`, 'success');
+                showToast(`Evaluation Passed (${evalRecord.quizScore}%)! Cert: ${resData.certificateNumber || evalRecord.certificateReference} generated & +150 XP awarded!`, 'success');
                 switchTrainingStage('results');
             } else {
-                showToast(`Evaluation Score: ${evalRecord.quizScore}% (Threshold: ${evalRecord.passingThreshold}%). Remedial required.`, 'warning');
+                showToast(`Evaluation Score: ${evalRecord.quizScore}% (Threshold: ${evalRecord.passingThreshold || 80}%). Remedial required.`, 'warning');
                 switchTrainingStage('results');
             }
+        } else if (res && !res.success) {
+            showToast('Evaluation submission failed: ' + (res.message || 'Unknown error'), 'error');
         }
     } catch (err) {
         showToast('Failed to submit evaluation to server: ' + err.message, 'error');
@@ -1054,7 +1342,7 @@ async function submitTrainingEvaluation() {
 }
 
 function feedResultsIntoCompetency(result) {
-    const matchingNeed = trainingNeedsState.find(n => 
+    const matchingNeed = trainingNeedsState.find(n =>
         n.associateName.includes(result.associateName) || n.targetCompetency === result.competencyTarget
     );
     if (matchingNeed) {
@@ -1287,7 +1575,7 @@ function renderBasicTrainingReport() {
         const totalEnrolled = progRoster.length || 1;
         const attendedCount = progRoster.filter(p => p.attendanceStatus === 'Attended' || p.attendanceStatus === 'Completed').length;
         const completedCount = progRoster.filter(p => p.attendanceStatus === 'Completed' || p.evaluationStatus === 'Completed').length;
-        
+
         const avgScoreResults = trainingResultsState.filter(r => r.programId === prog.id);
         const avgScore = avgScoreResults.length > 0
             ? Math.round(avgScoreResults.reduce((acc, r) => acc + r.quizScore, 0) / avgScoreResults.length)
@@ -1333,19 +1621,118 @@ function renderBasicTrainingReport() {
 // 8. MODAL HANDLERS
 // =========================================================================
 
+let currentSchedulingNeedId = null;
+
 function scheduleFromNeed(needId) {
-    const need = trainingNeedsState.find(n => n.id === needId);
-    if (!need) return;
-    openScheduleModal(need.linkedProgramId);
+    const raw = trainingNeedsState.find(n => n.id === needId);
+    if (!raw) return;
+    const need = normalizeTrainingNeed(raw);
+    currentSchedulingNeedId = need.id;
+    openScheduleModal(need.linkedProgramId, need.id);
 }
 
-function openScheduleModal(preselectedProgramId = null) {
+function updateScheduleModalRosterCount() {
+    const checked = document.querySelectorAll('.sched-roster-checkbox:checked').length;
+    const countEl = document.getElementById('sched-modal-roster-count');
+    if (countEl) {
+        countEl.textContent = `${checked} Selected`;
+    }
+}
+
+function openScheduleModal(preselectedProgramId = null, preselectedNeedId = null) {
+    currentSchedulingNeedId = preselectedNeedId || currentSchedulingNeedId;
+
+    // 1. Populate Programs Dropdown
     const progSelect = document.getElementById('sched-modal-program-select');
     if (progSelect) {
         progSelect.innerHTML = trainingProgramsState.map(p => `
             <option value="${p.id}" ${p.id === preselectedProgramId ? 'selected' : ''}>${p.title} (${p.category})</option>
         `).join('');
     }
+
+    // 2. Populate Dynamic Participant Roster (Derived from Active Need Gaps & Staff)
+    const rosterContainer = document.getElementById('sched-modal-roster-container');
+    if (rosterContainer) {
+        // Collect candidate associates from Need Gaps
+        const candidateMap = new Map();
+
+        // Add from active training needs
+        trainingNeedsState.forEach(raw => {
+            const n = normalizeTrainingNeed(raw);
+            const key = n.associateName;
+            if (!candidateMap.has(key)) {
+                candidateMap.set(key, {
+                    associateId: n.employeeId || (n.associateName.includes('Maria') ? 'emp-101' : (n.associateName.includes('Carlos') ? 'emp-102' : (n.associateName.includes('David') ? 'emp-106' : 'emp-104'))),
+                    name: n.associateName,
+                    role: n.associateRole,
+                    dept: n.dept,
+                    avatar: n.associateAvatar,
+                    isNeedTrigger: true,
+                    needTitle: n.title,
+                    gap: n.gap,
+                    needId: n.id,
+                    isChecked: (preselectedNeedId && n.id === preselectedNeedId) || (preselectedProgramId && n.linkedProgramId === preselectedProgramId)
+                });
+            }
+        });
+
+        // Add standard team peers if not already in map
+        const defaultPeers = [
+            { associateId: 'emp-101', name: 'Maria Santos', role: 'Front Desk Host', dept: 'Front Office', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80' },
+            { associateId: 'emp-102', name: 'Carlos Gomez', role: 'Concierge Lead', dept: 'Front Office', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80' },
+            { associateId: 'emp-103', name: 'Angela Reyes', role: 'Guest Relations Officer', dept: 'Front Office', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80' },
+            { associateId: 'emp-104', name: 'Chef Marco S.', role: 'Line Cook Lead', dept: 'Culinary', avatar: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=150&auto=format&fit=crop&q=80' },
+            { associateId: 'emp-106', name: 'David Lee', role: 'F&B Server Lead', dept: 'F&B Service', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80' }
+        ];
+
+        defaultPeers.forEach(peer => {
+            if (!candidateMap.has(peer.name)) {
+                candidateMap.set(peer.name, {
+                    ...peer,
+                    isNeedTrigger: false,
+                    isChecked: false
+                });
+            }
+        });
+
+        // If nothing is checked yet, check the first candidate
+        const candidates = Array.from(candidateMap.values());
+        if (!candidates.some(c => c.isChecked) && candidates.length > 0) {
+            candidates[0].isChecked = true;
+        }
+
+        rosterContainer.innerHTML = candidates.map(c => `
+            <label class="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#E8DEDC] hover:bg-slate-50 cursor-pointer transition">
+                <div class="flex items-center space-x-2.5">
+                    <input type="checkbox" class="sched-roster-checkbox rounded text-primary focus:ring-primary h-4 w-4" 
+                        value="${c.associateId}" 
+                        data-name="${c.name}" 
+                        data-role="${c.role}" 
+                        data-dept="${c.dept}" 
+                        data-avatar="${c.avatar}" 
+                        ${c.isChecked ? 'checked' : ''} 
+                        onchange="updateScheduleModalRosterCount()">
+                    <img src="${c.avatar}" alt="${c.name}" class="w-7 h-7 rounded-full object-cover border border-[#E8DEDC]">
+                    <div>
+                        <div class="font-bold text-xs text-slate-900">${c.name}</div>
+                        <div class="text-[10px] text-slate-500">${c.role} · <strong class="text-slate-700">${c.dept}</strong></div>
+                    </div>
+                </div>
+                <div>
+                    ${c.isNeedTrigger ? `
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                            ${c.gap ? c.gap + ' Gap' : 'Active Need'}
+                        </span>
+                    ` : `
+                        <span class="text-[10px] text-slate-400 font-medium">Department Peer</span>
+                    `}
+                </div>
+            </label>
+        `).join('');
+
+        updateScheduleModalRosterCount();
+    }
+
     openModal('modal-schedule-training-session');
 }
 
@@ -1358,10 +1745,43 @@ async function saveScheduledSession() {
 
     const prog = trainingProgramsState.find(p => p.id === progId) || trainingProgramsState[0];
 
+    // Collect dynamically checked participants from the modal checkboxes
+    const checkedBoxes = Array.from(document.querySelectorAll('.sched-roster-checkbox:checked'));
+    const selectedRoster = checkedBoxes.map(cb => ({
+        associateId: cb.value,
+        name: cb.dataset.name,
+        role: cb.dataset.role,
+        dept: cb.dataset.dept,
+        avatar: cb.dataset.avatar,
+        attendanceStatus: 'Attended',
+        attendanceRate: 100,
+        checkInTime: '13:50',
+        evaluationStatus: 'Pending',
+        score: null,
+        resultId: null
+    }));
+
+    // Fallback if none checked
+    if (selectedRoster.length === 0) {
+        selectedRoster.push({
+            associateId: 'emp-101',
+            name: 'Maria Santos',
+            role: 'Front Desk Host',
+            dept: 'Front Office',
+            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+            attendanceStatus: 'Attended',
+            attendanceRate: 100,
+            checkInTime: '13:50',
+            evaluationStatus: 'Pending',
+            score: null,
+            resultId: null
+        });
+    }
+
     const newSession = {
         id: `sess-${Date.now()}`,
         programId: prog.id,
-        title: `${prog.title} - Cohort B`,
+        title: `${prog.title} - Cohort ${String.fromCharCode(65 + (trainingSessionsState.length % 26))}`,
         dept: prog.dept,
         trainerName: trainerName,
         trainerTitle: 'Assigned Senior Trainer',
@@ -1370,49 +1790,41 @@ async function saveScheduledSession() {
         date: date,
         time: time,
         status: 'Scheduled',
-        roster: [
-            {
-                associateId: 'emp-101',
-                name: 'Maria Santos',
-                role: 'Front Desk Host',
-                dept: 'Front Office',
-                avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-                attendanceStatus: 'Attended',
-                attendanceRate: 100,
-                checkInTime: '13:50',
-                evaluationStatus: 'Pending',
-                score: null,
-                resultId: null
-            },
-            {
-                associateId: 'emp-102',
-                name: 'Carlos Gomez',
-                role: 'Concierge Lead',
-                dept: 'Front Office',
-                avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-                attendanceStatus: 'Attended',
-                attendanceRate: 100,
-                checkInTime: '13:55',
-                evaluationStatus: 'Pending',
-                score: null,
-                resultId: null
-            }
-        ]
+        roster: selectedRoster
     };
 
-    trainingSessionsState.unshift(newSession);
+    trainingSessionsState.unshift(normalizeTrainingSession(newSession));
     closeModal('modal-schedule-training-session');
-    
+
     renderTrainingSessions();
     renderAttendanceConsole();
     renderBasicTrainingReport();
     updateTrainingStats();
-    showToast(`Training session "${newSession.title}" scheduled!`, 'success');
+    showToast(`Training session "${newSession.title}" scheduled with ${selectedRoster.length} participants!`, 'success');
     switchTrainingStage('schedules');
 
-    // Async persist to backend
+    // Async persist to Supabase backend
     try {
-        await TrainingAPI.scheduleSession(newSession);
+        const res = await TrainingAPI.scheduleSession(newSession);
+        if (res && res.data) {
+            const savedSess = normalizeTrainingSession(res.data);
+            const idx = trainingSessionsState.findIndex(s => s.id === newSession.id || s.id === savedSess.id);
+            if (idx !== -1) {
+                trainingSessionsState[idx] = savedSess;
+                renderTrainingSessions();
+                renderAttendanceConsole();
+            }
+        }
+
+        // If scheduled from a specific Need, update that need's status to Scheduled
+        if (currentSchedulingNeedId) {
+            const need = trainingNeedsState.find(n => n.id === currentSchedulingNeedId);
+            if (need) {
+                need.status = 'Scheduled';
+                renderTrainingNeeds();
+            }
+            currentSchedulingNeedId = null;
+        }
     } catch (err) {
         console.warn('Could not persist session to backend:', err);
     }
@@ -1467,7 +1879,7 @@ async function saveNewTrainingProgram() {
 
     trainingProgramsState.unshift(newProg);
     closeModal('modal-create-training-program');
-    
+
     renderTrainingPrograms();
     renderBasicTrainingReport();
     updateTrainingStats();
