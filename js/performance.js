@@ -496,14 +496,50 @@ function renderEmployeePulseGoals(goals) {
         }
     });
 
+    const totalGoalCount = empGoals.length;
+    const completedOrApprovedCount = empGoals.filter(g => {
+        const st = (g.status || '').toLowerCase();
+        return st === 'approved' || st === 'completed' || st === 'passed';
+    }).length;
+
     if (countBadge) {
-        countBadge.textContent = `${empGoals.length} Objective${empGoals.length === 1 ? '' : 's'}`;
+        countBadge.textContent = `${totalGoalCount}/2 Objectives`;
     }
 
     const kpiGoalsRatio = document.getElementById('kpi-goals-ratio');
     if (kpiGoalsRatio) {
-        const approvedCount = empGoals.filter(g => g.status === 'Approved').length;
-        kpiGoalsRatio.textContent = `${approvedCount} of ${empGoals.length || 1} Done`;
+        kpiGoalsRatio.textContent = `${completedOrApprovedCount} of ${totalGoalCount} Passed (${totalGoalCount}/2 Set)`;
+    }
+
+    // Fetch prescribed LMS list if not cached yet
+    if ((!window.dynamicLmsState || !window.dynamicLmsState.prescribed) && !window._fetchingPulsePrescribed) {
+        window._fetchingPulsePrescribed = true;
+        fetch(`api/lms.php?action=get_prescribed&employee=${encodeURIComponent(currentUserId)}`)
+            .then(res => res.json())
+            .then(json => {
+                if (json.success && Array.isArray(json.data)) {
+                    if (!window.dynamicLmsState) window.dynamicLmsState = {};
+                    window.dynamicLmsState.prescribed = json.data;
+                    renderEmployeePulseGoals(empGoals);
+                }
+            })
+            .catch(e => console.error('Error fetching prescribed LMS for goals:', e))
+            .finally(() => window._fetchingPulsePrescribed = false);
+    }
+
+    // Fetch evaluations list if not cached yet
+    if ((!window.dbEvaluations || window.dbEvaluations.length === 0) && !window._fetchingPulseEvals) {
+        window._fetchingPulseEvals = true;
+        fetch('api/performance.php?action=get_performance_data')
+            .then(res => res.json())
+            .then(json => {
+                if (json.success && json.data && json.data.evaluations) {
+                    window.dbEvaluations = json.data.evaluations;
+                    renderEmployeePulseGoals(empGoals);
+                }
+            })
+            .catch(e => console.error('Error fetching evaluations for pulse goals:', e))
+            .finally(() => window._fetchingPulseEvals = false);
     }
 
     // Check Pending Goals Limit (Max 2 Pending allowed for Employee)
@@ -530,7 +566,7 @@ function renderEmployeePulseGoals(goals) {
                     <i class="fas fa-bullseye"></i>
                 </div>
                 <h4 class="font-bold text-slate-800 text-xs">No Performance Objectives Set Yet</h4>
-                <p class="text-[11px] text-slate-500 max-w-sm mx-auto">Draft your shift targets for Q3. Once submitted, your supervisor will review and calibrate them.</p>
+                <p class="text-[11px] text-slate-500 max-w-sm mx-auto">Draft your shift targets for Q3. Once submitted, your supervisor will review and calibrate them. (Max Capacity: 2 Objectives)</p>
                 <button onclick="openModal('modal-create-goal')" ${isBlockedFromSettingGoal ? 'disabled' : ''} class="btn-primary px-3 py-1.5 text-xs font-bold inline-flex items-center space-x-1.5 shadow-2xs ${isBlockedFromSettingGoal ? 'opacity-50 cursor-not-allowed' : ''}">
                     <i class="fas fa-plus text-[10px]"></i>
                     <span>Set First Goal</span>
@@ -540,9 +576,108 @@ function renderEmployeePulseGoals(goals) {
         return;
     }
 
-    container.innerHTML = empGoals.map(g => {
-        const isApproved = g.status === 'Approved';
+    const evalRec = (window.dbEvaluations || []).find(ev => {
+        const evEmpId = (ev.employee_id || '').toLowerCase().trim();
+        return evEmpId === currentUserId ||
+            (currentUserId === 'emp-101' && (evEmpId === 'emp-1' || evEmpId.includes('101') || evEmpId.includes('maria'))) ||
+            (currentUserId === 'emp-102' && (evEmpId === 'emp-2' || evEmpId.includes('102') || evEmpId.includes('antonio') || evEmpId.includes('marco')));
+    });
+
+
+    container.innerHTML = empGoals.map((g, idx) => {
+        const statusLower = (g.status || '').toLowerCase();
+        const isFailed = statusLower.includes('fail') || statusLower.includes('retake') || statusLower.includes('remediat') || statusLower.includes('disapprov') || statusLower.includes('not met');
+        const isApproved = statusLower === 'approved' || statusLower === 'completed' || statusLower === 'passed';
         const isRevised = !!g.supervisor_notes || (g.updated_at && g.created_at && g.updated_at !== g.created_at);
+
+        let statusBadgeHtml = '';
+        if (isFailed) {
+            statusBadgeHtml = `
+                <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-200 flex items-center space-x-1">
+                    <i class="fas fa-circle-xmark text-rose-600"></i>
+                    <span>${g.status || 'Failed / Needs Remediation'}</span>
+                </span>
+            `;
+        } else if (isApproved) {
+            statusBadgeHtml = `
+                <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center space-x-1">
+                    <i class="fas fa-check-circle text-emerald-600"></i>
+                    <span>${g.status || 'Approved'}</span>
+                </span>
+            `;
+        } else {
+            statusBadgeHtml = `
+                <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200 flex items-center space-x-1">
+                    <i class="fas fa-clock text-amber-600"></i>
+                    <span>${g.status || 'Pending Approval'}</span>
+                </span>
+            `;
+        }
+
+        // Check for prescribed LMS document linked to this goal or employee
+        const prescribedList = (window.dynamicLmsState && window.dynamicLmsState.prescribed) || window.dbPrescribedLms || [];
+        const matchedLms = prescribedList.find(p => {
+            if (p.goal_id && String(p.goal_id) === String(g.id)) return true;
+            if (g.lms_id && String(p.lms_id) === String(g.lms_id)) return true;
+            return false;
+        });
+
+        const lmsTitle = matchedLms ? (matchedLms.document_title || matchedLms.title) : (g.lms_title || g.lms_doc_title || g.prescribed_lms);
+        const lmsDocId = matchedLms ? (matchedLms.lms_id || matchedLms.id) : (g.lms_id || '');
+
+        let lmsBannerHtml = '';
+        if (lmsTitle) {
+            const lmsStatus = matchedLms ? (matchedLms.status || 'Enrolled') : 'Enrolled';
+            const isLmsFailed = lmsStatus.toLowerCase().includes('fail') || lmsStatus.toLowerCase().includes('retake');
+            const isLmsPassed = lmsStatus.toLowerCase().includes('pass') || lmsStatus.toLowerCase().includes('complet');
+
+            lmsBannerHtml = `
+                <div class="p-2.5 bg-blue-50/80 rounded-xl border border-blue-200/90 flex items-center justify-between text-[11px] gap-2 shadow-2xs mt-1">
+                    <div class="flex items-center space-x-2 truncate">
+                        <div class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0 text-xs font-bold shadow-2xs">
+                            <i class="fas fa-book-bookmark"></i>
+                        </div>
+                        <div class="truncate">
+                            <div class="flex items-center space-x-1.5">
+                                <span class="text-[9px] font-extrabold text-blue-700 uppercase tracking-wider">Prescribed LMS Handbook</span>
+                                ${isLmsPassed ? '<span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">Passed</span>' : (isLmsFailed ? '<span class="text-[9px] font-bold text-rose-700 bg-rose-100 px-1.5 py-0.2 rounded">Failed / Needs Retake</span>' : '<span class="text-[9px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded">' + lmsStatus + '</span>')}
+                            </div>
+                            <span class="font-bold text-slate-900 truncate block text-xs mt-0.5">${lmsTitle}</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="switchPillar('pillar-training'); if(typeof openBookReader === 'function') openBookReader('${lmsDocId}');"
+                        class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-[10px] flex-shrink-0 shadow-2xs transition flex items-center space-x-1">
+                        <i class="fas fa-book-open text-[9px]"></i>
+                        <span>Read SOP</span>
+                    </button>
+                </div>
+            `;
+        }
+
+        let evalBannerHtml = '';
+        if (evalRec) {
+            const tierLabel = evalRec.tier_label || 'Appraised';
+            const evalStatus = evalRec.status || 'Calibrated';
+            const evalScore = parseFloat(evalRec.calibrated_score || evalRec.supervisor_rating || 0);
+            const evalScoreStr = evalScore > 0 ? `⭐ ${evalScore.toFixed(2)} / 5.0` : 'Pending Rating';
+            
+            evalBannerHtml = `
+                <div class="p-2.5 bg-emerald-50/60 rounded-xl border border-emerald-200/80 flex items-center justify-between text-[11px] gap-2 shadow-2xs mt-1">
+                    <div class="flex items-center space-x-2 truncate">
+                        <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 text-xs font-bold shadow-2xs">
+                            <i class="fas fa-award"></i>
+                        </div>
+                        <div class="truncate">
+                            <div class="flex items-center space-x-1.5">
+                                <span class="text-[9px] font-extrabold text-emerald-800 uppercase tracking-wider">Formal Evaluation &amp; Tier</span>
+                                <span class="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-200">${evalStatus}</span>
+                            </div>
+                            <span class="font-bold text-slate-900 truncate block text-xs mt-0.5">${tierLabel} <span class="text-emerald-700 font-mono text-[10px]">(${evalScoreStr})</span></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         const tasks = g.tasks || [];
         const generalTasks = tasks.filter(t => t.task_type === 'general');
@@ -556,19 +691,23 @@ function renderEmployeePulseGoals(goals) {
                 <div class="space-y-2">
                     <div class="flex items-center justify-between gap-2 flex-wrap">
                         <div class="flex items-center space-x-1.5">
-                            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${isApproved ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'} flex items-center space-x-1">
-                                <i class="fas ${isApproved ? 'fa-check-circle text-emerald-600' : 'fa-clock text-amber-600'}"></i>
-                                <span>${g.status || 'Pending Approval'}</span>
-                            </span>
+                            ${statusBadgeHtml}
                             ${isRevised ? `<span class="px-1.5 py-0.5 rounded-full text-[8px] font-bold bg-purple-100 text-purple-800 border border-purple-200 inline-flex items-center space-x-0.5"><i class="fas fa-pen-to-square text-[7px]"></i><span>Revised</span></span>` : ''}
                         </div>
-                        <span class="text-[10px] text-slate-400 font-mono">Target: ${g.target_date || 'Q3 2026'}</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[9px] font-mono font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full shadow-2xs">${idx + 1}/2</span>
+                            <span class="text-[10px] text-slate-400 font-mono">Target: ${g.target_date || 'Q3 2026'}</span>
+                        </div>
                     </div>
 
                     <div>
                         <h4 class="font-bold text-slate-900 text-xs leading-snug">${g.title}</h4>
                         <p class="text-[10px] text-slate-500">${g.department || 'Front Office'}</p>
                     </div>
+
+                    ${evalBannerHtml}
+                    ${lmsBannerHtml}
+
 
                     <!-- Dynamic Goal Progress based on Task Checklists -->
                     <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/70 space-y-1">
@@ -580,9 +719,10 @@ function renderEmployeePulseGoals(goals) {
                             <span class="font-mono text-primary">${progressPct}% (${completedTasksCount}/${totalTasksCount || 1} Done)</span>
                         </div>
                         <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                            <div class="${progressPct >= 100 ? 'bg-emerald-500' : 'bg-primary'} h-1.5 rounded-full transition-all duration-500" style="width: ${progressPct}%"></div>
+                            <div class="${progressPct >= 100 ? 'bg-emerald-500' : (isFailed ? 'bg-rose-500' : 'bg-primary')} h-1.5 rounded-full transition-all duration-500" style="width: ${progressPct}%"></div>
                         </div>
                     </div>
+
 
                     <!-- Action Checklists Section -->
                     <div class="space-y-2 pt-1">

@@ -12,7 +12,15 @@
         "supporting_evidence": "Task Checklist Verified",
         "supervisor_notes": null,
         "created_at": "2026-08-27T15:33:39+00:00",
-        "updated_at": "2026-08-27T15:33:39+00:00"
+        "updated_at": "2026-08-27T15:33:39+00:00",
+        "goalId": 33,
+        "employeeId": "emp-101",
+        "milestoneTitle": "Task Completed: dasds",
+        "actualMetric": "Goal Progress: 100%",
+        "supportingEvidence": "Task Checklist Verified",
+        "supervisorNotes": null,
+        "createdAt": "2026-08-27T15:33:39+00:00",
+        "updatedAt": "2026-08-27T15:33:39+00:00"
     },
     {
         "id": "mon-cb9df274",
@@ -27,7 +35,15 @@
         "supporting_evidence": "Task Checklist Verified",
         "supervisor_notes": null,
         "created_at": "2026-08-27T17:11:06+00:00",
-        "updated_at": "2026-08-27T17:11:06+00:00"
+        "updated_at": "2026-08-27T17:11:06+00:00",
+        "goalId": 34,
+        "employeeId": "emp-102",
+        "milestoneTitle": "Task Completed: dasds",
+        "actualMetric": "Goal Progress: 100%",
+        "supportingEvidence": "Task Checklist Verified",
+        "supervisorNotes": null,
+        "createdAt": "2026-08-27T17:11:06+00:00",
+        "updatedAt": "2026-08-27T17:11:06+00:00"
     },
     {
         "id": "mon-711f3de5",
@@ -42,7 +58,15 @@
         "supporting_evidence": null,
         "supervisor_notes": null,
         "created_at": "2026-08-27T17:11:56+00:00",
-        "updated_at": "2026-08-27T17:11:56+00:00"
+        "updated_at": "2026-08-27T17:11:56+00:00",
+        "goalId": 34,
+        "employeeId": "emp-102",
+        "milestoneTitle": "wala",
+        "actualMetric": "121",
+        "supportingEvidence": null,
+        "supervisorNotes": null,
+        "createdAt": "2026-08-27T17:11:56+00:00",
+        "updatedAt": "2026-08-27T17:11:56+00:00"
     },
     {
         "id": "mon-c96e3ad6",
@@ -57,6 +81,29 @@
         "supporting_evidence": "Task Checklist Verified",
         "supervisor_notes": null,
         "created_at": "2026-08-27T17:42:19+00:00",
-        "updated_at": "2026-08-27T17:42:19+00:00"
+        "updated_at": "2026-08-27T17:42:19+00:00",
+        "goalId": 35,
+        "employeeId": "emp-101",
+        "milestoneTitle": "Task Completed: dasds",
+        "actualMetric": "Goal Progress: 100%",
+        "supportingEvidence": "Task Checklist Verified",
+        "supervisorNotes": null,
+        "createdAt": "2026-08-27T17:42:19+00:00",
+        "updatedAt": "2026-08-27T17:42:19+00:00"
+    },
+    {
+        "id": "mon-75a0d0c5",
+        "goal_id": 35,
+        "employee_id": "emp-101",
+        "milestone_title": "s",
+        "actual_metric": "s",
+        "progress": 0,
+        "accomplishments": "go",
+        "challenges": "sd",
+        "feedback": "sds",
+        "supporting_evidence": null,
+        "supervisor_notes": "sds",
+        "created_at": "2026-08-28T20:05:39+00:00",
+        "updated_at": "2026-08-28T20:05:39+00:00"
     }
 ]

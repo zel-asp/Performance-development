@@ -10,7 +10,14 @@
         "is_read": false,
         "created_at": "2026-08-27T15:33:07+00:00",
         "updated_at": "2026-08-27T15:33:07+00:00",
-        "goal_id": 33
+        "goal_id": 33,
+        "recipientRole": "Associate",
+        "userId": "emp-101",
+        "relatedId": "33",
+        "isRead": false,
+        "createdAt": "2026-08-27T15:33:07+00:00",
+        "updatedAt": "2026-08-27T15:33:07+00:00",
+        "goalId": 33
     },
     {
         "id": "notif-ce3d9c17",
@@ -23,7 +30,14 @@
         "is_read": false,
         "created_at": "2026-08-27T15:33:40+00:00",
         "updated_at": "2026-08-27T15:33:40+00:00",
-        "goal_id": 33
+        "goal_id": 33,
+        "recipientRole": "Supervisor",
+        "userId": "emp-102",
+        "relatedId": "task-gen-fd39cadd",
+        "isRead": false,
+        "createdAt": "2026-08-27T15:33:40+00:00",
+        "updatedAt": "2026-08-27T15:33:40+00:00",
+        "goalId": 33
     },
     {
         "id": "notif-8f4df4e8",
@@ -32,7 +46,10 @@
         "title": "Performance Appraisal Endorsed",
         "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 2.2 / 5.0 (Developing (Needs PIP)).",
         "is_read": false,
-        "created_at": "2026-08-27T15:34:24+00:00"
+        "created_at": "2026-08-27T15:34:24+00:00",
+        "userId": "emp-101",
+        "isRead": false,
+        "createdAt": "2026-08-27T15:34:24+00:00"
     },
     {
         "id": "notif-36135d15",
@@ -41,7 +58,10 @@
         "title": "Performance Appraisal Endorsed",
         "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 2.6 / 5.0 (Developing (Needs PIP)).",
         "is_read": false,
-        "created_at": "2026-08-27T15:35:07+00:00"
+        "created_at": "2026-08-27T15:35:07+00:00",
+        "userId": "emp-101",
+        "isRead": false,
+        "createdAt": "2026-08-27T15:35:07+00:00"
     },
     {
         "id": "notif-df39c38f",
@@ -50,7 +70,10 @@
         "title": "Performance Appraisal Endorsed",
         "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 3.2 / 5.0 (Proficient).",
         "is_read": false,
-        "created_at": "2026-08-27T15:35:35+00:00"
+        "created_at": "2026-08-27T15:35:35+00:00",
+        "userId": "emp-101",
+        "isRead": false,
+        "createdAt": "2026-08-27T15:35:35+00:00"
     },
     {
         "id": "notif-cec9a852",
@@ -59,7 +82,10 @@
         "title": "Performance Appraisal Endorsed",
         "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 3.7 / 5.0 (Advanced Tier).",
         "is_read": false,
-        "created_at": "2026-08-27T15:38:19+00:00"
+        "created_at": "2026-08-27T15:38:19+00:00",
+        "userId": "emp-101",
+        "isRead": false,
+        "createdAt": "2026-08-27T15:38:19+00:00"
     },
     {
         "id": "notif-b985ce8f",
@@ -68,7 +94,10 @@
         "title": "Performance Appraisal Endorsed",
         "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 1.5 / 5.0 (Developing (Needs PIP)).",
         "is_read": false,
-        "created_at": "2026-08-27T15:38:46+00:00"
+        "created_at": "2026-08-27T15:38:46+00:00",
+        "userId": "emp-101",
+        "isRead": false,
+        "createdAt": "2026-08-27T15:38:46+00:00"
     },
     {
         "id": "notif-a8ecfe8f",
@@ -77,7 +106,10 @@
         "title": "Performance Appraisal Endorsed",
         "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 4 / 5.0 (Advanced Tier).",
         "is_read": false,
-        "created_at": "2026-08-27T15:44:43+00:00"
+        "created_at": "2026-08-27T15:44:43+00:00",
+        "userId": "emp-101",
+        "isRead": false,
+        "createdAt": "2026-08-27T15:44:43+00:00"
     },
     {
         "id": "notif-b66e4adc",
@@ -86,7 +118,10 @@
         "title": "Performance Appraisal Endorsed",
         "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 2.1 / 5.0 (Developing (Needs PIP)).",
         "is_read": false,
-        "created_at": "2026-08-27T15:48:33+00:00"
+        "created_at": "2026-08-27T15:48:33+00:00",
+        "userId": "emp-101",
+        "isRead": false,
+        "createdAt": "2026-08-27T15:48:33+00:00"
     },
     {
         "id": "notif-c26596c5",
@@ -99,7 +134,14 @@
         "is_read": false,
         "created_at": "2026-08-27T16:33:29+00:00",
         "updated_at": "2026-08-27T16:33:29+00:00",
-        "goal_id": 33
+        "goal_id": 33,
+        "recipientRole": "Associate",
+        "userId": "emp-101",
+        "relatedId": "task-spec-b8af3226",
+        "isRead": false,
+        "createdAt": "2026-08-27T16:33:29+00:00",
+        "updatedAt": "2026-08-27T16:33:29+00:00",
+        "goalId": 33
     },
     {
         "id": "notif-69ec06ee",
@@ -108,7 +150,10 @@
         "title": "Performance Appraisal Endorsed",
         "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 2.7 / 5.0 (Developing (Needs PIP)).",
         "is_read": false,
-        "created_at": "2026-08-27T16:44:39+00:00"
+        "created_at": "2026-08-27T16:44:39+00:00",
+        "userId": "emp-101",
+        "isRead": false,
+        "createdAt": "2026-08-27T16:44:39+00:00"
     },
     {
         "id": "notif-e4c64579",
@@ -121,7 +166,14 @@
         "is_read": false,
         "created_at": "2026-08-27T17:03:47+00:00",
         "updated_at": "2026-08-27T17:03:47+00:00",
-        "goal_id": 34
+        "goal_id": 34,
+        "recipientRole": "Associate",
+        "userId": "emp-101",
+        "relatedId": "34",
+        "isRead": false,
+        "createdAt": "2026-08-27T17:03:47+00:00",
+        "updatedAt": "2026-08-27T17:03:47+00:00",
+        "goalId": 34
     },
     {
         "id": "notif-37db4d20",
@@ -134,7 +186,14 @@
         "is_read": false,
         "created_at": "2026-08-27T17:03:58+00:00",
         "updated_at": "2026-08-27T17:03:58+00:00",
-        "goal_id": 35
+        "goal_id": 35,
+        "recipientRole": "Supervisor",
+        "userId": "emp-102",
+        "relatedId": "35",
+        "isRead": false,
+        "createdAt": "2026-08-27T17:03:58+00:00",
+        "updatedAt": "2026-08-27T17:03:58+00:00",
+        "goalId": 35
     },
     {
         "id": "notif-0c368717",
@@ -147,7 +206,14 @@
         "is_read": false,
         "created_at": "2026-08-27T17:10:46+00:00",
         "updated_at": "2026-08-27T17:10:46+00:00",
-        "goal_id": 35
+        "goal_id": 35,
+        "recipientRole": "Associate",
+        "userId": "emp-101",
+        "relatedId": "35",
+        "isRead": false,
+        "createdAt": "2026-08-27T17:10:46+00:00",
+        "updatedAt": "2026-08-27T17:10:46+00:00",
+        "goalId": 35
     },
     {
         "id": "notif-f083d706",
@@ -160,7 +226,14 @@
         "is_read": false,
         "created_at": "2026-08-27T17:10:47+00:00",
         "updated_at": "2026-08-27T17:10:47+00:00",
-        "goal_id": 34
+        "goal_id": 34,
+        "recipientRole": "Supervisor",
+        "userId": "emp-102",
+        "relatedId": "34",
+        "isRead": false,
+        "createdAt": "2026-08-27T17:10:47+00:00",
+        "updatedAt": "2026-08-27T17:10:47+00:00",
+        "goalId": 34
     },
     {
         "id": "notif-f8f09e0b",
@@ -173,7 +246,14 @@
         "is_read": false,
         "created_at": "2026-08-27T17:11:06+00:00",
         "updated_at": "2026-08-27T17:11:06+00:00",
-        "goal_id": 34
+        "goal_id": 34,
+        "recipientRole": "Supervisor",
+        "userId": "emp-102",
+        "relatedId": "task-gen-2bc81064",
+        "isRead": false,
+        "createdAt": "2026-08-27T17:11:06+00:00",
+        "updatedAt": "2026-08-27T17:11:06+00:00",
+        "goalId": 34
     },
     {
         "id": "notif-63c4bf30",
@@ -186,7 +266,14 @@
         "is_read": false,
         "created_at": "2026-08-27T17:11:56+00:00",
         "updated_at": "2026-08-27T17:11:56+00:00",
-        "goal_id": 34
+        "goal_id": 34,
+        "recipientRole": "Associate",
+        "userId": "emp-102",
+        "relatedId": "34",
+        "isRead": false,
+        "createdAt": "2026-08-27T17:11:56+00:00",
+        "updatedAt": "2026-08-27T17:11:56+00:00",
+        "goalId": 34
     },
     {
         "id": "notif-772e495d",
@@ -195,7 +282,10 @@
         "title": "Performance Appraisal Endorsed",
         "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 3 / 5.0 (Proficient).",
         "is_read": false,
-        "created_at": "2026-08-27T17:15:38+00:00"
+        "created_at": "2026-08-27T17:15:38+00:00",
+        "userId": "emp-102",
+        "isRead": false,
+        "createdAt": "2026-08-27T17:15:38+00:00"
     },
     {
         "id": "notif-8825ff6c",
@@ -204,7 +294,10 @@
         "title": "Performance Appraisal Endorsed",
         "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 3.5 / 5.0 (Advanced Tier).",
         "is_read": false,
-        "created_at": "2026-08-27T17:35:45+00:00"
+        "created_at": "2026-08-27T17:35:45+00:00",
+        "userId": "emp-102",
+        "isRead": false,
+        "createdAt": "2026-08-27T17:35:45+00:00"
     },
     {
         "id": "notif-8d2c7310",
@@ -217,7 +310,14 @@
         "is_read": false,
         "created_at": "2026-08-27T17:41:49+00:00",
         "updated_at": "2026-08-27T17:41:49+00:00",
-        "goal_id": 34
+        "goal_id": 34,
+        "recipientRole": "Supervisor",
+        "userId": "emp-102",
+        "relatedId": "34",
+        "isRead": false,
+        "createdAt": "2026-08-27T17:41:49+00:00",
+        "updatedAt": "2026-08-27T17:41:49+00:00",
+        "goalId": 34
     },
     {
         "id": "notif-99d52d9f",
@@ -230,7 +330,14 @@
         "is_read": false,
         "created_at": "2026-08-27T17:42:19+00:00",
         "updated_at": "2026-08-27T17:42:19+00:00",
-        "goal_id": 35
+        "goal_id": 35,
+        "recipientRole": "Supervisor",
+        "userId": "emp-102",
+        "relatedId": "task-gen-92a6409a",
+        "isRead": false,
+        "createdAt": "2026-08-27T17:42:19+00:00",
+        "updatedAt": "2026-08-27T17:42:19+00:00",
+        "goalId": 35
     },
     {
         "id": "notif-dfc5d5ae",
@@ -239,6 +346,50 @@
         "title": "Performance Appraisal Endorsed",
         "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 2.4 / 5.0 (Developing (Needs PIP)).",
         "is_read": false,
-        "created_at": "2026-08-27T17:43:16+00:00"
+        "created_at": "2026-08-27T17:43:16+00:00",
+        "userId": "emp-101",
+        "isRead": false,
+        "createdAt": "2026-08-27T17:43:16+00:00"
+    },
+    {
+        "id": "notif-ecfb7397",
+        "recipient_role": "Associate",
+        "user_id": "emp-101",
+        "type": "milestone_logged",
+        "title": "Shift Milestone Logged \ud83c\udfaf",
+        "message": "Milestone \"s\" recorded with metric \"s\" (0% Target Progress).",
+        "related_id": "35",
+        "is_read": false,
+        "created_at": "2026-08-28T20:05:39+00:00",
+        "updated_at": "2026-08-28T20:05:39+00:00",
+        "goal_id": 35,
+        "recipientRole": "Associate",
+        "userId": "emp-101",
+        "relatedId": "35",
+        "isRead": false,
+        "createdAt": "2026-08-28T20:05:39+00:00",
+        "updatedAt": "2026-08-28T20:05:39+00:00",
+        "goalId": 35
+    },
+    {
+        "id": "notif-878848dd",
+        "user_id": "emp-102",
+        "type": "performance",
+        "title": "Performance Appraisal Endorsed",
+        "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 2.7 / 5.0 (Developing (Needs PIP)).",
+        "is_read": false,
+        "created_at": "2026-08-28T20:07:32+00:00",
+        "userId": "emp-102",
+        "isRead": false,
+        "createdAt": "2026-08-28T20:07:32+00:00"
+    },
+    {
+        "id": "notif-b2b25770",
+        "user_id": "emp-102",
+        "type": "performance",
+        "title": "Performance Appraisal Endorsed",
+        "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 3.2 / 5.0 (Proficient).",
+        "is_read": false,
+        "created_at": "2026-08-28T20:07:46+00:00"
     }
 ]

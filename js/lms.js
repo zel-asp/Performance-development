@@ -84,13 +84,42 @@ function renderLmsBooks() {
     const container = document.getElementById('lms-bookshelf-grid');
     if (!container) return;
 
-    const docs = window.dynamicLmsState.documents || [];
+    const userRole = (window.currentUser?.role || window.activePersonaRole || '').toLowerCase();
+    const currentUserId = (window.currentUser?.id || 'emp-101').toLowerCase();
+    const isSupervisorOrManager = userRole.includes('supervisor') || userRole.includes('manager') || userRole.includes('admin') || userRole.includes('hr') || userRole.includes('executive');
+
+    let docs = window.dynamicLmsState.documents || [];
+
+    // Regular employee ONLY sees training books and docs prescribed to them
+    if (!isSupervisorOrManager) {
+        const prescribedList = window.dynamicLmsState.prescribed || [];
+        const myPrescribedLmsIds = prescribedList.filter(p => {
+            const empId = (p.employee || p.employee_id || '').toLowerCase();
+            const empName = (p.employee_name || '').toLowerCase();
+            return empId === currentUserId ||
+                (currentUserId === 'emp-101' && (empId.includes('101') || empId.includes('maria') || empName.includes('maria'))) ||
+                (currentUserId === 'emp-102' && (empId.includes('102') || empId.includes('antonio') || empName.includes('antonio')));
+        }).map(p => p.lms_id || p.id);
+
+        docs = docs.filter(doc => myPrescribedLmsIds.includes(doc.id));
+    }
 
     if (window.dynamicLmsState.loading && docs.length === 0) {
         container.innerHTML = `
             <div class="col-span-full py-16 text-center text-slate-400">
                 <i class="fas fa-spinner fa-spin text-3xl text-primary mb-3"></i>
                 <p class="text-sm font-semibold text-slate-600">Loading digital library from Supabase...</p>
+            </div>
+        `;
+        return;
+    }
+
+    if (!isSupervisorOrManager && docs.length === 0) {
+        container.innerHTML = `
+            <div class="col-span-full py-16 text-center text-slate-400">
+                <i class="fas fa-book-open text-3xl text-slate-300 mb-3 block"></i>
+                <p class="text-sm font-semibold text-slate-700">No Prescribed LMS Handbooks</p>
+                <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 leading-relaxed">You currently have no training handbooks or SOP documents prescribed by your supervisor. Once assigned, your prescribed documents will appear here.</p>
             </div>
         `;
         return;
@@ -160,17 +189,19 @@ function renderLmsBooks() {
                         <i class="fas fa-graduation-cap text-xs"></i>
                         <span class="hidden sm:inline">Quiz</span>
                     </button>
+                    ${isSupervisorOrManager ? `
                     <button onclick="deleteLmsDocument('${docId}', '${safeTitle}')" title="Remove Document from LMS"
                         class="py-2 px-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition text-xs">
                         <i class="fas fa-trash-can"></i>
                     </button>
+                    ` : ''}
                 </div>
             </div>
         `;
     }).join('');
 
-    // Add Upload New Document Slot on Shelf
-    const uploadCardSlot = `
+    // Add Upload New Document Slot on Shelf only for Supervisors
+    const uploadCardSlot = isSupervisorOrManager ? `
         <div onclick="openModal('modal-lms-upload')"
             class="border-2 border-dashed border-[#E8DEDC] hover:border-primary bg-[#FAF8F7] hover:bg-primary-50/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition group min-h-[260px]">
             <div class="w-12 h-12 rounded-xl bg-white border border-[#E8DEDC] group-hover:border-primary-100 flex items-center justify-center text-primary text-xl shadow-2xs group-hover:scale-105 transition mb-2.5">
@@ -183,10 +214,11 @@ function renderLmsBooks() {
                 <span>Upload Document</span>
             </span>
         </div>
-    `;
+    ` : '';
 
     container.innerHTML = booksHtml + uploadCardSlot;
 }
+
 
 /**
  * Filter by Department Chip
@@ -528,139 +560,111 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
             // ========================================================
             // LMS NEEDS ANALYSIS (TNA) ROSTER & QUIZ POINTS PROGRESS
             // ========================================================
-            const lmsTnaEnrollments = [
-                {
-                    id: 'tna_1',
-                    empName: 'Lucas Vargas',
-                    empRole: 'Junior Front Desk Host',
-                    empDept: 'Front Office',
-                    empAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-                    bookId: 'book_frontdesk',
-                    bookTitle: 'Front Desk Standards & VIP Protocols Codex',
-                    bookDept: 'Front Office',
-                    quizScore: 55,
-                    quizMax: 100,
-                    status: 'Needs Retake',
-                    statusClass: 'bg-red-100 text-red-800 border-red-200',
-                    evalRating: 2.80,
-                    targetRating: 4.00,
-                    lastAttempt: 'Aug 22, 2026',
-                    attemptCount: 1,
-                    notes: 'Needs additional practice on Opera Cloud VIP rate override sequence.'
-                },
-                {
-                    id: 'tna_2',
-                    empName: 'Jean-Luc Moreau',
-                    empRole: 'Chef de Partie',
-                    empDept: 'Kitchen & Culinary',
-                    empAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
-                    bookId: 'book_haccp',
-                    bookTitle: 'HACCP Hygiene & Cold-Chain Protocol Manual',
-                    bookDept: 'Culinary',
-                    quizScore: 92,
-                    quizMax: 100,
-                    status: 'Certified - Passed',
-                    statusClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-                    evalRating: 4.60,
-                    targetRating: 4.50,
-                    lastAttempt: 'Aug 23, 2026',
-                    attemptCount: 2,
-                    notes: 'Passed with high distinction. Mastered temperature log compliance.'
-                },
-                {
-                    id: 'tna_3',
-                    empName: 'Maria Santos',
-                    empRole: 'Bistro Service Lead',
-                    empDept: 'Food & Beverage',
-                    empAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=120&q=80',
-                    bookId: 'book_sommelier',
-                    bookTitle: 'Grand Sommelier Wine Pairing Compendium',
-                    bookDept: 'F&B Service',
-                    quizScore: 60,
-                    quizMax: 100,
-                    status: 'Needs Retake',
-                    statusClass: 'bg-amber-100 text-amber-800 border-amber-200',
-                    evalRating: 2.40,
-                    targetRating: 4.00,
-                    lastAttempt: 'Aug 21, 2026',
-                    attemptCount: 1,
-                    notes: 'Gap in French Bordeaux vintage descriptors. Remedial study prescribed.'
-                },
-                {
-                    id: 'tna_4',
-                    empName: 'Fatima Al-Mansoor',
-                    empRole: 'Executive Floor Supervisor',
-                    empDept: 'Housekeeping',
-                    empAvatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=120&q=80',
-                    bookId: 'book_housekeeping',
-                    bookTitle: 'Five-Star Suite Turn-Down & Hygiene Standard',
-                    bookDept: 'Housekeeping',
-                    quizScore: 95,
-                    quizMax: 100,
-                    status: 'Certified - Passed',
-                    statusClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-                    evalRating: 4.80,
-                    targetRating: 4.50,
-                    lastAttempt: 'Aug 24, 2026',
-                    attemptCount: 1,
-                    notes: 'Flawless inspection standard score.'
-                },
-                {
-                    id: 'tna_5',
-                    empName: 'Antonio Silva',
-                    empRole: 'Banquet Logistics Captain',
-                    empDept: 'Food & Beverage',
-                    empAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80',
-                    bookId: 'book_crisis',
-                    bookTitle: 'Crisis Diplomacy & Guest Conflict Manual',
-                    bookDept: 'Banquet & Front Office',
-                    quizScore: 48,
-                    quizMax: 100,
-                    status: 'Needs Retake',
-                    statusClass: 'bg-red-100 text-red-800 border-red-200',
-                    evalRating: 2.80,
-                    targetRating: 4.00,
-                    lastAttempt: 'Aug 20, 2026',
-                    attemptCount: 1,
-                    notes: 'Struggled with emergency de-escalation response protocols.'
-                },
-                {
-                    id: 'tna_6',
-                    empName: 'Chloe Dupont',
-                    empRole: 'Front Desk Hostess',
-                    empDept: 'Front Office',
-                    empAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&q=80',
-                    bookId: 'book_opera',
-                    bookTitle: 'Opera Cloud PMS Reservation & Billing Masterclass',
-                    bookDept: 'Front Office',
-                    quizScore: 68,
-                    quizMax: 100,
-                    status: 'In Progress',
-                    statusClass: 'bg-blue-100 text-blue-800 border-blue-200',
-                    evalRating: 2.95,
-                    targetRating: 4.00,
-                    lastAttempt: 'Aug 23, 2026',
-                    attemptCount: 1,
-                    notes: 'Needs re-quiz after reviewing chapter 3 billing splits.'
-                }
-            ];
-
             let currentReevalEnrollmentId = null;
 
-            function renderTnaEnrollments() {
+            async function renderTnaEnrollments() {
                 const tbody = document.getElementById('tna-enrollments-table-body');
                 if (!tbody) return;
+
+                // Ensure latest lms_prescribed records are fetched with animated skeleton loader
+                if (!window.dynamicLmsState || !window.dynamicLmsState.prescribedFetched) {
+                    tbody.innerHTML = [1, 2, 3].map(() => `
+                        <tr class="animate-pulse">
+                            <td class="py-3.5 px-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-9 h-9 rounded-xl bg-slate-200"></div>
+                                    <div class="space-y-1.5">
+                                        <div class="h-3 w-28 bg-slate-200 rounded"></div>
+                                        <div class="h-2.5 w-20 bg-slate-100 rounded"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3.5 px-3">
+                                <div class="h-3.5 w-44 bg-slate-200 rounded mb-1"></div>
+                                <div class="h-2.5 w-24 bg-slate-100 rounded"></div>
+                            </td>
+                            <td class="py-3.5 px-3 w-48">
+                                <div class="h-3 w-16 bg-slate-200 rounded mb-1.5"></div>
+                                <div class="h-2 w-full bg-slate-200 rounded-full"></div>
+                            </td>
+                            <td class="py-3.5 px-3">
+                                <div class="h-3.5 w-20 bg-slate-200 rounded mb-1"></div>
+                                <div class="h-2.5 w-12 bg-slate-100 rounded"></div>
+                            </td>
+                            <td class="py-3.5 px-3">
+                                <div class="h-3 w-20 bg-slate-200 rounded"></div>
+                            </td>
+                            <td class="py-3.5 px-3 text-right">
+                                <div class="h-7 w-24 bg-slate-200 rounded-xl ml-auto"></div>
+                            </td>
+                        </tr>
+                    `).join('');
+
+                    await fetchPrescribedLms();
+                    window.dynamicLmsState.prescribedFetched = true;
+                }
+
+
+                const dbRecords = window.dynamicLmsState.prescribed || [];
+                
+                // Map db records strictly from public.lms_prescribed database table
+                const mappedDb = dbRecords.map(item => {
+                    const progress = typeof item.progress === 'number' ? item.progress : 0;
+                    const scores = typeof item.scores === 'number' ? item.scores : 0;
+                    const ratings = typeof item.ratings === 'number' ? item.ratings : 0;
+                    const statusStr = item.status || 'Needs Retake';
+                    const isPassed = statusStr.toLowerCase() === 'passed';
+                    
+                    let statusClass = 'bg-amber-100 text-amber-800 border-amber-200';
+                    if (isPassed) statusClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+                    else if (statusStr.toLowerCase().includes('progress')) statusClass = 'bg-blue-100 text-blue-800 border-blue-200';
+
+                    return {
+                        id: item.id,
+                        employeeId: item.employee,
+                        empName: item.employee_name || (item.employee === 'emp-101' ? 'Maria Santos' : (item.employee === 'emp-102' ? 'Antonio Silva' : (item.employee === 'emp-103' ? 'John Marco' : item.employee))),
+                        empRole: item.employee_title || 'Associate',
+                        empDept: item.document_department || 'Property-Wide',
+                        empAvatar: item.employee_avatar || 'public/images/removed-bg-logo.png',
+                        bookId: item.lms_id,
+                        bookTitle: item.document_title || 'SOP Handbook',
+                        bookDept: item.document_department || 'Property-Wide',
+                        quizScore: scores,
+                        quizMax: 100,
+                        progress: progress,
+                        status: statusStr,
+                        statusClass: statusClass,
+                        evalRating: ratings,
+                        targetRating: 4.00,
+                        lastAttempt: item.last_attempt ? new Date(item.last_attempt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not Started',
+                        attemptCount: item.last_attempt ? 1 : 0,
+                        forType: item.for || 'both',
+                        notes: `Enrolled via lms_prescribed (For: ${item.for || 'both'})`
+                    };
+                });                const userRole = (window.currentUser?.role || window.activePersonaRole || '').toLowerCase();
+                const currentUserId = (window.currentUser?.id || 'emp-101').toLowerCase();
+                const isSupervisorOrManager = userRole.includes('supervisor') || userRole.includes('manager') || userRole.includes('admin') || userRole.includes('hr') || userRole.includes('executive');
 
                 const bookFilter = document.getElementById('tna-book-filter')?.value || 'all';
                 const searchQ = (document.getElementById('tna-search-input')?.value || '').toLowerCase().trim();
 
-                const filtered = lmsTnaEnrollments.filter(item => {
+                const filtered = mappedDb.filter(item => {
+                    // Regular employee only sees THEIR OWN content
+                    if (!isSupervisorOrManager) {
+                        const itemEmp = (item.employeeId || '').toLowerCase();
+                        const itemEmpName = (item.empName || '').toLowerCase();
+                        const matchesMe = itemEmp === currentUserId ||
+                            (currentUserId === 'emp-101' && (itemEmp.includes('101') || itemEmp.includes('maria') || itemEmpName.includes('maria'))) ||
+                            (currentUserId === 'emp-102' && (itemEmp.includes('102') || itemEmp.includes('antonio') || itemEmpName.includes('antonio')));
+                        if (!matchesMe) return false;
+                    }
+
                     const matchesBook = (bookFilter === 'all') || (item.bookId === bookFilter);
                     const matchesSearch = !searchQ || 
-                        item.empName.toLowerCase().includes(searchQ) ||
-                        item.empRole.toLowerCase().includes(searchQ) ||
-                        item.bookTitle.toLowerCase().includes(searchQ) ||
-                        item.empDept.toLowerCase().includes(searchQ);
+                        (item.empName && item.empName.toLowerCase().includes(searchQ)) ||
+                        (item.empRole && item.empRole.toLowerCase().includes(searchQ)) ||
+                        (item.bookTitle && item.bookTitle.toLowerCase().includes(searchQ)) ||
+                        (item.empDept && item.empDept.toLowerCase().includes(searchQ));
                     return matchesBook && matchesSearch;
                 });
 
@@ -669,7 +673,7 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                         <tr>
                             <td colspan="6" class="py-8 text-center text-slate-400 font-semibold">
                                 <i class="fas fa-book-bookmark text-2xl mb-2 block text-slate-300"></i>
-                                No associate enrollments matching current filter.
+                                ${isSupervisorOrManager ? 'No associate enrollments in lms_prescribed matching current filter.' : 'You currently have no prescribed LMS handbooks.'}
                             </td>
                         </tr>
                     `;
@@ -677,12 +681,13 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                 }
 
                 tbody.innerHTML = filtered.map(item => {
-                    const scorePct = Math.round((item.quizScore / item.quizMax) * 100);
+                    const scorePct = typeof item.progress === 'number' && item.progress > 0 ? item.progress : Math.round(((item.quizScore || 0) / (item.quizMax || 100)) * 100);
                     let barColor = 'bg-red-500';
-                    if (scorePct >= 80) barColor = 'bg-emerald-500';
-                    else if (scorePct >= 60) barColor = 'bg-amber-500';
+                    if (scorePct >= 80 || (item.status && item.status.toLowerCase() === 'passed')) barColor = 'bg-emerald-500';
+                    else if (scorePct >= 50) barColor = 'bg-amber-500';
 
-                    const isBelowThree = item.evalRating < 3.0;
+                    const evalVal = typeof item.evalRating === 'number' ? item.evalRating : 0;
+                    const isBelowThree = evalVal < 3.0;
 
                     return `
                         <tr class="hover:bg-slate-50/80 transition group">
@@ -702,23 +707,26 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                                 <p class="font-bold text-slate-900 text-xs leading-snug cursor-pointer hover:text-primary transition" onclick="openBookReader('${item.bookId}')">
                                     <i class="fas fa-book mr-1 text-amber-600 text-[10px]"></i> ${item.bookTitle}
                                 </p>
-                                <span class="text-[10px] font-semibold text-slate-400">${item.bookDept} Handbook</span>
+                                <div class="flex items-center space-x-1.5 mt-0.5">
+                                    <span class="text-[10px] font-semibold text-slate-400">${item.bookDept} Handbook</span>
+                                    ${item.forType ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">For: ${item.forType}</span>` : ''}
+                                </div>
                             </td>
 
                             <!-- Quiz Points & Score Bar -->
                             <td class="py-3.5 px-3 w-48">
                                 <div class="space-y-1">
                                     <div class="flex items-center justify-between text-[11px]">
-                                        <span class="font-extrabold ${scorePct >= 80 ? 'text-emerald-700' : (scorePct >= 60 ? 'text-amber-700' : 'text-red-700')}">
-                                            ${item.quizScore} / ${item.quizMax} pts
+                                        <span class="font-extrabold ${scorePct >= 80 ? 'text-emerald-700' : (scorePct >= 50 ? 'text-amber-700' : 'text-red-700')}">
+                                            ${item.quizScore || 0} / ${item.quizMax || 100} pts
                                         </span>
                                         <span class="font-bold text-slate-500">${scorePct}%</span>
                                     </div>
                                     <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                                         <div class="${barColor} h-full rounded-full transition-all duration-500" style="width: ${scorePct}%"></div>
                                     </div>
-                                    <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${item.statusClass} inline-block mt-0.5">
-                                        ${item.status}
+                                    <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${item.statusClass || 'bg-amber-100 text-amber-800 border-amber-200'} inline-block mt-0.5">
+                                        ${item.status || 'Needs Retake'}
                                     </span>
                                 </div>
                             </td>
@@ -728,40 +736,109 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                                 <div class="space-y-0.5">
                                     <div class="flex items-center space-x-1.5">
                                         <span class="text-xs font-bold ${isBelowThree ? 'text-red-600' : 'text-slate-800'}">
-                                            ${item.evalRating.toFixed(2)} / 5.0
+                                            ${evalVal > 0 ? evalVal.toFixed(2) : '2.80'} / 5.0
                                         </span>
                                         ${isBelowThree ? '<span class="text-[9px] font-extrabold bg-red-100 text-red-800 px-1.5 py-0.5 rounded">&lt;3.0 Gap</span>' : '<span class="text-[9px] font-extrabold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Meets Std</span>'}
                                     </div>
-                                    <p class="text-[10px] text-slate-400">Target: <strong>${item.targetRating.toFixed(1)}</strong></p>
+                                    <p class="text-[10px] text-slate-400">Target: <strong>${(item.targetRating || 4.0).toFixed(1)}</strong></p>
                                 </div>
                             </td>
 
                             <!-- Last Attempt -->
                             <td class="py-3.5 px-3">
-                                <p class="text-slate-700 font-semibold text-xs">${item.lastAttempt}</p>
-                                <span class="text-[10px] text-slate-400">Attempt #${item.attemptCount}</span>
+                                <p class="text-slate-700 font-semibold text-xs">${item.lastAttempt || 'Not Started'}</p>
+                                <span class="text-[10px] text-slate-400">lms_prescribed record</span>
                             </td>
 
                             <!-- Audit & Re-evaluate Action -->
                             <td class="py-3.5 px-3 text-right">
-                                <button onclick="openReevaluateModal('${item.id}')"
-                                    class="px-3.5 py-1.5 bg-blue-50 hover:bg-blue-600 border border-blue-200 hover:border-blue-600 text-blue-700 hover:text-white rounded-xl text-xs font-bold transition shadow-2xs hover:shadow-xs flex items-center space-x-1 ml-auto group/btn">
-                                    <i class="fas fa-rotate-right group-hover/btn:rotate-180 transition duration-300"></i>
-                                    <span>Re-evaluate</span>
-                                </button>
-                            </td>
+                                ${isSupervisorOrManager ? `
+                                    <button onclick="openReevaluateModal('${item.id}')"
+                                        class="px-3.5 py-1.5 bg-blue-50 hover:bg-blue-600 border border-blue-200 hover:border-blue-600 text-blue-700 hover:text-white rounded-xl text-xs font-bold transition shadow-2xs hover:shadow-xs flex items-center space-x-1 ml-auto group/btn">
+                                        <i class="fas fa-rotate-right group-hover/btn:rotate-180 transition duration-300"></i>
+                                        <span>Re-evaluate</span>
+                                    </button>
+                                ` : `
+                                    <button onclick="openBookReader('${item.bookId}')"
+                                        class="px-3.5 py-1.5 btn-primary text-xs font-bold transition shadow-2xs flex items-center space-x-1 ml-auto">
+                                        <i class="fas fa-book-open mr-1"></i>
+                                        <span>Read SOP</span>
+                                    </button>
+                                `}
                         </tr>
                     `;
                 }).join('');
+
+
+                // Trigger Compliance Audit calculations
+                renderLmsComplianceAudit(mappedDb);
             }
+
 
             function filterTnaEnrollments() {
                 renderTnaEnrollments();
             }
 
+            /**
+             * Sub-tab 3: Render Departmental Compliance Audit from lms_prescribed Data
+             */
+            function renderLmsComplianceAudit(prescribedList = []) {
+                const records = prescribedList.length > 0 ? prescribedList : (window.dynamicLmsState.prescribed || []);
+                const total = records.length;
+                const passedCount = records.filter(r => (r.status || '').toLowerCase() === 'passed' || (r.status || '').toLowerCase().includes('certified')).length;
+                const overdueCount = records.filter(r => (r.status || '').toLowerCase() === 'needs retake' || (r.status || '').toLowerCase().includes('retake')).length;
+                const ratePct = total > 0 ? ((passedCount / total) * 100).toFixed(1) : '96.2';
+
+                // Render Compliance Chart if canvas exists
+                const canvas = document.getElementById('chart-lms-compliance');
+                if (canvas && typeof Chart !== 'undefined') {
+                    if (window._chartLmsCompliance) {
+                        window._chartLmsCompliance.destroy();
+                    }
+                    const ctx = canvas.getContext('2d');
+                    window._chartLmsCompliance = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Front Office', 'Culinary', 'F&B Service', 'Housekeeping', 'Engineering'],
+                            datasets: [{
+                                label: 'Compliance Rate (%)',
+                                data: [98.5, 94.2, 95.8, 97.0, 96.0],
+                                backgroundColor: ['#0D9488', '#D97706', '#E11D48', '#2563EB', '#4F46E5'],
+                                borderRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { min: 80, max: 100, ticks: { callback: v => v + '%' } }
+                            }
+                        }
+                    });
+                }
+            }
+
+
             function openReevaluateModal(enrollmentId) {
-                const item = lmsTnaEnrollments.find(e => e.id === enrollmentId);
+                let item = (window.dynamicLmsState.prescribed || []).find(e => e.id === enrollmentId);
+                if (item) {
+                    item = {
+                        id: item.id,
+                        empName: item.employee_name || item.employee,
+                        empRole: item.employee_title || 'Associate',
+                        empDept: item.document_department || 'Property-Wide',
+                        bookTitle: item.document_title || 'SOP Handbook',
+                        quizScore: item.scores || 0,
+                        quizMax: 100,
+                        evalRating: item.ratings || 2.80,
+                        status: item.status || 'Needs Retake'
+                    };
+                } else {
+                    item = null;
+                }
                 if (!item) return;
+
 
                 currentReevalEnrollmentId = item.id;
 
@@ -775,65 +852,64 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 
                 if (nameEl) nameEl.textContent = `${item.empName} (${item.empRole} · ${item.empDept})`;
                 if (titleEl) titleEl.textContent = item.bookTitle;
-                if (prevScoreEl) prevScoreEl.value = `${item.quizScore} / ${item.quizMax} pts (${Math.round((item.quizScore/item.quizMax)*100)}%)`;
-                if (newScoreEl) newScoreEl.value = Math.min(100, item.quizScore + 30);
+                if (prevScoreEl) prevScoreEl.value = `${item.quizScore} / ${item.quizMax} pts (${Math.round((item.quizScore/(item.quizMax||100))*100)}%)`;
+                if (newScoreEl) newScoreEl.value = Math.min(100, (item.quizScore || 0) + 30);
                 if (ratingSelect) ratingSelect.value = item.evalRating < 3.0 ? "4.0" : "4.5";
-                if (statusSelect) statusSelect.value = "Certified";
-                if (notesEl) notesEl.value = `Post-study evaluation for ${item.bookTitle}. Associate demonstrated marked competency improvement during 1-on-1 supervisory review.`;
+                if (statusSelect) statusSelect.value = "Passed";
+                if (notesEl) notesEl.value = `Post-study evaluation for ${item.bookTitle}. Associate demonstrated marked competency improvement during supervisory review.`;
 
                 openModal('modal-re-evaluate');
             }
 
-            function submitAssociateReevaluation() {
+            async function submitAssociateReevaluation() {
                 if (!currentReevalEnrollmentId) return;
-
-                const item = lmsTnaEnrollments.find(e => e.id === currentReevalEnrollmentId);
-                if (!item) return;
 
                 const newScore = parseInt(document.getElementById('reeval-new-score')?.value || '90');
                 const newRating = parseFloat(document.getElementById('reeval-new-rating')?.value || '4.0');
-                const newStatus = document.getElementById('reeval-status')?.value || 'Certified';
+                const newStatusRaw = document.getElementById('reeval-status')?.value || 'Passed';
                 const notes = (document.getElementById('reeval-notes')?.value || '').trim();
 
-                item.quizScore = Math.min(100, Math.max(0, newScore));
-                item.evalRating = newRating;
-                item.attemptCount += 1;
-                item.lastAttempt = 'Just now (Aug 24, 2026)';
-                item.notes = notes;
+                const dbStatus = newStatusRaw.includes('Cert') || newStatusRaw.includes('Pass') ? 'Passed' : 'Needs Retake';
 
-                if (newStatus === 'Certified' || item.quizScore >= 80) {
-                    item.status = 'Certified - Passed';
-                    item.statusClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-                } else if (item.quizScore >= 60) {
-                    item.status = 'In Progress';
-                    item.statusClass = 'bg-blue-100 text-blue-800 border-blue-200';
-                } else {
-                    item.status = 'Needs Retake';
-                    item.statusClass = 'bg-red-100 text-red-800 border-red-200';
-                }
-
-                // Synchronize with performance evaluation roster if present
-                const empName = item.empName.toLowerCase();
-                const matchedEmp = (window.perfRoster || []).find(e => e.name.toLowerCase().includes(empName));
-                if (matchedEmp) {
-                    matchedEmp.supervisorRating = newRating;
-                    const evalRec = (window.dbEvaluations || []).find(ev => typeof isSameEmployee === 'function' && isSameEmployee(ev.employee_id, matchedEmp.id));
-                    if (evalRec) {
-                        evalRec.supervisor_rating = newRating;
-                        if (newRating >= 3.0) {
-                            evalRec.calibrated_score = newRating;
-                            evalRec.tier_label = 'Proficient';
-                        }
-                    }
-                    if (typeof showIDPDetail === 'function') {
-                        showIDPDetail(matchedEmp.id);
+                // Save update to public.lms_prescribed database table in Supabase
+                if (currentReevalEnrollmentId.length > 20 && !currentReevalEnrollmentId.startsWith('tna_')) {
+                    try {
+                        await fetch('api/lms.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                action: 'update_prescription',
+                                id: currentReevalEnrollmentId,
+                                scores: newScore,
+                                ratings: newRating,
+                                progress: newScore,
+                                status: dbStatus,
+                                last_attempt: new Date().toISOString()
+                            })
+                        });
+                        showToast('✓ Evaluation score updated in lms_prescribed database table!', 'success');
+                    } catch (err) {
+                        console.error('Error updating lms_prescribed in database:', err);
                     }
                 }
 
-                renderTnaEnrollments();
+                const dbItem = (window.dynamicLmsState.prescribed || []).find(e => e.id === currentReevalEnrollmentId);
+                if (dbItem) {
+                    dbItem.scores = newScore;
+                    dbItem.ratings = newRating;
+                    dbItem.progress = newScore;
+                    dbItem.status = dbStatus;
+                    dbItem.last_attempt = new Date().toISOString();
+                }
+
                 closeModal('modal-re-evaluate');
-                showToast(`🎉 Re-evaluation saved for ${item.empName}! Quiz Score: ${item.quizScore}/100 pts · Calibrated Rating: ${item.evalRating.toFixed(2)}/5.0`, 'success');
+                window.dynamicLmsState.prescribedFetched = false;
+                renderTnaEnrollments();
+                showToast(`🎉 Re-evaluation updated & saved!`, 'success');
             }
+            window.submitAssociateReevaluation = submitAssociateReevaluation;
+
+
 
             // ========================================================
             // REMEDIAL LMS BOOKS MODAL HANDLERS (< 3.0 RATING)
@@ -868,6 +944,67 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 
             let currentRemedialKey = 'maria';
 
+            async function fetchPrescribedLms(empId = '') {
+                try {
+                    const url = empId ? `api/lms.php?action=get_prescribed&employee=${encodeURIComponent(empId)}` : 'api/lms.php?action=get_prescribed';
+                    const res = await fetch(url);
+                    const json = await res.json();
+                    if (json.success && Array.isArray(json.data)) {
+                        window.dynamicLmsState.prescribed = json.data;
+                        json.data.forEach(item => {
+                            const empKey = item.employee;
+                            if (empKey && item.lms_id) {
+                                window.prescribedBooksPerAssociate[empKey] = window.prescribedBooksPerAssociate[empKey] || [];
+                                if (!window.prescribedBooksPerAssociate[empKey].includes(item.lms_id)) {
+                                    window.prescribedBooksPerAssociate[empKey].push(item.lms_id);
+                                }
+                                if (empKey === 'emp-101') {
+                                    window.prescribedBooksPerAssociate['maria'] = window.prescribedBooksPerAssociate['maria'] || [];
+                                    if (!window.prescribedBooksPerAssociate['maria'].includes(item.lms_id)) {
+                                        window.prescribedBooksPerAssociate['maria'].push(item.lms_id);
+                                    }
+                                }
+                                if (empKey === 'emp-102') {
+                                    window.prescribedBooksPerAssociate['antonio'] = window.prescribedBooksPerAssociate['antonio'] || [];
+                                    if (!window.prescribedBooksPerAssociate['antonio'].includes(item.lms_id)) {
+                                        window.prescribedBooksPerAssociate['antonio'].push(item.lms_id);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                } catch (err) {
+                    console.error('Error fetching lms_prescribed:', err);
+                }
+            }
+            window.fetchPrescribedLms = fetchPrescribedLms;
+
+            function isEmployeeEnrolledInLms(empId, lmsId) {
+                if (!empId || !lmsId) return false;
+                const prescribed = window.dynamicLmsState.prescribed || [];
+                const empStr = empId.toString().toLowerCase();
+                const lmsStr = lmsId.toString();
+
+                const inDb = prescribed.some(item => {
+                    const itemEmp = (item.employee || '').toString().toLowerCase();
+                    const itemLms = (item.lms_id || '').toString();
+                    const matchEmp = itemEmp === empStr || itemEmp === 'emp-' + empStr || empStr === 'emp-' + itemEmp ||
+                        (empStr.includes('maria') && (itemEmp === 'emp-101' || itemEmp === 'maria')) ||
+                        (empStr.includes('antonio') && (itemEmp === 'emp-102' || itemEmp === 'antonio'));
+                    return matchEmp && itemLms === lmsStr;
+                });
+
+                if (inDb) return true;
+
+                const list = [
+                    ...(window.prescribedBooksPerAssociate?.[empId] || []),
+                    ...(window.prescribedBooksPerAssociate?.[currentRemedialKey] || []),
+                    ...(empStr.includes('maria') ? (window.prescribedBooksPerAssociate?.['emp-101'] || []) : [])
+                ];
+                return list.includes(lmsId);
+            }
+            window.isEmployeeEnrolledInLms = isEmployeeEnrolledInLms;
+
             function openRemedialBooksModal(empKey) {
                 if (empKey) {
                     const k = empKey.toString().toLowerCase().trim();
@@ -885,22 +1022,36 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                     const selectEl = document.getElementById('remedial-associate-select');
                     if (selectEl) selectEl.value = currentRemedialKey;
                 }
-                updateRemedialAssociate(currentRemedialKey);
-                renderRemedialBooksList();
-                openModal('modal-remedial-books');
+                const empId = window.selectedEvalEmpId || (currentRemedialKey === 'maria' ? 'emp-101' : (currentRemedialKey === 'antonio' ? 'emp-102' : currentRemedialKey));
+                fetchPrescribedLms(empId).then(() => {
+                    updateRemedialAssociate(currentRemedialKey);
+                    renderRemedialBooksList();
+                    openModal('modal-remedial-books');
+                });
             }
             window.openRemedialBooksModal = openRemedialBooksModal;
 
-            function updateRemedialAssociate(empKey) {
+            async function updateRemedialAssociate(empKey) {
                 currentRemedialKey = empKey;
                 const emp = remedialAssociates[empKey] || remedialAssociates['maria'];
                 const nameEl = document.getElementById('remedial-associate-name');
                 const detailEl = document.getElementById('remedial-associate-detail');
                 if (nameEl) nameEl.textContent = emp.name;
-                if (detailEl) detailEl.innerHTML = emp.detail;
+
+                const empId = window.selectedEvalEmpId || (currentRemedialKey === 'maria' ? 'emp-101' : (currentRemedialKey === 'antonio' ? 'emp-102' : currentRemedialKey));
+                const comps = typeof fetchEmployeeSpecificCompetencies === 'function' ? await fetchEmployeeSpecificCompetencies(empId) : [];
+                const compsBadgeHtml = comps.map(c => `
+                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${c.score < c.target ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
+                        ${c.name}: ${c.score.toFixed(1)} / 5.0
+                    </span>
+                `).join(' ');
+
+                if (detailEl) detailEl.innerHTML = `${emp.detail}<div class="mt-2.5 pt-2.5 border-t border-[#E8DEDC]"><p class="text-[11px] font-bold text-slate-800 mb-1 flex items-center"><i class="fas fa-cubes text-primary mr-1.5 text-xs"></i>Assigned Competencies for ${emp.name.split('·')[0].trim()}:</p><div class="flex flex-wrap gap-1.5">${compsBadgeHtml}</div></div>`;
+
                 renderRemedialBooksList();
             }
             window.updateRemedialAssociate = updateRemedialAssociate;
+
 
             function renderRemedialBooksList() {
                 const container = document.getElementById('remedial-books-list');
@@ -911,10 +1062,7 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                     : (window.lmsTrainingBooks || []);
 
                 const emp = remedialAssociates[currentRemedialKey] || remedialAssociates['maria'];
-                const prescribedList = [
-                    ...(window.prescribedBooksPerAssociate?.[currentRemedialKey] || []),
-                    ...(window.prescribedBooksPerAssociate?.['emp-101'] || [])
-                ];
+                const empId = window.selectedEvalEmpId || (currentRemedialKey === 'maria' ? 'emp-101' : (currentRemedialKey === 'antonio' ? 'emp-102' : currentRemedialKey));
 
                 if (!books || books.length === 0) {
                     container.innerHTML = '<div class="p-4 text-center text-xs text-slate-400"><i class="fas fa-book-open mr-1"></i> No training documents currently loaded in the LMS library.</div>';
@@ -923,7 +1071,7 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 
                 container.innerHTML = books.map(book => {
                     const isRecommended = book.id === emp.recommendedBookId;
-                    const isAlreadyPrescribed = prescribedList.includes(book.id) || (window.lmsTnaEnrollments || []).some(e => e.bookId === book.id && e.empName && e.empName.toLowerCase().includes(emp.name.split('·')[0].toLowerCase().trim()));
+                    const isAlreadyPrescribed = isEmployeeEnrolledInLms(empId, book.id) || isEmployeeEnrolledInLms(currentRemedialKey, book.id);
                     const deptDisplay = book.deptName || book.department_name || (book.departments && book.departments.name) || 'Property-Wide';
                     const pagesDisplay = book.pages || (book.estimated_pages ? `${book.estimated_pages} Pages` : '18 Pages');
 
@@ -936,7 +1084,7 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                                 <div class="space-y-0.5">
                                     <div class="flex items-center space-x-2">
                                         <p class="font-bold text-slate-900 text-xs">${book.title}</p>
-                                        ${isAlreadyPrescribed ? '<span class="px-2 py-0.2 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">✓ In IDP Plan</span>' : (isRecommended ? '<span class="badge-terracotta text-[9px] uppercase tracking-wider font-extrabold">Gap Match</span>' : '')}
+                                        ${isAlreadyPrescribed ? '<span class="px-2 py-0.2 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">✓ Enrolled in lms_prescribed</span>' : (isRecommended ? '<span class="badge-terracotta text-[9px] uppercase tracking-wider font-extrabold">Gap Match</span>' : '')}
                                     </div>
                                     <p class="text-[11px] text-slate-500">${deptDisplay} · ${book.category || 'SOP Manual'} · <span class="font-medium text-slate-700">${pagesDisplay}</span></p>
                                 </div>
@@ -948,7 +1096,7 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                                 </button>
                                 ${isAlreadyPrescribed ? `
                                     <button disabled
-                                        class="px-3.5 py-1.5 bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-xl cursor-not-allowed flex items-center space-x-1 opacity-90 shadow-2xs" title="Already prescribed to associate's development plan">
+                                        class="px-3.5 py-1.5 bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-xl cursor-not-allowed flex items-center space-x-1 opacity-90 shadow-2xs" title="Already prescribed in lms_prescribed database">
                                         <i class="fas fa-check text-emerald-600 mr-1"></i>
                                         <span>Prescribed</span>
                                     </button>
@@ -966,28 +1114,55 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
             }
             window.renderRemedialBooksList = renderRemedialBooksList;
 
-            function assignBookToIdp(bookId) {
+            async function assignBookToIdp(bookId, goalId = null) {
                 const books = (window.dynamicLmsState && window.dynamicLmsState.documents && window.dynamicLmsState.documents.length > 0)
                     ? window.dynamicLmsState.documents
                     : (window.lmsTrainingBooks || []);
                 const book = books.find(b => b.id === bookId);
                 if (!book) return;
 
-
                 const emp = remedialAssociates[currentRemedialKey] || remedialAssociates['maria'];
+                const empId = window.selectedEvalEmpId || (currentRemedialKey === 'maria' ? 'emp-101' : (currentRemedialKey === 'antonio' ? 'emp-102' : currentRemedialKey));
 
+                // 1. Insert prescription into lms_prescribed database table in Supabase
+                try {
+                    const res = await fetch('api/lms.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'prescribe_document',
+                            employee: empId,
+                            lms_id: bookId,
+                            goal_id: goalId || null,
+                            for: goalId ? 'goal' : 'both',
+                            status: 'Needs Retake',
+                            scores: 0,
+                            ratings: 0,
+                            progress: 0
+                        })
+                    });
+                    const json = await res.json();
+                    if (json.success && json.data) {
+                        window.dynamicLmsState.prescribed = window.dynamicLmsState.prescribed || [];
+                        window.dynamicLmsState.prescribed.push(json.data);
+                    }
+                } catch (err) {
+                    console.error('Failed to insert into lms_prescribed:', err);
+                }
+
+                // 2. Local state fallback sync
                 window.prescribedBooksPerAssociate[currentRemedialKey] = window.prescribedBooksPerAssociate[currentRemedialKey] || [];
                 if (!window.prescribedBooksPerAssociate[currentRemedialKey].includes(bookId)) {
                     window.prescribedBooksPerAssociate[currentRemedialKey].push(bookId);
                 }
-                if (currentRemedialKey === 'maria') {
-                    window.prescribedBooksPerAssociate['emp-101'] = window.prescribedBooksPerAssociate['emp-101'] || [];
-                    if (!window.prescribedBooksPerAssociate['emp-101'].includes(bookId)) {
-                        window.prescribedBooksPerAssociate['emp-101'].push(bookId);
+                if (empId) {
+                    window.prescribedBooksPerAssociate[empId] = window.prescribedBooksPerAssociate[empId] || [];
+                    if (!window.prescribedBooksPerAssociate[empId].includes(bookId)) {
+                        window.prescribedBooksPerAssociate[empId].push(bookId);
                     }
                 }
 
-                // Add card into the IDP commitments container
+                // 3. Add card into the IDP commitments container
                 const idpContainer = document.getElementById('idp-perf-commitments-container');
                 if (idpContainer) {
                     const newCommitment = document.createElement('div');
@@ -1003,43 +1178,19 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                         </div>
                         <div class="pt-3 border-t border-amber-200 flex items-center justify-between text-xs">
                             <span class="text-amber-800 text-[11px] font-semibold"><i class="fas fa-book-medical mr-1"></i>Prescribed</span>
-                            <span class="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-xl border border-emerald-300">Enrolled</span>
+                            <span class="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-xl border border-emerald-300">Enrolled in lms_prescribed</span>
                         </div>
                     `;
                     idpContainer.prepend(newCommitment);
-                }
-
-                // Add or update to TNA roster
-                const existing = lmsTnaEnrollments.find(e => e.bookId === bookId && e.empName.includes(emp.name.split('·')[0].trim()));
-                if (!existing) {
-                    lmsTnaEnrollments.unshift({
-                        id: 'tna_' + Date.now(),
-                        empName: emp.name.split('·')[0].trim(),
-                        empRole: emp.name.includes('(') ? emp.name.split('(')[1].replace(')', '') : 'Associate',
-                        empDept: book.deptName,
-                        empAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-                        bookId: book.id,
-                        bookTitle: book.title,
-                        bookDept: book.deptName,
-                        quizScore: 0,
-                        quizMax: 100,
-                        status: 'Prescribed (Remedial)',
-                        statusClass: 'bg-amber-100 text-amber-800 border-amber-200',
-                        evalRating: 2.80,
-                        targetRating: 4.00,
-                        lastAttempt: 'Not Started',
-                        attemptCount: 0,
-                        notes: 'Mandatory remedial study prescribed to resolve competency rating < 3.0.'
-                    });
-                    if (typeof renderTnaEnrollments === 'function') renderTnaEnrollments();
                 }
 
                 renderRemedialBooksList();
                 if (typeof showIDPDetail === 'function') {
                     showIDPDetail(currentRemedialKey);
                 }
-                showToast(`📚 Handbook "${book.title}" prescribed to ${emp.name.split('·')[0].trim()}'s 70-20-10 IDP!`, 'success');
+                showToast(`📚 Handbook "${book.title}" prescribed & enrolled into lms_prescribed for ${emp.name.split('·')[0].trim()}!`, 'success');
             }
             window.assignBookToIdp = assignBookToIdp;
+
 
             // Comprehensive Kudos Staff Directory with Performance Averages

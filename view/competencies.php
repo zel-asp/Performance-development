@@ -128,15 +128,12 @@
         
         <!-- Back Navigation & Associate Focus Bar -->
         <div class="flex items-center justify-between flex-wrap gap-3 p-4 bg-white rounded-2xl border border-[#E8DEDC] shadow-2xs">
-            <button onclick="switchSubTab('comp', 'profiles')" class="btn-secondary px-3.5 py-2 text-xs font-bold flex items-center space-x-2 shadow-2xs hover:bg-slate-50 transition">
-                <i class="fas fa-arrow-left text-primary"></i>
-                <span>← Back to Competency Matrix</span>
-            </button>
             <div class="flex items-center space-x-2">
                 <span class="text-xs font-semibold text-slate-500">Associate 360° Assessment Focus:</span>
                 <span id="comp-assessment-header-name" class="font-heading font-bold text-xs bg-primary-50 text-primary border border-primary-100 px-3 py-1 rounded-xl">Maria Santos</span>
             </div>
         </div>
+
 
         <!-- MODE A: SINGLE EMPLOYEE DEEP-DIVE VIEW -->
         <div id="comp-single-employee-view" class="space-y-6">
@@ -149,9 +146,14 @@
                         <span class="text-slate-900">Multi-Rater Competency Radar</span>
                         <span class="text-[11px] text-slate-500 font-medium">Target vs Self vs Calibrated</span>
                     </div>
-                    <div class="h-64 sm:h-72 w-full flex items-center justify-center relative">
+                    <div id="radar-chart-canvas-container" class="h-64 sm:h-72 w-full flex items-center justify-center relative">
+                        <div id="radar-skeleton-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-[#FAF8F7]/90 backdrop-blur-xs z-10 rounded-2xl animate-pulse">
+                            <div class="w-16 h-16 rounded-full border-4 border-slate-200 border-t-primary animate-spin mb-2"></div>
+                            <span class="text-[11px] font-bold text-slate-600">Calculating Multi-Rater Geometry...</span>
+                        </div>
                         <canvas id="chart-competency-radar"></canvas>
                     </div>
+
                     <div class="w-full pt-3 border-t border-[#E8DEDC] flex items-center justify-between text-[11px] font-semibold text-slate-600">
                         <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-gold mr-1.5"></span> Benchmark</span>
                         <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-dusty mr-1.5"></span> Self</span>
@@ -177,19 +179,20 @@
                         <!-- Populated dynamically by renderSelectedEmployeeRadarView() -->
                     </div>
 
-                    <div class="p-3.5 bg-primary-50/50 rounded-2xl border border-primary-100 flex items-center justify-between text-xs">
+                    <div id="comp-conduct-eval-box" class="p-3.5 bg-primary-50/50 rounded-2xl border border-primary-100 flex items-center justify-between text-xs">
                         <span class="text-slate-700">Need to record a new calibration?</span>
                         <button onclick="launchDynamicEvaluationModal(activeCompetencyEmpKey)" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1">
                             <i class="fas fa-clipboard-check"></i>
                             <span>+ Conduct Assessment</span>
                         </button>
                     </div>
+
                 </div>
 
             </div>
 
             <!-- 2.2 Training Needs Analysis (TNA) & Skills Gap Diagnostic -->
-            <div class="card-clean p-6 space-y-5">
+            <div id="comp-tna-skills-gap-card" class="card-clean p-6 space-y-5">
                 <div class="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-[#E8DEDC]">
                     <div>
                         <h3 class="font-heading font-bold text-base text-slate-900">Training Needs Analysis (TNA) &amp; Skills Gap Diagnostic</h3>
@@ -201,6 +204,7 @@
                     <!-- Populated dynamically by renderSkillsGapAnalysis() -->
                 </div>
             </div>
+
         </div>
 
         <!-- MODE B: MULTI-EMPLOYEE TEAM ROSTER GRID (DECK VIEW) -->

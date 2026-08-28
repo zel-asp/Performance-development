@@ -458,8 +458,15 @@
                 if (typeof loadAndRenderPlanningGoals === 'function') {
                     loadAndRenderPlanningGoals();
                 }
+                if (typeof renderEmployeeOverviewCompetencies === 'function') {
+                    renderEmployeeOverviewCompetencies(persona.id);
+                }
+                if (typeof renderTnaEnrollments === 'function') {
+                    renderTnaEnrollments();
+                }
                 showToast(`Signed in: ${persona.name} (${persona.tag})`, 'info');
             }
+
 
             function applyRoleVisibility(userRole) {
                 // Read exclusively from the users.role column value
@@ -479,16 +486,77 @@
                     }
                 }
 
+                // Competency Sub-tabs & Controls scoping for Associate
+                const compProfilesBtn = document.getElementById('subtab-btn-comp-profiles');
+                const compAssessBtn = document.getElementById('subtab-btn-comp-assessment');
+                const compDevBtn = document.getElementById('subtab-btn-comp-development');
+                const compBackToMatrixBtn = document.querySelector('button[onclick*="switchSubTab(\'comp\', \'profiles\')"]');
+
+                if (compBackToMatrixBtn) {
+                    if (isAssociate) compBackToMatrixBtn.classList.add('hidden');
+                    else compBackToMatrixBtn.classList.remove('hidden');
+                }
+
+                const compConductEvalBox = document.getElementById('comp-conduct-eval-box');
+                if (compConductEvalBox) {
+                    if (isAssociate) compConductEvalBox.classList.add('hidden');
+                    else compConductEvalBox.classList.remove('hidden');
+                }
+
+                const compTnaGapCard = document.getElementById('comp-tna-skills-gap-card');
+                if (compTnaGapCard) {
+                    if (isAssociate) compTnaGapCard.classList.add('hidden');
+                    else compTnaGapCard.classList.remove('hidden');
+                }
+
+
+                if (isAssociate) {
+                    if (compProfilesBtn) compProfilesBtn.classList.add('hidden');
+                    if (compAssessBtn) {
+                        compAssessBtn.classList.remove('hidden');
+                        compAssessBtn.innerHTML = '<i class="fas fa-chart-radar mr-1.5"></i> My 360° Assessment';
+                    }
+                    if (compDevBtn) {
+                        compDevBtn.classList.remove('hidden');
+                        compDevBtn.innerHTML = '<i class="fas fa-certificate mr-1.5 text-gold"></i> My Certifications';
+                    }
+
+
+                    // Default sub-tab to 360° Assessment for Employee
+                    const activeCompSub = document.querySelector('.subnav-comp.active')?.getAttribute('data-sub');
+                    if (!activeCompSub || activeCompSub === 'profiles') {
+                        if (typeof switchSubTab === 'function') {
+                            switchSubTab('comp', 'assessment');
+                        }
+                    }
+
+                    // Force active competency employee key to logged-in user
+                    if (typeof selectEmployeeForCompetencies === 'function') {
+                        const empId = window.currentUser?.id || 'emp-101';
+                        selectEmployeeForCompetencies(empId);
+                    }
+                } else {
+                    if (compProfilesBtn) compProfilesBtn.classList.remove('hidden');
+                    if (compAssessBtn) {
+                        compAssessBtn.classList.remove('hidden');
+                        compAssessBtn.innerHTML = '<i class="fas fa-chart-radar mr-1.5"></i> 360° Assessment &amp; Skills Gap';
+                    }
+                    if (compDevBtn) {
+                        compDevBtn.classList.remove('hidden');
+                        compDevBtn.innerHTML = '<i class="fas fa-route mr-1.5"></i> IDP, Certifications &amp; Appraisal';
+                    }
+                }
+
                 // Supervisor & Management only navigation items
+                // NOTE: pillar-comp (Competency Management) is NOW VISIBLE to Associates!
                 const supervisorOnlyPillars = [
                     'pillar-perf',
-                    'pillar-comp',
                     'pillar-training',
                     'pillar-succession',
                     'pillar-reports'
                 ];
 
-                document.querySelectorAll('.nav-item').forEach(link => {
+                document.querySelectorAll('.nav-item, [data-pillar]').forEach(link => {
                     const pillar = link.getAttribute('data-pillar');
                     if (supervisorOnlyPillars.includes(pillar)) {
                         if (isAssociate) {
@@ -496,8 +564,12 @@
                         } else {
                             link.classList.remove('hidden');
                         }
+                    } else if (pillar === 'pillar-comp') {
+                        link.classList.remove('hidden');
+                        link.style.display = '';
                     }
                 });
+
 
                 // If active pillar was supervisor-only and current user is an Associate, return to overview dashboard
                 const activePanel = document.querySelector('.pillar-panel.active');
@@ -507,6 +579,7 @@
                     }
                 }
             }
+
 
             // HR Central Roster Management Helpers
             const departmentRosters = {
@@ -669,15 +742,18 @@
             // Restore user session on refresh
             document.addEventListener('DOMContentLoaded', () => {
                 const isAuth = localStorage.getItem('oxford_session_auth');
-                const savedRole = localStorage.getItem('oxford_session_role');
+                const savedRole = localStorage.getItem('oxford_session_role') || 'associate';
                 const authScreen = document.getElementById('auth-screen');
                 if (isAuth === 'true' && authScreen) {
                     authScreen.classList.add('hidden');
-                    if (savedRole && typeof switchRole === 'function') {
-                        switchRole(savedRole);
-                    }
+                }
+                if (typeof switchRole === 'function') {
+                    switchRole(savedRole);
+                } else if (typeof applyRoleVisibility === 'function') {
+                    applyRoleVisibility(savedRole);
                 }
             });
+
 
             // Form Templates
             function fillGoalTemplate(type) {

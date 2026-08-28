@@ -160,6 +160,29 @@
                                     </div>
                                 </div>
 
+                                <!-- Employee Specific Evaluated Competencies Card -->
+                                <div class="card-clean p-6 space-y-4">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                                        <div class="space-y-0.5">
+                                            <div class="flex items-center space-x-2">
+                                                <h3 class="font-heading font-bold text-base text-slate-900">
+                                                    My Evaluated Competencies &amp; Standards</h3>
+                                                <span id="emp-overview-comp-count" class="badge-dusty">4 Assigned Competencies</span>
+                                            </div>
+                                            <p class="text-xs text-slate-500">Baseline competency ratings and target benchmarks specifically evaluated for your position.</p>
+                                        </div>
+                                        <button onclick="switchPillar('pillar-comp')"
+                                            class="px-3.5 py-1.5 bg-[#FAF8F7] hover:bg-slate-100 border border-[#E8DEDC] text-slate-700 rounded-xl text-xs font-semibold inline-flex items-center space-x-1.5 transition">
+                                            <i class="fas fa-cubes text-xs text-primary"></i>
+                                            <span>View Full Competency Radar</span>
+                                        </button>
+                                    </div>
+                                    <div id="emp-overview-competencies-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        <!-- Employee specific competencies rendered dynamically -->
+                                    </div>
+                                </div>
+
+
                                 <!-- 2-Column: Key Trends + Shift Climate (Balanced Side-by-Side) -->
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 

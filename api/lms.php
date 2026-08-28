@@ -47,7 +47,29 @@ try {
 
 
 
-        // 3. Delete Document from Supabase SQL & Storage
+        // 3. Prescribe LMS Document to Employee (Insert into lms_prescribed)
+        case 'prescribe_document':
+        case 'prescribe_lms':
+        case 'enroll_lms':
+            $response = $controller->prescribeDocument($payload);
+            break;
+
+        // 4. Get Prescribed LMS Documents for Employee
+        case 'get_prescribed_documents':
+        case 'get_prescribed':
+        case 'list_prescribed':
+            $response = $controller->getPrescribedDocuments($payload);
+            break;
+
+        // 4b. Update Prescription Status / Progress in lms_prescribed
+        case 'update_prescription':
+        case 'update_prescribed':
+            $response = $controller->updatePrescriptionStatus($payload);
+            break;
+
+        // 5. Delete Document from Supabase SQL & Storage
+
+
         case 'delete_document':
         case 'remove_document':
             $id = $payload['id'] ?? $payload['document_id'] ?? '';

@@ -1120,6 +1120,12 @@ function renderRoleCompetencyFramework() {
 
 // 3.11 Select Associate for Single Deep-Dive (Navigates to 360° Assessment & Skills Gap)
 function selectCompetencyAssociate(empKey) {
+    const roleName = String(window.currentUser?.role || window.activePersonaRole || '').toLowerCase().trim();
+    const isAssociate = (roleName === 'associate' || roleName === 'employee' || roleName === 'staff');
+    if (isAssociate) {
+        empKey = window.currentUser?.id || 'emp-101';
+    }
+
     const dynEmps = window.dynamicCompetencyState.employees || [];
     let emp = dynEmps.find(e => e.id === empKey);
     if (!emp && associatesCompetencyData[empKey]) {
@@ -1128,6 +1134,7 @@ function selectCompetencyAssociate(empKey) {
         emp = dynEmps[0];
     }
     if (!emp) return;
+
 
     activeCompetencyEmpKey = emp.id || empKey;
 
@@ -1174,7 +1181,11 @@ async function renderSelectedEmployeeRadarView() {
     }
     if (!emp) return;
 
+    const radarOverlay = document.getElementById('radar-skeleton-overlay');
+    if (radarOverlay) radarOverlay.classList.remove('hidden');
+
     const nameEl = document.getElementById('comp-radar-emp-name');
+
     const roleEl = document.getElementById('comp-radar-emp-role');
     const scoreEl = document.getElementById('comp-radar-overall-score');
     const statusBadgeEl = document.getElementById('comp-radar-status-badge');
@@ -1182,7 +1193,25 @@ async function renderSelectedEmployeeRadarView() {
     if (nameEl) nameEl.innerText = emp.full_name || emp.name;
     if (roleEl) roleEl.innerText = `${emp.title || emp.role} · ${emp.department || emp.dept}`;
 
+    const barsContainer = document.getElementById('comp-radar-bars-container');
+    if (barsContainer) {
+        barsContainer.innerHTML = `
+            <div class="space-y-3 animate-pulse">
+                ${[1, 2, 3, 4, 5].map(() => `
+                    <div class="p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] space-y-2">
+                        <div class="flex justify-between items-center">
+                            <div class="h-3.5 w-36 bg-slate-200 rounded"></div>
+                            <div class="h-3.5 w-10 bg-slate-200 rounded"></div>
+                        </div>
+                        <div class="h-2 w-full bg-slate-200 rounded-full"></div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
     // 1. Fetch live assessments directly from Supabase for this employee
+
     let liveAssessMap = {};
     try {
         const assessRes = await fetch(`api/competencies.php?action=get_assessments&employee_id=${encodeURIComponent(emp.id)}`);
@@ -1218,6 +1247,22 @@ async function renderSelectedEmployeeRadarView() {
         applicableComps = window.dynamicCompetencyState.competencies || [];
     }
 
+    // Ensure all competencies present in liveAssessMap are included in applicableComps
+    const compIdSet = new Set(applicableComps.map(c => c.id));
+    Object.values(liveAssessMap).forEach(a => {
+        if (!compIdSet.has(a.competency_id)) {
+            applicableComps.push({
+                id: a.competency_id,
+                name: a.competency_name || 'Competency',
+                scope: 'Specific',
+                benchmark_score: a.benchmark_score || 4.0,
+                max_score: a.max_score || 5.0
+            });
+            compIdSet.add(a.competency_id);
+        }
+    });
+
+
     // 3. Compute live overall score across all assessed competencies
     const allAssessedScores = Object.values(liveAssessMap).map(a => parseFloat(a.score)).filter(s => !isNaN(s));
     let numScore = 0;
@@ -1249,8 +1294,8 @@ async function renderSelectedEmployeeRadarView() {
     }
 
     // 4. Render Dimension Score Progress Bars
-    const barsContainer = document.getElementById('comp-radar-bars-container');
     if (barsContainer) {
+
         barsContainer.innerHTML = applicableComps.map(c => {
             const assessRec = liveAssessMap[c.id];
             const scoreData = (assessRec && assessRec.score !== null && assessRec.score !== undefined)
@@ -1393,7 +1438,13 @@ function updateCompetencyRadarChart(emp, competencies, liveAssessMap = {}) {
             }
         }
     });
+
+    const radarOverlay = document.getElementById('radar-skeleton-overlay');
+    if (radarOverlay) {
+        setTimeout(() => radarOverlay.classList.add('hidden'), 200);
+    }
 }
+
 
 // ========================================================
 // 3.16 Helper: Map any Employee ID or Name to Competency Key
@@ -1992,6 +2043,9 @@ function renderCertificationsRoster() {
         `;
     }).join('');
 
+    const roleName = String(window.currentUser?.role || window.activePersonaRole || '').toLowerCase().trim();
+    const isAssociate = (roleName === 'associate' || roleName === 'employee' || roleName === 'staff');
+
     container.innerHTML = `
         <div class="space-y-4">
             <div class="flex items-center justify-between">
@@ -1999,14 +2053,17 @@ function renderCertificationsRoster() {
                     <h3 class="font-heading font-bold text-base text-slate-900">${emp.name}'s Verified Qualifications &amp; Licensures</h3>
                     <p class="text-xs text-slate-500">Official registry tracking expiration alerts and recertification cycles.</p>
                 </div>
-                <button onclick="openModal('modal-add-certificate')" class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5">
-                    <i class="fas fa-plus"></i>
-                    <span>+ Record New Certificate</span>
-                </button>
+                ${!isAssociate ? `
+                    <button onclick="openModal('modal-add-certificate')" class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5">
+                        <i class="fas fa-plus"></i>
+                        <span>+ Record New Certificate</span>
+                    </button>
+                ` : ''}
             </div>
-            <div class="space-y-3">${certsHtml.length > 0 ? certsHtml : '<p class="text-xs text-slate-400 italic p-4 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC]">No active credentials logged. Click "+ Record New Certificate" to add.</p>'}</div>
+            <div class="space-y-3">${certsHtml.length > 0 ? certsHtml : '<p class="text-xs text-slate-400 italic p-4 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC]">No active credentials logged.</p>'}</div>
         </div>
     `;
+
 }
 
 // 3.22 Render Performance Integration Summary
@@ -2513,8 +2570,16 @@ async function handleAddCompetencySubmit(e) {
 
 // 4.9 Launch Dynamic Evaluation Modal
 async function launchDynamicEvaluationModal(empId) {
+    const roleName = String(window.currentUser?.role || window.activePersonaRole || '').toLowerCase().trim();
+    const isAssociate = (roleName === 'associate' || roleName === 'employee' || roleName === 'staff');
+    if (isAssociate) {
+        showToast('🔒 View-Only Mode: Associates cannot conduct self-evaluations.', 'warning');
+        return;
+    }
+
     const modal = document.getElementById('modal-conduct-assessment');
     if (!modal) return;
+
 
     // Find employee from state
     const employees = window.dynamicCompetencyState.employees || [];
@@ -2991,6 +3056,117 @@ function exportCompetencyReportCSV() {
     showToast('Exported Oxford Suites Dynamic Competency Matrix to CSV!', 'success');
 }
 
+window.employeeCompetencyProfiles = {
+    'emp-101': [
+        { name: 'Front Desk Standards & Guest Relations', score: 4.20, target: 4.00, status: 'Proficient', dept: 'Front Office' },
+        { name: 'Opera Cloud PMS & Reservations', score: 2.80, target: 4.00, status: 'Needs Improvement', dept: 'Front Office' },
+        { name: 'VIP Check-In & Service Protocol', score: 4.50, target: 4.00, status: 'Mastered', dept: 'Front Office' },
+        { name: 'Guest De-escalation & Crisis Response', score: 3.50, target: 4.00, status: 'On Track', dept: 'Front Office' }
+    ],
+    'emp-102': [
+        { name: 'HACCP Food Safety & Sanitation', score: 4.60, target: 4.50, status: 'Mastered', dept: 'Culinary' },
+        { name: 'Grand Sommelier Wine Pairing', score: 2.40, target: 4.00, status: 'Needs Improvement', dept: 'F&B Service' },
+        { name: 'Banquet Operations & Logistics', score: 2.80, target: 4.00, status: 'Needs Improvement', dept: 'F&B Service' },
+        { name: 'Fine Dining Table Service', score: 4.10, target: 4.00, status: 'Proficient', dept: 'F&B Service' }
+    ],
+    'emp-103': [
+        { name: 'Executive Suite Turn-Down', score: 4.80, target: 4.50, status: 'Mastered', dept: 'Housekeeping' },
+        { name: 'Linen Inventory Management', score: 4.20, target: 4.00, status: 'Proficient', dept: 'Housekeeping' },
+        { name: 'Deep Cleaning Protocols', score: 4.00, target: 4.00, status: 'Proficient', dept: 'Housekeeping' }
+    ]
+};
+
+async function fetchEmployeeSpecificCompetencies(empId = 'emp-101') {
+    const cleanId = (empId || 'emp-101').toString().toLowerCase();
+    
+    try {
+        const res = await fetch(`api/competencies.php?action=get_assessments&employee_id=${encodeURIComponent(cleanId)}`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            return json.data.map(item => ({
+                id: item.competency_id,
+                name: item.competency_name || 'Assigned Competency',
+                score: item.rating ? parseFloat(item.rating) : (item.score ? parseFloat(item.score) : 4.0),
+                target: item.benchmark_score ? parseFloat(item.benchmark_score) : 4.0,
+                status: (parseFloat(item.rating || item.score || 4.0) >= 4.0) ? 'Proficient' : ((parseFloat(item.rating || item.score || 4.0) >= 3.0) ? 'On Track' : 'Needs Improvement'),
+                dept: item.category || item.department_name || 'Competency'
+            }));
+        }
+
+    } catch (e) {
+        console.error('Error fetching employee specific competencies:', e);
+    }
+
+    if (cleanId.includes('102') || cleanId.includes('antonio')) return window.employeeCompetencyProfiles['emp-102'];
+    if (cleanId.includes('103') || cleanId.includes('john')) return window.employeeCompetencyProfiles['emp-103'];
+    return window.employeeCompetencyProfiles['emp-101'];
+}
+window.fetchEmployeeSpecificCompetencies = fetchEmployeeSpecificCompetencies;
+
+async function renderEmployeeOverviewCompetencies(empId = 'emp-101') {
+    const container = document.getElementById('emp-overview-competencies-container');
+    if (!container) return;
+
+    // Animated Skeleton Loading State
+    container.innerHTML = `
+        <div class="col-span-1 md:col-span-2 lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
+            ${[1, 2, 3, 4].map(() => `
+                <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-3">
+                    <div class="flex justify-between items-center">
+                        <div class="h-3.5 w-28 bg-slate-200 rounded"></div>
+                        <div class="h-4 w-12 bg-slate-200 rounded-full"></div>
+                    </div>
+                    <div class="h-2 w-full bg-slate-200 rounded-full"></div>
+                    <div class="flex justify-between items-center text-[10px]">
+                        <div class="h-3 w-16 bg-slate-100 rounded"></div>
+                        <div class="h-3 w-12 bg-slate-100 rounded"></div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+
+    const list = await fetchEmployeeSpecificCompetencies(empId);
+    const countEl = document.getElementById('emp-overview-comp-count');
+    if (countEl) countEl.textContent = `${list.length} Assigned Competencies`;
+
+    if (!list || list.length === 0) {
+        container.innerHTML = '<div class="col-span-4 p-4 text-center text-xs text-slate-400">No specific competencies evaluated yet for this employee.</div>';
+        return;
+    }
+
+
+    container.innerHTML = list.map(comp => {
+        const pct = Math.min(100, Math.round((comp.score / 5.0) * 100));
+        const isBelow = comp.score < comp.target;
+        let badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+        if (isBelow) badgeClass = 'bg-red-100 text-red-800 border-red-200';
+        else if (comp.score >= 4.5) badgeClass = 'bg-amber-100 text-amber-900 border-amber-200';
+
+        return `
+            <div class="p-4 rounded-2xl border ${isBelow ? 'border-red-200 bg-red-50/20' : 'border-[#E8DEDC] bg-[#FAF8F7]'} flex flex-col justify-between space-y-3 transition hover:shadow-2xs">
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${comp.dept || 'Assigned Competency'}</span>
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full border ${badgeClass}">${comp.status}</span>
+                    </div>
+                    <h4 class="font-heading font-bold text-slate-900 text-xs leading-snug">${comp.name}</h4>
+                </div>
+                <div class="pt-2 border-t border-[#E8DEDC] space-y-1">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-extrabold text-slate-800">${comp.score.toFixed(2)} / 5.0</span>
+                        <span class="text-[11px] text-slate-400">Target: <strong class="text-slate-600">${comp.target.toFixed(1)}</strong></span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                        <div class="${isBelow ? 'bg-red-500' : 'bg-emerald-500'} h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+window.renderEmployeeOverviewCompetencies = renderEmployeeOverviewCompetencies;
+
 // Global exposes
 window.loadDepartmentDropdowns = loadDepartmentDropdowns;
 window.fetchDynamicCompetencyMatrix = fetchDynamicCompetencyMatrix;
@@ -3010,5 +3186,7 @@ window.exportCompetencyReportCSV = exportCompetencyReportCSV;
 // Auto-run on load
 window.addEventListener('DOMContentLoaded', () => {
     initCompetencyModule();
+    renderEmployeeOverviewCompetencies(window.selectedEvalEmpId || 'emp-101');
 });
+
 

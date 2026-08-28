@@ -408,6 +408,163 @@ class LmsController
     }
 
     /**
+     * Prescribe LMS Document to an Employee (Insert into lms_prescribed)
+     */
+    public function prescribeDocument(array $postData): array
+    {
+        $employee = trim($postData['employee'] ?? $postData['employee_id'] ?? '');
+        if (empty($employee)) {
+            return ['success' => false, 'message' => 'Employee ID is required for prescription.'];
+        }
+
+        $lmsId = trim($postData['lms_id'] ?? $postData['book_id'] ?? '');
+        if (empty($lmsId)) {
+            return ['success' => false, 'message' => 'LMS document ID is required.'];
+        }
+
+        $goalId = isset($postData['goal_id']) && !empty($postData['goal_id']) ? (int)$postData['goal_id'] : null;
+        $scores = isset($postData['scores']) ? (float)$postData['scores'] : (isset($postData['score']) ? (float)$postData['score'] : 0.00);
+        $ratings = isset($postData['ratings']) ? (float)$postData['ratings'] : (isset($postData['rating']) ? (float)$postData['rating'] : 0.00);
+        $progress = isset($postData['progress']) ? (int)$postData['progress'] : 0;
+        $status = in_array($postData['status'] ?? '', ['needs retake', 'passed', 'Needs Retake', 'Passed', 'In Progress', 'Pending']) ? $postData['status'] : 'Needs Retake';
+        $forType = in_array(strtolower($postData['for'] ?? ''), ['goal', 'competency', 'both']) ? strtolower($postData['for']) : 'both';
+        $timeConsumed = isset($postData['time_consumed']) ? (int)$postData['time_consumed'] : 0;
+        $lastAttempt = !empty($postData['last_attempt']) ? $postData['last_attempt'] : null;
+
+        // 1. Check if employee is already enrolled / prescribed in this LMS document
+        $query = 'lms_prescribed?employee=eq.' . urlencode($employee) . '&lms_id=eq.' . urlencode($lmsId);
+        $checkRes = supabaseRequest($query, 'GET', null, true);
+        if ($checkRes['status'] >= 200 && $checkRes['status'] < 300 && !empty($checkRes['data']) && is_array($checkRes['data'])) {
+            return [
+                'success' => true,
+                'already_enrolled' => true,
+                'message' => 'Employee is already enrolled in this LMS document.',
+                'data' => $checkRes['data'][0]
+            ];
+        }
+
+        // 2. Insert new prescription record into lms_prescribed database table
+        $now = date('c');
+        $record = [
+            'employee' => $employee,
+            'lms_id' => $lmsId,
+            'goal_id' => $goalId,
+            'scores' => $scores,
+            'ratings' => $ratings,
+            'progress' => $progress,
+            'status' => $status,
+            'for' => $forType,
+            'last_attempt' => $lastAttempt,
+            'time_consumed' => $timeConsumed,
+            'created_at' => $now,
+            'updated_at' => $now
+        ];
+
+        $insertRes = supabaseRequest('lms_prescribed', 'POST', $record, true);
+        if ($insertRes['status'] >= 200 && $insertRes['status'] < 300 && !empty($insertRes['data'])) {
+            $created = is_array($insertRes['data']) && isset($insertRes['data'][0]) ? $insertRes['data'][0] : $record;
+            return [
+                'success' => true,
+                'already_enrolled' => false,
+                'message' => 'LMS document successfully prescribed and enrolled in database!',
+                'data' => $created
+            ];
+        }
+
+        return [
+            'success' => false,
+            'message' => 'Failed to insert prescription into lms_prescribed database: ' . ($insertRes['error'] ?? 'Database error')
+        ];
+    }
+
+    /**
+     * Get Prescribed LMS Documents with Document & Employee Details
+     */
+    public function getPrescribedDocuments(array $params = []): array
+    {
+        $employee = trim($params['employee'] ?? $params['employee_id'] ?? '');
+        $query = 'lms_prescribed?order=created_at.desc';
+        if (!empty($employee)) {
+            $query .= '&employee=eq.' . urlencode($employee);
+        }
+
+        $res = supabaseRequest($query, 'GET', null, true);
+        $records = is_array($res['data']) ? $res['data'] : [];
+
+        // 1. Fetch lms_documents map
+        $docRes = supabaseRequest('lms_documents', 'GET', null, true);
+        $documents = is_array($docRes['data']) ? $docRes['data'] : [];
+        $docMap = [];
+        foreach ($documents as $d) {
+            $docMap[$d['id']] = $d;
+        }
+
+        // 2. Fetch employees map
+        $empRes = supabaseRequest('employees', 'GET', null, true);
+        $employees = is_array($empRes['data']) ? $empRes['data'] : [];
+        $empMap = [];
+        foreach ($employees as $e) {
+            $empMap[$e['id']] = $e;
+        }
+
+        $enriched = [];
+        foreach ($records as $rec) {
+            $lId = $rec['lms_id'] ?? null;
+            $eId = $rec['employee'] ?? null;
+
+            $doc = $lId && isset($docMap[$lId]) ? $docMap[$lId] : null;
+            $emp = $eId && isset($empMap[$eId]) ? $empMap[$eId] : null;
+
+            $rec['document_title'] = $doc['title'] ?? 'SOP Handbook';
+            $rec['document_category'] = $doc['category'] ?? 'SOP Manual';
+            $rec['document_department'] = $doc['department_name'] ?? ($doc['department_id'] ?? 'Property-Wide');
+            $rec['document_file_path'] = $doc['file_path'] ?? '#';
+
+            $rec['employee_name'] = $emp['full_name'] ?? ($eId === 'emp-101' ? 'Maria Santos' : ($eId === 'emp-102' ? 'Antonio Silva' : ($eId === 'emp-103' ? 'John Marco' : $eId)));
+            $rec['employee_title'] = $emp['title'] ?? 'Associate';
+            $rec['employee_role'] = $emp['role'] ?? 'Associate';
+            $rec['employee_avatar'] = $emp['avatar_url'] ?? 'public/images/removed-bg-logo.png';
+
+            $enriched[] = $rec;
+        }
+
+        return [
+            'success' => true,
+            'data' => $enriched,
+            'total' => count($enriched)
+        ];
+    }
+
+    /**
+     * Update Prescription Progress / Status in lms_prescribed table
+     */
+    public function updatePrescriptionStatus(array $postData): array
+    {
+        $id = trim($postData['id'] ?? '');
+        if (empty($id)) {
+            return ['success' => false, 'message' => 'Prescription record ID is required.'];
+        }
+
+        $updatePayload = [];
+        if (isset($postData['scores'])) $updatePayload['scores'] = (float)$postData['scores'];
+        if (isset($postData['ratings'])) $updatePayload['ratings'] = (float)$postData['ratings'];
+        if (isset($postData['progress'])) $updatePayload['progress'] = (int)$postData['progress'];
+        if (isset($postData['status'])) $updatePayload['status'] = $postData['status'];
+        if (isset($postData['time_consumed'])) $updatePayload['time_consumed'] = (int)$postData['time_consumed'];
+        if (isset($postData['last_attempt'])) $updatePayload['last_attempt'] = $postData['last_attempt'];
+        if (isset($postData['for'])) $updatePayload['for'] = $postData['for'];
+        $updatePayload['updated_at'] = date('c');
+
+        $res = supabaseRequest('lms_prescribed?id=eq.' . urlencode($id), 'PATCH', $updatePayload, true);
+        if ($res['status'] >= 200 && $res['status'] < 300) {
+            return ['success' => true, 'message' => 'LMS prescription updated successfully!', 'data' => $updatePayload];
+        }
+
+        return ['success' => false, 'message' => $res['error'] ?? 'Failed to update prescription record.'];
+    }
+
+
+    /**
      * Get Badge Class for Category
      */
     private function getCategoryBadge(string $category): string
@@ -419,3 +576,4 @@ class LmsController
         return 'bg-gold text-slate-900';
     }
 }
+
