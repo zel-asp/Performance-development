@@ -1,414 +1,529 @@
-const lmsTrainingBooks = [
-                {
-                    id: 'book_front_office',
-                    title: 'Front Desk Standards & VIP Protocols Codex',
-                    subtitle: 'Oxford Suites, Makati Hospitality Standard Operating Procedure',
-                    dept: 'front_office',
-                    deptName: 'Front Office',
-                    category: 'SOP Manual',
-                    pages: '18 Pages · 4 Chapters',
-                    time: '20 min read',
-                    xp: 100,
-                    author: 'Elena Vance · HR & Front Desk Lead',
-                    gradient: 'from-[#7F1418] via-[#9E1B20] to-[#450A0C]',
-                    spineColor: 'rgba(217, 119, 6, 0.4)',
-                    foilColor: 'border-amber-400/40 text-amber-200',
-                    icon: 'fa-bell-concierge',
-                    badge: 'VIP Hospitality Standard',
-                    badgeBg: 'bg-amber-400 text-amber-950',
-                    desc: 'Master the 5-star greeting ritual, keycard encoding, luggage concierge dispatch, and discretion protocols for diplomatic & celebrity guests.',
-                    tip: 'Never mention a guest room number aloud in the lobby. Point discreetly to the written key wallet.',
-                    chapters: [
-                        'Chapter 1: The 10-5 Eye Contact & Greeting Rule',
-                        'Chapter 2: Opera Cloud Check-in & Keycard Provisioning',
-                        'Chapter 3: VIP Escort & Suite Orientation Etiquette',
-                        'Chapter 4: Discretion & Rapid Luggage Logistics'
-                    ],
-                    sopSteps: [
-                        { step: '1. Warm Welcome', text: 'Acknowledge approaching guests within 10 feet with genuine eye contact, offering chilled infused water towels during summer months.' },
-                        { step: '2. Identity & Profile Check', text: 'Confirm reservation in Opera PMS without verbalizing confidential contact details or suite room numbers.' },
-                        { step: '3. Digital Key Provisioning', text: 'Encode dual RFID keycards, present within gold-embossed key folder along with property Wi-Fi card.' },
-                        { step: '4. Concierge Handoff', text: 'Signal the concierge desk via subtle gesture for luggage escort and elevator escort to guest suite.' }
-                    ]
-                },
-                {
-                    id: 'book_haccp',
-                    title: 'HACCP Hygiene & Cold-Chain Protocol Manual',
-                    subtitle: 'Kitchen Cold-Storage & Surface Sanitation Guide',
-                    dept: 'culinary',
-                    deptName: 'Culinary',
-                    category: 'Compliance Standard',
-                    pages: '24 Pages · 5 Chapters',
-                    time: '25 min read',
-                    xp: 100,
-                    author: 'Chef Marco Rossi · Executive Sous Chef',
-                    gradient: 'from-[#065F46] via-[#047857] to-[#022C22]',
-                    spineColor: 'rgba(16, 185, 129, 0.4)',
-                    foilColor: 'border-emerald-300/40 text-emerald-100',
-                    icon: 'fa-utensils',
-                    badge: 'Mandatory HACCP Safety',
-                    badgeBg: 'bg-emerald-400 text-emerald-950',
-                    desc: 'Comprehensive protocols for dual temperature logging, meat & dairy segregation, 7-step hand scrubbing, and allergen cross-contact prevention.',
-                    tip: 'Walk-in chillers must strictly maintain 2°C to 4°C. Check logs every 4 hours and report any ±1°C fluctuation immediately.',
-                    chapters: [
-                        'Chapter 1: 7-Step Medical Grade Hand Scrubbing',
-                        'Chapter 2: Critical Control Points (CCP) & Temperature Logs',
-                        'Chapter 3: Cross-Contamination Prevention (Color-coded Boards)',
-                        'Chapter 4: Blast Chilling & Rapid Food Storage SOP',
-                        'Chapter 5: Allergen Segregation & Guest Notification'
-                    ],
-                    sopSteps: [
-                        { step: '1. Hand Scrubbing Station', text: 'Lather forearms and hands with antibacterial foam for 20 seconds, rinse under 38°C water, and air dry.' },
-                        { step: '2. Thermometer Probe Calibration', text: 'Sanitize digital probe with alcohol wipes before and after checking inner core meat temperatures.' },
-                        { step: '3. Cold-Chain Log Entry', text: 'Record temperature in digital tablet log at 06:00, 10:00, 14:00, 18:00, and 22:00.' },
-                        { step: '4. FIFO Stock Rotation', text: 'Apply First-In, First-Out labels with batch expiration date on every vacuum-sealed container.' }
-                    ]
-                },
-                {
-                    id: 'book_sommelier',
-                    title: 'Sommelier Fine Wine Pairing & Vintage Compendium',
-                    subtitle: 'Bordeaux, Burgundy, & New World Varietals Codex',
-                    dept: 'fb_service',
-                    deptName: 'F&B Service',
-                    category: 'Masterclass Guide',
-                    pages: '32 Pages · 6 Chapters',
-                    time: '35 min read',
-                    xp: 150,
-                    author: 'Pierre Dubois · Master Sommelier',
-                    gradient: 'from-[#92400E] via-[#B45309] to-[#451A03]',
-                    spineColor: 'rgba(245, 158, 11, 0.4)',
-                    foilColor: 'border-amber-300/50 text-amber-100',
-                    icon: 'fa-wine-glass-empty',
-                    badge: 'Sommelier Masterclass',
-                    badgeBg: 'bg-amber-400 text-amber-950',
-                    desc: 'Expert guide to vintage evaluations, decanting techniques for aged Grand Crus, flavor balancing with chef tasting menus, and cellar storage.',
-                    tip: 'Hold the wine bottle from the punt base with the label facing the guest at all times during tableside presentation.',
-                    chapters: [
-                        'Chapter 1: Old World vs New World Terroir Profiles',
-                        'Chapter 2: Acidity, Tannin, and Sweetness Food Balancing',
-                        'Chapter 3: Tableside Decanting & Crystal Glass Selection',
-                        'Chapter 4: Champagne & Sparkling Service Rituals',
-                        'Chapter 5: Premium Wine Upselling & Storytelling'
-                    ],
-                    sopSteps: [
-                        { step: '1. Label Presentation', text: 'Present the bottle to the host with the label clearly facing up, stating vintage, château name, and appellation.' },
-                        { step: '2. Capsule Cutting & Extraction', text: 'Cut the foil cleanly below the second lip of the bottle neck, extracting cork smoothly without audible pop.' },
-                        { step: '3. Tasting Pour (30ml)', text: 'Pour a 30ml tasting measure for the host to approve clarity, aroma bouquet, and temperature.' },
-                        { step: '4. Clockwise Table Service', text: 'Serve guests clockwise starting with ladies, filling glasses to the widest bowl contour (maximum 1/3 glass).' }
-                    ]
-                },
-                {
-                    id: 'book_opera_pms',
-                    title: 'Opera Cloud PMS & Room Dispatch Masterclass',
-                    subtitle: 'Fast-Track Reservation, Split Billing & Room Allocation',
-                    dept: 'front_office',
-                    deptName: 'Front Office',
-                    category: 'SOP Manual',
-                    pages: '16 Pages · 4 Chapters',
-                    time: '18 min read',
-                    xp: 100,
-                    author: 'Ana Tanaka · Night Auditor Lead',
-                    gradient: 'from-[#1E3A8A] via-[#1D4ED8] to-[#0F172A]',
-                    spineColor: 'rgba(59, 130, 246, 0.4)',
-                    foilColor: 'border-blue-300/40 text-blue-100',
-                    icon: 'fa-desktop',
-                    badge: 'Core Systems Mastery',
-                    badgeBg: 'bg-blue-400 text-blue-950',
-                    desc: 'Step-by-step shortcuts for Opera Cloud: fast check-in under 60 seconds, split billing for corporate guests, and floor status synchronization.',
-                    tip: 'Use Alt+F shortcuts to instantly locate guest loyalty tier points without navigating through nested sub-windows.',
-                    chapters: [
-                        'Chapter 1: Accelerated 60-Second Check-in Workflow',
-                        'Chapter 2: Corporate Folio Routing & Split Charges',
-                        'Chapter 3: Housekeeping Status Sync & Queue Rooms',
-                        'Chapter 4: Night Audit Balancing & Discrepancy Reconciliation'
-                    ],
-                    sopSteps: [
-                        { step: '1. Quick Search Key', text: 'Press F8 and enter reservation confirmation number or guest surname.' },
-                        { step: '2. Pre-authorization Lock', text: 'Swipe credit card for room rate plus $150 incidentals daily pre-authorization hold.' },
-                        { step: '3. RFID Keycard Sync', text: 'Place keycards on RFID terminal and press Generate Key (Shift+K).' },
-                        { step: '4. Instant Folio Window', text: 'Route company expenses to Window 2 and personal minibar incidentals to Window 1.' }
-                    ]
-                },
-                {
-                    id: 'book_housekeeping',
-                    title: 'Five-Star Suite Turndown & Linen Standard Handbook',
-                    subtitle: 'Hospitality Housekeeping Precision & Room Inspection',
-                    dept: 'housekeeping',
-                    deptName: 'Housekeeping',
-                    category: 'SOP Manual',
-                    pages: '22 Pages · 5 Chapters',
-                    time: '20 min read',
-                    xp: 100,
-                    author: 'Rosa Flores · Floor Supervisor',
-                    icon: 'fa-bed',
-                    badge: 'Housekeeping Standard',
-                    desc: 'Master the 45-degree hospital fold bed making, aromatherapy pillow placement, bathroom marble buffing, and turndown treats styling.',
-                    tip: 'Never leave fingerprints on polished brass handles or bathroom mirrors. Use microfiber glass towels for final inspection.',
-                    chapters: [
-                        'Chapter 1: 300-Thread Count Fitted Sheet & Hospital Fold Bedding',
-                        'Chapter 2: Evening Turndown Lighting & Foot Mat Alignment',
-                        'Chapter 3: Bathroom Marble Sanitation & Eco-friendly Amenities',
-                        'Chapter 4: Minibar Audit & Refresh Standards'
-                    ],
-                    sopSteps: [
-                        { step: '1. Strip & Sanitize', text: 'Strip used linens into laundry trolley, inspect mattress protector, and sanitize high-touch remotes and switches.' },
-                        { step: '2. Bed Dressing', text: 'Smooth Egyptian cotton fitted sheet tightly, fold duvet corner at 45° angle, and fluff 4 down pillows upright.' },
-                        { step: '3. Evening Turndown Ambience', text: 'Dim bedside lamp, set ambient jazz audio to volume 2, and place lavender essential pillow mist.' },
-                        { step: '4. Quality Card Signature', text: 'Place inspector handwritten greeting card on the nightstand beside bedside slippers.' }
-                    ]
-                },
-                {
-                    id: 'book_crisis',
-                    title: 'Crisis Diplomacy & Frontline De-escalation Protocol',
-                    subtitle: 'Service Recovery, Emergency Evacuation & Guest Reassurance',
-                    dept: 'all',
-                    deptName: 'Property-Wide',
-                    category: 'Safety Protocol',
-                    pages: '15 Pages · 3 Chapters',
-                    time: '15 min read',
-                    xp: 120,
-                    author: 'Carlos Gomez & Security Operations',
-                    icon: 'fa-shield-halved',
-                    badge: 'Emergency Protocol',
-                    desc: 'Standardized LAST method (Listen, Apologize, Solve, Thank) for handling upset guests, emergency medical dispatch, and fire alarm evacuation routes.',
-                    tip: 'Always lower your vocal tone by 10% and slow speech pacing when de-escalating an agitated guest.',
-                    chapters: [
-                        'Chapter 1: The LAST Framework for Service Recovery',
-                        'Chapter 2: $200 Incident Recovery Budget Empowerment',
-                        'Chapter 3: Medical Emergency & First-Aid Dispatch',
-                        'Chapter 4: Fire Alarm Zones & Assembly Area Coordination'
-                    ],
-                    sopSteps: [
-                        { step: '1. Active Listening', text: 'Listen without interruption for 60 seconds, taking written notes to validate guest concerns.' },
-                        { step: '2. Sincere Empathy', text: 'Acknowledge the emotional impact without placing blame on other team members or departments.' },
-                        { step: '3. Empowered Action', text: 'Exercise instant service recovery: complimentary dining voucher or room category upgrade immediately.' },
-                        { step: '4. Follow-up & Log', text: 'Check back with guest in 30 minutes and record incident in the Daily Duty Manager handover log.' }
-                    ]
-                }
-            ];
+// ========================================================
+// DYNAMIC LEARNING MANAGEMENT SYSTEM (LMS) - SUPABASE INTEGRATED
+// ========================================================
 
-            function renderLmsBooks() {
-                const container = document.getElementById('lms-bookshelf-grid');
-                if (!container) return;
+window.dynamicLmsState = {
+    documents: [],
+    departments: [],
+    activeDept: 'all',
+    search: '',
+    loading: false
+};
 
-                const searchInput = (document.getElementById('lms-search-input')?.value || '').toLowerCase().trim();
-                const filtered = lmsTrainingBooks.filter(b => {
-                    const matchDept = (lmsActiveDeptFilter === 'all' || b.dept === lmsActiveDeptFilter || b.dept === 'all');
-                    const matchText = !searchInput || 
-                        b.title.toLowerCase().includes(searchInput) || 
-                        b.desc.toLowerCase().includes(searchInput) ||
-                        b.category.toLowerCase().includes(searchInput) ||
-                        b.deptName.toLowerCase().includes(searchInput);
-                    return matchDept && matchText;
+let lmsActiveDeptFilter = 'all';
+let currentReadingBookId = null;
+
+/**
+ * Fetch LMS Documents from Supabase REST via api/lms.php
+ */
+async function fetchDynamicLmsDocuments(deptFilter = null, searchVal = null) {
+    const container = document.getElementById('lms-bookshelf-grid');
+    if (!container) return;
+
+    if (deptFilter !== null) window.dynamicLmsState.activeDept = deptFilter;
+    if (searchVal !== null) window.dynamicLmsState.search = searchVal;
+
+    window.dynamicLmsState.loading = true;
+
+    try {
+        const params = new URLSearchParams({
+            action: 'get_documents'
+        });
+        if (window.dynamicLmsState.activeDept && window.dynamicLmsState.activeDept !== 'all') {
+            params.append('department_id', window.dynamicLmsState.activeDept);
+        }
+        if (window.dynamicLmsState.search) {
+            params.append('search', window.dynamicLmsState.search);
+        }
+
+        const res = await fetch(`api/lms.php?${params.toString()}`);
+        const json = await res.json();
+
+        if (json.success && Array.isArray(json.data)) {
+            window.dynamicLmsState.documents = json.data;
+        } else {
+            console.warn('LMS fetch warning:', json.message);
+        }
+    } catch (err) {
+        console.error('Failed to fetch LMS documents from Supabase:', err);
+    } finally {
+        window.dynamicLmsState.loading = false;
+        renderLmsBooks();
+    }
+}
+
+/**
+ * Load Departments into Upload Modal & Filter Chips
+ */
+async function loadLmsDepartments() {
+    try {
+        const res = await fetch('api/competencies.php?action=get_departments');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+            window.dynamicLmsState.departments = json.data;
+
+            // Populate Modal Department Dropdown
+            const modalSelect = document.getElementById('lms-doc-dept');
+            if (modalSelect) {
+                let options = '<option value="all">Property-Wide (All Associates)</option>';
+                json.data.forEach(d => {
+                    options += `<option value="${d.id}">${d.name}</option>`;
                 });
+                modalSelect.innerHTML = options;
+            }
+        }
+    } catch (e) {
+        console.warn('Could not load departments for LMS:', e);
+    }
+}
 
-                let booksHtml = filtered.map(book => {
-                    return `
-                        <!-- Minimalist Clean Book Card -->
-                        <div class="card-clean p-5 flex flex-col justify-between h-full group bg-white border border-[#E8DEDC] hover:border-[#D8CECB] transition">
-                            <div class="space-y-3">
-                                <!-- Top Badges & Icon -->
-                                <div class="flex items-center justify-between">
-                                    <div class="w-9 h-9 rounded-xl bg-[#FAF8F7] text-primary border border-[#E8DEDC] flex items-center justify-center text-sm font-bold shadow-2xs">
-                                        <i class="fas ${book.icon}"></i>
-                                    </div>
-                                    <div class="flex items-center space-x-1.5">
-                                        <span class="badge-secondary">${book.deptName}</span>
-                                        <span class="badge-gold">+${book.xp} XP</span>
-                                    </div>
-                                </div>
-                                
-                                <!-- Content -->
-                                <div>
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${book.category}</span>
-                                    <h4 class="font-heading font-bold text-sm sm:text-base text-slate-900 mt-0.5 leading-snug group-hover:text-primary transition">${book.title}</h4>
-                                    <p class="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">${book.desc}</p>
-                                </div>
+/**
+ * Render Dynamic 3D Digital Bookshelf Grid
+ */
+function renderLmsBooks() {
+    const container = document.getElementById('lms-bookshelf-grid');
+    if (!container) return;
 
-                                <!-- Metadata Row -->
-                                <div class="pt-2.5 border-t border-[#E8DEDC] flex items-center justify-between text-[11px] text-slate-400">
-                                    <span class="truncate max-w-[140px]"><i class="fas fa-feather-pointed mr-1 text-slate-400"></i> ${book.author}</span>
-                                    <span class="font-medium text-slate-600">${book.pages}</span>
-                                </div>
-                            </div>
+    const docs = window.dynamicLmsState.documents || [];
 
-                            <!-- Actions -->
-                            <div class="pt-3.5 flex items-center justify-between gap-2 border-t border-[#E8DEDC] mt-3.5">
-                                <button onclick="openBookReader('${book.id}')"
-                                    class="flex-1 py-2 px-3 btn-primary text-xs font-bold flex items-center justify-center space-x-1.5">
-                                    <i class="fas fa-book-open text-xs"></i>
-                                    <span>Read Handbook</span>
-                                </button>
-                                <button onclick="launchInteractiveQuiz('${book.title.replace(/'/g, "\\'")}')"
-                                    class="py-2 px-3 btn-secondary text-xs font-semibold flex items-center space-x-1 flex-shrink-0">
-                                    <i class="fas fa-graduation-cap text-gold-dark text-xs"></i>
-                                    <span>Quiz</span>
-                                </button>
-                            </div>
+    if (window.dynamicLmsState.loading && docs.length === 0) {
+        container.innerHTML = `
+            <div class="col-span-full py-16 text-center text-slate-400">
+                <i class="fas fa-spinner fa-spin text-3xl text-primary mb-3"></i>
+                <p class="text-sm font-semibold text-slate-600">Loading digital library from Supabase...</p>
+            </div>
+        `;
+        return;
+    }
+
+    let booksHtml = docs.map(doc => {
+        const docId = doc.id;
+        const title = doc.title || 'Untitled Handbook';
+        const deptName = doc.department_name || 'Property-Wide';
+        const category = doc.category || 'SOP Manual';
+        const pages = doc.estimated_pages ? `${doc.estimated_pages} Pages` : '18 Pages';
+        const readingMin = doc.estimated_reading_minutes ? `${doc.estimated_reading_minutes} min read` : '20 min read';
+        const xp = doc.exp_reward || 100;
+        const icon = doc.icon || 'fa-book-bookmark';
+        const desc = doc.description || 'Standard operating procedure manual and operational workflow guidance.';
+        const filePath = doc.file_path || '#';
+        const isPdf = (doc.file_type || '').toLowerCase().includes('pdf') || filePath.toLowerCase().endsWith('.pdf');
+        const safeTitle = title.replace(/'/g, "\\'");
+
+        return `
+            <!-- Minimalist Clean Book Card with Supabase Data -->
+            <div class="card-clean p-5 flex flex-col justify-between h-full group bg-white border border-[#E8DEDC] hover:border-[#D8CECB] transition shadow-2xs hover:shadow-xs rounded-2xl relative">
+                <div class="space-y-3">
+                    <!-- Top Badges & Icon -->
+                    <div class="flex items-center justify-between">
+                        <div class="w-9 h-9 rounded-xl bg-[#FAF8F7] text-primary border border-[#E8DEDC] flex items-center justify-center text-sm font-bold shadow-2xs group-hover:scale-105 transition">
+                            <i class="fas ${icon}"></i>
                         </div>
-                    `;
-                }).join('');
-
-                // Add Upload New Document / Book Card Slot on Shelf
-                const uploadCardSlot = `
-                    <div onclick="openModal('modal-lms-upload')"
-                        class="border-2 border-dashed border-[#E8DEDC] hover:border-primary bg-[#FAF8F7] hover:bg-primary-50/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition group min-h-[260px]">
-                        <div class="w-12 h-12 rounded-xl bg-white border border-[#E8DEDC] group-hover:border-primary-100 flex items-center justify-center text-primary text-xl shadow-2xs group-hover:scale-105 transition mb-2.5">
-                            <i class="fas fa-file-circle-plus"></i>
+                        <div class="flex items-center space-x-1.5">
+                            <span class="badge-secondary text-[10px] px-2 py-0.5">${deptName}</span>
+                            <span class="badge-gold text-[10px] px-2 py-0.5 font-bold">+${xp} XP</span>
                         </div>
-                        <h4 class="font-heading font-bold text-sm text-slate-900 group-hover:text-primary transition">Upload Handbook / SOP</h4>
-                        <p class="text-xs text-slate-500 max-w-[200px] mt-1 leading-relaxed">Publish PDF standard operating procedures or guides</p>
-                        <span class="mt-3.5 px-3 py-1.5 rounded-full btn-primary text-[11px] font-bold transition flex items-center space-x-1.5">
-                            <i class="fas fa-arrow-up-from-bracket text-xs"></i>
-                            <span>Upload Document</span>
-                        </span>
                     </div>
-                `;
-
-                container.innerHTML = booksHtml + uploadCardSlot;
-            }
-
-            function setLmsDeptFilter(deptKey) {
-                lmsActiveDeptFilter = deptKey;
-                document.querySelectorAll('.lms-dept-filter-chip').forEach(chip => {
-                    const chipDept = chip.getAttribute('data-dept');
-                    if (chipDept === lmsActiveDeptFilter) {
-                        chip.className = 'lms-dept-filter-chip active px-3 py-1 rounded-full font-bold bg-primary text-white transition text-[11px] whitespace-nowrap';
-                    } else {
-                        chip.className = 'lms-dept-filter-chip px-3 py-1 rounded-full font-semibold bg-[#FAF8F7] text-slate-600 border border-[#E8DEDC] hover:bg-slate-100 transition text-[11px] whitespace-nowrap';
-                    }
-                });
-                renderLmsBooks();
-            }
-
-            function filterLmsBooks() {
-                renderLmsBooks();
-            }
-
-            function openBookReader(bookId) {
-                const book = lmsTrainingBooks.find(b => b.id === bookId);
-                if (!book) return;
-
-                currentReadingBookId = book.id;
-
-                // Update Header
-                document.getElementById('reader-book-title').textContent = book.title;
-                document.getElementById('reader-book-author').textContent = `${book.author} · ${book.pages} · ${book.time}`;
-                document.getElementById('reader-book-xp-badge').textContent = `+${book.xp} XP Completion`;
-                
-                // Update Tip
-                document.getElementById('reader-tip-text').textContent = book.tip || 'Follow standard 5-star protocol and maintain guest delight at all touchpoints.';
-
-                // Update TOC
-                const tocEl = document.getElementById('reader-toc');
-                if (tocEl && book.chapters) {
-                    tocEl.innerHTML = book.chapters.map((ch, idx) => `
-                        <div class="p-2 rounded-lg bg-slate-50 border border-slate-200/70 hover:bg-amber-50/50 hover:border-amber-300 transition cursor-pointer flex items-center justify-between text-xs">
-                            <span class="font-medium text-slate-700"><i class="fas fa-bookmark text-amber-500 text-[10px] mr-1.5"></i> ${ch}</span>
-                            <span class="text-[10px] font-bold text-slate-400">p.${(idx + 1) * 3}</span>
+                    
+                    <!-- Content -->
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${category}</span>
+                            ${isPdf ? '<span class="text-[9px] font-extrabold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">PDF</span>' : ''}
                         </div>
-                    `).join('');
-                }
+                        <h4 class="font-heading font-bold text-sm sm:text-base text-slate-900 mt-0.5 leading-snug group-hover:text-primary transition line-clamp-2">${title}</h4>
+                        <p class="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">${desc}</p>
+                    </div>
 
-                // Update Procedure Content
-                const contentEl = document.getElementById('reader-page-content');
-                if (contentEl && book.sopSteps) {
-                    contentEl.innerHTML = book.sopSteps.map(step => `
-                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                            <p class="font-bold text-slate-900 text-xs text-primary">${step.step}</p>
-                            <p class="text-xs text-slate-600 leading-relaxed">${step.text}</p>
-                        </div>
-                    `).join('');
-                }
+                    <!-- Metadata Row -->
+                    <div class="pt-2.5 border-t border-[#E8DEDC] flex items-center justify-between text-[11px] text-slate-400">
+                        <span class="truncate max-w-[140px]"><i class="fas fa-clock mr-1 text-slate-400"></i> ${readingMin}</span>
+                        <span class="font-medium text-slate-600">${pages}</span>
+                    </div>
+                </div>
 
-                openModal('modal-book-reader');
+                <!-- Actions -->
+                <div class="pt-3.5 flex items-center justify-between gap-1.5 border-t border-[#E8DEDC] mt-3.5">
+                    <button onclick="openBookReader('${docId}')"
+                        class="flex-1 py-2 px-3 btn-primary text-xs font-bold flex items-center justify-center space-x-1.5 shadow-2xs">
+                        <i class="fas fa-book-open text-xs"></i>
+                        <span>Read SOP</span>
+                    </button>
+                    ${filePath && filePath !== '#' ? `
+                    <a href="${filePath}" target="_blank" download title="Open / Download Document"
+                        class="py-2 px-2.5 btn-secondary text-xs font-semibold flex items-center justify-center text-slate-600 hover:text-primary hover:bg-slate-100 rounded-xl border border-[#E8DEDC]">
+                        <i class="fas fa-file-arrow-down text-xs"></i>
+                    </a>
+                    ` : ''}
+                    <button onclick="launchInteractiveQuiz('${safeTitle}')" title="Take Knowledge Verification Quiz"
+                        class="py-2 px-2.5 btn-secondary text-xs font-semibold flex items-center space-x-1 flex-shrink-0 text-gold-dark hover:bg-gold-50">
+                        <i class="fas fa-graduation-cap text-xs"></i>
+                        <span class="hidden sm:inline">Quiz</span>
+                    </button>
+                    <button onclick="deleteLmsDocument('${docId}', '${safeTitle}')" title="Remove Document from LMS"
+                        class="py-2 px-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition text-xs">
+                        <i class="fas fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Add Upload New Document Slot on Shelf
+    const uploadCardSlot = `
+        <div onclick="openModal('modal-lms-upload')"
+            class="border-2 border-dashed border-[#E8DEDC] hover:border-primary bg-[#FAF8F7] hover:bg-primary-50/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition group min-h-[260px]">
+            <div class="w-12 h-12 rounded-xl bg-white border border-[#E8DEDC] group-hover:border-primary-100 flex items-center justify-center text-primary text-xl shadow-2xs group-hover:scale-105 transition mb-2.5">
+                <i class="fas fa-cloud-arrow-up"></i>
+            </div>
+            <h4 class="font-heading font-bold text-sm text-slate-900 group-hover:text-primary transition">Upload Handbook / SOP</h4>
+            <p class="text-xs text-slate-500 max-w-[200px] mt-1 leading-relaxed">Publish PDF standard operating procedures to Supabase bucket</p>
+            <span class="mt-3.5 px-3 py-1.5 rounded-full btn-primary text-[11px] font-bold transition flex items-center space-x-1.5 shadow-2xs">
+                <i class="fas fa-arrow-up-from-bracket text-xs"></i>
+                <span>Upload Document</span>
+            </span>
+        </div>
+    `;
+
+    container.innerHTML = booksHtml + uploadCardSlot;
+}
+
+/**
+ * Filter by Department Chip
+ */
+function setLmsDeptFilter(deptKey) {
+    lmsActiveDeptFilter = deptKey;
+    document.querySelectorAll('.lms-dept-filter-chip').forEach(chip => {
+        const chipDept = chip.getAttribute('data-dept');
+        if (chipDept === lmsActiveDeptFilter) {
+            chip.className = 'lms-dept-filter-chip active px-3 py-1 rounded-full font-bold bg-primary text-white transition text-[11px] whitespace-nowrap';
+        } else {
+            chip.className = 'lms-dept-filter-chip px-3 py-1 rounded-full font-semibold bg-[#FAF8F7] text-slate-600 border border-[#E8DEDC] hover:bg-slate-100 transition text-[11px] whitespace-nowrap';
+        }
+    });
+
+    const searchInput = (document.getElementById('lms-search-input')?.value || '').trim();
+    fetchDynamicLmsDocuments(deptKey, searchInput);
+}
+
+/**
+ * Filter Books by Real-Time Search Input
+ */
+let lmsSearchDebounce = null;
+function filterLmsBooks() {
+    clearTimeout(lmsSearchDebounce);
+    lmsSearchDebounce = setTimeout(() => {
+        const searchInput = (document.getElementById('lms-search-input')?.value || '').trim();
+        fetchDynamicLmsDocuments(lmsActiveDeptFilter, searchInput);
+    }, 250);
+}
+
+/**
+ * Open Document in Reader Modal with Live Supabase File Link
+ */
+function openBookReader(docId) {
+    const doc = (window.dynamicLmsState.documents || []).find(d => d.id === docId);
+    if (!doc) return;
+
+    currentReadingBookId = doc.id;
+
+    // Update Header
+    document.getElementById('reader-book-title').textContent = doc.title || 'SOP Document';
+    const deptName = doc.department_name || 'Property-Wide';
+    const pages = doc.estimated_pages ? `${doc.estimated_pages} Pages` : '18 Pages';
+    const time = doc.estimated_reading_minutes ? `${doc.estimated_reading_minutes} min read` : '20 min read';
+    document.getElementById('reader-book-author').textContent = `${deptName} · ${pages} · ${time}`;
+    document.getElementById('reader-book-xp-badge').textContent = `+${doc.exp_reward || 100} XP Completion`;
+    
+    // Update Download Link
+    const dlBtn = document.getElementById('reader-download-btn');
+    if (dlBtn) {
+        if (doc.file_path && doc.file_path !== '#') {
+            dlBtn.href = doc.file_path;
+            dlBtn.classList.remove('hidden');
+        } else {
+            dlBtn.classList.add('hidden');
+        }
+    }
+
+    // Update Tip / Highlight
+    document.getElementById('reader-tip-text').textContent = doc.learning_outcomes || 'Review all mandatory procedures and maintain 5-star standard compliance across all touchpoints.';
+
+    // Update TOC & Step-by-Step Procedure Content
+    const tocEl = document.getElementById('reader-toc');
+    if (tocEl) {
+        const chapters = [
+            'Chapter 1: Standard Operating Overview',
+            'Chapter 2: Essential Execution Protocols',
+            'Chapter 3: Quality Assurance & Safety Benchmarks',
+            'Chapter 4: Digital Audit & Daily Sign-off'
+        ];
+        tocEl.innerHTML = chapters.map((ch, idx) => `
+            <div class="p-2 rounded-lg bg-slate-50 border border-slate-200/70 hover:bg-amber-50/50 hover:border-amber-300 transition cursor-pointer flex items-center justify-between text-xs">
+                <span class="font-medium text-slate-700"><i class="fas fa-bookmark text-amber-500 text-[10px] mr-1.5"></i> ${ch}</span>
+                <span class="text-[10px] font-bold text-slate-400">p.${(idx + 1) * 4}</span>
+            </div>
+        `).join('');
+    }
+
+    const contentEl = document.getElementById('reader-page-content');
+    if (contentEl) {
+        contentEl.innerHTML = `
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <p class="font-bold text-slate-900 text-xs text-primary">1. Operational Description</p>
+                <p class="text-xs text-slate-600 leading-relaxed">${doc.description || 'Master standard operating procedures and operational compliance.'}</p>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <p class="font-bold text-slate-900 text-xs text-primary">2. Key Learning Outcomes</p>
+                <p class="text-xs text-slate-600 leading-relaxed">${doc.learning_outcomes || 'Demonstrate mastery of hospitality guidelines and quality verification.'}</p>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <p class="font-bold text-slate-900 text-xs text-primary">3. Storage Object &amp; File Verification</p>
+                <p class="text-xs text-slate-600 leading-relaxed font-mono text-[11px] break-all">${doc.file_name || 'document.pdf'} (${Math.round((doc.file_size || 0) / 1024)} KB)</p>
+            </div>
+        `;
+    }
+
+    openModal('modal-book-reader');
+}
+
+/**
+ * Launch Quiz from Reader
+ */
+function launchQuizFromReader() {
+    if (currentReadingBookId) {
+        const doc = (window.dynamicLmsState.documents || []).find(d => d.id === currentReadingBookId);
+        closeModal('modal-book-reader');
+        if (doc) {
+            launchInteractiveQuiz(doc.title);
+        }
+    }
+}
+
+/**
+ * Handle File Selection in Upload Modal
+ */
+function handleLmsFileSelect(input) {
+    let file = null;
+    if (input instanceof File) {
+        file = input;
+    } else if (input && input.files && input.files[0]) {
+        file = input.files[0];
+    }
+
+    if (file) {
+        window._lmsSelectedFile = file;
+        const chosenEl = document.getElementById('lms-file-chosen');
+        const chosenName = document.getElementById('lms-file-chosen-name');
+        if (chosenEl && chosenName) {
+            const sizeStr = file.size > 1048576 
+                ? (file.size / 1048576).toFixed(1) + ' MB' 
+                : Math.round(file.size / 1024) + ' KB';
+            chosenName.textContent = `${file.name} (${sizeStr})`;
+            chosenEl.classList.remove('hidden');
+        }
+        const titleInput = document.getElementById('lms-doc-title');
+        if (titleInput && !titleInput.value.trim()) {
+            const defaultTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' ');
+            titleInput.value = defaultTitle.charAt(0).toUpperCase() + defaultTitle.slice(1);
+        }
+    }
+}
+
+/**
+ * Initialize Drag & Drop Handlers on Dropzone
+ */
+function initLmsDropzone() {
+    const dropzone = document.getElementById('lms-dropzone');
+    const fileInput = document.getElementById('lms-file-input');
+    if (!dropzone || dropzone._hasDragInit) return;
+    dropzone._hasDragInit = true;
+
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('border-primary', 'bg-primary-50/40');
+    });
+
+    dropzone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-primary', 'bg-primary-50/40');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-primary', 'bg-primary-50/40');
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+            const droppedFile = e.dataTransfer.files[0];
+            window._lmsSelectedFile = droppedFile;
+            if (fileInput) {
+                try {
+                    const dt = new DataTransfer();
+                    dt.items.add(droppedFile);
+                    fileInput.files = dt.files;
+                } catch (_) {}
             }
+            handleLmsFileSelect(droppedFile);
+        }
+    });
+}
 
-            function launchQuizFromReader() {
-                if (currentReadingBookId) {
-                    const book = lmsTrainingBooks.find(b => b.id === currentReadingBookId);
-                    closeModal('modal-book-reader');
-                    if (book) {
-                        launchInteractiveQuiz(book.title);
-                    }
-                }
-            }
+/**
+ * Submit Document Upload with Multipart / Supabase Storage
+ */
+async function submitLmsDocUpload(e) {
+    if (e && e.preventDefault) e.preventDefault();
 
-            function handleLmsFileSelect(input) {
-                if (input.files && input.files[0]) {
-                    const file = input.files[0];
-                    const chosenEl = document.getElementById('lms-file-chosen');
-                    const chosenName = document.getElementById('lms-file-chosen-name');
-                    if (chosenEl && chosenName) {
-                        chosenName.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
-                        chosenEl.classList.remove('hidden');
-                    }
-                    if (!document.getElementById('lms-doc-title').value) {
-                        const defaultTitle = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' ');
-                        document.getElementById('lms-doc-title').value = defaultTitle.charAt(0).toUpperCase() + defaultTitle.slice(1);
-                    }
-                }
-            }
+    const form = document.getElementById('form-lms-upload');
+    const fileInput = document.getElementById('lms-file-input');
+    const titleInput = document.getElementById('lms-doc-title');
+    const submitBtn = document.getElementById('btn-submit-lms-upload');
 
-            function submitLmsDocUpload() {
-                const title = (document.getElementById('lms-doc-title')?.value || '').trim();
-                const dept = document.getElementById('lms-doc-dept')?.value || 'front_office';
-                const category = document.getElementById('lms-doc-category')?.value || 'SOP Manual';
-                const pages = (document.getElementById('lms-doc-pages')?.value || '15 Pages · 3 Chapters').trim();
-                const xp = 100;
-                const desc = (document.getElementById('lms-doc-desc')?.value || '').trim() || 'Official hotel standard documentation and operational workflow instructions.';
+    let file = null;
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+        file = fileInput.files[0];
+    } else if (window._lmsSelectedFile) {
+        file = window._lmsSelectedFile;
+    }
 
-                if (!title) {
-                    showToast('Please enter a document title to publish!', 'error');
-                    return;
-                }
+    if (!file) {
+        showToast('Please select or browse a document / PDF file to upload!', 'error');
+        return;
+    }
 
-                const deptNames = {
-                    front_office: 'Front Office',
-                    culinary: 'Culinary',
-                    fb_service: 'F&B Service',
-                    housekeeping: 'Housekeeping',
-                    banquet: 'Banquets',
-                    all: 'Property-Wide'
-                };
+    const title = (titleInput?.value || '').trim();
+    if (!title) {
+        showToast('Please enter a document title!', 'error');
+        return;
+    }
 
-                const newBook = {
-                    id: 'book_' + Date.now(),
-                    title: title,
-                    subtitle: desc,
-                    dept: dept,
-                    deptName: deptNames[dept] || 'Hospitality',
-                    category: category,
-                    pages: pages,
-                    time: '15 min read',
-                    xp: xp,
-                    author: 'Elena Vance (HR Content Management)',
-                    icon: 'fa-book-open-reader',
-                    badge: 'Newly Uploaded SOP',
-                    desc: desc,
-                    tip: 'Review all mandatory steps carefully before taking the verification knowledge quiz.',
-                    chapters: [
-                        'Chapter 1: Standard Operational Overview',
-                        'Chapter 2: Quality Assurance & Safety Guidelines',
-                        'Chapter 3: Practical Checklist & Digital Sign-off'
-                    ],
-                    sopSteps: [
-                        { step: '1. Preparation & Setup', text: 'Ensure all equipment, workstations, and digital systems are calibrated according to Oxford Suites, Makati specifications.' },
-                        { step: '2. Standard Procedure Execution', text: desc },
-                        { step: '3. Compliance Audit Sign-off', text: 'Document completion in shift register and inform department supervisor.' }
-                    ]
-                };
+    // Set Button Loading State
+    let origBtnContent = '';
+    if (submitBtn) {
+        origBtnContent = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5 text-xs"></i><span>Uploading Direct to Supabase Storage...</span>';
+    }
 
-                lmsTrainingBooks.unshift(newBook);
-                renderLmsBooks();
-                closeModal('modal-lms-upload');
-                showToast(`Handbook "${title}" successfully published to associate training library!`, 'success');
+    try {
+        // 1. Upload file directly to Supabase Storage bucket 'documents' (Bypasses PHP 2M limits completely)
+        const cleanName = file.name.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+        const storagePath = `lms/${Date.now()}_${cleanName}`;
+        const uploadUrl = `https://jvxnrgcxegzhyaekxdok.supabase.co/storage/v1/object/documents/${storagePath}`;
+        const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2eG5yZ2N4ZWd6aHlhZWt4ZG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NTczOTYsImV4cCI6MjEwMzEzMzM5Nn0.nPTeedzMfSnFgFhxb2PDoXiH_aW8Mmwt04ltYR7IznU';
 
-                // Reset form
-                document.getElementById('lms-doc-title').value = '';
-                document.getElementById('lms-doc-desc').value = '';
-                document.getElementById('lms-file-chosen')?.classList.add('hidden');
-            }
+        const storageRes = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+                'apikey': anonKey,
+                'Authorization': `Bearer ${anonKey}`,
+                'Content-Type': file.type || 'application/octet-stream',
+                'x-upsert': 'true'
+            },
+            body: file
+        });
+
+        if (!storageRes.ok) {
+            const errData = await storageRes.json().catch(() => ({}));
+            throw new Error(errData.message || `Supabase storage upload failed with status ${storageRes.status}`);
+        }
+
+        const publicUrl = `https://jvxnrgcxegzhyaekxdok.supabase.co/storage/v1/object/public/documents/${storagePath}`;
+
+        // 2. Publish document record into Supabase SQL database
+        const metadataPayload = {
+            action: 'publish_document',
+            title: title,
+            file_name: file.name,
+            file_path: publicUrl,
+            file_type: file.type || 'application/pdf',
+            file_size: file.size,
+            department_id: document.getElementById('lms-doc-dept')?.value || 'all',
+            category: document.getElementById('lms-doc-category')?.value || 'SOP Manual',
+            estimated_pages: parseInt(document.getElementById('lms-doc-pages')?.value, 10) || 18,
+            exp_reward: parseInt(document.getElementById('lms-doc-xp')?.value, 10) || 100,
+            description: (document.getElementById('lms-doc-desc')?.value || '').trim(),
+            learning_outcomes: (document.getElementById('lms-doc-outcomes')?.value || '').trim(),
+            status: 'Published',
+            uploaded_by: 'emp-103'
+        };
+
+        const res = await fetch('api/lms.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(metadataPayload)
+        });
+
+        const json = await res.json();
+
+        if (json.success) {
+            closeModal('modal-lms-upload');
+            showToast(`Handbook "${title}" uploaded directly to Supabase Storage & published!`, 'success');
+            
+            // Reset form & state
+            if (form) form.reset();
+            window._lmsSelectedFile = null;
+            const chosenEl = document.getElementById('lms-file-chosen');
+            if (chosenEl) chosenEl.classList.add('hidden');
+
+            // Refresh Bookshelf immediately without page reload
+            await fetchDynamicLmsDocuments();
+        } else {
+            showToast(json.message || 'Failed to save document metadata.', 'error');
+        }
+    } catch (err) {
+        console.error('Direct upload error:', err);
+        showToast('Upload error: ' + err.message, 'error');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origBtnContent || '<i class="fas fa-upload mr-1 text-xs"></i><span>Publish Document to Library</span>';
+        }
+    }
+}
+
+
+/**
+ * Delete LMS Document
+ */
+async function deleteLmsDocument(docId, docTitle) {
+    if (!confirm(`Are you sure you want to remove "${docTitle}" from the LMS library and Supabase storage?`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch('api/lms.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete_document', id: docId })
+        });
+        const json = await res.json();
+
+        if (json.success) {
+            showToast(json.message || 'Document removed successfully.', 'success');
+            await fetchDynamicLmsDocuments();
+        } else {
+            showToast(json.message || 'Failed to delete document.', 'error');
+        }
+    } catch (err) {
+        showToast('Error deleting document: ' + err.message, 'error');
+    }
+}
+
+// Auto-initialize LMS on DOM load
+document.addEventListener('DOMContentLoaded', () => {
+    loadLmsDepartments();
+    fetchDynamicLmsDocuments();
+    initLmsDropzone();
+});
+
+// Also trigger if page already loaded
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    loadLmsDepartments();
+    fetchDynamicLmsDocuments();
+    initLmsDropzone();
+}
+
+
 
             // ========================================================
             // LMS NEEDS ANALYSIS (TNA) ROSTER & QUIZ POINTS PROGRESS
@@ -791,28 +906,39 @@ const lmsTrainingBooks = [
                 const container = document.getElementById('remedial-books-list');
                 if (!container) return;
 
+                const books = (window.dynamicLmsState && window.dynamicLmsState.documents && window.dynamicLmsState.documents.length > 0)
+                    ? window.dynamicLmsState.documents
+                    : (window.lmsTrainingBooks || []);
+
                 const emp = remedialAssociates[currentRemedialKey] || remedialAssociates['maria'];
                 const prescribedList = [
                     ...(window.prescribedBooksPerAssociate?.[currentRemedialKey] || []),
                     ...(window.prescribedBooksPerAssociate?.['emp-101'] || [])
                 ];
 
-                container.innerHTML = lmsTrainingBooks.map(book => {
+                if (!books || books.length === 0) {
+                    container.innerHTML = '<div class="p-4 text-center text-xs text-slate-400"><i class="fas fa-book-open mr-1"></i> No training documents currently loaded in the LMS library.</div>';
+                    return;
+                }
+
+                container.innerHTML = books.map(book => {
                     const isRecommended = book.id === emp.recommendedBookId;
-                    const isAlreadyPrescribed = prescribedList.includes(book.id) || lmsTnaEnrollments.some(e => e.bookId === book.id && e.empName.toLowerCase().includes(emp.name.split('·')[0].toLowerCase().trim()));
+                    const isAlreadyPrescribed = prescribedList.includes(book.id) || (window.lmsTnaEnrollments || []).some(e => e.bookId === book.id && e.empName && e.empName.toLowerCase().includes(emp.name.split('·')[0].toLowerCase().trim()));
+                    const deptDisplay = book.deptName || book.department_name || (book.departments && book.departments.name) || 'Property-Wide';
+                    const pagesDisplay = book.pages || (book.estimated_pages ? `${book.estimated_pages} Pages` : '18 Pages');
 
                     return `
                         <div class="p-3.5 rounded-2xl border ${isAlreadyPrescribed ? 'border-emerald-200 bg-emerald-50/20' : (isRecommended ? 'border-primary/40 bg-primary-50/30 shadow-xs' : 'border-[#E8DEDC] bg-white hover:bg-[#FAF8F7]')} flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition">
                             <div class="flex items-start space-x-3">
                                 <div class="w-9 h-9 rounded-xl ${isAlreadyPrescribed ? 'bg-emerald-100 text-emerald-800' : 'bg-[#FAF8F7] text-primary'} border border-[#E8DEDC] flex items-center justify-center text-sm shadow-2xs flex-shrink-0">
-                                    <i class="fas ${book.icon}"></i>
+                                    <i class="fas ${book.icon || 'fa-book-open'}"></i>
                                 </div>
                                 <div class="space-y-0.5">
                                     <div class="flex items-center space-x-2">
                                         <p class="font-bold text-slate-900 text-xs">${book.title}</p>
                                         ${isAlreadyPrescribed ? '<span class="px-2 py-0.2 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">✓ In IDP Plan</span>' : (isRecommended ? '<span class="badge-terracotta text-[9px] uppercase tracking-wider font-extrabold">Gap Match</span>' : '')}
                                     </div>
-                                    <p class="text-[11px] text-slate-500">${book.deptName} · ${book.category} · <span class="font-medium text-slate-700">${book.pages}</span></p>
+                                    <p class="text-[11px] text-slate-500">${deptDisplay} · ${book.category || 'SOP Manual'} · <span class="font-medium text-slate-700">${pagesDisplay}</span></p>
                                 </div>
                             </div>
                             <div class="flex items-center space-x-2 self-end sm:self-auto flex-shrink-0">
@@ -841,8 +967,12 @@ const lmsTrainingBooks = [
             window.renderRemedialBooksList = renderRemedialBooksList;
 
             function assignBookToIdp(bookId) {
-                const book = lmsTrainingBooks.find(b => b.id === bookId);
+                const books = (window.dynamicLmsState && window.dynamicLmsState.documents && window.dynamicLmsState.documents.length > 0)
+                    ? window.dynamicLmsState.documents
+                    : (window.lmsTrainingBooks || []);
+                const book = books.find(b => b.id === bookId);
                 if (!book) return;
+
 
                 const emp = remedialAssociates[currentRemedialKey] || remedialAssociates['maria'];
 

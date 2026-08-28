@@ -1,3 +1,4 @@
+<?php require_once 'config/config.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -19,12 +20,21 @@
         <!-- Chart.js CDN -->
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+        <!-- Dynamic Supabase Configuration from Environment -->
+        <script>
+            window.SUPABASE_CONFIG = {
+                url: '<?php echo rtrim(SUPABASE_URL, "/"); ?>',
+                anonKey: '<?php echo SUPABASE_ANON_KEY; ?>'
+            };
+        </script>
+
         <!-- Sonner Toast (vanilla) CSS -->
         <link href="https://cdn.jsdelivr.net/npm/vanilla-sonner@latest/dist/vanilla-sonner.min.css" rel="stylesheet" />
 
         <!-- Sonner Toast Controller & Global Shim with Max 3 FIFO Queue & 3s Auto-Dismiss -->
         <script>
             window._toastQueue = [];
+
             window._activeToastIds = [];
             const MAX_VISIBLE_TOASTS = 3;
             const TOAST_DURATION = 2000;

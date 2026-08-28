@@ -3,10 +3,11 @@
  * Oxford Suites, Makati · HR3 System
  */
 
-const SUPABASE_CONFIG = {
+const SUPABASE_CONFIG = window.SUPABASE_CONFIG || {
     url: 'https://jvxnrgcxegzhyaekxdok.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2eG5yZ2N4ZWd6aHlhZWt4ZG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NTczOTYsImV4cCI6MjEwMzEzMzM5Nn0.nPTeedzMfSnFgFhxb2PDoXiH_aW8Mmwt04ltYR7IznU'
 };
+
 
 // Initialize Supabase Client if supabase-js library is loaded
 let supabaseClient = null;

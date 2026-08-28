@@ -104,3 +104,96 @@ function supabaseRequest($endpoint, $method = 'GET', $data = null, $useServiceRo
         'error'  => ($httpCode >= 400) ? ($decodedData['message'] ?? 'Request failed') : null
     ];
 }
+
+/**
+ * 3. Supabase Storage Upload Helper
+ * Uploads binary file content to a specific Supabase storage bucket
+ */
+function uploadToSupabaseStorage($bucket, $destinationPath, $fileContent, $mimeType = 'application/octet-stream') {
+    $url = rtrim(SUPABASE_URL, '/') . '/storage/v1/object/' . rawurlencode($bucket) . '/' . ltrim($destinationPath, '/');
+    $apiKey = SUPABASE_SERVICE_ROLE_KEY;
+
+    $ch = curl_init($url);
+    $headers = [
+        "apikey: {$apiKey}",
+        "Authorization: Bearer {$apiKey}",
+        "Content-Type: {$mimeType}",
+        "x-upsert: true"
+    ];
+
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $fileContent);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($curlError) {
+        return ['status' => 500, 'data' => null, 'error' => $curlError];
+    }
+
+    $decoded = json_decode($response, true);
+    $publicUrl = rtrim(SUPABASE_URL, '/') . '/storage/v1/object/public/' . rawurlencode($bucket) . '/' . ltrim($destinationPath, '/');
+
+    return [
+        'status' => $httpCode,
+        'data' => $decoded,
+        'publicUrl' => $publicUrl,
+        'filePath' => $destinationPath,
+        'error' => ($httpCode >= 400) ? ($decoded['message'] ?? 'Storage upload failed') : null
+    ];
+}
+
+/**
+ * 4. Supabase Storage Delete Helper
+ */
+function deleteFromSupabaseStorage($bucket, $destinationPaths) {
+    $url = rtrim(SUPABASE_URL, '/') . '/storage/v1/object/' . rawurlencode($bucket);
+    $apiKey = SUPABASE_SERVICE_ROLE_KEY;
+
+    $paths = is_array($destinationPaths) ? $destinationPaths : [$destinationPaths];
+    $paths = array_map(function($p) {
+        return ltrim($p, '/');
+    }, array_filter($paths));
+
+    if (empty($paths)) {
+        return ['status' => 200, 'data' => [], 'error' => null];
+    }
+
+    $ch = curl_init($url);
+    $headers = [
+        "apikey: {$apiKey}",
+        "Authorization: Bearer {$apiKey}",
+        "Content-Type: application/json"
+    ];
+
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['prefixes' => array_values($paths)]));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($curlError) {
+        return ['status' => 500, 'data' => null, 'error' => $curlError];
+    }
+
+    $decoded = json_decode($response, true);
+    return [
+        'status' => $httpCode,
+        'data' => $decoded,
+        'error' => ($httpCode >= 400) ? ($decoded['message'] ?? 'Storage delete failed') : null
+    ];
+}
+
+

@@ -798,8 +798,12 @@
                 showToast('Congratulations! Scored 100% on the quiz! +100 XP awarded!', 'success');
             }
 
-            // =========================================================================
-            // LEARNING MANAGEMENT SYSTEM (LMS) - DIGITAL 3D BOOK & SOP LIBRARY
-            // =========================================================================
-            let currentReadingBookId = null;
-            let lmsActiveDeptFilter = 'all';
+            // Expose Core Navigation & Modal Functions to Window
+            window.switchPillar = switchPillar;
+            window.switchSubTab = switchSubTab;
+            window.openModal = openModal;
+            window.closeModal = closeModal;
+            window.toggleMobileSidebar = toggleMobileSidebar;
+            window.switchRole = switchRole;
+            window.logOutToAuth = logOutToAuth;
+

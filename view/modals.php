@@ -855,9 +855,9 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h3 class="font-heading font-bold text-base text-slate-900">Upload Training Document / SOP</h3>
-                        <span class="badge-sage">LMS Library</span>
+                        <span class="badge-sage">Supabase Storage</span>
                     </div>
-                    <p class="text-xs text-slate-500 mt-0.5">Publish PDF handbooks, SOP guides, or video modules to associate book shelf</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Publish PDF handbooks, SOP guides, or documents directly to Supabase storage bucket</p>
                 </div>
             </div>
             <button onclick="closeModal('modal-lms-upload')"
@@ -867,80 +867,84 @@
         </div>
 
         <!-- Form Content -->
-        <div class="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1 text-xs bg-white">
+        <form id="form-lms-upload" enctype="multipart/form-data" onsubmit="submitLmsDocUpload(event)" class="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1 text-xs bg-white">
+
             <!-- File Drag & Drop Zone -->
             <div id="lms-dropzone" onclick="document.getElementById('lms-file-input').click()"
                 class="border-2 border-dashed border-sage-light hover:border-sage-dark bg-sage-50/30 hover:bg-sage-50/60 p-6 rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition group">
                 <div class="w-12 h-12 rounded-full bg-sage-100 text-sage-dark flex items-center justify-center text-xl mb-2 group-hover:scale-110 transition shadow-2xs">
                     <i class="fas fa-cloud-arrow-up"></i>
                 </div>
-                <p class="font-bold text-slate-900 text-xs">Drag & drop document or <span class="text-primary font-bold underline">browse files</span></p>
-                <p class="text-[10px] text-slate-400 mt-1">Supports PDF, DOCX, PPTX, MP4, and SCORM packages (Max 50MB)</p>
+                <p class="font-bold text-slate-900 text-xs">Drag &amp; drop document or <span class="text-primary font-bold underline">browse files</span></p>
+                <p class="text-[10px] text-slate-400 mt-1">Supports PDF, DOCX, DOC, PPTX, TXT, MP4, and ZIP files</p>
                 <p id="lms-file-chosen" class="text-xs font-bold text-sage-dark mt-2 hidden"><i class="fas fa-check-circle mr-1"></i> <span id="lms-file-chosen-name">file.pdf</span></p>
-                <input type="file" id="lms-file-input" onchange="handleLmsFileSelect(this)" class="hidden" accept=".pdf,.docx,.doc,.pptx,.mp4,.zip">
+                <input type="file" id="lms-file-input" name="document" onchange="handleLmsFileSelect(this)" class="hidden" accept=".pdf,.docx,.doc,.pptx,.txt,.mp4,.zip" required>
             </div>
 
             <!-- Metadata Fields -->
             <div class="space-y-3">
                 <div>
-                    <label class="block font-bold text-slate-800 text-[11px] mb-1">Document / Book Title</label>
-                    <input id="lms-doc-title" type="text" placeholder="e.g., Executive Suite Turndown & Linen Standard Handbook"
+                    <label class="block font-bold text-slate-800 text-[11px] mb-1">Document / Book Title *</label>
+                    <input id="lms-doc-title" name="title" type="text" required placeholder="e.g., Executive Suite Turndown & Linen Standard Handbook"
                         class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block font-bold text-slate-800 text-[11px] mb-1">Target Department</label>
-                        <select id="lms-doc-dept" class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
-                            <option value="front_office">Front Office</option>
-                            <option value="culinary">Kitchen & Culinary</option>
-                            <option value="fb_service">Food & Beverage</option>
-                            <option value="housekeeping">Housekeeping & Laundry</option>
-                            <option value="banquet">Banquets & Events</option>
+                        <select id="lms-doc-dept" name="department_id" class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                             <option value="all">Property-Wide (All Associates)</option>
+                            <!-- Dynamically populated from Supabase departments -->
                         </select>
                     </div>
                     <div>
-                        <label class="block font-bold text-slate-800 text-[11px] mb-1">Document Category</label>
-                        <select id="lms-doc-category" class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
+                        <label class="block font-bold text-slate-800 text-[11px] mb-1">Document Category *</label>
+                        <select id="lms-doc-category" name="category" class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                             <option value="SOP Manual">SOP Handbook / Manual</option>
-                            <option value="Compliance Standard">Compliance & Hygiene</option>
+                            <option value="Compliance Standard">Compliance &amp; Hygiene</option>
                             <option value="Masterclass Guide">Masterclass Compendium</option>
-                            <option value="Safety Protocol">Safety & Emergency Protocol</option>
+                            <option value="Safety Protocol">Safety &amp; Emergency Protocol</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block font-bold text-slate-800 text-[11px] mb-1">Estimated Reading / Pages</label>
-                        <input id="lms-doc-pages" type="text" placeholder="e.g., 20 Pages · 4 Chapters"
+                        <label class="block font-bold text-slate-800 text-[11px] mb-1">Estimated Reading Pages</label>
+                        <input id="lms-doc-pages" name="estimated_pages" type="number" min="1" max="500" value="18" placeholder="e.g., 18"
                             class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                     </div>
                     <div>
-                        <label class="block font-bold text-slate-800 text-[11px] mb-1">Associate Quiz Reward</label>
-                        <input id="lms-doc-xp" type="text" readonly value="+100 XP (On Quiz Completion)"
-                            class="w-full p-2.5 bg-slate-100 border border-slate-200 text-slate-500 rounded-xl text-xs font-bold cursor-not-allowed">
+                        <label class="block font-bold text-slate-800 text-[11px] mb-1">Associate XP Reward</label>
+                        <input id="lms-doc-xp" name="exp_reward" type="number" min="10" max="500" value="100"
+                            class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] text-slate-800 rounded-xl text-xs font-bold focus:ring-2 focus:ring-primary focus:outline-none">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block font-bold text-slate-800 text-[11px] mb-1">Short Description / Learning Outcomes</label>
-                    <textarea id="lms-doc-desc" rows="2" placeholder="Describe essential procedures, compliance benchmarks, and key check points..."
+                    <label class="block font-bold text-slate-800 text-[11px] mb-1">Short Description</label>
+                    <textarea id="lms-doc-desc" name="description" rows="2" placeholder="Describe essential procedures, compliance benchmarks, and key check points..."
+                        class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar"></textarea>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-800 text-[11px] mb-1">Key Learning Outcomes</label>
+                    <textarea id="lms-doc-outcomes" name="learning_outcomes" rows="2" placeholder="List core competencies and standards associates will master after reading..."
                         class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar"></textarea>
                 </div>
             </div>
-        </div>
+        </form>
 
         <!-- Footer -->
         <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
-            <span class="text-[11px] text-slate-500 font-semibold"><i class="fas fa-shield-halved text-sage-dark mr-1"></i> Official Training Documentation Publishing</span>
-            <div class="flex items-center space-x-2">
-                <button onclick="closeModal('modal-lms-upload')"
+            <span class="text-[11px] text-slate-500 font-semibold hidden sm:inline"><i class="fas fa-shield-halved text-sage-dark mr-1"></i> Bucket: "documents"</span>
+            <div class="flex items-center space-x-2 ml-auto">
+                <button type="button" onclick="closeModal('modal-lms-upload')"
                     class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
-                <button onclick="submitLmsDocUpload()"
-                    class="btn-primary px-5 py-2 text-xs font-bold">
-                    <i class="fas fa-upload mr-1.5"></i> Publish Document
+                <button type="button" id="btn-submit-lms-upload" onclick="document.getElementById('form-lms-upload').requestSubmit()"
+                    class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-2xs">
+                    <i class="fas fa-upload mr-1 text-xs"></i>
+                    <span>Publish Document to Library</span>
                 </button>
             </div>
         </div>
@@ -966,10 +970,10 @@
                 </div>
             </div>
             <div class="flex items-center space-x-2">
-                <button onclick="showToast('Downloading PDF Document...', 'info')" class="btn-secondary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5">
-                    <i class="fas fa-file-pdf text-primary text-xs"></i>
-                    <span class="hidden sm:inline">Download PDF</span>
-                </button>
+                <a id="reader-download-btn" href="#" target="_blank" class="btn-secondary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5 hover:bg-slate-100">
+                    <i class="fas fa-arrow-up-right-from-square text-primary text-xs"></i>
+                    <span class="hidden sm:inline">Open / Download File</span>
+                </a>
                 <button onclick="closeModal('modal-book-reader')"
                     class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
                     <i class="fas fa-times text-xs"></i>
