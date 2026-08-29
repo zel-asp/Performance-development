@@ -145,7 +145,7 @@ try {
             $response = [
                 'success' => true,
                 'data' => [
-                    'evaluations' => $evalsRes['data'] ?? [],
+                    'evaluations' => $evalsRes['data']['evaluations'] ?? ($evalsRes['data'] ?? []),
                     'planning'    => $planRes['data'] ?? []
                 ]
             ];
@@ -180,6 +180,28 @@ try {
 
         case 'retry_plan':
             $response = $controller->retryPlan($payload);
+            break;
+
+        case 'get_training_programs':
+            $response = $controller->getTrainingPrograms($payload);
+            break;
+
+        case 'get_training_needs':
+            $response = $controller->getTrainingNeeds($payload);
+            break;
+
+        case 'assign_formal_training':
+        case 'assign_formal_curriculum':
+            $response = $controller->assignFormalCurriculum($payload);
+            break;
+
+        case 'continue_to_final_evaluation':
+        case 'continue_final_evaluation':
+            $response = $controller->continueToFinal1on1Evaluation($payload);
+            break;
+
+        case 'mark_goal_failed':
+            $response = $controller->markGoalFailed($payload);
             break;
 
         default:

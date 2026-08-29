@@ -219,6 +219,7 @@
                                                 <option value="pending" selected>Pending Approval</option>
                                                 <option value="approved">Approved</option>
                                                 <option value="completed">Completed</option>
+                                                <option value="failed">Failed</option>
                                             </select>
                                             <button onclick="confirmApproveAllPendingGoals()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
                                                 <i class="fas fa-check-double"></i>

@@ -29,7 +29,7 @@ create table public.training_needs (
   constraint training_needs_department_id_fkey foreign KEY (department_id) references departments (id) on delete set null,
   constraint training_needs_employee_id_fkey foreign KEY (employee_id) references employees (id) on delete CASCADE,
   constraint training_needs_target_competency_id_fkey foreign KEY (target_competency_id) references competencies (id) on delete set null,
-  constraint training_needs_target_goal_id_fkey foreign KEY (target_goal_id) references training_needs (id) on update CASCADE on delete CASCADE,
+  constraint training_needs_target_goal_id_fkey foreign KEY (target_goal_id) references performance_goals (id) on update CASCADE on delete CASCADE,
   constraint training_needs_source_type_check check (
     (
       (source_type)::text = any (

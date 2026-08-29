@@ -64,7 +64,7 @@ class PerformanceGoalModel extends BaseModel
         $scopeEnum = in_array($scopeLower, ['single', 'dept', 'property']) ? $scopeLower : 'single';
 
         $statusVal = trim($data['status'] ?? 'Pending Approval');
-        $validStatuses = ['Pending Approval', 'Approved', 'Needs Revision', 'Completed'];
+        $validStatuses = ['Pending Approval', 'Approved', 'Needs Revision', 'Completed', 'Failed'];
         if (!in_array($statusVal, $validStatuses)) {
             $statusVal = 'Pending Approval';
         }
@@ -84,7 +84,8 @@ class PerformanceGoalModel extends BaseModel
             'supervisor_id' => !empty($data['supervisor_id']) ? trim($data['supervisor_id']) : null,
             'supervisor_notes' => !empty($data['supervisor_notes']) ? trim($data['supervisor_notes']) : null,
             'retry_count'    => isset($data['retry_count']) ? (int)$data['retry_count'] : 0,
-            'needs_training' => isset($data['needs_training']) ? (bool)$data['needs_training'] : false
+            'needs_training' => isset($data['needs_training']) ? (bool)$data['needs_training'] : false,
+            'in_training'    => isset($data['in_training']) ? (bool)$data['in_training'] : false
         ];
 
         // Direct Supabase insert
@@ -104,7 +105,7 @@ class PerformanceGoalModel extends BaseModel
     }
 
     /**
-     * Update goal status in Supabase (e.g. Approved, Needs Revision, Completed)
+     * Update goal status in Supabase (e.g. Approved, Needs Revision, Completed, Failed)
      */
     public function updateStatus(string $id, string $status, ?string $supervisorNotes = null): ?array
     {
@@ -118,6 +119,33 @@ class PerformanceGoalModel extends BaseModel
         }
 
         return $this->update($id, $update);
+    }
+
+    /**
+     * Update in_training flag for a goal in Supabase
+     */
+    public function setInTraining(string|int $goalId, bool $inTraining = true): ?array
+    {
+        return $this->update((string)$goalId, [
+            'in_training' => $inTraining,
+            'updated_at'  => date('c')
+        ]);
+    }
+
+    /**
+     * Update in_training flag for all active goals of an employee
+     */
+    public function setEmployeeGoalsInTraining(string $empId, bool $inTraining = true): array
+    {
+        $goals = $this->getGoalsByEmployee($empId);
+        $updated = [];
+        foreach ($goals as $g) {
+            if (!empty($g['id'])) {
+                $up = $this->setInTraining($g['id'], $inTraining);
+                if ($up) $updated[] = $up;
+            }
+        }
+        return $updated;
     }
 
     /**
@@ -141,6 +169,34 @@ class PerformanceGoalModel extends BaseModel
         foreach ($goals as $g) {
             if (!empty($g['id'])) {
                 $up = $this->setNeedsTraining($g['id'], $needsTraining);
+                if ($up) $updated[] = $up;
+            }
+        }
+        return $updated;
+    }
+
+    /**
+     * Set exact retry_count for a goal in Supabase
+     */
+    public function setGoalRetryCount(string|int $goalId, int $count): ?array
+    {
+        return $this->update((string)$goalId, [
+            'retry_count'    => $count,
+            'needs_training' => ($count >= 3),
+            'updated_at'     => date('c')
+        ]);
+    }
+
+    /**
+     * Set exact retry_count for all active goals of an employee in Supabase
+     */
+    public function setEmployeeGoalsRetryCount(string $empId, int $count): array
+    {
+        $goals = $this->getGoalsByEmployee($empId);
+        $updated = [];
+        foreach ($goals as $g) {
+            if (!empty($g['id'])) {
+                $up = $this->setGoalRetryCount($g['id'], $count);
                 if ($up) $updated[] = $up;
             }
         }
@@ -200,6 +256,7 @@ class PerformanceGoalModel extends BaseModel
         if (isset($data['supervisor_notes'])) $update['supervisor_notes'] = trim($data['supervisor_notes']);
         if (isset($data['retry_count'])) $update['retry_count'] = (int)$data['retry_count'];
         if (isset($data['needs_training'])) $update['needs_training'] = (bool)$data['needs_training'];
+        if (isset($data['in_training'])) $update['in_training'] = (bool)$data['in_training'];
 
         return $this->update($id, $update);
     }
@@ -212,7 +269,7 @@ class PerformanceGoalModel extends BaseModel
         $goals = $this->getGoalsByEmployee($empId);
         foreach ($goals as $g) {
             $status = strtolower(trim($g['status'] ?? ''));
-            if ($status !== 'completed') {
+            if ($status !== 'completed' && $status !== 'failed') {
                 return true;
             }
         }
@@ -231,6 +288,36 @@ class PerformanceGoalModel extends BaseModel
     }
 
     /**
+     * Mark a goal as failed
+     */
+    public function markFailed(string $id): ?array
+    {
+        return $this->update($id, [
+            'status'     => 'Failed',
+            'updated_at' => date('c')
+        ]);
+    }
+
+    /**
+     * Mark all active goals for an employee as failed
+     */
+    public function markEmployeeGoalsFailed(string $empId): array
+    {
+        $goals = $this->getGoalsByEmployee($empId);
+        $failed = [];
+        foreach ($goals as $g) {
+            if (!empty($g['id'])) {
+                $status = strtolower(trim($g['status'] ?? ''));
+                if ($status !== 'completed' && $status !== 'failed') {
+                    $up = $this->markFailed($g['id']);
+                    if ($up) $failed[] = $up;
+                }
+            }
+        }
+        return $failed;
+    }
+
+    /**
      * Mark all active goals for an employee as completed
      */
     public function markEmployeeGoalsCompleted(string $empId): array
@@ -240,7 +327,7 @@ class PerformanceGoalModel extends BaseModel
         foreach ($goals as $g) {
             if (!empty($g['id'])) {
                 $status = strtolower(trim($g['status'] ?? ''));
-                if ($status !== 'completed') {
+                if ($status !== 'completed' && $status !== 'failed') {
                     $up = $this->markCompleted($g['id']);
                     if ($up) $completed[] = $up;
                 }

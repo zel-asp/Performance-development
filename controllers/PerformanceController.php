@@ -903,9 +903,11 @@ class PerformanceController
 
             $evalRecord = $this->evaluationModel->getEvaluationByEmployee($eId);
             $evalStatus = $evalRecord['status'] ?? 'Pending';
-            $selfRating = isset($evalRecord['self_rating']) ? (float)$evalRecord['self_rating'] : ($eId === 'emp-102' ? 4.7 : 4.3);
-            $mgrRating = isset($evalRecord['supervisor_rating']) && $evalRecord['supervisor_rating'] > 0 ? (float)$evalRecord['supervisor_rating'] : 4.8;
-            $tierLabel = $evalRecord['tier_label'] ?? ($mgrRating >= 4.5 ? 'Master Tier' : 'Proficient');
+            $selfRating = isset($evalRecord['self_evaluation']) && $evalRecord['self_evaluation'] !== null && (float)$evalRecord['self_evaluation'] > 0
+                ? (float)$evalRecord['self_evaluation']
+                : (isset($evalRecord['self_rating']) && $evalRecord['self_rating'] !== null ? (float)$evalRecord['self_rating'] : 0.0);
+            $mgrRating = isset($evalRecord['supervisor_rating']) && $evalRecord['supervisor_rating'] !== null && (float)$evalRecord['supervisor_rating'] > 0 ? (float)$evalRecord['supervisor_rating'] : 0.0;
+            $tierLabel = $evalRecord['tier_label'] ?? ($mgrRating >= 4.5 ? 'Master Tier' : ($mgrRating >= 3.0 ? 'Proficient' : 'Pending Evaluation'));
 
             $roster[] = [
                     'id'                 => $eId,
@@ -918,7 +920,7 @@ class PerformanceController
                     'selfRating'         => $selfRating,
                     'managerRating'      => $mgrRating,
                     'supervisorRating'   => $mgrRating,
-                    'customerRating'     => 4.9,
+                    'customerRating'     => ($mgrRating > 0 ? 4.9 : 0.0),
                     'tierLabel'          => $tierLabel,
                     'goalsCount'         => count($goals),
                     'approvedCount'      => $approvedCount,
@@ -1040,6 +1042,20 @@ class PerformanceController
         $empId = $payload['employee_id'] ?? 'emp-101';
         $saved = $this->evaluationModel->calibrateEvaluation($payload);
 
+        // If calibrated score is below 3.0 after 2nd attempt (retry_count >= 1), automatically flag needs_training = true
+        $calibratedScore = isset($payload['calibrated_score']) ? (float)$payload['calibrated_score'] : (isset($payload['new_calibrated_score']) ? (float)$payload['new_calibrated_score'] : 0.0);
+        if ($calibratedScore > 0 && $calibratedScore < 3.0) {
+            $goals = $this->goalModel->getGoalsByEmployee($empId);
+            $maxRetry = 0;
+            foreach ($goals as $g) {
+                $r = isset($g['retry_count']) ? (int)$g['retry_count'] : 0;
+                if ($r > $maxRetry) $maxRetry = $r;
+            }
+            if ($maxRetry >= 1) {
+                $this->goalModel->setEmployeeGoalsNeedsTraining($empId, true);
+            }
+        }
+
         return [
             'success' => true,
             'data'    => $saved,
@@ -1141,6 +1157,175 @@ class PerformanceController
             'retry_count' => $newRetryCount,
             'data'    => $updatedGoals,
             'message' => "Plan retried (Retry count updated to {$newRetryCount} in database). Tasks prepared for re-monitoring."
+        ];
+    }
+
+    /**
+     * Get all active training programs from training_programs
+     */
+    public function getTrainingPrograms(array $payload = []): array
+    {
+        $res = supabaseRequest('training_programs', 'GET', null, true);
+        $programs = ($res['status'] === 200 && is_array($res['data'])) ? $res['data'] : [];
+        return [
+            'success' => true,
+            'data'    => $programs
+        ];
+    }
+
+    /**
+     * Get training needs from training_needs
+     */
+    public function getTrainingNeeds(array $payload = []): array
+    {
+        $res = supabaseRequest('training_needs', 'GET', null, true);
+        $needs = ($res['status'] === 200 && is_array($res['data'])) ? $res['data'] : [];
+        return [
+            'success' => true,
+            'data'    => $needs
+        ];
+    }
+
+    /**
+     * Assign Formal Curriculum / Program to Employee from Stage 7 IDP Remediation
+     * Inserts into training_needs with target_goal_id and employee_id, and sets needs_training = true
+     */
+    public function assignFormalCurriculum(array $payload): array
+    {
+        $programId = $payload['program_id'] ?? $payload['programId'] ?? null;
+        $empId = $payload['employee_id'] ?? $payload['employeeId'] ?? 'emp-101';
+        $goalId = $payload['goal_id'] ?? $payload['target_goal_id'] ?? null;
+
+        if (empty($programId)) {
+            return ['success' => false, 'message' => 'Program ID is required.'];
+        }
+
+        // 1. Fetch training program details
+        $progRes = supabaseRequest('training_programs?id=eq.' . urlencode($programId), 'GET', null, true);
+        $program = (!empty($progRes['data']) && is_array($progRes['data'])) ? $progRes['data'][0] : null;
+        if (!$program) {
+            return ['success' => false, 'message' => 'Training Program not found.'];
+        }
+
+        // 2. Fetch employee details
+        $empRes = supabaseRequest('employees?id=eq.' . urlencode($empId), 'GET', null, true);
+        $emp = (!empty($empRes['data']) && is_array($empRes['data'])) ? $empRes['data'][0] : null;
+        $empName = $emp['full_name'] ?? ($emp['name'] ?? ($payload['associate_name'] ?? 'Associate'));
+        $empRole = $emp['title'] ?? ($emp['role'] ?? ($payload['associate_role'] ?? 'Staff'));
+        $dept = $emp['department'] ?? ($program['dept'] ?? 'General');
+
+        // 3. Resolve active goal if goalId is missing
+        if (empty($goalId)) {
+            $goals = $this->goalModel->getGoalsByEmployee($empId);
+            if (!empty($goals)) {
+                $goalId = (string)$goals[0]['id'];
+            }
+        }
+
+        // 4. Create record in training_needs
+        $passingScore = isset($program['passing_score']) ? (float)$program['passing_score'] : 80.0;
+        $targetBenchmark = round($passingScore / 20.0, 2); // e.g. 80% => 4.00 / 5.0
+
+        $needPayload = [
+            'title'               => 'Formal Training: ' . ($program['title'] ?? 'Performance IDP Curriculum'),
+            'source_type'         => 'competency_gap',
+            'source_label'        => 'Stage 7 Performance IDP Remediation',
+            'category'            => $program['category'] ?? 'Performance Gap',
+            'dept'                => $dept,
+            'employee_id'         => $empId,
+            'associate_name'      => $empName,
+            'associate_role'      => $empRole,
+            'associate_avatar'    => $emp['avatar_url'] ?? null,
+            'target_competency'   => $program['target_competency'] ?? 'Performance Calibration Standard',
+            'competency_key'      => $program['competency_key'] ?? 'performance_remediation',
+            'current_score'       => 0.00,
+            'required_score'      => $targetBenchmark,
+            'gap'                 => (0 - $targetBenchmark),
+            'urgency'             => 'High',
+            'status'              => 'In Training',
+            'linked_program_id'   => $program['id'],
+            'target_goal_id'      => $goalId ? (string)$goalId : null,
+            'date_identified'     => date('M d, Y'),
+            'notes'               => "Enrolled from Stage 7 IDP Remediation for Goal ID: {$goalId}. Benchmark score: {$targetBenchmark} / 5.0.",
+            'created_at'          => date('c'),
+            'updated_at'          => date('c')
+        ];
+
+        // Attempt 1: with target_goal_id
+        $insertRes = supabaseRequest('training_needs', 'POST', $needPayload, true);
+
+        // Attempt 2: fallback without target_goal_id if FK constraint on target_goal_id restricts
+        if ($insertRes['status'] !== 200 && $insertRes['status'] !== 201) {
+            $needPayload['target_goal_id'] = null;
+            $insertRes = supabaseRequest('training_needs', 'POST', $needPayload, true);
+        }
+
+        $insertedRecord = (!empty($insertRes['data']) && is_array($insertRes['data'])) ? $insertRes['data'][0] : $needPayload;
+
+        // 5. Update goal needs_training flag to true, in_training to true, and set retry_count = 3 in performance_goals
+        if (!empty($goalId)) {
+            $this->goalModel->setNeedsTraining($goalId, true);
+            $this->goalModel->setInTraining($goalId, true);
+            $this->goalModel->setGoalRetryCount($goalId, 3);
+        } else {
+            $this->goalModel->setEmployeeGoalsNeedsTraining($empId, true);
+            $this->goalModel->setEmployeeGoalsInTraining($empId, true);
+            $this->goalModel->setEmployeeGoalsRetryCount($empId, 3);
+        }
+
+        return [
+            'success' => true,
+            'message' => "Formal Training Program '{$program['title']}' assigned to {$empName} in training_needs.",
+            'data'    => $insertedRecord
+        ];
+    }
+
+    /**
+     * Continue to Final 1-on-1 Evaluation (Sets retry_count to 4 in database)
+     */
+    public function continueToFinal1on1Evaluation(array $payload): array
+    {
+        $goalId = $payload['goal_id'] ?? $payload['id'] ?? null;
+        $empId = $payload['employee_id'] ?? 'emp-101';
+
+        if (!empty($goalId)) {
+            $updated = $this->goalModel->setGoalRetryCount($goalId, 4);
+        } else {
+            $updated = $this->goalModel->setEmployeeGoalsRetryCount($empId, 4);
+        }
+
+        return [
+            'success' => true,
+            'data'    => $updated,
+            'retry_count' => 4,
+            'message' => "Initiated Final 1-on-1 Evaluation (Retry count set to 4). Phases 3-6 locked."
+        ];
+    }
+
+    /**
+     * Mark Performance Goal as Failed
+     */
+    public function markGoalFailed(array $payload): array
+    {
+        $goalId = $payload['goal_id'] ?? $payload['id'] ?? null;
+        $empId = $payload['employee_id'] ?? null;
+
+        if (!empty($goalId)) {
+            $updated = $this->goalModel->markFailed((string)$goalId);
+        } elseif (!empty($empId)) {
+            $updated = $this->goalModel->markEmployeeGoalsFailed($empId);
+        } else {
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => "Goal ID or Employee ID is required to mark as failed."
+            ];
+        }
+
+        return [
+            'success' => true,
+            'data'    => $updated,
+            'message' => "Performance goal permanently marked as Failed."
         ];
     }
 

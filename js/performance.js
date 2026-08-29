@@ -200,6 +200,35 @@ const PerformanceAPI = {
             employee_id: employeeId,
             goal_id: goalId
         });
+    },
+
+    // 15. Training Programs & Needs
+    getTrainingPrograms() {
+        return this.request('get_training_programs', 'GET');
+    },
+
+    getTrainingNeeds() {
+        return this.request('get_training_needs', 'GET');
+    },
+
+    assignFormalCurriculum(data) {
+        return this.request('assign_formal_training', 'POST', data);
+    },
+
+    // 16. Continue to Final 1-on-1 Evaluation (Sets retry_count = 4)
+    continueToFinalEvaluation(employeeId, goalId = null) {
+        return this.request('continue_to_final_evaluation', 'POST', {
+            employee_id: employeeId,
+            goal_id: goalId
+        });
+    },
+
+    // 17. Mark Performance Goal as Failed
+    markGoalFailed(goalId, employeeId = null) {
+        return this.request('mark_goal_failed', 'POST', {
+            goal_id: goalId,
+            employee_id: employeeId
+        });
     }
 };
 
@@ -208,6 +237,8 @@ window.dbGoals = [];
 window.dbGeneralTasks = [];
 window.dbEvaluations = [];
 window.dbGoalTasks = [];
+window.dbTrainingNeeds = [];
+window.dbTrainingPrograms = [];
 
 /**
  * Universal safe helper to get dbEvaluations as an Array
@@ -240,6 +271,64 @@ function updateDbEvaluationRecord(record) {
     }
 }
 window.updateDbEvaluationRecord = updateDbEvaluationRecord;
+
+/**
+ * Get active training need record for employee from training_needs
+ */
+function getEmployeeTrainingNeed(empId) {
+    if (!Array.isArray(window.dbTrainingNeeds) || window.dbTrainingNeeds.length === 0) return null;
+    const list = window.dbTrainingNeeds.filter(tn => isSameEmployee(tn.employee_id, empId) || isSameEmployee(tn.employeeId, empId));
+    if (list.length === 0) return null;
+    // Prioritize active In Training records
+    const active = list.find(tn => tn.status === 'In Training' || tn.status === 'In Progress' || tn.status === 'Identified');
+    return active || list[list.length - 1];
+}
+window.getEmployeeTrainingNeed = getEmployeeTrainingNeed;
+
+/**
+ * Check if employee is currently flagged for Needs Training or enrolled in training_needs
+ */
+function isEmployeeInTraining(empId) {
+    const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, empId));
+    const hasInTrainingGoal = empGoals.some(g => !!g.in_training);
+    const hasNeedsTrainingGoal = empGoals.some(g => !!g.needs_training);
+    const tn = getEmployeeTrainingNeed(empId);
+    if (hasInTrainingGoal || hasNeedsTrainingGoal) return true;
+    if (tn && (tn.status === 'In Training' || tn.status === 'Identified' || tn.status === 'In Progress')) return true;
+    return false;
+}
+window.isEmployeeInTraining = isEmployeeInTraining;
+
+/**
+ * Check if employee has a recorded score / completed training in training_needs
+ */
+function isEmployeeTrainingScored(empId) {
+    const tn = getEmployeeTrainingNeed(empId);
+    if (!tn) return false;
+    const currentScore = parseFloat(tn.current_score || tn.currentScore || 0);
+    const status = (tn.status || '').toLowerCase();
+    return currentScore > 0 || status === 'resolved' || status === 'completed' || status === 'passed';
+}
+window.isEmployeeTrainingScored = isEmployeeTrainingScored;
+
+/**
+ * Get max retry_count for employee
+ */
+function getEmployeeRetryCount(empId) {
+    const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, empId));
+    return empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
+}
+window.getEmployeeRetryCount = getEmployeeRetryCount;
+
+/**
+ * Check if employee's active goal is permanently Failed
+ */
+function isEmployeeGoalFailed(empId) {
+    const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, empId));
+    return empGoals.some(g => (g.status || '').toLowerCase() === 'failed');
+}
+window.isEmployeeGoalFailed = isEmployeeGoalFailed;
+
 window.planningStatusFilter = 'pending';
 window.planningSearchQuery = '';
 window.approvedSearchQuery = '';
@@ -354,12 +443,14 @@ window.perfRoster = [
         avatar: 'MS',
         avatarBg: 'bg-primary',
         attendance: { present: 22, absent: 1, total: 23, percentage: '95.6%' },
-        managerRating: 4.6,
-        customerRating: 4.8,
+        selfRating: 0.0,
+        managerRating: 0.0,
+        supervisorRating: 0.0,
+        customerRating: 0.0,
         goalsCount: 3,
         planningStatus: 'Approved',
         approvalStatus: 'Approved',
-        monitoringProgress: 88,
+        monitoringProgress: 0,
         monitoringStatus: 'On Track',
         evaluationStatus: 'Pending Evaluation',
         reviewStatus: 'Pending Review',
@@ -375,12 +466,14 @@ window.perfRoster = [
         avatar: 'CR',
         avatarBg: 'bg-amber-600',
         attendance: { present: 23, absent: 0, total: 23, percentage: '100%' },
-        managerRating: 4.9,
-        customerRating: 4.9,
+        selfRating: 0.0,
+        managerRating: 0.0,
+        supervisorRating: 0.0,
+        customerRating: 0.0,
         goalsCount: 1,
         planningStatus: 'Approved',
         approvalStatus: 'Approved',
-        monitoringProgress: 95,
+        monitoringProgress: 0,
         monitoringStatus: 'Exceeding',
         evaluationStatus: 'Pending Evaluation',
         reviewStatus: 'Pending Review',
@@ -515,11 +608,18 @@ window.renderPerformanceSkeletons = renderPerformanceSkeletons;
 async function loadAndRenderPlanningGoals() {
     renderPerformanceSkeletons();
     try {
-        // Fetch dynamic monitoring and planning data from Supabase backend
+        // Fetch dynamic monitoring and planning data from backend
         try {
             const monRes = await PerformanceAPI.getMonitoringData();
-            if (monRes && monRes.roster && monRes.roster.length > 0) {
-                window.perfRoster = monRes.roster;
+            if (monRes && monRes.roster && Array.isArray(monRes.roster) && monRes.roster.length > 0) {
+                monRes.roster.forEach(dynEmp => {
+                    const existing = (window.perfRoster || []).find(e => isSameEmployee(e.id, dynEmp.id));
+                    if (existing) {
+                        Object.assign(existing, dynEmp);
+                    } else {
+                        window.perfRoster.push(dynEmp);
+                    }
+                });
             }
         } catch (e) {
             console.warn('Fallback to standard planning goals:', e);
@@ -581,8 +681,12 @@ async function loadAndRenderPlanningGoals() {
         // Recalculate employee counts & status
         window.perfRoster.forEach(emp => {
             emp.goalsCount = emp.goals.length;
-            const hasPending = emp.goals.some(g => g.status !== 'Approved');
-            emp.planningStatus = hasPending ? 'Pending Approval' : (emp.goals.length > 0 ? 'Approved' : 'Draft');
+            const hasPending = emp.goals.some(g => {
+                const st = (g.status || '').toLowerCase();
+                return st !== 'approved' && st !== 'completed' && st !== 'failed';
+            });
+            const allFailed = emp.goals.length > 0 && emp.goals.every(g => (g.status || '').toLowerCase() === 'failed');
+            emp.planningStatus = allFailed ? 'Failed' : (hasPending ? 'Pending Approval' : (emp.goals.length > 0 ? 'Approved' : 'Draft'));
             emp.approvalStatus = emp.planningStatus;
         });
 
@@ -591,22 +695,39 @@ async function loadAndRenderPlanningGoals() {
             const evalData = await PerformanceAPI.getEvaluations();
             const evList = Array.isArray(evalData) ? evalData : (Array.isArray(evalData?.evaluations) ? evalData.evaluations : (Array.isArray(evalData?.data) ? evalData.data : []));
             window.dbEvaluations = evList;
-            evList.forEach(ev => {
-                const emp = window.perfRoster.find(e => isSameEmployee(e.id, ev.employee_id));
-                if (emp) {
+
+            (window.perfRoster || []).forEach(emp => {
+                const ev = evList.find(rec => isSameEmployee(emp.id, rec.employee_id)) || emp.evaluationRecord;
+                if (ev) {
                     emp.evaluationRecord = ev;
-                    emp.evaluationStatus = ev.status || 'Pending';
-                    if (ev.self_rating) emp.selfRating = parseFloat(ev.self_rating);
-                    if (ev.supervisor_rating) {
-                        emp.supervisorRating = parseFloat(ev.supervisor_rating);
-                        emp.managerRating = parseFloat(ev.supervisor_rating);
-                    }
+                    const selfScore = (ev.self_evaluation !== undefined && ev.self_evaluation !== null && parseFloat(ev.self_evaluation) > 0)
+                        ? parseFloat(ev.self_evaluation)
+                        : ((ev.self_rating !== undefined && ev.self_rating !== null && parseFloat(ev.self_rating) > 0)
+                            ? parseFloat(ev.self_rating)
+                            : (emp.selfRating || 0.0));
+                    const supScore = (ev.supervisor_rating !== undefined && ev.supervisor_rating !== null && parseFloat(ev.supervisor_rating) > 0)
+                        ? parseFloat(ev.supervisor_rating)
+                        : (emp.supervisorRating || 0.0);
+                    emp.selfRating = selfScore || 0.0;
+                    emp.supervisorRating = supScore;
+                    emp.managerRating = supScore;
+                    emp.evaluationStatus = ev.status || (supScore > 0 ? 'Rated' : (selfScore ? 'Self-Reviewed' : 'Pending Evaluation'));
                     if (ev.tier_label) emp.tierLabel = ev.tier_label;
                 }
             });
         } catch (e) {
             console.warn('Database evaluations load note:', e);
             if (!Array.isArray(window.dbEvaluations)) window.dbEvaluations = [];
+        }
+
+        // Fetch dynamic training needs directly from database
+        try {
+            const needsData = await PerformanceAPI.getTrainingNeeds();
+            const needsList = Array.isArray(needsData) ? needsData : (Array.isArray(needsData?.data) ? needsData.data : []);
+            window.dbTrainingNeeds = needsList;
+        } catch (e) {
+            console.warn('Database training needs load note:', e);
+            if (!Array.isArray(window.dbTrainingNeeds)) window.dbTrainingNeeds = [];
         }
 
         // Update Planning Hero KPI Cards
@@ -704,11 +825,12 @@ function renderEmployeePulseGoals(goals) {
     // Fetch evaluations list if not cached yet
     if ((!window.dbEvaluations || window.dbEvaluations.length === 0) && !window._fetchingPulseEvals) {
         window._fetchingPulseEvals = true;
-        fetch('api/performance.php?action=get_performance_data')
+        fetch('api/performance.php?action=get_evaluations')
             .then(res => res.json())
             .then(json => {
-                if (json.success && json.data && json.data.evaluations) {
-                    window.dbEvaluations = json.data.evaluations;
+                const evList = Array.isArray(json.data) ? json.data : (Array.isArray(json.data?.evaluations) ? json.data.evaluations : (Array.isArray(json.evaluations) ? json.evaluations : []));
+                if (evList.length > 0) {
+                    window.dbEvaluations = evList;
                     renderEmployeePulseGoals(empGoals);
                 }
             })
@@ -767,23 +889,37 @@ function renderEmployeePulseGoals(goals) {
         let statusBadgeHtml = '';
         if (isFailed) {
             statusBadgeHtml = `
-                <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-200 flex items-center space-x-1">
-                    <i class="fas fa-circle-xmark text-rose-600"></i>
-                    <span>${g.status || 'Failed / Needs Remediation'}</span>
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 inline-flex items-center space-x-1 shadow-2xs">
+                    <i class="fas fa-times-circle text-rose-600 text-[9px]"></i>
+                    <span>Status: Failed (Remediation)</span>
                 </span>
             `;
-        } else if (isApproved) {
+        } else if (statusLower === 'completed') {
             statusBadgeHtml = `
-                <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center space-x-1">
-                    <i class="fas fa-check-circle text-emerald-600"></i>
-                    <span>${g.status || 'Approved'}</span>
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 inline-flex items-center space-x-1 shadow-2xs">
+                    <i class="fas fa-circle-check text-indigo-600 text-[9px]"></i>
+                    <span>Status: Completed</span>
+                </span>
+            `;
+        } else if (g.in_training || g.needs_training) {
+            statusBadgeHtml = `
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center space-x-1 shadow-2xs">
+                    <i class="fas fa-graduation-cap text-amber-700 text-[9px]"></i>
+                    <span>Status: In Training</span>
+                </span>
+            `;
+        } else if (statusLower === 'approved') {
+            statusBadgeHtml = `
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center space-x-1 shadow-2xs">
+                    <i class="fas fa-check-circle text-emerald-600 text-[9px]"></i>
+                    <span>Status: Approved & Active</span>
                 </span>
             `;
         } else {
             statusBadgeHtml = `
-                <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200 flex items-center space-x-1">
-                    <i class="fas fa-clock text-amber-600"></i>
-                    <span>${g.status || 'Pending Approval'}</span>
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 inline-flex items-center space-x-1 shadow-2xs">
+                    <i class="fas fa-clock text-amber-600 text-[9px]"></i>
+                    <span>Status: Pending Approval</span>
                 </span>
             `;
         }
@@ -1071,7 +1207,11 @@ function openEmployeeSelfEvalModal(goalId, empId) {
     if (goalTitleEl) goalTitleEl.textContent = goal ? goal.title : 'Performance Objective';
     if (metricEl) metricEl.textContent = goal ? goal.target_metric : 'CSAT > 90%';
 
-    const currentScore = evalRec?.self_evaluation ? parseFloat(evalRec.self_evaluation) : 4.5;
+    const currentScore = (evalRec?.self_evaluation !== undefined && evalRec?.self_evaluation !== null && parseFloat(evalRec.self_evaluation) > 0)
+        ? parseFloat(evalRec.self_evaluation)
+        : ((evalRec?.self_rating !== undefined && evalRec?.self_rating !== null && parseFloat(evalRec.self_rating) > 0)
+            ? parseFloat(evalRec.self_rating)
+            : 1.0);
     if (ratingInput) ratingInput.value = currentScore;
     if (previewEl) previewEl.textContent = `⭐ ${currentScore.toFixed(2)} / 5.0`;
 
@@ -1247,15 +1387,20 @@ function renderPlanningRosterTable() {
         });
     }
 
-    // Filter by status dropdown (pending / approved / completed / all)
+    // Filter by status dropdown (pending / approved / completed / failed / all)
     if (window.planningStatusFilter && window.planningStatusFilter !== 'all') {
         const sf = window.planningStatusFilter.toLowerCase();
         if (sf === 'pending') {
-            allGoals = allGoals.filter(g => (g.status || '').toLowerCase() !== 'approved' && (g.status || '').toLowerCase() !== 'completed');
+            allGoals = allGoals.filter(g => {
+                const st = (g.status || '').toLowerCase();
+                return st !== 'approved' && st !== 'completed' && st !== 'failed';
+            });
         } else if (sf === 'approved') {
             allGoals = allGoals.filter(g => (g.status || '').toLowerCase() === 'approved');
         } else if (sf === 'completed') {
             allGoals = allGoals.filter(g => (g.status || '').toLowerCase() === 'completed');
+        } else if (sf === 'failed') {
+            allGoals = allGoals.filter(g => (g.status || '').toLowerCase() === 'failed');
         }
     }
 
@@ -1304,6 +1449,7 @@ function renderPlanningRosterTable() {
         const goalStatus = (goal.status || '').toLowerCase();
         const isCompleted = goalStatus === 'completed';
         const isApproved = goalStatus === 'approved';
+        const isFailed = goalStatus === 'failed';
         const isRevised = !!goal.supervisor_notes || (goal.updated_at && goal.created_at && goal.updated_at !== goal.created_at);
 
         const tr = document.createElement('tr');
@@ -1373,14 +1519,18 @@ function renderPlanningRosterTable() {
                         <span class="text-primary font-mono">${taskProgress}%</span>
                     </div>
                     <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                        <div class="${taskProgress >= 100 ? 'bg-emerald-500' : 'bg-primary'} h-1.5 rounded-full transition-all duration-300" style="width: ${taskProgress}%"></div>
+                        <div class="${taskProgress >= 100 ? 'bg-emerald-500' : (isFailed ? 'bg-rose-500' : 'bg-primary')} h-1.5 rounded-full transition-all duration-300" style="width: ${taskProgress}%"></div>
                     </div>
                 </div>
             </td>
 
-            <!-- 7. Status Badge (Pending / Approved / Completed) -->
+            <!-- 7. Status Badge (Pending / Approved / Completed / Failed) -->
             <td class="px-5 py-4 text-center whitespace-nowrap">
-                ${isCompleted ? `
+                ${isFailed ? `
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 inline-flex items-center space-x-1">
+                        <i class="fas fa-times-circle text-rose-600 text-[9px]"></i><span>Failed</span>
+                    </span>
+                ` : (isCompleted ? `
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 inline-flex items-center space-x-1">
                         <i class="fas fa-circle-check text-indigo-600 text-[9px]"></i><span>Completed</span>
                     </span>
@@ -1392,7 +1542,7 @@ function renderPlanningRosterTable() {
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 inline-flex items-center space-x-1">
                         <i class="fas fa-clock text-amber-600 text-[9px]"></i><span>Pending</span>
                     </span>
-                `)}
+                `))}
             </td>
 
             <!-- 8. Actions -->
@@ -1400,8 +1550,8 @@ function renderPlanningRosterTable() {
                 <button onclick="openViewGoalModal('${goal.id || emp.id}')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex items-center justify-center transition shadow-2xs" title="View Full Details">
                     <i class="fas fa-eye text-xs"></i>
                 </button>
-                ${(isApproved || isCompleted) ? `
-                    <button disabled class="w-7 h-7 rounded-lg bg-slate-100 text-slate-300 inline-flex items-center justify-center cursor-not-allowed opacity-40 shadow-2xs" title="Revise disabled for approved/completed goals">
+                ${(isApproved || isCompleted || isFailed) ? `
+                    <button disabled class="w-7 h-7 rounded-lg bg-slate-100 text-slate-300 inline-flex items-center justify-center cursor-not-allowed opacity-40 shadow-2xs" title="Revise disabled for approved, completed, or failed goals">
                         <i class="fas fa-pen-to-square text-xs"></i>
                     </button>
                 ` : `
@@ -1412,15 +1562,19 @@ function renderPlanningRosterTable() {
                 <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}')" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 inline-flex items-center justify-center transition shadow-2xs" title="Delete Objective">
                     <i class="fas fa-trash text-xs"></i>
                 </button>
-                ${(!isApproved && !isCompleted) ? `
-                    <button onclick="confirmApproveSingleGoal('${goal.id}', '${emp.id}', '${(goal.title || '').replace(/'/g, "\\'")}')" class="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white inline-flex items-center justify-center shadow-xs transition" title="Approve Objective">
-                        <i class="fas fa-check text-xs"></i>
-                    </button>
-                ` : `
+                ${isFailed ? `
+                    <span class="w-7 h-7 rounded-lg text-rose-700 bg-rose-50 border border-rose-200 inline-flex items-center justify-center text-xs" title="Objective Permanently Failed">
+                        <i class="fas fa-times"></i>
+                    </span>
+                ` : ((isApproved || isCompleted) ? `
                     <span class="w-7 h-7 rounded-lg text-emerald-700 bg-emerald-50 border border-emerald-200 inline-flex items-center justify-center text-xs" title="${isCompleted ? 'Objective Completed' : 'Objective Approved & Locked'}">
                         <i class="fas ${isCompleted ? 'fa-circle-check' : 'fa-lock'}"></i>
                     </span>
-                `}
+                ` : `
+                    <button onclick="confirmApproveSingleGoal('${goal.id}', '${emp.id}', '${(goal.title || '').replace(/'/g, "\\'")}')" class="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white inline-flex items-center justify-center shadow-xs transition" title="Approve Objective">
+                        <i class="fas fa-check text-xs"></i>
+                    </button>
+                `)}
             </td>
         `;
 
@@ -3074,6 +3228,11 @@ function renderMonitoringRosterTable() {
         const hasEval = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0;
         const supScore = hasEval ? parseFloat(evalRec.supervisor_rating) : (emp.supervisorRating || 0);
 
+        const inTraining = isEmployeeInTraining(emp.id);
+        const tnNeed = getEmployeeTrainingNeed(emp.id);
+        const isScored = isEmployeeTrainingScored(emp.id);
+        const retryCount = getEmployeeRetryCount(emp.id);
+
         tr.innerHTML = `
             <td class="px-5 py-4">
                 <div class="flex items-center space-x-3">
@@ -3083,11 +3242,24 @@ function renderMonitoringRosterTable() {
                     <div>
                         <p class="font-bold text-slate-900 text-sm leading-tight max-w-[150px] truncate" title="${emp.name}">${emp.name}</p>
                         <span class="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded max-w-[150px] truncate block" title="${emp.position}">${emp.position}</span>
+                        ${inTraining ? `
+                            <div class="mt-1.5 p-1.5 bg-rose-50/90 rounded-lg border border-rose-200 text-[10px] space-y-0.5 max-w-[180px]">
+                                <div class="flex items-center space-x-1 font-bold text-rose-800 truncate" title="${tnNeed?.title || 'Mandatory Formal Training'}">
+                                    <i class="fas fa-graduation-cap text-rose-600 flex-shrink-0"></i>
+                                    <span class="truncate">${tnNeed ? (tnNeed.title || '').replace('Formal Training: ', '') : 'Mandatory Training'}</span>
+                                </div>
+                                <div class="flex items-center justify-between text-[10px] text-slate-600 font-mono">
+                                    <span>Score: <strong class="${isScored ? 'text-emerald-700' : 'text-rose-700'}">${parseFloat(tnNeed?.current_score || 0).toFixed(2)}</strong>/5.0</span>
+                                    <span>Target: <strong class="text-slate-800">${parseFloat(tnNeed?.required_score || 4.0).toFixed(2)}</strong></span>
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             </td>
             <td class="px-5 py-4">
                 <span class="font-semibold text-slate-700 max-w-[130px] truncate block" title="${emp.department}">${emp.department}</span>
+                ${inTraining ? `<span class="mt-1 inline-block px-2 py-0.5 bg-rose-100 text-rose-800 rounded text-[9px] font-bold">Needs Training: True</span>` : ''}
             </td>
             <td class="px-5 py-4">
                 ${hasEval ? `
@@ -3117,13 +3289,32 @@ function renderMonitoringRosterTable() {
                 <button onclick="toggleEmployeeMonitoringDetail('${emp.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
                     View Stream &amp; Tasks
                 </button>
-                <button onclick="openLogMilestoneModal('${emp.id}')" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-xl transition inline-flex items-center space-x-1">
-                    <i class="fas fa-plus text-[10px]"></i><span>Log KPI</span>
-                </button>
-                <button onclick="triggerEvaluationForEmployee('${emp.id}')" class="px-3.5 py-1.5 ${hasEval ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-primary hover:bg-primary-dark'} text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1 inline-flex">
-                    <i class="fas fa-star-half-stroke"></i>
-                    <span>${hasEval ? 'Re-Evaluate' : 'Evaluate'}</span>
-                </button>
+                ${(isEmployeeGoalFailed(emp.id) || retryCount >= 4) ? `
+                    <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed inline-flex items-center space-x-1" title="${isEmployeeGoalFailed(emp.id) ? 'Goal has failed' : 'Locked: Final 1-on-1 Evaluation is active in Phase 7'}">
+                        <i class="fas fa-lock text-[10px]"></i>
+                        <span>${isEmployeeGoalFailed(emp.id) ? 'Goal Failed' : 'Final Eval in Phase 7'}</span>
+                    </button>
+                ` : `
+                    <button onclick="openLogMilestoneModal('${emp.id}')" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-xl transition inline-flex items-center space-x-1">
+                        <i class="fas fa-plus text-[10px]"></i><span>Log KPI</span>
+                    </button>
+                    ${(inTraining && !isScored) ? `
+                        <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed inline-flex items-center space-x-1" title="Associate is currently undergoing Mandatory Formal Training. Re-evaluation locked until training is completed.">
+                            <i class="fas fa-lock text-[10px]"></i>
+                            <span>In Training (Locked)</span>
+                        </button>
+                    ` : ((inTraining && isScored) ? `
+                        <button onclick="triggerEvaluationForEmployee('${emp.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1 inline-flex" title="Training Completed! Open Post-Training Re-Evaluation">
+                            <i class="fas fa-star-half-stroke"></i>
+                            <span>Re-Evaluate (After Training)</span>
+                        </button>
+                    ` : `
+                        <button onclick="triggerEvaluationForEmployee('${emp.id}')" class="px-3.5 py-1.5 ${hasEval ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-primary hover:bg-primary-dark'} text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1 inline-flex">
+                            <i class="fas fa-star-half-stroke"></i>
+                            <span>${hasEval ? 'Re-Evaluate' : 'Evaluate'}</span>
+                        </button>
+                    `)}
+                `}
             </td>
         `;
 
@@ -3224,6 +3415,45 @@ function renderEmployeeMonitoringStream(emp) {
     }
 
     const isSupervisor = (window.activePersonaRole !== 'Associate');
+
+    // Display Active Enrolled Training Curriculum Banner if in training
+    const inTraining = isEmployeeInTraining(emp.id);
+    const tnNeed = getEmployeeTrainingNeed(emp.id);
+    const isScored = isEmployeeTrainingScored(emp.id);
+
+    if (inTraining && tnNeed) {
+        const trainingCard = document.createElement('div');
+        trainingCard.className = 'p-4 bg-gradient-to-r from-purple-50 via-rose-50 to-amber-50 rounded-2xl border border-purple-200/90 shadow-2xs space-y-2 text-xs mb-3';
+        trainingCard.innerHTML = `
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-200 text-purple-900 border border-purple-300">
+                            Enrolled Formal Training: ${tnNeed.status || 'In Training'}
+                        </span>
+                        <h4 class="font-bold text-slate-900 text-xs mt-0.5">${tnNeed.title}</h4>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3 font-mono text-[11px]">
+                    <div class="text-right">
+                        <span class="text-[9px] text-slate-500 block uppercase font-bold">Training Score</span>
+                        <span class="font-bold ${isScored ? 'text-emerald-700' : 'text-rose-700'}">${parseFloat(tnNeed.current_score || 0).toFixed(2)} / 5.0</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[9px] text-slate-500 block uppercase font-bold">Target Benchmark</span>
+                        <span class="font-bold text-slate-800">${parseFloat(tnNeed.required_score || 4.0).toFixed(2)} / 5.0</span>
+                    </div>
+                </div>
+            </div>
+            <p class="text-[11px] text-slate-600 leading-relaxed">
+                ${tnNeed.notes || 'Formal curriculum assigned from IDP Remediation. Re-evaluation in Stage 4 & 5 is locked until training completion score is logged.'}
+            </p>
+        `;
+        container.appendChild(trainingCard);
+    }
 
     empGoals.forEach(goal => {
         const allTasks = goal.tasks || [];
@@ -3684,10 +3914,16 @@ function renderEvaluationRosterTable() {
         const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
         // Read evaluation record directly from Database
-        const evalRec = emp.evaluationRecord || getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id));
-        const isRated = evalRec && (evalRec.status === 'Rated' || evalRec.status === 'Calibrated');
-        const selfEvaluation = evalRec && typeof evalRec.self_evaluation !== 'undefined' && evalRec.self_evaluation !== null ? parseFloat(evalRec.self_evaluation) : null;
-        const supervisorRating = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null ? parseFloat(evalRec.supervisor_rating) : (isRated ? (emp.supervisorRating || 0) : 0);
+        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const supervisorRating = (evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0)
+            ? parseFloat(evalRec.supervisor_rating)
+            : ((emp.supervisorRating && parseFloat(emp.supervisorRating) > 0) ? parseFloat(emp.supervisorRating) : 0.0);
+        const isRated = supervisorRating > 0 || (evalRec && (evalRec.status === 'Rated' || evalRec.status === 'Calibrated'));
+        const selfEvaluation = (evalRec && typeof evalRec.self_evaluation !== 'undefined' && evalRec.self_evaluation !== null && parseFloat(evalRec.self_evaluation) > 0)
+            ? parseFloat(evalRec.self_evaluation)
+            : ((evalRec && typeof evalRec.self_rating !== 'undefined' && evalRec.self_rating !== null && parseFloat(evalRec.self_rating) > 0)
+                ? parseFloat(evalRec.self_rating)
+                : ((emp.selfRating && parseFloat(emp.selfRating) > 0) ? parseFloat(emp.selfRating) : null));
         const isBelowBenchmark = isRated && supervisorRating > 0 && supervisorRating < 3.0;
         const tierLabel = evalRec && evalRec.tier_label ? evalRec.tier_label : (supervisorRating >= 4.5 ? 'Master Tier' : (supervisorRating >= 3.5 ? 'Advanced Tier' : (supervisorRating >= 3.0 ? 'Proficient' : 'Needs PIP')));
 
@@ -3774,10 +4010,22 @@ function renderEvaluationRosterTable() {
                 <button onclick="showEmployeeEvalDetail('${emp.id}', true)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition shadow-2xs" title="View Full Appraisal">
                     <i class="fas fa-eye mr-1"></i>View
                 </button>
-                <button onclick="openAppraisalModal('${emp.id}')" class="px-3 py-1.5 ${isRated ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-primary hover:bg-primary-dark'} text-white rounded-lg text-[11px] font-bold shadow-xs transition inline-flex items-center space-x-1" title="Open Appraisal Scoring Form">
-                    <i class="fas fa-star-half-stroke"></i>
-                    <span>${isRated ? 'Re-Evaluate' : 'Evaluate'}</span>
-                </button>
+                ${(isEmployeeInTraining(emp.id) && !isEmployeeTrainingScored(emp.id)) ? `
+                    <button disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg text-[11px] font-bold cursor-not-allowed inline-flex items-center space-x-1" title="Associate is currently enrolled in Mandatory Formal Training. Evaluation is locked until training score is recorded.">
+                        <i class="fas fa-lock text-[10px]"></i>
+                        <span>In Training</span>
+                    </button>
+                ` : ((isEmployeeInTraining(emp.id) && isEmployeeTrainingScored(emp.id)) ? `
+                    <button onclick="openAppraisalModal('${emp.id}', true)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold shadow-xs transition inline-flex items-center space-x-1" title="Training Completed! Open Post-Training Appraisal">
+                        <i class="fas fa-star-half-stroke"></i>
+                        <span>Evaluate (After Training)</span>
+                    </button>
+                ` : `
+                    <button onclick="openAppraisalModal('${emp.id}')" class="px-3 py-1.5 ${isRated ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-primary hover:bg-primary-dark'} text-white rounded-lg text-[11px] font-bold shadow-xs transition inline-flex items-center space-x-1" title="Open Appraisal Scoring Form">
+                        <i class="fas fa-star-half-stroke"></i>
+                        <span>${isRated ? 'Re-Evaluate' : 'Evaluate'}</span>
+                    </button>
+                `)}
                 <button onclick="searchEmployeeInStage('review', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-[11px] font-bold transition inline-flex items-center space-x-1" title="Proceed to Stage 5 Calibration & 1-on-1 Review">
                     <i class="fas fa-comments text-purple-600"></i>
                     <span>Review &rarr;</span>
@@ -3795,17 +4043,17 @@ function showEmployeeEvalDetail(empId, openModalImmediately = false) {
     if (!emp) return;
     window.selectedEvalEmpId = emp.id;
 
-    // Read DB evaluation record from database store
-    const evalRec = emp.evaluationRecord || getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id));
-
     // Header info (Support both modal and inline IDs if present)
     const titleEl = document.getElementById('eval-modal-emp-title') || document.getElementById('eval-detail-emp-title');
     const subEl = document.getElementById('eval-modal-emp-subtitle') || document.getElementById('eval-detail-emp-subtitle');
     if (titleEl) titleEl.innerText = `${emp.name} — Formal Supervisor Appraisal`;
     if (subEl) subEl.innerText = `${emp.position} · ${emp.department}`;
 
-    const isRated = evalRec && (evalRec.status === 'Rated' || evalRec.status === 'Calibrated');
-    const superScore = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null ? parseFloat(evalRec.supervisor_rating) : 0;
+    const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+    const superScore = (evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0)
+        ? parseFloat(evalRec.supervisor_rating)
+        : ((emp.supervisorRating && parseFloat(emp.supervisorRating) > 0) ? parseFloat(emp.supervisorRating) : 0);
+    const isRated = superScore > 0 || (evalRec && (evalRec.status === 'Rated' || evalRec.status === 'Calibrated'));
     const isBelowBenchmark = isRated && superScore > 0 && superScore < 3.0;
     const tierLabel = evalRec && evalRec.tier_label ? evalRec.tier_label : (superScore >= 4.5 ? 'Master Tier' : (superScore >= 3.5 ? 'Advanced Tier' : (superScore >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)')));
 
@@ -3819,35 +4067,36 @@ function showEmployeeEvalDetail(empId, openModalImmediately = false) {
             statusBadge.textContent = `✓ Appraisal Completed (${tierLabel})`;
         } else {
             statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200';
-            statusBadge.textContent = 'Pending Supervisor Evaluation';
+            statusBadge.textContent = 'Pending Formal Appraisal';
         }
     }
 
-    // Toggle Warning Alert Banner if Supervisor Rating Below 3.0
-    const warningAlert = document.getElementById('eval-detail-warning-alert');
-    if (warningAlert) {
-        if (isBelowBenchmark) {
-            warningAlert.classList.remove('hidden');
-        } else {
-            warningAlert.classList.add('hidden');
-        }
-    }
-
-    // Approved Objectives Scorecard from Database
-    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+    // Monitoring Progress Summary in Detail
+    const monProgressEl = document.getElementById('eval-detail-mon-progress');
+    const taskCountEl = document.getElementById('eval-detail-task-count');
+    const approvedGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
     let totalAllTasks = 0;
     let completedAllTasks = 0;
+    approvedGoals.forEach(g => {
+        (g.tasks || []).forEach(t => {
+            totalAllTasks++;
+            if (t.status === 'completed') completedAllTasks++;
+        });
+    });
+    const avgProg = totalAllTasks > 0 ? Math.round((completedAllTasks / totalAllTasks) * 100) : (approvedGoals.length > 0 ? 100 : 0);
+    if (monProgressEl) monProgressEl.innerHTML = `${avgProg}% <span class="text-sm font-normal text-slate-400">Shift Execution</span>`;
+    if (taskCountEl) taskCountEl.textContent = `${completedAllTasks} of ${totalAllTasks} monitoring tasks verified in database`;
 
-    const objContainer = document.getElementById('eval-detail-objectives-container');
-    if (objContainer) {
-        if (empGoals.length === 0) {
-            objContainer.innerHTML = `<p class="col-span-full text-slate-400 italic text-xs py-2">No active objectives calibrated in database yet.</p>`;
+    // Render Approved Goals & Tasks in Evaluation Detail
+    const goalsContainer = document.getElementById('eval-detail-goals-container');
+    if (goalsContainer) {
+        if (approvedGoals.length === 0) {
+            goalsContainer.innerHTML = `<div class="p-6 text-center text-slate-400 italic bg-white rounded-2xl border border-slate-200">No approved objectives found in database for this associate.</div>`;
         } else {
-            objContainer.innerHTML = empGoals.map((g, idx) => {
+            goalsContainer.innerHTML = approvedGoals.map((g, idx) => {
                 const tasks = g.tasks || [];
                 const done = tasks.filter(t => t.status === 'completed').length;
                 const total = tasks.length;
-                totalAllTasks += total;
                 completedAllTasks += done;
                 const pct = total > 0 ? Math.round((done / total) * 100) : (g.status === 'Completed' ? 100 : 0);
                 return `
@@ -3876,12 +4125,37 @@ function showEmployeeEvalDetail(empId, openModalImmediately = false) {
 
     // Enable Open Appraisal Button (openAppraisalModal handles notice confirmation if tasks < 100%)
     const btnOpenAppraisal = document.getElementById('btn-open-eval-appraisal');
+    const inTrainingEval = isEmployeeInTraining(emp.id);
+    const isScoredEval = isEmployeeTrainingScored(emp.id);
+    const retryCountEval = getEmployeeRetryCount(emp.id);
+    const isGoalFailedEval = isEmployeeGoalFailed(emp.id);
+
     if (btnOpenAppraisal) {
-        btnOpenAppraisal.disabled = false;
-        btnOpenAppraisal.className = 'btn-primary px-4 py-2 text-xs font-bold shadow-xs inline-flex items-center space-x-1.5';
-        btnOpenAppraisal.innerHTML = `<i class="fas fa-star-half-stroke mr-1"></i><span>${isRated ? 'Re-Evaluate Appraisal' : 'Open Appraisal Form'}</span>`;
-        btnOpenAppraisal.title = 'Open Appraisal Form';
-        btnOpenAppraisal.onclick = () => openAppraisalModal(emp.id);
+        if (isGoalFailedEval || retryCountEval >= 4) {
+            btnOpenAppraisal.disabled = true;
+            btnOpenAppraisal.className = 'btn-secondary px-4 py-2 text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none inline-flex items-center space-x-1.5';
+            btnOpenAppraisal.innerHTML = `<i class="fas fa-lock mr-1"></i><span>Locked (${isGoalFailedEval ? 'Goal Failed' : 'Final Eval in Phase 7'})</span>`;
+            btnOpenAppraisal.title = 'Appraisal evaluation locked. Final evaluation is managed in Phase 7.';
+            btnOpenAppraisal.onclick = null;
+        } else if (inTrainingEval && !isScoredEval) {
+            btnOpenAppraisal.disabled = true;
+            btnOpenAppraisal.className = 'btn-secondary px-4 py-2 text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none inline-flex items-center space-x-1.5';
+            btnOpenAppraisal.innerHTML = `<i class="fas fa-lock mr-1"></i><span>In Training (Locked)</span>`;
+            btnOpenAppraisal.title = 'Associate is currently enrolled in mandatory formal training. Appraisal evaluation is locked until training score is recorded.';
+            btnOpenAppraisal.onclick = null;
+        } else if (inTrainingEval && isScoredEval) {
+            btnOpenAppraisal.disabled = false;
+            btnOpenAppraisal.className = 'btn-primary px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs inline-flex items-center space-x-1.5';
+            btnOpenAppraisal.innerHTML = `<i class="fas fa-star-half-stroke mr-1"></i><span>Evaluate (After Training)</span>`;
+            btnOpenAppraisal.title = 'Training Completed! Open Post-Training Appraisal';
+            btnOpenAppraisal.onclick = () => openAppraisalModal(emp.id, true);
+        } else {
+            btnOpenAppraisal.disabled = false;
+            btnOpenAppraisal.className = 'btn-primary px-4 py-2 text-xs font-bold shadow-xs inline-flex items-center space-x-1.5';
+            btnOpenAppraisal.innerHTML = `<i class="fas fa-star-half-stroke mr-1"></i><span>${isRated ? 'Re-Evaluate Appraisal' : 'Open Appraisal Form'}</span>`;
+            btnOpenAppraisal.title = 'Open Appraisal Form';
+            btnOpenAppraisal.onclick = () => openAppraisalModal(emp.id);
+        }
     }
 
     // Supervisor Assessment Score from Database
@@ -3949,11 +4223,21 @@ window.hideEmployeeEvalDetail = hideEmployeeEvalDetail;
 
 window.pendingEvalEmpId = null;
 
-function openAppraisalModal(empId) {
+function openAppraisalModal(empId, isPostTraining = false) {
     const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || (window.perfRoster || [])[0];
     if (!emp) return;
 
     window.selectedEvalEmpId = emp.id;
+
+    // Check if employee is in training without score
+    const inTraining = isEmployeeInTraining(emp.id);
+    const isScored = isEmployeeTrainingScored(emp.id);
+    if (inTraining && !isScored && !isPostTraining) {
+        if (typeof showToast === 'function') {
+            showToast(`⚠️ Cannot evaluate ${emp.name}: Associate is currently enrolled in Mandatory Formal Training. Re-evaluation is locked until training score is recorded.`, 'warning');
+        }
+        return;
+    }
 
     // Check if employee has approved goals and all monitoring action tasks are completed
     const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
@@ -3967,14 +4251,14 @@ function openAppraisalModal(empId) {
     });
 
     const allTasksDone = totalTasks > 0 && completedTasks === totalTasks;
-    if (!allTasksDone) {
+    if (!allTasksDone && !isPostTraining && !inTraining) {
         if (typeof showToast === 'function') {
             showToast(`⚠️ Cannot evaluate ${emp.name}: Monitoring tasks are still not done (${completedTasks}/${totalTasks} completed). Complete all tasks in Stage 3 Continuous Monitoring first.`, 'warning');
         }
         return;
     }
 
-    openAppraisalModalInternal(emp.id);
+    openAppraisalModalInternal(emp.id, isPostTraining);
 }
 window.openAppraisalModal = openAppraisalModal;
 
@@ -4129,7 +4413,17 @@ async function handleAppraisalSubmit(e) {
 
         const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, empId));
         const needsTraining = empGoals.some(g => !!g.needs_training);
-        const isRetry = needsTraining;
+        const inTrainingScored = isEmployeeInTraining(empId) && isEmployeeTrainingScored(empId);
+        const isRetry = needsTraining || inTrainingScored;
+
+        // If post-training appraisal, ensure retry_count is set to 3 and needs_training is cleared
+        if (inTrainingScored) {
+            try {
+                await PerformanceAPI.setNeedsTraining({ employee_id: empId, needs_training: false, retry_count: 3 });
+            } catch (err) {
+                console.warn('Set retry_count error:', err);
+            }
+        }
 
         // Save directly to Database via PerformanceAPI
         const saved = await PerformanceAPI.submitAppraisal({
@@ -4344,7 +4638,17 @@ function renderReviewRosterTable() {
                             <span>Create Dev Plan</span>
                         </button>
                     `}
-                    ${isCalibrated ? `
+                    ${(isEmployeeInTraining(emp.id) && !isEmployeeTrainingScored(emp.id)) ? `
+                        <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 font-bold rounded-xl text-xs cursor-not-allowed flex items-center space-x-1" title="In Training: Calibration locked until training score is recorded.">
+                            <i class="fas fa-lock text-[10px]"></i>
+                            <span>In Training</span>
+                        </button>
+                    ` : ((isEmployeeInTraining(emp.id) && isEmployeeTrainingScored(emp.id)) ? `
+                        <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="Training completed! Open Post-Training Calibration">
+                            <i class="fas fa-sliders"></i>
+                            <span>Calibrate (After Training)</span>
+                        </button>
+                    ` : (isCalibrated ? `
                         <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="Re-Calibrate 1-on-1 Review">
                             <i class="fas fa-sliders"></i>
                             <span>Re-Calibrate</span>
@@ -4354,7 +4658,7 @@ function renderReviewRosterTable() {
                             <i class="fas fa-sliders"></i>
                             <span>Calibrate</span>
                         </button>
-                    `}
+                    `))}
                 </div>
             </td>
         `;
@@ -4479,14 +4783,50 @@ function showCalibrationDetail(empId, openModalImmediately = false) {
     }
 
     const openCalibBtn = document.getElementById('calib-detail-btn-open-modal');
+    const inTrainingCalib = isEmployeeInTraining(emp.id);
+    const isScoredCalib = isEmployeeTrainingScored(emp.id);
+    const retryCountCalib = getEmployeeRetryCount(emp.id);
+    const isGoalFailedCalib = isEmployeeGoalFailed(emp.id);
+
     if (openCalibBtn) {
-        openCalibBtn.setAttribute('onclick', `open1on1CalibrationModal('${emp.id}')`);
+        if (isGoalFailedCalib || retryCountCalib >= 4) {
+            openCalibBtn.disabled = true;
+            openCalibBtn.className = 'btn-secondary px-4 py-2 text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none flex items-center space-x-1.5';
+            openCalibBtn.innerHTML = `<i class="fas fa-lock mr-1.5"></i><span>Locked (${isGoalFailedCalib ? 'Goal Failed' : 'Final Eval in Phase 7'})</span>`;
+            openCalibBtn.onclick = null;
+        } else if (inTrainingCalib && !isScoredCalib) {
+            openCalibBtn.disabled = true;
+            openCalibBtn.className = 'btn-secondary px-4 py-2 text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none flex items-center space-x-1.5';
+            openCalibBtn.innerHTML = '<i class="fas fa-lock mr-1.5"></i><span>In Training (Locked)</span>';
+            openCalibBtn.onclick = null;
+        } else if (inTrainingCalib && isScoredCalib) {
+            openCalibBtn.disabled = false;
+            openCalibBtn.className = 'btn-primary px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white shadow-xs flex items-center space-x-1.5';
+            openCalibBtn.innerHTML = '<i class="fas fa-sliders mr-1.5"></i><span>Calibrate (After Training)</span>';
+            openCalibBtn.setAttribute('onclick', `open1on1CalibrationModal('${emp.id}')`);
+        } else {
+            openCalibBtn.disabled = false;
+            openCalibBtn.className = 'btn-primary px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-xs flex items-center space-x-1.5';
+            openCalibBtn.innerHTML = '<i class="fas fa-sliders mr-1.5"></i><span>Calibrate 1-on-1</span>';
+            openCalibBtn.setAttribute('onclick', `open1on1CalibrationModal('${emp.id}')`);
+        }
     }
 
     // Dynamic Next Step: Show Send Colleague Kudos if >= 3.0, or Create Development Plan if < 3.0
     if (nextStepContainer) {
         const effectiveScore = calibScore !== null ? calibScore : rawSupScore;
-        if (effectiveScore >= 3.0) {
+        if (inTrainingCalib && !isScoredCalib) {
+            const tnNeed = getEmployeeTrainingNeed(emp.id);
+            nextStepContainer.innerHTML = `
+                <div class="p-4 bg-purple-50 rounded-2xl border border-purple-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-purple-950">
+                    <div class="flex items-center space-x-2.5">
+                        <i class="fas fa-graduation-cap text-purple-600 text-base"></i>
+                        <span><strong>Mandatory Training Enrolled:</strong> ${tnNeed ? tnNeed.title : 'Formal Curriculum'}. 1-on-1 Calibration is locked until training score is recorded in training_needs.</span>
+                    </div>
+                    <span class="px-3 py-1 bg-purple-200 text-purple-900 rounded-xl font-bold text-xs">In Training</span>
+                </div>
+            `;
+        } else if (effectiveScore >= 3.0) {
             nextStepContainer.innerHTML = `
                 <div class="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-950">
                     <div class="flex items-center space-x-2.5">
@@ -4533,84 +4873,6 @@ function showCalibrationDetail(empId, openModalImmediately = false) {
 }
 
 window.showCalibrationDetail = showCalibrationDetail;
-
-function renderIDPRosterTable() {
-    const container = document.getElementById('idp-roster-tbody');
-    if (!container) return;
-    container.innerHTML = '';
-
-    const evaluatedEmployees = (window.perfRoster || []).filter(emp => {
-        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
-        const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
-        return score > 0;
-    });
-
-    if (evaluatedEmployees.length === 0) {
-        container.innerHTML = `
-            <tr>
-                <td colspan="5" class="px-5 py-8 text-center text-slate-400 italic bg-slate-50">
-                    <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2 text-base">
-                        <i class="fas fa-id-card"></i>
-                    </div>
-                    <p class="font-bold text-slate-700 mb-0.5">No Calibrated IDPs Available</p>
-                    <p class="text-slate-400 text-[11px]">Employees must complete Stage 4 supervisor evaluations and Stage 5 1-on-1 calibrations before 70-20-10 IDP plans are generated.</p>
-                </td>
-            </tr>
-        `;
-        showEmptyIDPDetail();
-        return;
-    }
-
-    if (!window.selectedEvalEmpId || !evaluatedEmployees.some(e => isSameEmployee(e.id, window.selectedEvalEmpId))) {
-        window.selectedEvalEmpId = evaluatedEmployees[0].id;
-    }
-    showIDPDetail(window.selectedEvalEmpId);
-
-    evaluatedEmployees.forEach(emp => {
-        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
-        const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
-        const isPIP = score < 3.0;
-        const isSelected = isSameEmployee(emp.id, window.selectedEvalEmpId);
-
-        const tr = document.createElement('tr');
-        tr.className = `hover:bg-slate-50 transition text-xs border-b border-slate-100 cursor-pointer ${isSelected ? 'bg-indigo-50/50' : ''}`;
-        tr.onclick = () => {
-            window.selectedEvalEmpId = emp.id;
-            renderIDPRosterTable();
-        };
-
-        tr.innerHTML = `
-            <td class="px-5 py-4">
-                <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-800 font-bold flex items-center justify-center text-xs">
-                        ${emp.avatar || (emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0, 2) : 'EM')}
-                    </div>
-                    <div>
-                        <p class="font-bold text-slate-900 leading-tight">${emp.name}</p>
-                        <p class="text-[10px] text-slate-400">${emp.position}</p>
-                    </div>
-                </div>
-            </td>
-            <td class="px-5 py-4 text-slate-600 font-medium">${emp.department}</td>
-            <td class="px-5 py-4 font-mono font-bold ${isPIP ? 'text-rose-600' : 'text-emerald-600'}">
-                ⭐ ${score.toFixed(2)} / 5.0
-            </td>
-            <td class="px-5 py-4">
-                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${isPIP ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
-                    ${isPIP ? '⚠️ PIP Active (Remediation)' : '🟢 70-20-10 IDP Plan Active'}
-                </span>
-            </td>
-            <td class="px-5 py-4 text-right">
-                <button onclick="event.stopPropagation(); openViewIDPPlanModal('${emp.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1 ml-auto">
-                    <i class="fas fa-eye"></i>
-                    <span>View Plan</span>
-                </button>
-            </td>
-        `;
-        container.appendChild(tr);
-    });
-}
-window.renderIDPRosterTable = renderIDPRosterTable;
 
 function open1on1CalibrationModal(empId) {
     if (!empId) {
@@ -4767,7 +5029,16 @@ async function handleCalibrationSubmit(e) {
             try {
                 const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, empId));
                 const needsTraining = empGoals.some(g => !!g.needs_training);
-                const isRetry = needsTraining;
+                const inTrainingScored = isEmployeeInTraining(empId) && isEmployeeTrainingScored(empId);
+                const isRetry = needsTraining || inTrainingScored;
+
+                if (inTrainingScored) {
+                    try {
+                        await PerformanceAPI.setNeedsTraining({ employee_id: empId, needs_training: false, retry_count: 3 });
+                    } catch (err) {
+                        console.warn('Set retry_count error in calibration:', err);
+                    }
+                }
 
                 const saved = await PerformanceAPI.calibrateEvaluation({
                     employee_id: empId,
@@ -4938,20 +5209,35 @@ function openViewIDPPlanModal(empId) {
 
     const rawScore = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
     const isPIP = rawScore > 0 && rawScore < 3.0;
+    const retryCount = getEmployeeRetryCount(emp.id);
+    const isExceededRetry = retryCount >= 3 && isPIP;
 
     if (ratingEl) {
         if (rawScore > 0) {
-            ratingEl.innerHTML = `⭐ ${rawScore.toFixed(2)} / 5.0 <span class="text-xs font-semibold ${isPIP ? 'text-rose-600' : 'text-indigo-700'}">(${evalRec?.tier_label || (isPIP ? 'Developing (Needs PIP)' : 'Proficient')})</span>`;
+            ratingEl.innerHTML = `⭐ ${rawScore.toFixed(2)} / 5.0 <span class="text-xs font-semibold ${isExceededRetry ? 'text-rose-700' : (isPIP ? 'text-rose-600' : 'text-indigo-700')}">(${isExceededRetry ? 'Failed (3/3 Retries Exceeded)' : (evalRec?.tier_label || (isPIP ? 'Developing (Needs PIP)' : 'Proficient'))})</span>`;
             ratingEl.className = `text-sm font-bold font-mono ${isPIP ? 'text-rose-600' : 'text-indigo-700'}`;
         } else {
             ratingEl.innerHTML = `<span class="text-slate-400 italic text-xs">Pending Rating</span>`;
         }
     }
 
-    if (titleEl) titleEl.textContent = isPIP ? `Performance Improvement Plan (PIP): ${emp.name}` : `70-20-10 Individual Development Plan: ${emp.name}`;
+    if (titleEl) {
+        titleEl.textContent = isExceededRetry
+            ? `Failed Standard — Requires 1-on-1 Training: ${emp.name}`
+            : (isPIP ? `Performance Improvement Plan (PIP): ${emp.name}` : `70-20-10 Individual Development Plan: ${emp.name}`);
+    }
+
     if (statusPill) {
-        statusPill.textContent = isPIP ? 'Mandatory PIP Active' : '70-20-10 Growth Framework';
-        statusPill.className = `px-2 py-0.5 rounded-full text-[10px] font-bold ${isPIP ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800'}`;
+        if (isExceededRetry) {
+            statusPill.textContent = '🔴 FAILED (Requires 1-on-1 Training)';
+            statusPill.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs';
+        } else if (isPIP) {
+            statusPill.textContent = 'Mandatory PIP Active';
+            statusPill.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200';
+        } else {
+            statusPill.textContent = '70-20-10 Growth Framework';
+            statusPill.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800';
+        }
     }
 
     const criteria = evalRec && Array.isArray(evalRec.criteria_scores) ? evalRec.criteria_scores : [];
@@ -5169,9 +5455,7 @@ function renderIDPRosterTable() {
             ? parseFloat(evalRec.calibrated_score)
             : ((evalRec && evalRec.supervisor_rating !== undefined && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0)
                 ? parseFloat(evalRec.supervisor_rating)
-                : ((emp.supervisorRating && parseFloat(emp.supervisorRating) > 0)
-                    ? parseFloat(emp.supervisorRating)
-                    : ((emp.managerRating && parseFloat(emp.managerRating) > 0) ? parseFloat(emp.managerRating) : 0)));
+                : 0);
         return hasGoal && score > 0;
     }) : [];
 
@@ -5193,10 +5477,10 @@ function renderIDPRosterTable() {
             ? parseFloat(evalRec.calibrated_score)
             : ((evalRec && evalRec.supervisor_rating !== undefined && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0)
                 ? parseFloat(evalRec.supervisor_rating)
-                : ((emp.supervisorRating && parseFloat(emp.supervisorRating) > 0)
-                    ? parseFloat(emp.supervisorRating)
-                    : ((emp.managerRating && parseFloat(emp.managerRating) > 0) ? parseFloat(emp.managerRating) : 0)));
+                : 0);
         const hasPassed = score >= 3.0;
+        const retryCount = getEmployeeRetryCount(emp.id);
+        const isExceededRetry = retryCount >= 3 && !hasPassed;
         const xpPts = getKudosXP(score);
         const isGoalCompleted = (window.dbGoals || []).some(g => isSameEmployee(g.employee_id, emp.id) && g.status === 'Completed');
         const isKudosDisabled = !!(emp.kudosSent || isGoalCompleted);
@@ -5214,14 +5498,26 @@ function renderIDPRosterTable() {
             </td>
             <td class="px-5 py-4 text-slate-500 max-w-[150px] truncate" title="${emp.position} · ${emp.department}">${emp.position} · ${emp.department}</td>
             <td class="px-5 py-4 font-bold text-slate-800">
-                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${!hasPassed && score > 0 ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
-                    ${!hasPassed && score > 0 ? `PIP Remediation (${score.toFixed(2)}/5.0)` : `⭐ Proficient (${score.toFixed(2)}/5.0)`}
-                </span>
+                ${isExceededRetry ? `
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-200 text-rose-900 border border-rose-300">
+                        Failed (${score.toFixed(2)}/5.0)
+                    </span>
+                ` : `
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${!hasPassed && score > 0 ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
+                        ${!hasPassed && score > 0 ? `PIP Remediation (${score.toFixed(2)}/5.0)` : `⭐ Proficient (${score.toFixed(2)}/5.0)`}
+                    </span>
+                `}
             </td>
             <td class="px-5 py-4">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isGoalCompleted ? 'bg-indigo-100 text-indigo-800' : (hasPassed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}">
-                    ${isGoalCompleted ? 'Goal Completed ✓' : (hasPassed ? 'Clearance Active' : 'Action Plan Active')}
-                </span>
+                ${isExceededRetry ? `
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
+                        🔴 FAILED (Requires 1-on-1 Training)
+                    </span>
+                ` : `
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isGoalCompleted ? 'bg-indigo-100 text-indigo-800' : (hasPassed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}">
+                        ${isGoalCompleted ? 'Goal Completed ✓' : (hasPassed ? 'Clearance Active' : 'Action Plan Active')}
+                    </span>
+                `}
             </td>
             <td class="px-5 py-4 text-right">
                 <div class="flex items-center justify-end space-x-1.5">
@@ -5235,12 +5531,12 @@ function renderIDPRosterTable() {
                             <span>Kudos Sent (+${xpPts} XP)</span>
                         </button>
                     ` : `
-                        <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Send Colleague Kudos & Award XP">
+                        <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Send Colleague Kudos &amp; Award XP">
                             <i class="fas fa-award text-amber-600"></i>
                             <span>Send Kudos (+${xpPts} XP)</span>
                         </button>
                     `) : `
-                        <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Proceed to Phase 7 Transition & Rollover">
+                        <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Proceed to Phase 7 Transition &amp; Rollover">
                             <i class="fas fa-arrow-right text-rose-600"></i>
                             <span>Proceed to Phase 7</span>
                         </button>
@@ -5278,13 +5574,7 @@ function showIDPDetail(empId, openModalImmediately = false) {
     }
 
     const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
-    const score = (evalRec && evalRec.calibrated_score !== undefined && evalRec.calibrated_score !== null && parseFloat(evalRec.calibrated_score) > 0)
-        ? parseFloat(evalRec.calibrated_score)
-        : ((evalRec && evalRec.supervisor_rating !== undefined && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0)
-            ? parseFloat(evalRec.supervisor_rating)
-            : ((emp.supervisorRating && parseFloat(emp.supervisorRating) > 0)
-                ? parseFloat(emp.supervisorRating)
-                : ((emp.managerRating && parseFloat(emp.managerRating) > 0) ? parseFloat(emp.managerRating) : 0)));
+    const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
 
     if (score === 0) {
         showEmptyIDPDetail();
@@ -5305,11 +5595,24 @@ function showIDPDetail(empId, openModalImmediately = false) {
 
     const isPIP = score < 3.0;
     const hasPassedBenchmark = score >= 3.0;
+    const retryCount = getEmployeeRetryCount(emp.id);
+    const inTraining = isEmployeeInTraining(emp.id);
+    const tnNeed = getEmployeeTrainingNeed(emp.id);
+    const isScored = isEmployeeTrainingScored(emp.id);
+    const isGoalFailed = isEmployeeGoalFailed(emp.id);
+    const isNeeds1on1 = (retryCount >= 3 && isScored && !hasPassedBenchmark) || retryCount >= 4 || isGoalFailed;
+    const isExceededRetry = (retryCount >= 3 && !hasPassedBenchmark) || isNeeds1on1;
     const xpPts = getKudosXP(score);
     const isGoalCompleted = (window.dbGoals || []).some(g => isSameEmployee(g.employee_id, emp.id) && g.status === 'Completed');
     const isKudosDisabled = !!(emp.kudosSent || isGoalCompleted);
 
-    if (titleEl) titleEl.textContent = isPIP ? `Performance Improvement Plan (PIP) & IDP: ${emp.name}` : `70-20-10 Individual Development Plan (IDP): ${emp.name}`;
+    if (titleEl) {
+        titleEl.textContent = isNeeds1on1
+            ? `Needs Mandatory 1-on-1 Training: ${emp.name}`
+            : (isExceededRetry
+                ? `Failed Standard — Requires Mandatory 1-on-1 Training: ${emp.name}`
+                : (isPIP ? `Performance Improvement Plan (PIP) & IDP: ${emp.name}` : `70-20-10 Individual Development Plan (IDP): ${emp.name}`));
+    }
     if (subtitleEl) subtitleEl.textContent = `Position: ${emp.position} · ${emp.department} · Review Cycle ${evalRec?.cycle_period || '2026-Q3'}`;
 
     if (headerActions) {
@@ -5329,16 +5632,41 @@ function showIDPDetail(empId, openModalImmediately = false) {
                     </button>
                 `;
             }
+        } else if (isNeeds1on1) {
+            headerActions.innerHTML = `
+                <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition">
+                    <i class="fas fa-arrow-right"></i>
+                    <span>Proceed to Phase 7 Transition &rarr;</span>
+                </button>
+            `;
+        } else if (isExceededRetry) {
+            headerActions.innerHTML = `
+                <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-3.5 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition">
+                    <i class="fas fa-arrow-right"></i>
+                    <span>Proceed to Phase 7 Transition &rarr;</span>
+                </button>
+                <button onclick="openFormalCurriculumModal('${emp.id}')" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center space-x-1.5 transition">
+                    <i class="fas fa-chalkboard-user"></i>
+                    <span>Assign 1-on-1 Training</span>
+                </button>
+            `;
         } else {
             headerActions.innerHTML = `
                 <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition">
                     <i class="fas fa-arrow-right"></i>
                     <span>Proceed to Phase 7 Transition &rarr;</span>
                 </button>
-                <button onclick="openRemedialBooksModal('${emp.id}')" class="px-3.5 py-2 bg-gold hover:bg-gold-dark text-white rounded-xl text-xs font-semibold shadow-xs flex items-center space-x-1.5 transition">
-                    <i class="fas fa-book-medical"></i>
-                    <span>Prescribe LMS Books</span>
-                </button>
+                ${(inTraining && !isScored) ? `
+                    <button disabled class="px-3.5 py-2 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-semibold cursor-not-allowed flex items-center space-x-1.5" title="Associate is currently enrolled in Mandatory Formal Training.">
+                        <i class="fas fa-lock"></i>
+                        <span>Prescribe LMS Books (Locked)</span>
+                    </button>
+                ` : `
+                    <button onclick="openRemedialBooksModal('${emp.id}')" class="px-3.5 py-2 bg-gold hover:bg-gold-dark text-white rounded-xl text-xs font-semibold shadow-xs flex items-center space-x-1.5 transition">
+                        <i class="fas fa-book-medical"></i>
+                        <span>Prescribe LMS Books</span>
+                    </button>
+                `}
             `;
         }
     }
@@ -5362,6 +5690,13 @@ function showIDPDetail(empId, openModalImmediately = false) {
                     </button>
                 `;
             }
+        } else if (isExceededRetry) {
+            headerLmsAction.innerHTML = `
+                <button onclick="openFormalCurriculumModal('${emp.id}')" class="text-xs text-rose-700 font-bold hover:underline flex items-center space-x-1">
+                    <i class="fas fa-chalkboard-user text-[11px]"></i>
+                    <span>Assign 1-on-1 Formal Program &rarr;</span>
+                </button>
+            `;
         } else {
             headerLmsAction.innerHTML = `
                 <button onclick="openRemedialBooksModal('${emp.id}')" class="text-xs text-primary font-bold hover:underline flex items-center space-x-1">
@@ -5419,18 +5754,19 @@ function showIDPDetail(empId, openModalImmediately = false) {
                             <span>Prescribed</span>
                         </button>
                     ` : `
-                        <button onclick="openRemedialBooksModal('${emp.id}')" class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1">
-                            <i class="fas fa-book-medical text-[10px]"></i>
-                            <span>Prescribe</span>
+                        <button onclick="openRemedialBooksModal('${emp.id}')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1 shadow-2xs" title="Assign targeted LMS book for this skill deficiency">
+                            <i class="fas fa-plus text-amber-600 text-[9px]"></i>
+                            <span>Prescribe Book</span>
                         </button>
                     `) : ''}
                 </li>
             `).join('');
         } else {
-            gapsList.innerHTML = `<li class="p-3 text-center text-slate-400 italic bg-white rounded-xl border border-amber-100">No development gaps recorded in database.</li>`;
+            gapsList.innerHTML = `<li class="p-3 text-center text-slate-400 italic bg-white rounded-xl border border-amber-100">No development gaps identified.</li>`;
         }
     }
 
+    // Render 70-20-10 Commitments
     if (commitmentsContainer) {
         const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
         let totalAllTasks = 0;
@@ -5464,8 +5800,80 @@ function showIDPDetail(empId, openModalImmediately = false) {
                     </div>
                 </div>
             `;
+        } else if (isNeeds1on1 || isExceededRetry) {
+            topBannerHtml = `
+                <div class="col-span-full p-5 bg-rose-100 rounded-2xl border-2 border-rose-400 space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-rose-300 pb-3">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                                <i class="fas fa-handshake-angle"></i>
+                            </div>
+                            <div>
+                                <h5 class="font-bold text-rose-950 text-sm">Needs Mandatory 1-on-1 Training &amp; Direct Supervision</h5>
+                                <p class="text-xs text-rose-900">Current appraisal rating is ⭐ <strong>${score.toFixed(2)} / 5.0</strong>. ${isGoalFailed ? 'Performance Goal has Failed.' : 'Retries exhausted. All standard IDP actions are locked.'}</p>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-rose-700 text-white shadow-xs">
+                            ${isGoalFailed ? '🔴 Goal: FAILED' : '🔴 Needs 1-on-1 Training'}
+                        </span>
+                    </div>
+
+                    <div class="p-3 bg-white/95 rounded-xl border border-rose-300 space-y-1.5 text-xs text-slate-800">
+                        <p class="font-bold text-rose-900 flex items-center"><i class="fas fa-circle-exclamation mr-1.5 text-rose-600"></i> Remediation Directive: Require 1-on-1 Training &amp; Final Evaluation</p>
+                        <p class="text-[11px] text-slate-700">All standard tasks, book prescriptions, and re-evaluations are locked. Transition to Phase 7 to proceed with the final 1-on-1 evaluation lifecycle.</p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+                        <div class="flex items-center space-x-2">
+                            <button disabled class="px-3 py-1.5 bg-slate-200 text-slate-400 border border-slate-300 rounded-xl font-bold text-xs cursor-not-allowed">
+                                <i class="fas fa-lock mr-1"></i> Add Task (Locked)
+                            </button>
+                            <button disabled class="px-3 py-1.5 bg-slate-200 text-slate-400 border border-slate-300 rounded-xl font-bold text-xs cursor-not-allowed">
+                                <i class="fas fa-lock mr-1"></i> Prescribe Books (Locked)
+                            </button>
+                            <button disabled class="px-3.5 py-1.5 bg-slate-200 text-slate-400 border border-slate-300 rounded-xl font-bold text-xs cursor-not-allowed">
+                                <i class="fas fa-lock mr-1"></i> Re-Evaluate (Locked)
+                            </button>
+                        </div>
+                        <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5">
+                            <i class="fas fa-arrow-right"></i>
+                            <span>Proceed to Phase 7 Transition &rarr;</span>
+                        </button>
+                    </div>
+                </div>
+            `;
         } else {
             topBannerHtml = `
+                ${(inTraining && tnNeed) ? `
+                    <div class="col-span-full p-4 bg-gradient-to-r from-purple-50 via-rose-50 to-amber-50 rounded-2xl border border-purple-200 shadow-2xs space-y-2 text-xs mb-1">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                                    <i class="fas fa-graduation-cap"></i>
+                                </div>
+                                <div>
+                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-200 text-purple-900 border border-purple-300">
+                                        Enrolled Formal Training: ${tnNeed.status || 'In Training'}
+                                    </span>
+                                    <h5 class="font-bold text-purple-950 text-xs mt-0.5">${tnNeed.title}</h5>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3 font-mono text-[11px]">
+                                <div class="text-right">
+                                    <span class="text-[9px] text-slate-500 block uppercase font-bold">Training Score</span>
+                                    <span class="font-bold ${isScored ? 'text-emerald-700' : 'text-rose-700'}">${parseFloat(tnNeed.current_score || 0).toFixed(2)} / 5.0</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-[9px] text-slate-500 block uppercase font-bold">Target Benchmark</span>
+                                    <span class="font-bold text-slate-800">${parseFloat(tnNeed.required_score || 4.0).toFixed(2)} / 5.0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-600 leading-relaxed">
+                            ${tnNeed.notes || 'Formal training curriculum assigned. Prescribing LMS books, action tasks, and re-evaluation are locked until training is scored.'}
+                        </p>
+                    </div>
+                ` : ''}
                 <div class="col-span-full p-5 bg-rose-50 rounded-2xl border border-rose-200 space-y-3">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-rose-200/70 pb-3">
                         <div class="flex items-center space-x-2.5">
@@ -5478,17 +5886,29 @@ function showIDPDetail(empId, openModalImmediately = false) {
                             </div>
                         </div>
                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-200 text-rose-900 self-start sm:self-auto">
-                            Retry Review Active
+                            Retry Review Active (${retryCount}/3 Retries)
                         </span>
                     </div>
 
                     <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
                         <div class="flex items-center space-x-2">
-                            <button onclick="openAddSpecificTaskModal('${emp.id}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5">
-                                <i class="fas fa-plus"></i>
-                                <span>Add Specific Action Task</span>
-                            </button>
-                            ${isTrainingPrescribed ? `
+                            ${(inTraining && !isScored) ? `
+                                <button disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed flex items-center space-x-1.5" title="Associate is currently enrolled in Mandatory Formal Training.">
+                                    <i class="fas fa-lock"></i>
+                                    <span>Add Task (Locked)</span>
+                                </button>
+                            ` : `
+                                <button onclick="openAddSpecificTaskModal('${emp.id}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5">
+                                    <i class="fas fa-plus"></i>
+                                    <span>${(inTraining && isScored) ? 'Add Task (After Training)' : 'Add Specific Action Task'}</span>
+                                </button>
+                            `}
+                            ${(inTraining && !isScored) ? `
+                                <button disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed flex items-center space-x-1.5" title="Associate is currently enrolled in Mandatory Formal Training.">
+                                    <i class="fas fa-lock"></i>
+                                    <span>Prescribe Books (Locked)</span>
+                                </button>
+                            ` : (isTrainingPrescribed ? `
                                 <button onclick="openRemedialBooksModal('${emp.id}')" class="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5" title="View assigned training modules">
                                     <i class="fas fa-check-circle text-emerald-700"></i>
                                     <span>Training Prescribed (${prescribedList.length})</span>
@@ -5496,9 +5916,9 @@ function showIDPDetail(empId, openModalImmediately = false) {
                             ` : `
                                 <button onclick="openRemedialBooksModal('${emp.id}')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5">
                                     <i class="fas fa-graduation-cap"></i>
-                                    <span>Put in Remedial Training</span>
+                                    <span>${(inTraining && isScored) ? 'Prescribe Books (After Training)' : 'Put in Remedial Training'}</span>
                                 </button>
-                            `}
+                            `)}
                         </div>
 
                         <div class="flex items-center space-x-2">
@@ -5506,7 +5926,12 @@ function showIDPDetail(empId, openModalImmediately = false) {
                                 <i class="fas fa-hourglass-half text-rose-600 text-[10px]"></i>
                                 <span>Score (${score.toFixed(2)}/5.0) &lt; 3.0</span>
                             </span>
-                            ${!allTasksDone ? `
+                            ${(inTraining && !isScored) ? `
+                                <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed rounded-xl font-bold text-xs flex items-center space-x-1.5" title="Re-evaluation is locked while undergoing mandatory training.">
+                                    <i class="fas fa-lock text-[10px]"></i>
+                                    <span>In Training (Locked)</span>
+                                </button>
+                            ` : (!allTasksDone ? `
                                 <button disabled class="px-3.5 py-1.5 bg-slate-200 text-slate-400 border border-slate-200 cursor-not-allowed rounded-xl font-bold text-xs shadow-none opacity-60 flex items-center space-x-1.5" title="Cannot re-evaluate: Tasks are still not done (${completedAllTasks}/${totalAllTasks} completed). Complete all tasks in Stage 3 Continuous Monitoring first.">
                                     <i class="fas fa-lock text-[10px]"></i>
                                     <span>Re-Evaluate (Tasks Incomplete)</span>
@@ -5514,9 +5939,9 @@ function showIDPDetail(empId, openModalImmediately = false) {
                             ` : `
                                 <button onclick="openAppraisalModal('${emp.id}')" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5" title="Re-evaluate associate to submit improved rating">
                                     <i class="fas fa-star-half-stroke text-[11px]"></i>
-                                    <span>Re-Evaluate Associate</span>
+                                    <span>${(inTraining && isScored) ? 'Re-Evaluate (After Training) &rarr;' : 'Re-Evaluate Associate'}</span>
                                 </button>
-                            `}
+                            `)}
                         </div>
                     </div>
                 </div>
@@ -5652,6 +6077,8 @@ function renderCycleRosterTable() {
         const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
         const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
         const hasPassed = score >= 3.0;
+        const retryCount = getEmployeeRetryCount(emp.id);
+        const isExceededRetry = retryCount >= 3 && !hasPassed;
 
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
@@ -5665,17 +6092,23 @@ function renderCycleRosterTable() {
                 </div>
             </td>
             <td class="px-5 py-4 text-slate-500 max-w-[130px] truncate" title="${emp.department}">${emp.department}</td>
-            <td class="px-5 py-4 font-bold ${isCalibrated ? (hasPassed ? 'text-emerald-700' : 'text-rose-600') : 'text-slate-400 font-normal italic'}">
-                ${isCalibrated ? `⭐ ${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || (hasPassed ? 'Calibrated' : 'Needs PIP')})` : 'Pending Review'}
+            <td class="px-5 py-4 font-bold ${isCalibrated ? (isExceededRetry ? 'text-rose-700' : (hasPassed ? 'text-emerald-700' : 'text-rose-600')) : 'text-slate-400 font-normal italic'}">
+                ${isCalibrated ? (isExceededRetry ? `⭐ ${score.toFixed(2)} / 5.0 (Failed)` : `⭐ ${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || (hasPassed ? 'Calibrated' : 'Needs PIP')})`) : 'Pending Review'}
             </td>
             <td class="px-5 py-4">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${hasPassed ? 'bg-teal-100 text-teal-800' : 'bg-rose-100 text-rose-800'}">
-                    ${hasPassed ? '✓ Qualified for Next Cycle' : 'Action Plan Incomplete'}
-                </span>
+                ${isExceededRetry ? `
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
+                        🔴 FAILED — Transition Suspended
+                    </span>
+                ` : `
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${hasPassed ? 'bg-teal-100 text-teal-800' : 'bg-rose-100 text-rose-800'}">
+                        ${hasPassed ? '✓ Qualified for Next Cycle' : 'Action Plan Incomplete'}
+                    </span>
+                `}
             </td>
             <td class="px-5 py-4 text-right">
-                <button onclick="showCycleDetail('${emp.id}', true)" class="px-3.5 py-1.5 ${hasPassed ? 'bg-primary hover:bg-primary-dark text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'} font-bold rounded-xl text-xs shadow-xs transition">
-                    ${hasPassed ? 'View Rollover' : 'Review Plan'}
+                <button onclick="showCycleDetail('${emp.id}', true)" class="px-3.5 py-1.5 ${isExceededRetry ? 'bg-rose-700 hover:bg-rose-800 text-white' : (hasPassed ? 'bg-primary hover:bg-primary-dark text-white' : 'bg-amber-600 hover:bg-amber-700 text-white')} font-bold rounded-xl text-xs shadow-xs transition">
+                    ${isExceededRetry ? '1-on-1 Remand' : (hasPassed ? 'View Rollover' : 'Review Plan')}
                 </button>
             </td>
         `;
@@ -5771,16 +6204,51 @@ function showCycleDetail(empId, openModalImmediately = false) {
         : (evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.new_supervisor_rating ? parseFloat(evalRec.new_supervisor_rating) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0)));
     const hasPassed = effectiveScore >= 3.0;
 
+    const retryCount = getEmployeeRetryCount(emp.id);
+    const isExceededRetry = retryCount >= 3 && !hasPassed;
+
     const empGoals = (window.dbGoals || []).filter(g => g.status === 'Approved' && isSameEmployee(g.employee_id, emp.id));
     const needsTraining = empGoals.some(g => !!g.needs_training);
+    const inTraining = isEmployeeInTraining(emp.id);
+    const tnNeed = getEmployeeTrainingNeed(emp.id);
+    const isScored = isEmployeeTrainingScored(emp.id);
 
+    const isGoalFailed = isEmployeeGoalFailed(emp.id);
     const titleEl = document.getElementById('cycle-detail-title');
     const transitionCard = document.getElementById('cycle-detail-transition-card');
 
     if (titleEl) titleEl.textContent = `Development Monitoring & Next Cycle Initiation: ${emp.name}`;
 
     if (transitionCard) {
-        if (isCalibrated && hasPassed) {
+        if (isGoalFailed) {
+            transitionCard.innerHTML = `
+                <div class="p-6 bg-rose-100 rounded-2xl border-2 border-rose-400 space-y-4 text-xs">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-10 h-10 rounded-2xl bg-rose-700 text-white flex items-center justify-center font-bold text-base shadow-2xs">
+                                <i class="fas fa-ban"></i>
+                            </div>
+                            <div>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
+                                    🔴 PERFORMANCE GOAL FAILED
+                                </span>
+                                <h4 class="font-heading font-bold text-base text-rose-950 mt-0.5">Objective Concluded as Failed: ${emp.name}</h4>
+                            </div>
+                        </div>
+                        <span class="text-xl font-bold text-rose-800 font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.00</span>
+                    </div>
+                    <p class="text-slate-800 leading-relaxed text-xs">
+                        This performance goal has been formally marked as <strong>Failed</strong> following 4 unsuccessful evaluation attempts, formal training, and mandatory 1-on-1 mentorship. Review cycle is permanently concluded.
+                    </p>
+                    <div class="pt-3 border-t border-rose-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <span class="text-xs text-rose-900 font-bold"><i class="fas fa-lock mr-1 text-rose-600"></i> Cycle rollover is locked (Failed Objective)</span>
+                        <button disabled class="px-4 py-2 bg-slate-200 text-slate-400 border border-slate-300 rounded-xl font-bold text-xs cursor-not-allowed">
+                            Rollover Finalized (Failed)
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else if (isCalibrated && hasPassed) {
             transitionCard.innerHTML = `
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <div>
@@ -5800,8 +6268,99 @@ function showCycleDetail(empId, openModalImmediately = false) {
                     </button>
                 </div>
             `;
-        } else if (isCalibrated && !hasPassed) {
-            if (needsTraining) {
+        } else if (retryCount >= 4 && !hasPassed) {
+            transitionCard.innerHTML = `
+                <div class="p-6 bg-rose-100 rounded-2xl border-2 border-rose-400 space-y-4 text-xs">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center font-bold text-base shadow-2xs">
+                                <i class="fas fa-gavel"></i>
+                            </div>
+                            <div>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
+                                    🔴 Final Attempt #4 Active
+                                </span>
+                                <h4 class="font-heading font-bold text-base text-rose-950 mt-0.5">Final 1-on-1 Evaluation (Last Attempt): ${emp.name}</h4>
+                            </div>
+                        </div>
+                        <span class="text-xl font-bold text-rose-800 font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.0</span>
+                    </div>
+                    <p class="text-slate-800 leading-relaxed text-xs">
+                        Associate is undergoing the final 1-on-1 performance review (Attempt #4). Phases 3 to 6 are locked. Conduct the final evaluation to determine if the associate achieves proficiency (&ge; 3.00) or if the goal transitions to Failed.
+                    </p>
+                    <div class="pt-3 border-t border-rose-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <span class="text-xs text-rose-900 font-bold"><i class="fas fa-lock mr-1 text-rose-600"></i> Final Stage &bull; Last evaluation before failure</span>
+                        <button onclick="openPhase7FinalEvalModal('${emp.id}')" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
+                            <i class="fas fa-gavel"></i>
+                            <span>Conduct Final 1-on-1 Evaluation &rarr;</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else if ((retryCount === 3 && isScored && !hasPassed) || (retryCount >= 3 && !hasPassed)) {
+            transitionCard.innerHTML = `
+                <div class="p-6 bg-gradient-to-r from-rose-50 via-amber-50 to-purple-50 rounded-2xl border-2 border-rose-300 space-y-4 text-xs">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center font-bold text-base shadow-2xs">
+                                <i class="fas fa-handshake-angle"></i>
+                            </div>
+                            <div>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
+                                    🔴 Needs 1-on-1 Training (Retry #3 Exhausted)
+                                </span>
+                                <h4 class="font-heading font-bold text-base text-rose-950 mt-0.5">Mandatory 1-on-1 Mentorship Required: ${emp.name}</h4>
+                            </div>
+                        </div>
+                        <span class="text-xl font-bold text-rose-800 font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.0</span>
+                    </div>
+                    <p class="text-slate-800 leading-relaxed text-xs">
+                        Associate completed formal training but calibrated rating remains below 3.0 standard. <strong>Mandatory 1-on-1 mentorship</strong> is required. Click Continue to initiate the definitive Final 1-on-1 Evaluation lifecycle (Attempt #4).
+                    </p>
+                    <div class="pt-3 border-t border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <span class="text-xs text-rose-900 font-bold"><i class="fas fa-arrow-right mr-1 text-rose-600"></i> Next Step: Transition to Final Evaluation</span>
+                        <button onclick="continueToFinal1on1Evaluation('${emp.id}')" class="px-5 py-2.5 bg-rose-700 hover:bg-rose-800 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
+                            <i class="fas fa-play"></i>
+                            <span>Continue to Final 1-on-1 Evaluation &rarr;</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else if (inTraining && tnNeed) {
+                transitionCard.innerHTML = `
+                    <div class="p-6 bg-gradient-to-r from-purple-50 via-rose-50 to-amber-50 rounded-2xl border border-purple-200 space-y-4 text-xs">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <div class="flex items-center space-x-2.5">
+                                <div class="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center font-bold text-base shadow-2xs">
+                                    <i class="fas fa-graduation-cap"></i>
+                                </div>
+                                <div>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-200 text-purple-900 border border-purple-300">
+                                        Enrolled in Formal Training: ${tnNeed.status || 'In Training'}
+                                    </span>
+                                    <h4 class="font-heading font-bold text-base text-purple-950 mt-0.5">${tnNeed.title}</h4>
+                                </div>
+                            </div>
+                            <div class="text-right font-mono">
+                                <span class="text-[10px] text-slate-500 block uppercase font-bold">Training Score / Target</span>
+                                <span class="text-lg font-bold ${isScored ? 'text-emerald-700' : 'text-purple-900'}">${parseFloat(tnNeed.current_score || 0).toFixed(2)} / ${parseFloat(tnNeed.required_score || 4.0).toFixed(2)}</span>
+                            </div>
+                        </div>
+                        <p class="text-slate-700 leading-relaxed text-xs">
+                            Associate is actively enrolled in mandatory formal training. Once training score is recorded, re-evaluation and calibration (Retry #3) will unlock in Stages 4 and 5.
+                        </p>
+                        <div class="pt-3 border-t border-purple-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <span class="text-xs text-purple-800 font-semibold"><i class="fas fa-book-open mr-1"></i> Program: ${tnNeed.target_competency || tnNeed.category || 'Skill Gap'}</span>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="openFormalCurriculumModal('${emp.id}')" class="px-3.5 py-1.5 bg-white hover:bg-purple-100 text-purple-900 border border-purple-300 rounded-xl font-bold transition text-xs flex items-center space-x-1">
+                                    <i class="fas fa-repeat"></i>
+                                    <span>Switch / View Curriculum</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (needsTraining || (retryCount >= 1 && !hasPassed)) {
                 transitionCard.innerHTML = `
                     <div class="p-6 bg-rose-50 rounded-2xl border border-rose-300 space-y-4 text-xs">
                         <div class="flex items-center justify-between flex-wrap gap-2">
@@ -5813,21 +6372,21 @@ function showCycleDetail(empId, openModalImmediately = false) {
                                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-200 text-rose-900 border border-rose-300">
                                         Needs Training: Flagged (True)
                                     </span>
-                                    <h4 class="font-heading font-bold text-base text-slate-900 mt-0.5">Mandatory Departmental Training Required: ${emp.name}</h4>
+                                    <h4 class="font-heading font-bold text-base text-slate-900 mt-0.5">Mandatory Formal Training Required: ${emp.name}</h4>
                                 </div>
                             </div>
                             <span class="text-xl font-bold text-rose-700 font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.0</span>
                         </div>
                         <p class="text-slate-700 leading-relaxed text-xs">
-                            Associate has been flagged for <strong>Needs Training</strong>. <strong>Stage 3 re-monitoring loop is suspended.</strong> The associate must be assigned to mandatory formal training curriculum and intensive re-skilling in LMS.
+                            Associate is flagged for <strong>Needs Training</strong> (Retry limit exceeded or flagged). Formal training curriculum is required before monitoring rollover.
                         </p>
                         <div class="pt-3 border-t border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <span class="text-xs text-rose-800 font-bold"><i class="fas fa-graduation-cap mr-1 text-rose-600"></i> Action required: Mandatory Training enrollment</span>
+                            <span class="text-xs text-rose-800 font-bold"><i class="fas fa-graduation-cap mr-1 text-rose-600"></i> Action required: Mandatory Formal Curriculum enrollment</span>
                             <div class="flex items-center space-x-2">
                                 <button onclick="toggleNeedsTrainingFlag('${emp.id}', false)" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl font-bold transition text-xs">
                                     <span>Clear Flag</span>
                                 </button>
-                                <button onclick="openRemedialBooksModal('${emp.id}')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
+                                <button onclick="openFormalCurriculumModal('${emp.id}')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
                                     <i class="fas fa-graduation-cap"></i>
                                     <span>Need Training &rarr; Assign Formal Curriculum</span>
                                 </button>
@@ -5870,15 +6429,6 @@ function showCycleDetail(empId, openModalImmediately = false) {
                     </div>
                 `;
             }
-        } else {
-            transitionCard.innerHTML = `
-                <div class="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-400 italic space-y-2">
-                    <i class="fas fa-hourglass-start text-3xl text-slate-300 block"></i>
-                    <p class="font-semibold text-slate-700 text-xs">Active review cycle 2026-Q3 must complete Stages 1 through 6 before rollover.</p>
-                    <p class="text-[11px] text-slate-400">Complete formal appraisal and 1-on-1 calibration in Stage 5 to unlock the next cycle transition baseline.</p>
-                </div>
-            `;
-        }
     }
 
     if (openModalImmediately) {
@@ -5890,6 +6440,152 @@ function showCycleDetail(empId, openModalImmediately = false) {
     }
 }
 window.showCycleDetail = showCycleDetail;
+
+/**
+ * Open Formal Curriculum Modal and load training programs
+ */
+async function openFormalCurriculumModal(empId) {
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || (window.perfRoster || [])[0];
+    if (!emp) return;
+
+    window.selectedEvalEmpId = emp.id;
+
+    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+    const targetGoal = empGoals[0];
+
+    const nameEl = document.getElementById('formal-curriculum-emp-name');
+    const goalTitleEl = document.getElementById('formal-curriculum-goal-title');
+    const container = document.getElementById('formal-programs-list');
+
+    if (nameEl) nameEl.textContent = `${emp.name} · ${emp.position} (${emp.department})`;
+    if (goalTitleEl) goalTitleEl.textContent = `Target Goal: ${targetGoal ? targetGoal.title : 'Performance IDP Remediation'}`;
+
+    if (container) {
+        container.innerHTML = `
+            <div class="p-8 text-center text-slate-400 italic bg-slate-50 rounded-2xl border border-slate-200">
+                <i class="fas fa-spinner fa-spin text-lg mb-2 block text-rose-500"></i>
+                Loading formal training programs from database...
+            </div>
+        `;
+    }
+
+    openModal('modal-formal-curriculum');
+
+    try {
+        const res = await PerformanceAPI.getTrainingPrograms();
+        const programs = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+        window.dbTrainingPrograms = programs;
+
+        if (!container) return;
+
+        if (programs.length === 0) {
+            container.innerHTML = `
+                <div class="p-8 text-center text-slate-400 italic bg-slate-50 rounded-2xl border border-slate-200">
+                    No formal training programs found in database.
+                </div>
+            `;
+            return;
+        }
+
+        const existingNeed = getEmployeeTrainingNeed(emp.id);
+
+        container.innerHTML = programs.map(p => {
+            const isEnrolled = existingNeed && (existingNeed.linked_program_id === p.id || existingNeed.linkedProgramId === p.id);
+            const passingScore = p.passing_score ? parseFloat(p.passing_score) : 80;
+            const targetBenchmark = (passingScore / 20.0).toFixed(1);
+            const modules = Array.isArray(p.modules) ? p.modules : [];
+
+            return `
+                <div class="p-4 bg-white rounded-2xl border ${isEnrolled ? 'border-rose-300 bg-rose-50/20 ring-2 ring-rose-200' : 'border-slate-200 hover:border-slate-300'} transition shadow-2xs space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2 flex-wrap gap-1">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">
+                                    ${p.category || 'Skill Gap Remediation'}
+                                </span>
+                                <span class="text-[10px] text-slate-400 font-semibold font-mono">
+                                    <i class="fas fa-clock mr-0.5"></i>${p.duration || '3.5 Hours'}
+                                </span>
+                                <span class="text-[10px] text-slate-400 font-semibold">
+                                    <i class="fas fa-building mr-0.5"></i>${p.dept || 'General'}
+                                </span>
+                            </div>
+                            <h5 class="font-heading font-bold text-slate-900 text-sm">${p.title}</h5>
+                            <p class="text-slate-600 text-xs leading-relaxed">${p.description || 'Targeted training curriculum with practical modules and evaluation quiz.'}</p>
+                        </div>
+                        <div class="text-right flex-shrink-0 self-start sm:self-auto">
+                            <span class="font-bold text-slate-800 text-xs block">Benchmark: ⭐ ${targetBenchmark} / 5.0</span>
+                            <span class="text-[10px] text-slate-400 font-mono">Passing: ${passingScore}%</span>
+                        </div>
+                    </div>
+
+                    ${modules.length > 0 ? `
+                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                            <span class="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">Course Modules:</span>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] text-slate-600">
+                                ${modules.slice(0, 4).map(m => `
+                                    <div class="flex items-center space-x-1 truncate">
+                                        <i class="fas fa-check-circle text-rose-500 text-[10px] flex-shrink-0"></i>
+                                        <span class="truncate">${typeof m === 'string' ? m : (m.title || 'Module')}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <span class="text-[11px] text-slate-500">
+                            <i class="fas fa-chalkboard-user text-rose-600 mr-1"></i>Format: ${p.format || 'Workshop & Assessment'} (${p.trainer_type || 'Master Trainer'})
+                        </span>
+                        ${isEnrolled ? `
+                            <button disabled class="px-4 py-2 bg-emerald-100 text-emerald-800 font-bold rounded-xl text-xs border border-emerald-200 inline-flex items-center space-x-1.5">
+                                <i class="fas fa-check text-emerald-600"></i>
+                                <span>Enrolled in training_needs</span>
+                            </button>
+                        ` : `
+                            <button onclick="assignProgramToTrainingNeeds('${p.id}', '${emp.id}', '${targetGoal ? targetGoal.id : ''}')" class="btn-primary px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1.5">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span>Enroll in Program &rarr;</span>
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (err) {
+        console.error('Error loading training programs:', err);
+        if (container) {
+            container.innerHTML = `<div class="p-6 text-center text-rose-600 italic bg-rose-50 rounded-2xl border border-rose-200">Failed to load training programs: ${err.message || ''}</div>`;
+        }
+    }
+}
+window.openFormalCurriculumModal = openFormalCurriculumModal;
+
+async function assignProgramToTrainingNeeds(programId, empId, goalId) {
+    try {
+        const res = await PerformanceAPI.assignFormalCurriculum({
+            program_id: programId,
+            employee_id: empId,
+            goal_id: goalId,
+            target_goal_id: goalId
+        });
+        if (typeof showToast === 'function') {
+            showToast(res.message || 'Formal Training Program assigned and enrolled into training_needs!', 'success');
+        }
+        await loadAndRenderPlanningGoals();
+        openFormalCurriculumModal(empId);
+        if (typeof showCycleDetail === 'function') {
+            showCycleDetail(empId, false);
+        }
+        updateAllPerfStepperBadges();
+    } catch (err) {
+        console.error('Error assigning formal training program:', err);
+        if (typeof showToast === 'function') {
+            showToast('Failed to assign formal training program: ' + (err.message || ''), 'error');
+        }
+    }
+}
+window.assignProgramToTrainingNeeds = assignProgramToTrainingNeeds;
 
 /**
  * Toggle needs_training boolean flag on employee's goals
@@ -6312,4 +7008,290 @@ function getStagePendingCount(stageKey) {
 window.canSwitchSubTabWithGuard = function (currentStageKey, targetStageKey) {
     return true;
 };
+
+/**
+ * Continue to Final 1-on-1 Evaluation (Sets retry_count to 4 and opens Phase 7 final modal)
+ */
+async function continueToFinal1on1Evaluation(empId) {
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId));
+    if (!emp) return;
+
+    try {
+        const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Pending Approval') && isSameEmployee(g.employee_id, emp.id));
+        const targetGoal = empGoals[0];
+
+        await PerformanceAPI.continueToFinalEvaluation(emp.id, targetGoal ? targetGoal.id : null);
+        if (typeof showToast === 'function') {
+            showToast(`1-on-1 Remediation Initiated for ${emp.name}. Final 4th attempt active.`, 'success');
+        }
+
+        // Reload data to reflect retry_count = 4
+        await loadAndRenderPlanningGoals();
+
+        // Open the Phase 7 Final Evaluation Modal
+        openPhase7FinalEvalModal(emp.id);
+    } catch (err) {
+        console.error('Error continuing to final evaluation:', err);
+        if (typeof showToast === 'function') {
+            showToast(err.message || 'Failed to initiate final evaluation.', 'error');
+        }
+    }
+}
+window.continueToFinal1on1Evaluation = continueToFinal1on1Evaluation;
+
+/**
+ * Open Phase 7 Final 1-on-1 Evaluation Modal
+ */
+function openPhase7FinalEvalModal(empId) {
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId));
+    if (!emp) return;
+
+    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed' || g.status === 'Failed') && isSameEmployee(g.employee_id, emp.id));
+    const targetGoal = empGoals[0];
+
+    const empIdInput = document.getElementById('phase7-eval-emp-id');
+    const goalIdInput = document.getElementById('phase7-eval-goal-id');
+    const avatarEl = document.getElementById('phase7-eval-avatar');
+    const nameEl = document.getElementById('phase7-eval-name');
+    const roleDeptEl = document.getElementById('phase7-eval-role-dept');
+    const notesEl = document.getElementById('phase7-eval-notes');
+
+    if (empIdInput) empIdInput.value = emp.id;
+    if (goalIdInput) goalIdInput.value = targetGoal ? targetGoal.id : '';
+    if (avatarEl) {
+        avatarEl.textContent = emp.avatar || (emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0, 2) : 'EM');
+        avatarEl.className = `w-10 h-10 rounded-full ${emp.avatarBg || 'bg-rose-100 text-rose-800'} font-bold flex items-center justify-center text-xs`;
+    }
+    if (nameEl) nameEl.textContent = emp.name;
+    if (roleDeptEl) roleDeptEl.textContent = `${emp.position || 'Host'} · ${emp.department || 'Front Office'} · Final Remediation Attempt`;
+
+    // Construct criteria dynamically from active approved goals + 1-on-1 Mentorship Integration
+    let criteriaList = [];
+    if (empGoals.length > 0) {
+        criteriaList = empGoals.map((g, idx) => ({
+            id: `p7-crit-${idx}`,
+            title: g.title,
+            metric: g.target_metric || 'Standard Shift Benchmark',
+            weight: parseInt(g.weight || '30', 10) || 30,
+            initialRating: 2.5
+        }));
+    } else {
+        criteriaList = [
+            { id: 'p7-crit-0', title: 'Core Operational Performance & KPI Standards', metric: 'Standard Shift Benchmark', weight: 40, initialRating: 2.5 },
+            { id: 'p7-crit-1', title: 'Guest Engagement & Service Excellence', metric: 'CSAT >= 90%', weight: 30, initialRating: 2.5 }
+        ];
+    }
+
+    // Always append 1-on-1 Mentorship Integration
+    criteriaList.push({
+        id: 'p7-crit-mentor',
+        title: '1-on-1 Mentorship Integration',
+        metric: 'Demonstrated retention of 1-on-1 mentoring feedback & coach recommendations',
+        weight: 30,
+        initialRating: 2.5
+    });
+
+    const criteriaContainer = document.getElementById('phase7-criteria-container');
+    if (criteriaContainer) {
+        criteriaContainer.innerHTML = criteriaList.map((c, idx) => `
+            <div class="p-3.5 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] space-y-1.5 shadow-2xs">
+                <div class="flex justify-between items-center text-xs">
+                    <label class="font-bold text-slate-900 block truncate max-w-[200px]" title="${c.title}">${idx + 1}. ${c.title}</label>
+                    <span id="phase7-val-${c.id}" class="font-mono font-bold text-slate-900 text-xs flex-shrink-0 ml-1 bg-white px-2 py-0.5 rounded border border-slate-200">${c.initialRating.toFixed(1)}</span>
+                </div>
+                <p class="text-[10px] text-slate-500 truncate" title="${c.metric}">${c.metric}</p>
+                <div class="flex items-center space-x-2 pt-1">
+                    <input type="range" min="1" max="5" step="0.1" value="${c.initialRating}" id="phase7-score-${c.id}" data-id="${c.id}" data-title="${encodeURIComponent(c.title)}" data-metric="${encodeURIComponent(c.metric)}" class="w-full accent-rose-600 phase7-score-slider" oninput="updatePhase7FinalScoreCalc()">
+                </div>
+            </div>
+        `).join('');
+    }
+
+    if (notesEl) notesEl.value = '';
+
+    updatePhase7FinalScoreCalc();
+    openModal('modal-phase7-final-eval');
+}
+window.openPhase7FinalEvalModal = openPhase7FinalEvalModal;
+
+/**
+ * Recalculate dynamic scorecard in Phase 7 Final Evaluation
+ */
+function updatePhase7FinalScoreCalc() {
+    const sliders = document.querySelectorAll('.phase7-score-slider');
+    if (!sliders || sliders.length === 0) return;
+
+    let totalScore = 0;
+    sliders.forEach(slider => {
+        const val = parseFloat(slider.value) || 2.5;
+        const id = slider.getAttribute('data-id');
+        const valEl = document.getElementById(`phase7-val-${id}`);
+        if (valEl) valEl.textContent = val.toFixed(1);
+        totalScore += val;
+    });
+
+    const avg = parseFloat((totalScore / sliders.length).toFixed(2));
+    const isPassed = avg >= 3.0;
+
+    const displayEl = document.getElementById('phase7-calc-score-display');
+    const verdictEl = document.getElementById('phase7-calc-verdict');
+    const bannerEl = document.getElementById('phase7-calc-banner');
+
+    if (displayEl) {
+        displayEl.textContent = `⭐ ${avg.toFixed(2)} / 5.00`;
+        displayEl.className = `text-2xl font-mono font-bold ${isPassed ? 'text-emerald-700' : 'text-rose-700'}`;
+    }
+
+    if (verdictEl) {
+        verdictEl.textContent = isPassed ? 'Proficiency Benchmark Met (≥ 3.00) • Qualified for Rollover' : 'Below Standard (< 3.00) • Subject to Goal Failure';
+        verdictEl.className = `text-xs font-bold ${isPassed ? 'text-emerald-800' : 'text-rose-800'}`;
+    }
+
+    if (bannerEl) {
+        bannerEl.className = `p-4 rounded-2xl border flex items-center justify-between flex-wrap gap-2 transition-all ${isPassed ? 'bg-emerald-50/80 border-emerald-200' : 'bg-rose-50/80 border-rose-200'}`;
+    }
+}
+window.updatePhase7FinalScoreCalc = updatePhase7FinalScoreCalc;
+
+/**
+ * Handle submission of Phase 7 Final Evaluation Form
+ */
+async function handlePhase7FinalEvalSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const empId = document.getElementById('phase7-eval-emp-id')?.value;
+    const goalId = document.getElementById('phase7-eval-goal-id')?.value;
+    const notes = document.getElementById('phase7-eval-notes')?.value || '';
+
+    const sliders = document.querySelectorAll('.phase7-score-slider');
+    let totalScore = 0;
+    const criteriaScores = [];
+    sliders.forEach(slider => {
+        const val = parseFloat(slider.value) || 2.5;
+        const title = decodeURIComponent(slider.getAttribute('data-title') || 'Performance Criteria');
+        const metric = decodeURIComponent(slider.getAttribute('data-metric') || 'Standard Metric');
+        totalScore += val;
+        criteriaScores.push({
+            title: title,
+            metric: metric,
+            rating: val,
+            score: val
+        });
+    });
+
+    const avg = parseFloat((totalScore / (sliders.length || 1)).toFixed(2));
+    const emp = (window.perfRoster || []).find(x => isSameEmployee(x.id, empId));
+
+    if (avg < 3.0) {
+        // Store pending failure data and show double-check confirmation modal
+        window.pendingFinalFailData = {
+            empId: empId,
+            goalId: goalId,
+            score: avg,
+            notes: notes,
+            criteriaScores: criteriaScores
+        };
+
+        const confirmScoreEl = document.getElementById('confirm-fail-score');
+        if (confirmScoreEl) confirmScoreEl.textContent = `${avg.toFixed(2)} / 5.00`;
+
+        openModal('modal-confirm-goal-failure');
+        return;
+    }
+
+    // If passed standard (>= 3.0)
+    const btn = document.getElementById('btn-submit-phase7-final-eval');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Saving Final Evaluation...</span>';
+    }
+
+    try {
+        await PerformanceAPI.submitAppraisal({
+            employee_id: empId,
+            supervisor_rating: avg,
+            new_supervisor_rating: avg,
+            is_retry: true,
+            supervisor_notes: notes,
+            criteria_scores: criteriaScores
+        });
+
+        await PerformanceAPI.calibrateEvaluation({
+            employee_id: empId,
+            calibrated_score: avg,
+            new_calibrated_score: avg,
+            is_retry: true,
+            discussion_minutes: `Final Phase 7 1-on-1 evaluation completed. Score: ${avg.toFixed(2)}/5.00. Notes: ${notes}`
+        });
+
+        closeModal('modal-phase7-final-eval');
+        if (typeof showToast === 'function') {
+            showToast(`🎉 Final Evaluation Passed for ${emp?.name || 'Associate'} with score ${avg.toFixed(2)}/5.00!`, 'success');
+        }
+        await loadAndRenderPlanningGoals();
+    } catch (err) {
+        console.error('Error saving final evaluation:', err);
+        if (typeof showToast === 'function') {
+            showToast(err.message || 'Failed to submit final evaluation.', 'error');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+window.handlePhase7FinalEvalSubmit = handlePhase7FinalEvalSubmit;
+
+/**
+ * Execute Final Goal Failure upon confirmation
+ */
+async function executeConfirmGoalFailure() {
+    const data = window.pendingFinalFailData;
+    if (!data) return;
+
+    const btn = document.getElementById('btn-confirm-mark-failed');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Finalizing Failure...</span>';
+    }
+
+    try {
+        const emp = (window.perfRoster || []).find(x => isSameEmployee(x.id, data.empId));
+
+        // Submit final calibration record
+        await PerformanceAPI.calibrateEvaluation({
+            employee_id: data.empId,
+            calibrated_score: data.score,
+            discussion_minutes: `Final 4th Attempt 1-on-1 Review Concluded. Score: ${data.score.toFixed(2)} / 5.00 (Failed Standard). ${data.notes}`
+        });
+
+        // Mark goal as Failed in Supabase
+        await PerformanceAPI.markGoalFailed(data.goalId, data.empId);
+
+        closeModal('modal-confirm-goal-failure');
+        closeModal('modal-phase7-final-eval');
+
+        if (typeof showToast === 'function') {
+            showToast(`Performance Goal for ${emp?.name || 'Associate'} permanently finalized as Failed.`, 'error');
+        }
+
+        window.pendingFinalFailData = null;
+        await loadAndRenderPlanningGoals();
+    } catch (err) {
+        console.error('Error marking goal as failed:', err);
+        if (typeof showToast === 'function') {
+            showToast(err.message || 'Failed to finalize goal as failed.', 'error');
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+window.executeConfirmGoalFailure = executeConfirmGoalFailure;
+
 
