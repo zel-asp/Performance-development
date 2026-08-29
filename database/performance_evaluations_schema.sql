@@ -23,6 +23,7 @@ create table public.performance_evaluations (
   updated_at timestamp with time zone null default now(),
   new_supervisor_rating numeric null default '0'::numeric,
   new_calibrated_score numeric null default '0'::numeric,
+  self_evaluation numeric null default '0'::numeric,
   constraint performance_evaluations_pkey primary key (id),
   constraint performance_evaluations_employee_id_fkey foreign KEY (employee_id) references users (id) on delete CASCADE
 ) TABLESPACE pg_default;

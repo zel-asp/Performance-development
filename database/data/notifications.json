@@ -390,6 +390,38 @@
         "title": "Performance Appraisal Endorsed",
         "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 3.2 / 5.0 (Proficient).",
         "is_read": false,
-        "created_at": "2026-08-28T20:07:46+00:00"
+        "created_at": "2026-08-28T20:07:46+00:00",
+        "userId": "emp-102",
+        "isRead": false,
+        "createdAt": "2026-08-28T20:07:46+00:00"
+    },
+    {
+        "id": "notif-2995ecc6",
+        "recipient_role": "Supervisor",
+        "user_id": "emp-102",
+        "type": "task_completed",
+        "title": "Task Completed with Feedback \u2728",
+        "message": "Employee completed \"dasds\" and submitted learnings & feedback.",
+        "related_id": "task-gen-2bc81064",
+        "is_read": false,
+        "created_at": "2026-08-28T23:48:26+00:00",
+        "updated_at": "2026-08-28T23:48:26+00:00",
+        "goal_id": 34,
+        "recipientRole": "Supervisor",
+        "userId": "emp-102",
+        "relatedId": "task-gen-2bc81064",
+        "isRead": false,
+        "createdAt": "2026-08-28T23:48:26+00:00",
+        "updatedAt": "2026-08-28T23:48:26+00:00",
+        "goalId": 34
+    },
+    {
+        "id": "notif-62e41f1d",
+        "user_id": "emp-102",
+        "type": "performance",
+        "title": "Performance Appraisal Endorsed",
+        "message": "Your supervisor has submitted and endorsed your formal performance appraisal with an overall score of 4.9 / 5.0 (Master Tier).",
+        "is_read": false,
+        "created_at": "2026-08-28T23:49:05+00:00"
     }
 ]
