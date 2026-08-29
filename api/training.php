@@ -50,6 +50,11 @@ try {
             $response = $trainingController->createNeed($payload);
             break;
 
+        case 'assign_program':
+        case 'link_program':
+            $response = $trainingController->assignProgram($payload);
+            break;
+
         // 2. Training Programs
         case 'get_programs':
             $response = $trainingController->getPrograms($payload);

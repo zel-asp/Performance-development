@@ -5,6 +5,7 @@ require_once __DIR__ . '/../models/TrainingProgramModel.php';
 require_once __DIR__ . '/../models/TrainingSessionModel.php';
 require_once __DIR__ . '/../models/EvaluationModel.php';
 require_once __DIR__ . '/../models/TrainingReportModel.php';
+require_once __DIR__ . '/../models/CertificateModel.php';
 
 class TrainingController
 {
@@ -13,6 +14,7 @@ class TrainingController
     private TrainingSessionModel $sessionModel;
     private EvaluationModel $evaluationModel;
     private TrainingReportModel $reportModel;
+    private CertificateModel $certificateModel;
 
     public function __construct()
     {
@@ -21,6 +23,7 @@ class TrainingController
         $this->sessionModel = new TrainingSessionModel();
         $this->evaluationModel = new EvaluationModel();
         $this->reportModel = new TrainingReportModel();
+        $this->certificateModel = new CertificateModel();
     }
 
     // 1. Training Needs
@@ -43,6 +46,23 @@ class TrainingController
             'success' => true,
             'message' => 'Training need registered successfully.',
             'data'    => $created
+        ];
+    }
+
+    public function assignProgram(array $data): array
+    {
+        $needId = $data['needId'] ?? ($data['need_id'] ?? '');
+        $programId = $data['programId'] ?? ($data['program_id'] ?? '');
+
+        if (empty($needId) || empty($programId)) {
+            return ['success' => false, 'message' => 'Need ID and Program ID are required.'];
+        }
+
+        $updated = $this->needModel->assignProgram($needId, $programId);
+        return [
+            'success' => true,
+            'message' => 'Training program assigned to associate successfully.',
+            'data'    => $updated
         ];
     }
 
@@ -113,17 +133,28 @@ class TrainingController
         ];
     }
 
-    // 6. Master Bootstrap Data (Fetches all states in a single payload)
+    // 6. Digital Certificates
+    public function getCertificates(array $filters = []): array
+    {
+        $certs = $this->certificateModel->getCertificates($filters);
+        return [
+            'success' => true,
+            'data'    => $certs
+        ];
+    }
+
+    // 7. Master Bootstrap Data (Fetches all states in a single payload)
     public function getBootstrapData(): array
     {
         return [
             'success' => true,
             'data'    => [
-                'needs'       => $this->needModel->getNeeds(),
-                'programs'    => $this->programModel->getPrograms(),
-                'sessions'    => $this->sessionModel->getSessions(),
-                'results'     => $this->evaluationModel->getEvaluations(),
-                'reports'     => $this->reportModel->getSummaryAnalytics()
+                'needs'        => $this->needModel->getNeeds(),
+                'programs'     => $this->programModel->getPrograms(),
+                'sessions'     => $this->sessionModel->getSessions(),
+                'results'      => $this->evaluationModel->getEvaluations(),
+                'certificates' => $this->certificateModel->getCertificates(),
+                'reports'      => $this->reportModel->getSummaryAnalytics()
             ]
         ];
     }

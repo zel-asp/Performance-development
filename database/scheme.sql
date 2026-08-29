@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS competencies (
     category VARCHAR(100) NOT NULL, -- 'Service Excellence', 'Food Safety & Hygiene', 'Technical PMS', etc.
     department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
     description TEXT,
+    is_critical BOOLEAN DEFAULT FALSE,
     benchmark_score NUMERIC(3,2) DEFAULT 4.50,
     max_score NUMERIC(3,2) DEFAULT 5.00,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -174,6 +175,10 @@ CREATE TABLE IF NOT EXISTS training_evaluations (
     is_passed BOOLEAN GENERATED ALWAYS AS (quiz_score >= 80) STORED,
     certificate_reference VARCHAR(50) UNIQUE,
     xp_awarded INT DEFAULT 0,
+    competency_key VARCHAR(50),
+    competency_score_before NUMERIC(3,2),
+    competency_score_after NUMERIC(3,2),
+    synced_to_profile BOOLEAN DEFAULT FALSE,
     evaluated_at TIMESTAMPTZ DEFAULT NOW(),
     evaluated_by UUID REFERENCES employees(id) ON DELETE SET NULL,
     CONSTRAINT uq_evaluation UNIQUE (session_id, employee_id)

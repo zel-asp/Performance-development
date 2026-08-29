@@ -273,12 +273,25 @@ class CompetencyController
         }
 
         $totalProcessed = $updatedCount + $insertedCount;
+
+        // 3. Automatically synchronize Skill Gap deficits (< 3.8) to Training Management queue
+        $syncedNeeds = [];
+        try {
+            require_once __DIR__ . '/../models/TrainingNeedModel.php';
+            $needModel = new TrainingNeedModel();
+            $syncedNeeds = $needModel->syncDeficitsFromAssessments($employeeId);
+        } catch (\Throwable $e) {
+            // Log sync error without breaking the assessment save response
+            error_log('[CompetencyController] TNA Sync Warning: ' . $e->getMessage());
+        }
+
         return [
             'success' => true,
             'message' => "Successfully updated {$updatedCount} and created {$insertedCount} competency assessment records for employee.",
             'updatedCount' => $updatedCount,
             'insertedCount' => $insertedCount,
-            'totalProcessed' => $totalProcessed
+            'totalProcessed' => $totalProcessed,
+            'syncedNeedsCount' => count($syncedNeeds)
         ];
     }
 

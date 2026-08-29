@@ -112,7 +112,9 @@ function initAllCharts() {
 
     // Chart 4: Compliance Bar
     const ctxCompliance = document.getElementById('chart-lms-compliance');
-    if (ctxCompliance && !chartLmsComplianceInstance) {
+    if (ctxCompliance) {
+        const existing = typeof Chart !== 'undefined' ? Chart.getChart(ctxCompliance) : null;
+        if (existing) existing.destroy();
         chartLmsComplianceInstance = new Chart(ctxCompliance, {
             type: 'bar',
             data: {

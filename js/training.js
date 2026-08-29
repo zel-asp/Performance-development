@@ -74,501 +74,10 @@ const TrainingAPI = {
 // 1. STATE STORES
 // =========================================================================
 
-let trainingNeedsState = [
-    {
-        id: 'need-1',
-        title: 'Frontline Conflict De-escalation Deficit',
-        sourceType: 'competency_gap',
-        sourceLabel: 'Skill Gap',
-        category: 'Service Excellence',
-        dept: 'Front Office',
-        associateName: 'Maria Santos',
-        associateRole: 'Front Desk Host',
-        associateAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        targetCompetency: 'Frontline Conflict De-escalation',
-        competencyKey: 'de_escalation',
-        currentScore: 3.5,
-        requiredScore: 5.0,
-        gap: -1.5,
-        urgency: 'High',
-        status: 'Program Linked',
-        linkedProgramId: 'prog-1',
-        dateIdentified: 'Aug 18, 2026',
-        notes: 'Identified during Q3 Supervisor Review and Front Office guest friction logs.'
-    },
-    {
-        id: 'need-2',
-        title: 'HACCP Level 3 Mandatory Annual Recertification',
-        sourceType: 'compliance',
-        sourceLabel: 'Mandatory Compliance',
-        category: 'Food Safety & Hygiene',
-        dept: 'Culinary',
-        associateName: 'Carlos Gomez & Culinary Team (5 Associates)',
-        associateRole: 'Kitchen & Concierge Staff',
-        associateAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        targetCompetency: 'HACCP Safety & Sanitation',
-        competencyKey: 'haccp_safety',
-        currentScore: 4.0,
-        requiredScore: 4.8,
-        gap: -0.8,
-        urgency: 'Critical',
-        status: 'Scheduled',
-        linkedProgramId: 'prog-2',
-        dateIdentified: 'Aug 12, 2026',
-        notes: 'Statutory hospitality requirement for all food handling staff.'
-    },
-    {
-        id: 'need-3',
-        title: 'Sommelier Wine Upselling & Vintage Storytelling',
-        sourceType: 'competency_gap',
-        sourceLabel: 'Skill Gap',
-        category: 'Revenue Optimization',
-        dept: 'F&B Service',
-        associateName: 'David Lee',
-        associateRole: 'F&B Server Lead',
-        associateAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-        targetCompetency: 'Revenue & Wine Upsell',
-        competencyKey: 'revenue_upsell',
-        currentScore: 3.8,
-        requiredScore: 4.8,
-        gap: -1.0,
-        urgency: 'Medium',
-        status: 'Identified',
-        linkedProgramId: 'prog-3',
-        dateIdentified: 'Aug 20, 2026',
-        notes: 'Average wine check is 18% below restaurant benchmark for dinner shift.'
-    },
-    {
-        id: 'need-4',
-        title: 'Fire Safety & Crisis Evacuation Protocol',
-        sourceType: 'compliance',
-        sourceLabel: 'Mandatory Compliance',
-        category: 'Safety & Security',
-        dept: 'Housekeeping',
-        associateName: 'Housekeeping Staff (12 Associates)',
-        associateRole: 'Room Attendants',
-        associateAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-        targetCompetency: 'Crisis Management & Evacuation',
-        competencyKey: 'crisis_mgmt',
-        currentScore: 4.1,
-        requiredScore: 5.0,
-        gap: -0.9,
-        urgency: 'High',
-        status: 'Identified',
-        linkedProgramId: 'prog-4',
-        dateIdentified: 'Aug 22, 2026',
-        notes: 'Annual mandatory hotel evacuation drill and extinguisher handling.'
-    }
-];
-
-let trainingProgramsState = [
-    {
-        id: 'prog-1',
-        title: 'Hospitality Crisis Diplomacy & Guest De-escalation',
-        category: 'Skill Gap: Service Excellence',
-        categoryType: 'skill_gap',
-        dept: 'Front Office',
-        targetCompetency: 'Frontline Conflict De-escalation',
-        competencyKey: 'de_escalation',
-        duration: '3.5 Hours (1 Day Workshop)',
-        format: 'In-Person Workshop & Roleplay',
-        trainerType: 'Internal Master Trainer',
-        passingScore: 80,
-        xpAward: 150,
-        icon: 'fa-handshake-angle',
-        badgeColor: 'terracotta',
-        description: 'Comprehensive training covering the LAST de-escalation framework (Listen, Apologize, Solve, Thank), emotional intelligence under pressure, and diplomatic service recovery vouchers.',
-        modules: [
-            '1. Anatomy of Guest Frustration & Empathy Triggers',
-            '2. The LAST Protocol in Real Hospitality Scenarios',
-            '3. Body Language, Vocal Cadence & Boundary Setting',
-            '4. Live Simulations & Practical Scenario Assessment'
-        ],
-        quizQuestions: [
-            {
-                q: '1. What does the "A" in the LAST hospitality recovery framework represent?',
-                options: [
-                    'Argue the hotel policy diplomatically',
-                    'Apologize sincerely for the guest\'s distress without assigning blame',
-                    'Ask the manager to intervene immediately',
-                    'Assess the financial liability of the hotel'
-                ],
-                correct: 1
-            },
-            {
-                q: '2. When an agitated guest raises their voice in the lobby, the recommended verbal pace is:',
-                options: [
-                    'Match their volume and pace so you are heard clearly',
-                    'Lower your tone, speak 15% slower, and maintain calm open body posture',
-                    'Remain completely silent until they finish shouting',
-                    'Immediately step backwards behind the security desk'
-                ],
-                correct: 1
-            },
-            {
-                q: '3. What is the maximum instant amenity voucher a Front Desk Host may authorize without GM signoff?',
-                options: [
-                    '₱500 Dining Credit',
-                    '₱2,500 F&B or Spa Voucher + Room Category Upgrade',
-                    'Free Weekend Stay',
-                    '₱10,000 Cash Refund'
-                ],
-                correct: 1
-            },
-            {
-                q: '4. During de-escalation, which phrase should ALWAYS be avoided?',
-                options: [
-                    '"I completely understand your frustration and I will personally solve this."',
-                    '"That\'s not our hotel policy and there is nothing I can do."',
-                    '"Let me see what alternatives I can immediately arrange for you."',
-                    '"Thank you for bringing this to our attention right away."'
-                ],
-                correct: 1
-            },
-            {
-                q: '5. What documentation must be logged immediately after a de-escalation incident is resolved?',
-                options: [
-                    'Duty Manager Shift Friction Log with guest name, room number, root cause, and recovery voucher issued',
-                    'No logging is required if the guest stopped complaining',
-                    'Send a private WhatsApp message to coworkers',
-                    'Write a handwritten note and discard it at end of shift'
-                ],
-                correct: 0
-            }
-        ]
-    },
-    {
-        id: 'prog-2',
-        title: 'HACCP Level 3 Food Safety & Cold-Chain Mastery',
-        category: 'Mandatory Compliance',
-        categoryType: 'compliance',
-        dept: 'Culinary',
-        targetCompetency: 'HACCP Safety & Sanitation',
-        competencyKey: 'haccp_safety',
-        duration: '4.0 Hours',
-        format: 'Hygiene Lab & Inspection Walk',
-        trainerType: 'Certified External Auditor',
-        passingScore: 80,
-        xpAward: 150,
-        icon: 'fa-utensils',
-        badgeColor: 'sage',
-        description: 'Certified standard training on critical control points (CCP), digital cold-chain data logging, allergen cross-contact segregation, and sanitization protocols.',
-        modules: [
-            '1. Critical Control Points & Walk-in Chiller Thresholds',
-            '2. Color-coded Board Segregation & Cross-Contamination',
-            '3. Blast Chilling, Core Probe Calibration & FIFO Logs',
-            '4. Health Authority Audit Compliance Walkthrough'
-        ],
-        quizQuestions: [
-            {
-                q: '1. What is the mandatory minimum internal core temperature for cooked poultry?',
-                options: [
-                    '63°C (145°F)',
-                    '74°C (165°F) for at least 15 seconds',
-                    '55°C (130°F)',
-                    '85°C (185°F)'
-                ],
-                correct: 1
-            },
-            {
-                q: '2. The Temperature Danger Zone for rapid bacterial growth in food is between:',
-                options: [
-                    '0°C and 4°C',
-                    '5°C and 60°C (41°F and 140°F)',
-                    '60°C and 100°C',
-                    '-18°C and 0°C'
-                ],
-                correct: 1
-            },
-            {
-                q: '3. How often must walk-in chiller temperatures be manually logged in the HACCP register?',
-                options: [
-                    'Once a week',
-                    'Every 4 hours during shift operations',
-                    'Only during annual audits',
-                    'Once at the end of the month'
-                ],
-                correct: 1
-            },
-            {
-                q: '4. Which cutting board color is strictly reserved for raw poultry in commercial kitchens?',
-                options: [
-                    'Blue',
-                    'Yellow',
-                    'Red',
-                    'Green'
-                ],
-                correct: 1
-            },
-            {
-                q: '5. What is the maximum time hot food can be held on a buffet line before mandatory re-check or disposal?',
-                options: [
-                    '1 Hour',
-                    '4 Hours at ≥ 60°C',
-                    '8 Hours',
-                    '12 Hours'
-                ],
-                correct: 1
-            }
-        ]
-    },
-    {
-        id: 'prog-3',
-        title: 'Sommelier Fine Wine Pairing & Vintage Storytelling',
-        category: 'Skill Gap: Revenue Optimization',
-        categoryType: 'skill_gap',
-        dept: 'F&B Service',
-        targetCompetency: 'Revenue & Wine Upsell',
-        competencyKey: 'revenue_upsell',
-        duration: '3.0 Hours',
-        format: 'Tasting Workshop & Tableside Service',
-        trainerType: 'Master Sommelier',
-        passingScore: 80,
-        xpAward: 150,
-        icon: 'fa-wine-glass-empty',
-        badgeColor: 'gold',
-        description: 'Tasting workshop covering Old World vs New World terroirs, tableside decanting ritual, tasting pour etiquette, and food pairing storytelling.',
-        modules: [
-            '1. Bordeaux, Burgundy & Tuscan Vintage Profiles',
-            '2. Tableside Decanting Etiquette & Glassware Selection',
-            '3. Acidity & Tannin Balancing with Tasting Menus',
-            '4. Premium Cellar Upselling Dialogue'
-        ],
-        quizQuestions: [
-            {
-                q: '1. Which wine classification represents the highest statutory quality tier in Bordeaux, France?',
-                options: [
-                    'Vin de Pays',
-                    'Grand Cru Classé (1855 Classification)',
-                    'AOP Regional',
-                    'Table Wine'
-                ],
-                correct: 1
-            },
-            {
-                q: '2. What ideal serving temperature should be maintained for full-bodied vintage Cabernet Sauvignon?',
-                options: [
-                    '4°C to 6°C',
-                    '16°C to 18°C (60°F to 65°F)',
-                    '22°C to 25°C',
-                    '0°C'
-                ],
-                correct: 1
-            },
-            {
-                q: '3. Which grape variety is the primary constituent of authentic Barolo wines from Piedmont, Italy?',
-                options: [
-                    'Sangiovese',
-                    'Nebbiolo',
-                    'Merlot',
-                    'Pinot Noir'
-                ],
-                correct: 1
-            },
-            {
-                q: '4. When pairing wine with rich Wagyu Ribeye steak, what structural wine characteristic balances the marbling fat?',
-                options: [
-                    'High residual sugar',
-                    'High tannin and robust acidity',
-                    'Low alcohol content',
-                    'Effervescence'
-                ],
-                correct: 1
-            },
-            {
-                q: '5. What is the primary purpose of decanting an aged vintage red wine before service?',
-                options: [
-                    'Chilling the wine quickly',
-                    'Separate sediment and aerate the wine to open complex aromas',
-                    'Dilute the alcohol concentration',
-                    'Change the wine color'
-                ],
-                correct: 1
-            }
-        ]
-    }
-];
-
-let trainingSessionsState = [
-    {
-        id: 'sess-101',
-        programId: 'prog-1',
-        title: 'Hospitality Crisis Diplomacy & Guest De-escalation - Cohort A',
-        dept: 'Front Office',
-        trainerName: 'Elena Vance & FOM John Marco',
-        trainerTitle: 'Internal Master Hospitality Trainer',
-        trainerAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-        location: 'Executive Boardroom & Front Desk Mockup',
-        date: 'Aug 26, 2026',
-        time: '14:00 - 17:30',
-        status: 'In Progress', // 'Scheduled', 'In Progress', 'Completed'
-        roster: [
-            {
-                associateId: 'emp-101',
-                name: 'Maria Santos',
-                role: 'Front Desk Host',
-                dept: 'Front Office',
-                avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-                attendanceStatus: 'Attended', // 'Attended', 'Absent', 'Completed'
-                attendanceRate: 100,
-                checkInTime: '13:52',
-                evaluationStatus: 'Pending',
-                score: null,
-                resultId: null
-            },
-            {
-                associateId: 'emp-102',
-                name: 'Carlos Gomez',
-                role: 'Concierge Lead',
-                dept: 'Front Office',
-                avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-                attendanceStatus: 'Completed',
-                attendanceRate: 100,
-                checkInTime: '13:58',
-                evaluationStatus: 'Completed',
-                score: 95,
-                resultId: 'res-901'
-            },
-            {
-                associateId: 'emp-103',
-                name: 'Angela Reyes',
-                role: 'Guest Relations Officer',
-                dept: 'Front Office',
-                avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-                attendanceStatus: 'Attended',
-                attendanceRate: 100,
-                checkInTime: '14:01',
-                evaluationStatus: 'Pending',
-                score: null,
-                resultId: null
-            }
-        ]
-    },
-    {
-        id: 'sess-102',
-        programId: 'prog-2',
-        title: 'HACCP Food Safety Level 3 - Hygiene Intensive',
-        dept: 'Culinary',
-        trainerName: 'Chef Marco Rossi (Exec Sous Chef)',
-        trainerTitle: 'Certified Food Hygiene Auditor',
-        trainerAvatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
-        location: 'Main Culinary Kitchen & Training Cold Room',
-        date: 'Aug 27, 2026',
-        time: '09:00 - 13:00',
-        status: 'Scheduled',
-        roster: [
-            {
-                associateId: 'emp-104',
-                name: 'Chef Marco S.',
-                role: 'Line Cook Lead',
-                dept: 'Culinary',
-                avatar: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=150&auto=format&fit=crop&q=80',
-                attendanceStatus: 'Attended',
-                attendanceRate: 100,
-                checkInTime: '08:55',
-                evaluationStatus: 'Pending',
-                score: null,
-                resultId: null
-            },
-            {
-                associateId: 'emp-105',
-                name: 'Tanya Morales',
-                role: 'Pastry Chef de Partie',
-                dept: 'Culinary',
-                avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-                attendanceStatus: 'Attended',
-                attendanceRate: 100,
-                checkInTime: '08:58',
-                evaluationStatus: 'Pending',
-                score: null,
-                resultId: null
-            }
-        ]
-    },
-    {
-        id: 'sess-103',
-        programId: 'prog-3',
-        title: 'Sommelier Wine Pairing & Fine Dining Service Masterclass',
-        dept: 'F&B Service',
-        trainerName: 'Pierre Dubois',
-        trainerTitle: 'Master Sommelier',
-        trainerAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-        location: 'The Oxford Cellar & Fine Dining Room',
-        date: 'Aug 28, 2026',
-        time: '15:00 - 18:00',
-        status: 'Scheduled',
-        roster: [
-            {
-                associateId: 'emp-106',
-                name: 'David Lee',
-                role: 'F&B Server Lead',
-                dept: 'F&B Service',
-                avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-                attendanceStatus: 'Attended',
-                attendanceRate: 100,
-                checkInTime: '14:50',
-                evaluationStatus: 'Pending',
-                score: null,
-                resultId: null
-            }
-        ]
-    }
-];
-
-let trainingResultsState = [
-    {
-        id: 'res-901',
-        sessionId: 'sess-101',
-        programId: 'prog-1',
-        programTitle: 'Hospitality Crisis Diplomacy & Guest De-escalation',
-        category: 'Skill Gap: Service Excellence',
-        dept: 'Front Office',
-        associateId: 'emp-102',
-        associateName: 'Carlos Gomez',
-        associateRole: 'Concierge Lead',
-        associateAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        trainerName: 'Elena Vance & FOM John Marco',
-        completionDate: 'Aug 24, 2026',
-        attendanceRate: '100%',
-        quizScore: 95,
-        passingThreshold: 80,
-        resultStatus: 'Passed & Certified',
-        feedbackRating: 5.0,
-        certificateReference: 'OXF-CERT-2026-0889',
-        competencyTarget: 'Frontline Conflict De-escalation',
-        competencyKey: 'de_escalation',
-        competencyScoreBefore: 3.8,
-        competencyScoreAfter: 4.8,
-        syncedToProfile: true,
-        xpAwarded: 150
-    },
-    {
-        id: 'res-899',
-        sessionId: 'sess-prev',
-        programId: 'prog-2',
-        programTitle: 'HACCP Level 3 Food Safety & Cold-Chain Mastery',
-        category: 'Mandatory Compliance',
-        dept: 'Culinary',
-        associateId: 'emp-101',
-        associateName: 'Maria Santos',
-        associateRole: 'Front Desk Host (Cross-Training)',
-        associateAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        trainerName: 'Chef Marco Rossi',
-        completionDate: 'Jul 15, 2026',
-        attendanceRate: '100%',
-        quizScore: 98,
-        passingThreshold: 85,
-        resultStatus: 'Passed & Certified',
-        feedbackRating: 5.0,
-        certificateReference: 'OXF-CERT-2026-0742',
-        competencyTarget: 'HACCP Safety & Sanitation',
-        competencyKey: 'haccp_safety',
-        competencyScoreBefore: 4.0,
-        competencyScoreAfter: 4.8,
-        syncedToProfile: true,
-        xpAwarded: 150
-    }
-];
+let trainingNeedsState = [];
+let trainingProgramsState = [];
+let trainingSessionsState = [];
+let trainingResultsState = [];
 
 let activeAttendanceSessionId = 'sess-101';
 let currentEvaluationContext = {
@@ -596,6 +105,7 @@ function normalizeTrainingNeed(need) {
         ...need,
         id: need.id,
         title: need.title || 'Operational Training Need',
+        employeeId: need.employeeId || need.employee_id || null,
         associateName: need.associateName || need.associate_name || 'Associate',
         associateRole: need.associateRole || need.associate_role || 'Staff',
         associateAvatar: need.associateAvatar || need.associate_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
@@ -610,10 +120,78 @@ function normalizeTrainingNeed(need) {
         gap: gap,
         urgency: need.urgency || 'High',
         status: need.status || 'Identified',
-        linkedProgramId: need.linkedProgramId || need.linked_program_id || 'prog-1',
+        linkedProgramId: need.linkedProgramId || need.linked_program_id || null,
+        linkedProgramTitle: need.linkedProgramTitle || need.linked_program_title || null,
+        programDuration: need.programDuration || need.program_duration || null,
+        programPassingScore: need.programPassingScore || need.program_passing_score || null,
         dateIdentified: need.dateIdentified || need.date_identified || 'Aug 18, 2026',
         notes: need.notes || need.diagnosis_note || 'Identified during supervisor performance audit.'
     };
+}
+
+function formatDiagnosisNotesHtml(notesText) {
+    if (!notesText) return '<p class="text-slate-500 text-xs italic">Identified during supervisor performance evaluation.</p>';
+
+    // 1. If string has bullet lines with "•" or "\n"
+    if (notesText.includes('•') || notesText.includes('\n')) {
+        const lines = notesText.split('\n').map(l => l.trim()).filter(Boolean);
+        const headerLines = [];
+        const bulletItems = [];
+
+        lines.forEach(l => {
+            if (l.startsWith('•') || l.startsWith('-') || l.startsWith('*')) {
+                bulletItems.push(l.replace(/^[•\-\*]\s*/, ''));
+            } else {
+                headerLines.push(l);
+            }
+        });
+
+        return `
+            <div class="space-y-1.5 text-xs">
+                ${headerLines.length > 0 ? `<div class="font-medium text-slate-700 leading-snug">${headerLines.join(' ')}</div>` : ''}
+                ${bulletItems.length > 0 ? `
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1.5">Diagnosed Competency Deficits:</div>
+                    <ul class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-1">
+                        ${bulletItems.map(item => `
+                            <li class="flex items-center space-x-1.5 p-1.5 rounded-lg bg-white border border-[#E8DEDC] text-slate-700 text-xs shadow-2xs">
+                                <span class="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0"></span>
+                                <span class="font-semibold text-slate-800">${item}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    // 2. If string is comma-separated format like "Diagnosed low areas: VIP Protocol (1/4.5), Customer Service (1/4.5)..."
+    if (notesText.includes('Diagnosed low areas:')) {
+        const parts = notesText.split('Diagnosed low areas:');
+        const header = parts[0].trim();
+        const lowAreaSection = parts[1] || '';
+        const rawItems = lowAreaSection.split('. Requires')[0].split(',');
+
+        return `
+            <div class="space-y-1.5 text-xs">
+                ${header ? `<div class="font-medium text-slate-700 leading-snug">${header}</div>` : ''}
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1.5">Diagnosed Competency Deficits:</div>
+                <ul class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-1">
+                    ${rawItems.map(item => {
+                        const clean = item.trim();
+                        if (!clean) return '';
+                        return `
+                            <li class="flex items-center space-x-1.5 p-1.5 rounded-lg bg-white border border-[#E8DEDC] text-slate-700 text-xs shadow-2xs">
+                                <span class="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0"></span>
+                                <span class="font-semibold text-slate-800">${clean}</span>
+                            </li>
+                        `;
+                    }).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    return `<p class="text-slate-700 leading-relaxed text-xs">${notesText}</p>`;
 }
 
 function normalizeTrainingProgram(prog) {
@@ -774,7 +352,20 @@ function renderTrainingNeeds() {
     const container = document.getElementById('training-needs-list');
     if (!container) return;
 
-    let filteredNeeds = trainingNeedsState.map(normalizeTrainingNeed);
+    let allNormalized = trainingNeedsState.map(normalizeTrainingNeed);
+    
+    // Deduplicate by employeeId / associateName to ensure strictly 1 consolidated card per person
+    const seenAssociates = new Set();
+    let deduped = [];
+    allNormalized.forEach(n => {
+        const key = n.employeeId || n.associateName;
+        if (!seenAssociates.has(key)) {
+            seenAssociates.add(key);
+            deduped.push(n);
+        }
+    });
+
+    let filteredNeeds = deduped;
     if (needsActiveFilterTab === 'active') {
         filteredNeeds = filteredNeeds.filter(n => n.status !== 'Resolved' && n.status !== 'Completed');
     } else if (needsActiveFilterTab === 'resolved') {
@@ -803,6 +394,13 @@ function renderTrainingNeeds() {
         const isScheduled = need.status === 'Scheduled';
         const isSkillGap = need.sourceType === 'competency_gap';
 
+        // Find linked program metadata
+        const prog = trainingProgramsState.find(p => p.id === need.linkedProgramId) || null;
+        const programTitle = prog ? prog.title : (need.linkedProgramTitle || need.category || 'Hospitality Mastery Program');
+        const programDuration = prog ? prog.duration : (need.programDuration || '3.5 Hours (Workshop)');
+        const programPassingScore = prog ? prog.passingScore : (need.programPassingScore || 80);
+        const programFormat = prog ? prog.format : 'In-Person Workshop & Roleplay';
+
         // Calculate progress percentage on 5.0 scale
         const currentPct = Math.min(100, Math.max(10, Math.round((need.currentScore / 5.0) * 100)));
         const targetPct = Math.min(100, Math.max(10, Math.round((need.requiredScore / 5.0) * 100)));
@@ -821,7 +419,7 @@ function renderTrainingNeeds() {
             ? `<span class="badge-sage font-bold"><i class="fas fa-check-circle mr-1"></i> Resolved &amp; Synced (4.8 Score)</span>`
             : isScheduled
                 ? `<span class="badge-dusty font-bold"><i class="fas fa-calendar-check mr-1"></i> Session Scheduled</span>`
-                : `<span class="badge-terracotta font-bold"><i class="fas fa-bolt mr-1"></i> Deficit Active</span>`;
+                : `<span class="badge-terracotta font-bold"><i class="fas fa-bolt mr-1"></i> Deficit Active (< 3.8 TNA)</span>`;
 
         return `
             <div class="card-clean p-5 hover:shadow-md transition space-y-4 border ${isResolved ? 'bg-emerald-50/20 border-emerald-200' : 'bg-white border-[#E8DEDC]'}">
@@ -853,11 +451,11 @@ function renderTrainingNeeds() {
                         <div class="flex justify-between items-center text-[11px]">
                             <span class="text-slate-500 font-semibold">Current vs Target Benchmark:</span>
                             <span class="font-black text-slate-800">
-                                <span class="${need.currentScore < need.requiredScore ? 'text-terracotta-dark' : 'text-emerald-700'} font-bold">${need.currentScore}</span>
+                                <span class="${need.currentScore < 3.8 ? 'text-rose-600' : (need.currentScore < need.requiredScore ? 'text-amber-600' : 'text-emerald-700')} font-bold">${need.currentScore}</span>
                                 <span class="text-slate-400 font-normal"> / 5.0</span>
                                 <span class="text-slate-400 mx-1">vs</span>
                                 <span class="text-slate-900">${need.requiredScore}</span>
-                                <span class="ml-1 px-1.5 py-0.2 rounded text-[10px] font-bold ${need.gap < 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}">
+                                <span class="ml-1 px-1.5 py-0.2 rounded text-[10px] font-bold ${need.gap < 0 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
                                     ${need.gap < 0 ? need.gap : '+' + need.gap} Gap
                                 </span>
                             </span>
@@ -865,10 +463,10 @@ function renderTrainingNeeds() {
 
                         <!-- Progress Bar -->
                         <div class="w-full bg-slate-200/80 rounded-full h-2.5 relative overflow-hidden flex">
-                            <div class="h-2.5 rounded-full ${need.currentScore < 4.0 ? 'bg-terracotta' : 'bg-amber-500'} transition-all duration-500" style="width: ${currentPct}%;"></div>
+                            <div class="h-2.5 rounded-full ${need.currentScore < 3.8 ? 'bg-rose-500' : 'bg-amber-500'} transition-all duration-500" style="width: ${currentPct}%;"></div>
                         </div>
                         <div class="flex justify-between text-[10px] text-slate-400 font-medium">
-                            <span>Evaluated Rating (${need.currentScore})</span>
+                            <span>Assessed Score (${need.currentScore} &lt; 3.8 TNA)</span>
                             <span>Target Level (${need.requiredScore})</span>
                         </div>
                     </div>
@@ -876,35 +474,101 @@ function renderTrainingNeeds() {
                     <!-- Diagnosis Note (7 Cols) -->
                     <div class="lg:col-span-7 lg:pl-3 lg:border-l border-slate-200 space-y-1">
                         <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Diagnosis Audit Note &amp; Trigger Context:</span>
-                        <p class="text-slate-700 leading-relaxed">${need.notes}</p>
-                        <div class="flex items-center space-x-3 text-[11px] text-slate-400 pt-0.5">
+                        ${formatDiagnosisNotesHtml(need.notes)}
+                        <div class="flex items-center space-x-3 text-[11px] text-slate-400 pt-1">
                             <span><i class="fas fa-calendar-check mr-1 text-slate-400"></i> Identified: <strong class="text-slate-600">${need.dateIdentified}</strong></span>
-                            <span><i class="fas fa-link mr-1 text-primary"></i> Linked Syllabus: <strong class="text-primary font-bold">${need.category}</strong></span>
+                            <span><i class="fas fa-layer-group mr-1 text-primary"></i> Target Competency: <strong class="text-primary font-bold">${need.targetCompetency}</strong></span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Bottom Row: Action Trigger -->
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-xs">
-                    <div class="flex items-center space-x-2 text-slate-500">
-                        <i class="fas fa-lightbulb text-amber-500"></i>
-                        <span class="text-[11px]">Recommended Action: <strong>Schedule targeted cohort session before next shift audit.</strong></span>
-                    </div>
+                <!-- Training Curriculum Resolution Banner -->
+                ${prog ? `
+                    <div class="p-3.5 bg-primary/5 rounded-xl border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-primary text-white">
+                                    <i class="fas fa-graduation-cap mr-1"></i> Assigned Curriculum
+                                </span>
+                                <span class="font-bold text-slate-900">${prog.title}</span>
+                                ${!isResolved && !isAlreadyScheduled ? `
+                                    <button onclick="openAssignProgramModal('${need.id}')" class="text-[11px] text-primary hover:underline font-semibold ml-2">
+                                        <i class="fas fa-pen-to-square mr-1"></i>Change
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <p class="text-slate-600 text-[11px]">
+                                <i class="fas fa-clock mr-1 text-slate-400"></i> ${prog.duration || '3 Hours'} · 
+                                <i class="fas fa-chalkboard-user mr-1 text-slate-400"></i> ${prog.format || 'Workshop'}
+                            </p>
+                        </div>
 
-                    <div>
-                        ${!isResolved ? `
-                            <button onclick="scheduleFromNeed('${need.id}')" class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-2 shadow-sm">
-                                <i class="fas fa-calendar-plus"></i>
-                                <span>Schedule Training Session &rarr;</span>
-                            </button>
-                        ` : `
-                            <span class="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 text-xs font-bold">
-                                <i class="fas fa-award mr-1.5 text-emerald-600"></i>
-                                <span>Competency Upgraded to 4.8 Master Level</span>
-                            </span>
-                        `}
+                        <div class="flex-shrink-0">
+                            ${isResolved ? `
+                                <div class="flex items-center space-x-2">
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 text-xs font-bold">
+                                        <i class="fas fa-award mr-1.5 text-emerald-600"></i>
+                                        <span>Deficit Resolved · Score 4.8 Master Level</span>
+                                    </span>
+                                    <button onclick="switchTrainingStage('certs')" class="btn-secondary px-3 py-1.5 text-xs font-bold flex items-center space-x-1">
+                                        <i class="fas fa-certificate text-primary mr-1"></i>
+                                        <span>View License</span>
+                                    </button>
+                                </div>
+                            ` : isAlreadyScheduled ? `
+                                <div class="flex items-center space-x-2">
+                                    <span class="badge-sage text-xs font-bold py-1.5 px-3">
+                                        <i class="fas fa-calendar-check mr-1.5"></i> Session Scheduled (${existingSession ? existingSession.date : 'Upcoming'})
+                                    </span>
+                                    <button onclick="switchTrainingStage('schedules')" class="btn-secondary px-3 py-1.5 text-xs font-bold flex items-center space-x-1 shadow-2xs">
+                                        <i class="fas fa-calendar mr-1"></i>
+                                        <span>View Cohort Roster &rarr;</span>
+                                    </button>
+                                </div>
+                            ` : `
+                                <button onclick="scheduleFromNeed('${need.id}')" class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-2 shadow-sm whitespace-nowrap">
+                                    <i class="fas fa-calendar-plus"></i>
+                                    <span>Schedule Training Session &rarr;</span>
+                                </button>
+                            `}
+                        </div>
                     </div>
-                </div>
+                ` : `
+                    <div class="p-3.5 bg-amber-50/90 rounded-xl border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-600 text-white">
+                                    <i class="fas fa-user-gear mr-1"></i> Supervisor Action Required
+                                </span>
+                                <span class="font-bold text-slate-900">No Training Program Assigned Yet</span>
+                            </div>
+                            <p class="text-slate-600 text-[11px]">
+                                <i class="fas fa-circle-info mr-1 text-amber-600"></i> Review diagnosed deficit scores for <strong>${need.associateName}</strong> and manually select the appropriate training curriculum.
+                            </p>
+                        </div>
+
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            ${isAlreadyScheduled ? `
+                                <span class="badge-sage text-xs font-bold py-1.5 px-3">
+                                    <i class="fas fa-calendar-check mr-1.5"></i> Training Scheduled
+                                </span>
+                                <button onclick="switchTrainingStage('schedules')" class="btn-secondary px-3 py-1.5 text-xs font-bold flex items-center space-x-1 shadow-2xs">
+                                    <i class="fas fa-calendar mr-1"></i>
+                                    <span>View Cohort &rarr;</span>
+                                </button>
+                            ` : `
+                                <button onclick="openAssignProgramModal('${need.id}')" class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-sm whitespace-nowrap">
+                                    <i class="fas fa-plus-circle mr-1"></i>
+                                    <span>Assign Training Program &rarr;</span>
+                                </button>
+                                <button onclick="switchTrainingStage('programs')" class="px-3 py-2 rounded-lg bg-white border border-[#E8DEDC] hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center space-x-1 shadow-2xs transition whitespace-nowrap">
+                                    <i class="fas fa-layer-group text-slate-400"></i>
+                                    <span>Browse Catalog</span>
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                `}
             </div>
         `;
     }).join('');
@@ -972,17 +636,18 @@ function renderTrainingSessions() {
     if (!container) return;
 
     container.innerHTML = trainingSessionsState.map(sess => {
-        const isLive = sess.status === 'In Progress';
-        const isCompleted = sess.status === 'Completed';
+        const allCompleted = sess.roster && sess.roster.length > 0 && sess.roster.every(r => r.attendanceStatus === 'Completed' || r.evaluationStatus === 'Completed');
+        const isCompleted = sess.status === 'Completed' || allCompleted;
+        const isLive = !isCompleted && sess.status === 'In Progress';
 
-        const statusBadge = isLive
-            ? `<span class="badge-terracotta animate-pulse"><i class="fas fa-satellite-dish mr-1"></i> In Progress</span>`
-            : isCompleted
-                ? `<span class="badge-sage"><i class="fas fa-check-circle mr-1"></i> Completed</span>`
+        const statusBadge = isCompleted
+            ? `<span class="badge-sage font-bold"><i class="fas fa-check-circle mr-1"></i> Completed</span>`
+            : isLive
+                ? `<span class="badge-terracotta animate-pulse"><i class="fas fa-satellite-dish mr-1"></i> In Progress</span>`
                 : `<span class="badge-dusty"><i class="fas fa-calendar-clock mr-1"></i> Scheduled</span>`;
 
         return `
-            <div class="card-clean p-6 hover:shadow-md transition space-y-4 border ${isLive ? 'border-terracotta/40 bg-terracotta-50/10' : 'border-[#E8DEDC] bg-white'}">
+            <div class="card-clean p-6 hover:shadow-md transition space-y-4 border ${isLive ? 'border-terracotta/40 bg-terracotta-50/10' : isCompleted ? 'border-emerald-200/80 bg-emerald-50/10' : 'border-[#E8DEDC] bg-white'}">
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div class="space-y-1.5">
                         <div class="flex items-center space-x-2">
@@ -1019,8 +684,8 @@ function renderTrainingSessions() {
 
                     <div class="flex items-center space-x-2">
                         <button onclick="openAttendanceForSession('${sess.id}')" class="btn-secondary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5">
-                            <i class="fas fa-user-check text-sage-dark"></i>
-                            <span>Track Attendance</span>
+                            <i class="fas ${isCompleted ? 'fa-eye text-primary' : 'fa-user-check text-sage-dark'}"></i>
+                            <span>${isCompleted ? 'View Cohort (Completed)' : 'Track Attendance'}</span>
                         </button>
                         ${isLive ? `
                             <button onclick="startSessionEvaluation('${sess.id}', '${sess.roster[0]?.associateId}')" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1.5">
@@ -1071,10 +736,51 @@ function renderAttendanceConsole() {
         const isCompleted = member.attendanceStatus === 'Completed' || member.evaluationStatus === 'Completed';
 
         const statusBadge = isCompleted
-            ? `<span class="badge-sage font-bold"><i class="fas fa-check-double mr-1"></i> Completed (Passed 80%+)</span>`
+            ? `<span class="badge-sage font-bold"><i class="fas fa-check-double mr-1"></i> Completed (100%)</span>`
             : isAttended
                 ? `<span class="badge-dusty"><i class="fas fa-user-check mr-1"></i> Attended (Pending Quiz)</span>`
                 : `<span class="badge-terracotta"><i class="fas fa-xmark mr-1"></i> Absent (0%)</span>`;
+
+        const markAttendanceContent = isCompleted
+            ? `<span class="badge-sage text-xs font-bold py-1 px-3 inline-flex items-center"><i class="fas fa-lock text-[10px] mr-1.5 opacity-70"></i> Attended (Completed)</span>`
+            : `
+                <div class="flex items-center space-x-1.5">
+                    <button onclick="setAssociateAttendance('${session.id}', '${member.associateId}', 'Attended')" 
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${isAttended ? 'bg-dusty-dark text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                        <i class="fas fa-check mr-1 text-[10px]"></i> Attended
+                    </button>
+                    <button onclick="setAssociateAttendance('${session.id}', '${member.associateId}', 'Absent')" 
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${isAbsent ? 'bg-red-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                        <i class="fas fa-xmark mr-1 text-[10px]"></i> Absent
+                    </button>
+                </div>
+            `;
+
+        const actionContent = isCompleted
+            ? `
+                <div class="flex items-center justify-end space-x-1.5">
+                    <span class="text-[11px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 py-1 px-2.5 rounded-lg inline-flex items-center">
+                        <i class="fas fa-certificate text-gold mr-1"></i> Completed · View Only
+                    </span>
+                    ${member.resultId || trainingResultsState.some(r => r.associateId === member.associateId) ? `
+                        <button onclick="viewTrainingCertificate('${member.resultId || (trainingResultsState.find(r => r.associateId === member.associateId)?.id || '')}')" class="btn-secondary px-2.5 py-1 text-[11px] font-bold inline-flex items-center space-x-1">
+                            <i class="fas fa-file-pdf text-primary"></i>
+                            <span>View Cert</span>
+                        </button>
+                    ` : ''}
+                </div>
+            `
+            : isAttended
+                ? `
+                    <button onclick="startSessionEvaluation('${session.id}', '${member.associateId}')" 
+                        class="btn-primary px-3 py-1.5 text-[11px] font-bold inline-flex items-center space-x-1 shadow-xs">
+                        <i class="fas fa-pen-to-square"></i>
+                        <span>Take Evaluation Quiz &rarr;</span>
+                    </button>
+                `
+                : `
+                    <span class="text-slate-400 text-[11px] italic font-medium">Mark Attended First</span>
+                `;
 
         return `
             <tr class="hover:bg-[#FAF8F7]/80 transition">
@@ -1089,29 +795,8 @@ function renderAttendanceConsole() {
                 </td>
                 <td class="px-5 py-3.5 text-slate-600 font-medium">${member.checkInTime || '-'}</td>
                 <td class="px-5 py-3.5">${statusBadge}</td>
-                <td class="px-5 py-3.5">
-                    <div class="flex items-center space-x-1.5">
-                        <button onclick="setAssociateAttendance('${session.id}', '${member.associateId}', 'Attended')" 
-                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${isAttended || isCompleted ? 'bg-dusty-dark text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-                            <i class="fas fa-check mr-1 text-[10px]"></i> Attended
-                        </button>
-                        <button onclick="setAssociateAttendance('${session.id}', '${member.associateId}', 'Absent')" 
-                            class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${isAbsent ? 'bg-red-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-                            <i class="fas fa-xmark mr-1 text-[10px]"></i> Absent
-                        </button>
-                    </div>
-                </td>
-                <td class="px-5 py-3.5 text-right">
-                    ${isAttended || isCompleted ? `
-                        <button onclick="startSessionEvaluation('${session.id}', '${member.associateId}')" 
-                            class="btn-primary px-3 py-1.5 text-[11px] font-bold inline-flex items-center space-x-1 shadow-xs">
-                            <i class="fas fa-pen-to-square"></i>
-                            <span>${isCompleted ? 'Re-Evaluate Quiz' : 'Take Evaluation Quiz →'}</span>
-                        </button>
-                    ` : `
-                        <span class="text-slate-400 text-[11px] italic font-medium">Mark Attended First</span>
-                    `}
-                </td>
+                <td class="px-5 py-3.5">${markAttendanceContent}</td>
+                <td class="px-5 py-3.5 text-right">${actionContent}</td>
             </tr>
         `;
     }).join('');
@@ -1123,6 +808,11 @@ async function setAssociateAttendance(sessionId, associateId, status) {
 
     const member = session.roster.find(r => r.associateId === associateId);
     if (!member) return;
+
+    if (member.attendanceStatus === 'Completed' || member.evaluationStatus === 'Completed') {
+        showToast('This associate has completed certification. Attendance record is locked and finalized.', 'info');
+        return;
+    }
 
     const prevStatus = member.attendanceStatus;
     const prevRate = member.attendanceRate;
@@ -1226,7 +916,7 @@ function startSessionEvaluation(sessionId, associateId) {
     const questionsContainer = document.getElementById('eval-modal-questions-container');
 
     if (modalTitle) modalTitle.textContent = `Post-Training Evaluation Form: ${program.title}`;
-    if (modalSubtitle) modalSubtitle.textContent = `Associate: ${member.name} (${member.role}) · Trainer: ${session.trainerName} · Passing: ${program.passingScore}%`;
+    if (modalSubtitle) modalSubtitle.textContent = `Associate: ${member.name} (${member.role}) · Trainer: ${session.trainerName}`;
 
     if (questionsContainer) {
         let questionsList = program.quizQuestions || program.quiz_questions || [];
@@ -1343,11 +1033,13 @@ async function submitTrainingEvaluation() {
 
 function feedResultsIntoCompetency(result) {
     const matchingNeed = trainingNeedsState.find(n =>
-        n.associateName.includes(result.associateName) || n.targetCompetency === result.competencyTarget
+        (n.associateName && result.associateName && n.associateName.includes(result.associateName)) ||
+        (n.employeeId && result.associateId && n.employeeId === result.associateId) ||
+        (n.targetCompetency && result.competencyTarget && n.targetCompetency === result.competencyTarget)
     );
     if (matchingNeed) {
         matchingNeed.status = 'Resolved';
-        matchingNeed.currentScore = result.competencyScoreAfter;
+        matchingNeed.currentScore = result.competencyScoreAfter || 4.8;
         matchingNeed.gap = 0;
     }
 
@@ -1414,7 +1106,7 @@ function renderTrainingResults() {
                 </td>
                 <td class="px-5 py-3.5 font-bold text-slate-800">${res.programTitle}</td>
                 <td class="px-5 py-3.5 text-slate-600">${res.completionDate}</td>
-                <td class="px-5 py-3.5 font-bold ${isPassed ? 'text-emerald-700' : 'text-red-600'}">${res.quizScore}% <span class="text-[10px] text-slate-400 font-normal">(&ge;${res.passingThreshold}%)</span></td>
+                <td class="px-5 py-3.5 font-bold ${isPassed ? 'text-emerald-700' : 'text-slate-700'}">${res.quizScore}%</td>
                 <td class="px-5 py-3.5">
                     <span class="${isPassed ? 'badge-sage' : 'badge-terracotta'} font-bold">${res.resultStatus}</span>
                 </td>
@@ -1441,6 +1133,20 @@ function renderCertsTable() {
     if (!tbody) return;
 
     const certifiedResults = trainingResultsState.filter(r => r.certificateReference);
+
+    if (certifiedResults.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-5 py-8 text-center text-slate-400 text-xs italic">
+                    <div class="flex flex-col items-center justify-center space-y-2">
+                        <i class="fas fa-certificate text-2xl text-slate-300"></i>
+                        <span>No digital certificates issued yet. Pass a post-training evaluation quiz to generate verified licenses.</span>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
 
     tbody.innerHTML = certifiedResults.map(r => `
         <tr class="hover:bg-[#FAF8F7]/70 transition text-xs">
@@ -1627,6 +1333,17 @@ function scheduleFromNeed(needId) {
     const raw = trainingNeedsState.find(n => n.id === needId);
     if (!raw) return;
     const need = normalizeTrainingNeed(raw);
+
+    const existingSession = trainingSessionsState.find(s =>
+        (s.roster || []).some(r => r.associateId === need.employeeId || (r.name && need.associateName && r.name.toLowerCase() === need.associateName.toLowerCase())) &&
+        s.status !== 'Completed'
+    );
+    if (existingSession || need.status === 'Scheduled') {
+        showToast(`A training cohort is already scheduled for ${need.associateName}. Duplicate scheduling is disabled.`, 'warning');
+        switchTrainingStage('schedules');
+        return;
+    }
+
     currentSchedulingNeedId = need.id;
     openScheduleModal(need.linkedProgramId, need.id);
 }
@@ -1891,6 +1608,139 @@ async function saveNewTrainingProgram() {
         await TrainingAPI.createProgram(newProg);
     } catch (err) {
         console.warn('Could not persist program to backend:', err);
+    }
+}
+
+// ----------------------------------------------------
+// Supervisor Manual Training Program Assignment
+// ----------------------------------------------------
+function openAssignProgramModal(needId) {
+    const raw = trainingNeedsState.find(n => n.id === needId);
+    if (!raw) return;
+    const need = normalizeTrainingNeed(raw);
+
+    const existingSession = trainingSessionsState.find(s =>
+        (s.roster || []).some(r => r.associateId === need.employeeId || (r.name && need.associateName && r.name.toLowerCase() === need.associateName.toLowerCase())) &&
+        s.status !== 'Completed'
+    );
+    if (existingSession || need.status === 'Scheduled') {
+        showToast(`Training session is already scheduled for ${need.associateName}. Reassignment is locked to prevent duplication.`, 'warning');
+        return;
+    }
+
+    let modal = document.getElementById('modal-assign-training-program');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-assign-training-program';
+        modal.className = 'fixed inset-0 modal-overlay z-[999] hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs';
+        document.body.appendChild(modal);
+    }
+
+    const availablePrograms = trainingProgramsState || [];
+    const programOptions = availablePrograms.length > 0 ? availablePrograms.map(p => `
+        <label class="flex items-start p-3.5 rounded-xl border border-[#E8DEDC] bg-white hover:bg-slate-50 cursor-pointer transition space-x-3 group">
+            <input type="radio" name="assign_program_radio" value="${p.id}" class="mt-1 text-primary focus:ring-primary h-4 w-4 cursor-pointer" ${p.id === need.linkedProgramId ? 'checked' : ''}>
+            <div class="flex-1 space-y-1">
+                <div class="flex items-center justify-between">
+                    <h5 class="font-bold text-xs text-slate-900 group-hover:text-primary transition">${p.title}</h5>
+                    <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">${p.category} · ${p.dept}</span>
+                </div>
+                <p class="text-[11px] text-slate-500 leading-relaxed">${p.description || 'Structured hospitality training syllabus.'}</p>
+                <div class="flex items-center space-x-3 text-[10px] text-slate-400 pt-0.5">
+                    <span><i class="fas fa-clock mr-1"></i>${p.duration}</span>
+                    <span><i class="fas fa-award text-amber-500 mr-1"></i>Passing Threshold: &ge; ${p.passingScore || 80}%</span>
+                </div>
+            </div>
+        </label>
+    `).join('') : `
+        <div class="p-6 text-center text-slate-400 text-xs italic bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            No training programs created yet. You can create a new program from the Programs Catalog tab.
+        </div>
+    `;
+
+    modal.innerHTML = `
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 animate-scaleUp max-h-[90vh] flex flex-col">
+            <!-- Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-lg font-bold">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-heading font-bold text-base text-slate-900">Assign Training Program</h3>
+                        <p class="text-xs text-slate-500">Associate: <strong class="text-slate-800">${need.associateName}</strong> (${need.associateRole} · ${need.dept})</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-assign-training-program')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Associate Diagnosis Overview -->
+            <div class="p-3.5 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] space-y-2 text-xs">
+                <div class="flex justify-between items-center text-[11px] border-b border-slate-200 pb-1.5">
+                    <span class="text-slate-500 font-semibold">Assessed Overall Proficiency:</span>
+                    <span class="font-black text-rose-600">${need.currentScore} / 5.0 <span class="text-slate-400 font-normal">(Target: ${need.requiredScore})</span></span>
+                </div>
+                ${formatDiagnosisNotesHtml(need.notes)}
+            </div>
+
+            <!-- Program Selection List -->
+            <div class="space-y-2 flex-1 overflow-y-auto custom-scrollbar pr-1">
+                <span class="text-slate-500 text-xs font-bold block uppercase tracking-wider text-[10px]">Select Approved Training Curriculum:</span>
+                <div class="space-y-2" id="assign-program-options-list">
+                    ${programOptions}
+                </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="flex items-center justify-end space-x-2.5 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeModal('modal-assign-training-program')" class="btn-secondary px-4 py-2 text-xs font-bold">
+                    Cancel
+                </button>
+                <button type="button" onclick="submitAssignProgram('${need.id}')" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-sm">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Confirm Program Assignment</span>
+                </button>
+            </div>
+        </div>
+    `;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+async function submitAssignProgram(needId) {
+    const selectedRadio = document.querySelector('input[name="assign_program_radio"]:checked');
+    if (!selectedRadio) {
+        showToast('Please select a training program to assign.', 'error');
+        return;
+    }
+
+    const programId = selectedRadio.value;
+    const need = trainingNeedsState.find(n => n.id === needId);
+    const prog = trainingProgramsState.find(p => p.id === programId);
+
+    if (need) {
+        need.linkedProgramId = programId;
+        need.linked_program_id = programId;
+        need.status = 'Program Linked';
+    }
+
+    closeModal('modal-assign-training-program');
+    renderTrainingNeeds();
+    updateTrainingStats();
+    showToast(`Assigned "${prog ? prog.title : 'Program'}" to ${need ? need.associateName : 'Associate'}!`, 'success');
+
+    // Async persist to backend Supabase
+    try {
+        await fetch('api/training.php?action=assign_program', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ needId: needId, programId: programId })
+        });
+    } catch (err) {
+        console.warn('Could not persist program assignment to backend:', err);
     }
 }
 

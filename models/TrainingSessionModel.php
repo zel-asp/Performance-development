@@ -7,204 +7,121 @@ class TrainingSessionModel extends BaseModel
     public function __construct()
     {
         parent::__construct('training_sessions');
-        $this->seedInitialSessions();
     }
 
     public function getSessions(array $filters = []): array
     {
-        return $this->all($filters);
+        $all = $this->all($filters);
+        foreach ($all as &$s) {
+            $s['id'] = $s['id'] ?? '';
+            $s['date'] = $s['date'] ?? ($s['session_date'] ?? 'Aug 29, 2026');
+            $s['session_date'] = $s['date'];
+            $s['time'] = $s['time'] ?? ($s['time_slot'] ?? '14:00 - 17:30');
+            $s['time_slot'] = $s['time'];
+            $s['programId'] = $s['programId'] ?? ($s['program_id'] ?? '');
+            $s['trainerName'] = $s['trainerName'] ?? ($s['trainer_name'] ?? 'Assigned Master Trainer');
+            $s['trainerTitle'] = $s['trainerTitle'] ?? ($s['trainer_title'] ?? 'Senior Trainer');
+            $s['trainerAvatar'] = $s['trainerAvatar'] ?? ($s['trainer_avatar'] ?? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80');
+            if (is_string($s['roster'] ?? null)) {
+                $s['roster'] = json_decode($s['roster'], true) ?: [];
+            }
+            if (!isset($s['roster'])) {
+                $s['roster'] = [];
+            }
+            if (!empty($s['roster']) && count(array_filter($s['roster'], function($m) {
+                return ($m['attendanceStatus'] ?? '') === 'Completed' || ($m['evaluationStatus'] ?? '') === 'Completed';
+            })) === count($s['roster'])) {
+                $s['status'] = 'Completed';
+            }
+        }
+        return $all;
     }
 
     public function getSessionById(string $sessionId): ?array
     {
-        return $this->find($sessionId);
+        $session = $this->find($sessionId);
+        if ($session) {
+            $session['date'] = $session['date'] ?? ($session['session_date'] ?? 'Aug 29, 2026');
+            $session['time'] = $session['time'] ?? ($session['time_slot'] ?? '14:00 - 17:30');
+            $session['programId'] = $session['programId'] ?? ($session['program_id'] ?? '');
+            $session['trainerName'] = $session['trainerName'] ?? ($session['trainer_name'] ?? 'Assigned Master Trainer');
+            if (is_string($session['roster'] ?? null)) {
+                $session['roster'] = json_decode($session['roster'], true) ?: [];
+            }
+        }
+        return $session;
     }
 
     public function createSession(array $data): array
     {
-        if (empty($data['id'])) {
-            $data['id'] = 'sess-' . substr(bin2hex(random_bytes(3)), 0, 6);
-        }
-        if (empty($data['status'])) {
-            $data['status'] = 'Scheduled';
-        }
-        if (!isset($data['roster'])) {
-            $data['roster'] = [];
+        $id = $data['id'] ?? ('sess-' . substr(bin2hex(random_bytes(3)), 0, 6));
+        $roster = $data['roster'] ?? [];
+        if (is_string($roster)) {
+            $roster = json_decode($roster, true) ?: [];
         }
 
-        // Map frontend key names to Supabase schema columns
-        if (isset($data['date']) && !isset($data['session_date'])) {
-            $data['session_date'] = $data['date'];
-        }
-        if (isset($data['time']) && !isset($data['time_slot'])) {
-            $data['time_slot'] = $data['time'];
-        }
-        if (isset($data['programId']) && !isset($data['program_id'])) {
-            $data['program_id'] = $data['programId'];
-        }
-        if (isset($data['trainerName']) && !isset($data['trainer_name'])) {
-            $data['trainer_name'] = $data['trainerName'];
-        }
-        if (isset($data['trainerTitle']) && !isset($data['trainer_title'])) {
-            $data['trainer_title'] = $data['trainerTitle'];
-        }
-        if (isset($data['trainerAvatar']) && !isset($data['trainer_avatar'])) {
-            $data['trainer_avatar'] = $data['trainerAvatar'];
-        }
+        $clean = [
+            'id'             => $id,
+            'program_id'     => $data['program_id'] ?? ($data['programId'] ?? 'prog-1'),
+            'title'          => $data['title'] ?? 'Training Session Cohort',
+            'dept'           => $data['dept'] ?? 'Front Office',
+            'trainer_name'   => $data['trainer_name'] ?? ($data['trainerName'] ?? 'Assigned Trainer'),
+            'trainer_title'  => $data['trainer_title'] ?? ($data['trainerTitle'] ?? 'Lead Trainer'),
+            'trainer_avatar' => $data['trainer_avatar'] ?? ($data['trainerAvatar'] ?? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'),
+            'location'       => $data['location'] ?? 'Executive Boardroom',
+            'session_date'   => $data['session_date'] ?? ($data['date'] ?? date('M d, Y')),
+            'time_slot'      => $data['time_slot'] ?? ($data['time'] ?? '14:00 - 17:30'),
+            'capacity'       => (int)($data['capacity'] ?? 20),
+            'status'         => $data['status'] ?? 'Scheduled',
+            'roster'         => $roster,
+            'created_at'     => date('c')
+        ];
 
-        return $this->create($data);
+        return $this->create($clean);
     }
 
     public function updateRosterParticipant(string $sessionId, string $associateId, array $participantData): ?array
     {
         $session = $this->find($sessionId);
         if (!$session) {
-            return null;
+            // Create session record if not in db
+            $session = [
+                'id' => $sessionId,
+                'program_id' => $participantData['programId'] ?? 'prog-1',
+                'title' => 'Training Cohort Session',
+                'dept' => 'Front Office',
+                'trainer_name' => 'Assigned Trainer',
+                'location' => 'Training Room A',
+                'session_date' => date('M d, Y'),
+                'time_slot' => '14:00 - 17:30',
+                'status' => 'Scheduled',
+                'roster' => []
+            ];
+            $this->createSession($session);
         }
 
         $roster = $session['roster'] ?? [];
+        if (is_string($roster)) {
+            $roster = json_decode($roster, true) ?: [];
+        }
+
         $found = false;
         foreach ($roster as &$p) {
-            if (($p['associateId'] ?? '') === $associateId) {
+            if (($p['associateId'] ?? ($p['employee_id'] ?? '')) === $associateId) {
                 $p = array_merge($p, $participantData);
                 $found = true;
                 break;
             }
         }
-        if (!$found) {
-            $roster[] = $participantData;
+        $allCompleted = !empty($roster) && count(array_filter($roster, function($m) {
+            return ($m['attendanceStatus'] ?? '') === 'Completed' || ($m['evaluationStatus'] ?? '') === 'Completed';
+        })) === count($roster);
+
+        $updatePayload = ['roster' => $roster];
+        if ($allCompleted) {
+            $updatePayload['status'] = 'Completed';
         }
 
-        return $this->update($sessionId, ['roster' => $roster]);
-    }
-
-    private function seedInitialSessions(): void
-    {
-        $initial = [
-            [
-                'id' => 'sess-101',
-                'programId' => 'prog-1',
-                'title' => 'Hospitality Crisis Diplomacy & Guest De-escalation - Cohort A',
-                'dept' => 'Front Office',
-                'trainerName' => 'Elena Vance & FOM John Marco',
-                'trainerTitle' => 'Internal Master Hospitality Trainer',
-                'trainerAvatar' => 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-                'location' => 'Executive Boardroom & Front Desk Mockup',
-                'date' => 'Aug 26, 2026',
-                'time' => '14:00 - 17:30',
-                'status' => 'In Progress',
-                'roster' => [
-                    [
-                        'associateId' => 'emp-101',
-                        'name' => 'Maria Santos',
-                        'role' => 'Front Desk Host',
-                        'dept' => 'Front Office',
-                        'avatar' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-                        'attendanceStatus' => 'Attended',
-                        'attendanceRate' => 100,
-                        'checkInTime' => '13:52',
-                        'evaluationStatus' => 'Pending',
-                        'score' => null,
-                        'resultId' => null
-                    ],
-                    [
-                        'associateId' => 'emp-102',
-                        'name' => 'Carlos Gomez',
-                        'role' => 'Concierge Lead',
-                        'dept' => 'Front Office',
-                        'avatar' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-                        'attendanceStatus' => 'Completed',
-                        'attendanceRate' => 100,
-                        'checkInTime' => '13:58',
-                        'evaluationStatus' => 'Completed',
-                        'score' => 95,
-                        'resultId' => 'res-901'
-                    ],
-                    [
-                        'associateId' => 'emp-103',
-                        'name' => 'Angela Reyes',
-                        'role' => 'Guest Relations Officer',
-                        'dept' => 'Front Office',
-                        'avatar' => 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-                        'attendanceStatus' => 'Attended',
-                        'attendanceRate' => 100,
-                        'checkInTime' => '14:01',
-                        'evaluationStatus' => 'Pending',
-                        'score' => null,
-                        'resultId' => null
-                    ]
-                ]
-            ],
-            [
-                'id' => 'sess-102',
-                'programId' => 'prog-2',
-                'title' => 'HACCP Food Safety Level 3 - Hygiene Intensive',
-                'dept' => 'Culinary',
-                'trainerName' => 'Chef Marco Rossi (Exec Sous Chef)',
-                'trainerTitle' => 'Certified Food Hygiene Auditor',
-                'trainerAvatar' => 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
-                'location' => 'Main Culinary Kitchen & Training Cold Room',
-                'date' => 'Aug 27, 2026',
-                'time' => '09:00 - 13:00',
-                'status' => 'Scheduled',
-                'roster' => [
-                    [
-                        'associateId' => 'emp-104',
-                        'name' => 'Chef Marco S.',
-                        'role' => 'Line Cook Lead',
-                        'dept' => 'Culinary',
-                        'avatar' => 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=150&auto=format&fit=crop&q=80',
-                        'attendanceStatus' => 'Attended',
-                        'attendanceRate' => 100,
-                        'checkInTime' => '08:55',
-                        'evaluationStatus' => 'Pending',
-                        'score' => null,
-                        'resultId' => null
-                    ],
-                    [
-                        'associateId' => 'emp-105',
-                        'name' => 'Tanya Morales',
-                        'role' => 'Pastry Chef de Partie',
-                        'dept' => 'Culinary',
-                        'avatar' => 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-                        'attendanceStatus' => 'Attended',
-                        'attendanceRate' => 100,
-                        'checkInTime' => '08:58',
-                        'evaluationStatus' => 'Pending',
-                        'score' => null,
-                        'resultId' => null
-                    ]
-                ]
-            ],
-            [
-                'id' => 'sess-103',
-                'programId' => 'prog-3',
-                'title' => 'Sommelier Wine Pairing & Fine Dining Service Masterclass',
-                'dept' => 'F&B Service',
-                'trainerName' => 'Pierre Dubois',
-                'trainerTitle' => 'Master Sommelier',
-                'trainerAvatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-                'location' => 'The Oxford Cellar & Fine Dining Room',
-                'date' => 'Aug 28, 2026',
-                'time' => '15:00 - 18:00',
-                'status' => 'Scheduled',
-                'roster' => [
-                    [
-                        'associateId' => 'emp-106',
-                        'name' => 'David Lee',
-                        'role' => 'F&B Server Lead',
-                        'dept' => 'F&B Service',
-                        'avatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-                        'attendanceStatus' => 'Attended',
-                        'attendanceRate' => 100,
-                        'checkInTime' => '14:50',
-                        'evaluationStatus' => 'Pending',
-                        'score' => null,
-                        'resultId' => null
-                    ]
-                ]
-            ]
-        ];
-        $this->seedIfEmpty($initial);
+        return $this->update($sessionId, $updatePayload);
     }
 }

@@ -210,7 +210,7 @@
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
                                             <div class="relative">
                                                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                 </svg>
                                                 <input id="search-planning-goals" oninput="onPlanningGoalsSearch(this.value)" type="text" placeholder="Search objectives..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-700 w-44 sm:w-48 transition" />
                                             </div>
@@ -281,7 +281,7 @@
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
                                             <div class="relative">
                                                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                 </svg>
                                                 <input id="search-general-tasks" oninput="onGeneralTasksSearch(this.value)" type="text" placeholder="Search tasks..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-700 w-44 sm:w-48 transition" />
                                             </div>
@@ -350,7 +350,7 @@
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
                                             <div class="relative">
                                                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                 </svg>
                                                 <input id="search-approved-goals" oninput="onApprovedGoalsSearch(this.value)" type="text" placeholder="Search approved goals..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-slate-700 w-44 sm:w-48 transition" />
                                             </div>
@@ -405,7 +405,7 @@
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
                                             <div class="relative">
                                                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                 </svg>
                                                 <input id="search-monitoring-emp" oninput="onMonitoringEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-700 w-44 sm:w-48 transition" />
                                             </div>
@@ -468,7 +468,7 @@
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
                                             <div class="relative">
                                                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                 </svg>
                                                 <input id="search-eval-emp" oninput="onEvalEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-slate-700 w-44 sm:w-48 transition" />
                                             </div>
@@ -522,7 +522,7 @@
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
                                             <div class="relative">
                                                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                 </svg>
                                                 <input id="search-review-emp" oninput="onReviewEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-700 w-44 sm:w-48 transition" />
                                             </div>
@@ -575,7 +575,7 @@
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
                                             <div class="relative">
                                                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                 </svg>
                                                 <input id="search-idp-emp" oninput="onIDPEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 w-44 sm:w-48 transition" />
                                             </div>
@@ -627,7 +627,7 @@
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
                                             <div class="relative">
                                                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                 </svg>
                                                 <input id="search-cycle-emp" oninput="onCycleEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-slate-700 w-44 sm:w-48 transition" />
                                             </div>

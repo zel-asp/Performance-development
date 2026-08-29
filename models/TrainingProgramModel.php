@@ -7,262 +7,171 @@ class TrainingProgramModel extends BaseModel
     public function __construct()
     {
         parent::__construct('training_programs');
-        $this->seedInitialPrograms();
     }
 
     public function getPrograms(array $filters = []): array
     {
-        return $this->all($filters);
+        $all = $this->all($filters);
+        if (empty($all)) {
+            $baseline = $this->getBaselinePrograms();
+            foreach ($baseline as $bp) {
+                $this->createProgram($bp);
+            }
+            $all = $this->all($filters);
+        }
+
+        foreach ($all as &$p) {
+            $p['id'] = $p['id'] ?? '';
+            $p['targetCompetency'] = $p['target_competency'] ?? ($p['targetCompetency'] ?? 'Core Hospitality');
+            $p['competencyKey'] = $p['competency_key'] ?? ($p['competencyKey'] ?? 'general');
+            $p['categoryType'] = $p['category_type'] ?? ($p['categoryType'] ?? 'skill_gap');
+            $p['trainerType'] = $p['trainer_type'] ?? ($p['trainerType'] ?? 'Internal Master Trainer');
+            $p['passingScore'] = (int)($p['passing_score'] ?? ($p['passingScore'] ?? 80));
+            $p['xpAward'] = (int)($p['xp_award'] ?? ($p['xpAward'] ?? 150));
+            $p['badgeColor'] = $p['badge_color'] ?? ($p['badgeColor'] ?? 'primary');
+            if (is_string($p['modules'] ?? null)) {
+                $p['modules'] = json_decode($p['modules'], true) ?: [];
+            }
+            if (is_string($p['quiz_questions'] ?? null)) {
+                $p['quizQuestions'] = json_decode($p['quiz_questions'], true) ?: [];
+            } else {
+                $p['quizQuestions'] = $p['quiz_questions'] ?? ($p['quizQuestions'] ?? []);
+            }
+        }
+        return $all;
     }
 
     public function getProgramById(string $programId): ?array
     {
-        return $this->find($programId);
+        $prog = $this->find($programId);
+        if (!$prog) {
+            $all = $this->getPrograms();
+            foreach ($all as $p) {
+                if ($p['id'] === $programId) return $p;
+            }
+            return null;
+        }
+
+        $prog['targetCompetency'] = $prog['target_competency'] ?? ($prog['targetCompetency'] ?? 'Core Hospitality');
+        $prog['competencyKey'] = $prog['competency_key'] ?? ($prog['competencyKey'] ?? 'general');
+        $prog['categoryType'] = $prog['category_type'] ?? ($prog['categoryType'] ?? 'skill_gap');
+        $prog['trainerType'] = $prog['trainer_type'] ?? ($prog['trainerType'] ?? 'Internal Master Trainer');
+        $prog['passingScore'] = (int)($prog['passing_score'] ?? ($prog['passingScore'] ?? 80));
+        $prog['xpAward'] = (int)($prog['xp_award'] ?? ($prog['xpAward'] ?? 150));
+        $prog['badgeColor'] = $prog['badge_color'] ?? ($prog['badgeColor'] ?? 'primary');
+        if (is_string($prog['modules'] ?? null)) {
+            $prog['modules'] = json_decode($prog['modules'], true) ?: [];
+        }
+        if (is_string($prog['quiz_questions'] ?? null)) {
+            $prog['quizQuestions'] = json_decode($prog['quiz_questions'], true) ?: [];
+        } else {
+            $prog['quizQuestions'] = $prog['quiz_questions'] ?? ($prog['quizQuestions'] ?? []);
+        }
+
+        return $prog;
     }
 
     public function createProgram(array $data): array
     {
-        if (empty($data['id'])) {
-            $data['id'] = 'prog-' . substr(bin2hex(random_bytes(3)), 0, 6);
-        }
-        if (!isset($data['passingScore'])) {
-            $data['passingScore'] = 80;
-        }
-        if (!isset($data['xpAward'])) {
-            $data['xpAward'] = 150;
-        }
-        return $this->create($data);
+        $id = $data['id'] ?? ('prog-' . substr(bin2hex(random_bytes(3)), 0, 6));
+        $modules = $data['modules'] ?? [];
+        if (is_string($modules)) $modules = json_decode($modules, true) ?: [];
+        $quiz = $data['quiz_questions'] ?? ($data['quizQuestions'] ?? []);
+        if (is_string($quiz)) $quiz = json_decode($quiz, true) ?: [];
+
+        $clean = [
+            'id'                => $id,
+            'title'             => $data['title'] ?? 'Training Program',
+            'category'          => $data['category'] ?? 'Service Excellence',
+            'category_type'     => in_array($data['category_type'] ?? ($data['categoryType'] ?? ''), ['skill_gap', 'compliance']) ? ($data['category_type'] ?? $data['categoryType']) : 'skill_gap',
+            'dept'              => $data['dept'] ?? 'Front Office',
+            'target_competency' => $data['target_competency'] ?? ($data['targetCompetency'] ?? 'Guest Relations & VIP Protocol'),
+            'competency_key'    => $data['competency_key'] ?? ($data['competencyKey'] ?? 'guest_relations'),
+            'duration'          => $data['duration'] ?? '3.5 Hours',
+            'format'            => $data['format'] ?? 'Workshop & Roleplay',
+            'trainer_type'      => $data['trainer_type'] ?? ($data['trainerType'] ?? 'Internal Master Trainer'),
+            'passing_score'     => (int)($data['passing_score'] ?? ($data['passingScore'] ?? 80)),
+            'xp_award'          => (int)($data['xp_award'] ?? ($data['xpAward'] ?? 150)),
+            'icon'              => $data['icon'] ?? 'fa-graduation-cap',
+            'badge_color'       => $data['badge_color'] ?? ($data['badgeColor'] ?? 'primary'),
+            'description'       => $data['description'] ?? 'Comprehensive hotel training syllabus.',
+            'modules'           => $modules,
+            'quiz_questions'    => $quiz,
+            'created_at'        => date('c')
+        ];
+
+        return $this->create($clean);
     }
 
-    private function seedInitialPrograms(): void
+    private function getBaselinePrograms(): array
     {
-        $initial = [
+        return [
             [
                 'id' => 'prog-1',
                 'title' => 'Hospitality Crisis Diplomacy & Guest De-escalation',
-                'category' => 'Skill Gap: Service Excellence',
+                'category' => 'Skill Gap & Service Excellence',
                 'categoryType' => 'skill_gap',
                 'dept' => 'Front Office',
-                'targetCompetency' => 'Frontline Conflict De-escalation',
-                'competencyKey' => 'de_escalation',
+                'targetCompetency' => 'Guest Complaint Handling & VIP Protocol',
+                'competencyKey' => 'guest_complaint_handling',
                 'duration' => '3.5 Hours (1 Day Workshop)',
                 'format' => 'In-Person Workshop & Roleplay',
                 'trainerType' => 'Internal Master Trainer',
                 'passingScore' => 80,
                 'xpAward' => 150,
-                'icon' => 'fa-handshake-angle',
-                'badgeColor' => 'terracotta',
-                'description' => 'Comprehensive training covering the LAST de-escalation framework (Listen, Apologize, Solve, Thank), emotional intelligence under pressure, and diplomatic service recovery vouchers.',
-                'modules' => [
-                    '1. Anatomy of Guest Frustration & Empathy Triggers',
-                    '2. The LAST Protocol in Real Hospitality Scenarios',
-                    '3. Body Language, Vocal Cadence & Boundary Setting',
-                    '4. Live Simulations & Practical Scenario Assessment'
-                ],
+                'icon' => 'fa-shield-halved',
+                'badgeColor' => 'primary',
+                'description' => 'De-escalation protocols, empathy scripting, and service recovery compensation authority.',
+                'modules' => ['1. Active Listening & Empathy', '2. Service Recovery Matrix', '3. Roleplay Simulation', '4. Post-Training Evaluation'],
                 'quizQuestions' => [
-                    [
-                        'q' => '1. What does the "A" in the LAST hospitality recovery framework represent?',
-                        'options' => [
-                            'Argue the hotel policy diplomatically',
-                            'Apologize sincerely for the guest\'s distress without assigning blame',
-                            'Ask the manager to intervene immediately',
-                            'Assess the financial liability of the hotel'
-                        ],
-                        'correct' => 1
-                    ],
-                    [
-                        'q' => '2. When an agitated guest raises their voice in the lobby, the recommended verbal pace is:',
-                        'options' => [
-                            'Match their volume and pace so you are heard clearly',
-                            'Lower your tone, speak 15% slower, and maintain calm open body posture',
-                            'Remain completely silent until they finish shouting',
-                            'Immediately step backwards behind the security desk'
-                        ],
-                        'correct' => 1
-                    ],
-                    [
-                        'q' => '3. What is the maximum instant amenity voucher a Front Desk Host may authorize without GM signoff?',
-                        'options' => [
-                            '₱500 Dining Credit',
-                            '₱2,500 F&B or Spa Voucher + Room Category Upgrade',
-                            'Free Weekend Stay',
-                            '₱10,000 Cash Refund'
-                        ],
-                        'correct' => 1
-                    ],
-                    [
-                        'q' => '4. During de-escalation, which phrase should ALWAYS be avoided?',
-                        'options' => [
-                            '"I completely understand your frustration and I will personally solve this."',
-                            '"That\'s not our hotel policy and there is nothing I can do."',
-                            '"Let me see what alternatives I can immediately arrange for you."',
-                            '"Thank you for bringing this to our attention right away."'
-                        ],
-                        'correct' => 1
-                    ],
-                    [
-                        'q' => '5. What documentation must be logged immediately after a de-escalation incident is resolved?',
-                        'options' => [
-                            'Duty Manager Shift Friction Log with guest name, room number, root cause, and recovery voucher issued',
-                            'No logging is required if the guest stopped complaining',
-                            'Send a private WhatsApp message to coworkers',
-                            'Write a handwritten note and discard it at end of shift'
-                        ],
-                        'correct' => 0
-                    ]
+                    ['q' => 'What is the benchmark standard response time for VIP guest requests?', 'options' => ['Within 5 minutes', 'Within 30 minutes', 'By end of shift', 'Next morning'], 'correct' => 0],
+                    ['q' => 'Which protocol must be followed when a guest escalates a service delay?', 'options' => ['Listen and execute immediate service recovery voucher', 'Escalate immediately to GM without apology', 'Ask guest to wait in the lounge', 'Ignore the delay'], 'correct' => 0]
                 ]
             ],
             [
                 'id' => 'prog-2',
-                'title' => 'HACCP Level 3 Food Safety & Cold-Chain Mastery',
+                'title' => 'HACCP Level 3 Food Safety & Culinary Hygiene',
                 'category' => 'Mandatory Compliance',
                 'categoryType' => 'compliance',
-                'dept' => 'Culinary',
-                'targetCompetency' => 'HACCP Safety & Sanitation',
-                'competencyKey' => 'haccp_safety',
-                'duration' => '4.0 Hours',
-                'format' => 'Hygiene Lab & Inspection Walk',
-                'trainerType' => 'Certified External Auditor',
-                'passingScore' => 80,
-                'xpAward' => 150,
+                'dept' => 'Kitchen',
+                'targetCompetency' => 'Food Safety Compliance & Kitchen Sanitation',
+                'competencyKey' => 'food_safety_hygiene',
+                'duration' => '4.0 Hours (Interactive Cohort)',
+                'format' => 'Cohort Workshop & Kitchen Lab',
+                'trainerType' => 'Certified Master Trainer',
+                'passingScore' => 85,
+                'xpAward' => 200,
                 'icon' => 'fa-utensils',
-                'badgeColor' => 'sage',
-                'description' => 'Certified standard training on critical control points (CCP), digital cold-chain data logging, allergen cross-contact segregation, and sanitization protocols.',
-                'modules' => [
-                    '1. Critical Control Points & Walk-in Chiller Thresholds',
-                    '2. Color-coded Board Segregation & Cross-Contamination',
-                    '3. Blast Chilling, Core Probe Calibration & FIFO Logs',
-                    '4. Health Authority Audit Compliance Walkthrough'
-                ],
+                'badgeColor' => 'emerald',
+                'description' => 'Critical control point monitoring, cross-contamination prevention, and cold-chain logging.',
+                'modules' => ['1. CCP Identification', '2. Temperature Control Logs', '3. Allergen Protocols', '4. Sanitization Evaluation'],
                 'quizQuestions' => [
-                    [
-                        'q' => '1. What is the mandatory minimum internal core temperature for cooked poultry?',
-                        'options' => [
-                            '63°C (145°F)',
-                            '74°C (165°F) for at least 15 seconds',
-                            '55°C (130°F)',
-                            '85°C (185°F)'
-                        ],
-                        'correct' => 1
-                    ],
-                    [
-                        'q' => '2. The Temperature Danger Zone for rapid bacterial growth in food is between:',
-                        'options' => [
-                            '0°C and 4°C',
-                            '5°C and 60°C (41°F and 140°F)',
-                            '60°C and 100°C',
-                            '-18°C and 0°C'
-                        ],
-                        'correct' => 1
-                    ],
-                    [
-                        'q' => '3. How often must walk-in chiller temperatures be manually logged in the HACCP register?',
-                        'options' => [
-                            'Once a week',
-                            'Every 4 hours during shift operations',
-                            'Only during annual audits',
-                            'Once at the end of the month'
-                        ],
-                        'correct' => 1
-                    ],
-                    [
-                        'q' => '4. Which cutting board color is strictly reserved for raw poultry in commercial kitchens?',
-                        'options' => [
-                            'Blue',
-                            'Yellow',
-                            'Red',
-                            'Green'
-                        ],
-                        'correct' => 1
-                    ],
-                    [
-                        'q' => '5. What is the maximum time hot food can be held on a buffet line before mandatory re-check or disposal?',
-                        'options' => [
-                            '1 Hour',
-                            '4 Hours at ≥ 60°C',
-                            '8 Hours',
-                            '12 Hours'
-                        ],
-                        'correct' => 1
-                    ]
+                    ['q' => 'What is the maximum allowable temperature for walk-in chillers in culinary operations?', 'options' => ['4°C (40°F) or below', '10°C (50°F)', '15°C (60°F)', '0°C (32°F)'], 'correct' => 0],
+                    ['q' => 'How often must sanitizer concentration test strips be logged per shift?', 'options' => ['Every 2 hours', 'Once per week', 'Only during audits', 'End of day'], 'correct' => 0]
                 ]
             ],
             [
                 'id' => 'prog-3',
                 'title' => 'Sommelier Fine Wine Pairing & Vintage Storytelling',
-                'category' => 'Skill Gap: Revenue Optimization',
+                'category' => 'Revenue & Upsell',
                 'categoryType' => 'skill_gap',
-                'dept' => 'F&B Service',
-                'targetCompetency' => 'Revenue & Wine Upsell',
-                'competencyKey' => 'revenue_upsell',
-                'duration' => '3.0 Hours',
+                'dept' => 'Food & Beverage',
+                'targetCompetency' => 'F&B Product Knowledge & Premium Beverage Storytelling',
+                'competencyKey' => 'sommelier_wine_service',
+                'duration' => '3.0 Hours (Tasting Workshop)',
                 'format' => 'Tasting Workshop & Tableside Service',
-                'trainerType' => 'Master Sommelier',
+                'trainerType' => 'Head Sommelier',
                 'passingScore' => 80,
                 'xpAward' => 150,
-                'icon' => 'fa-wine-glass-empty',
-                'badgeColor' => 'gold',
-                'description' => 'Tasting workshop covering Old World vs New World terroirs, tableside decanting ritual, tasting pour etiquette, and food pairing storytelling.',
-                'modules' => [
-                    '1. Bordeaux, Burgundy & Tuscan Vintage Profiles',
-                    '2. Tableside Decanting Etiquette & Glassware Selection',
-                    '3. Acidity & Tannin Balancing with Tasting Menus',
-                    '4. Premium Cellar Upselling Dialogue'
-                ],
+                'icon' => 'fa-wine-glass',
+                'badgeColor' => 'purple',
+                'description' => 'Old World vs New World wine sensory profiling, varietal characteristics, and degustation pairings.',
+                'modules' => ['1. Varietal Sensory Profiling', '2. Degustation Menu Pairing', '3. Tableside Decanting', '4. Evaluation Tasting'],
                 'quizQuestions' => [
-                    [
-                        'q' => '1. Which wine classification represents the highest statutory quality tier in Bordeaux, France?',
-                        'options' => [
-                            'Vin de Pays',
-                            'Grand Cru Classé (1855 Classification)',
-                            'AOP Regional',
-                            'Table Wine'
-                        ],
-                        'correct' => 1
-                    ],
-                    [
-                        'q' => '2. What ideal serving temperature should be maintained for full-bodied vintage Cabernet Sauvignon?',
-                        'options' => [
-                            '4°C to 6°C',
-                            '16°C to 18°C (60°F to 65°F)',
-                            '22°C to 25°C',
-                            '0°C'
-                        ],
-                        'correct' => 1
-                    ],
-                    [
-                        'q' => '3. Which grape variety is the primary constituent of authentic Barolo wines from Piedmont, Italy?',
-                        'options' => [
-                            'Sangiovese',
-                            'Nebbiolo',
-                            'Merlot',
-                            'Pinot Noir'
-                        ],
-                        'correct' => 1
-                    ],
-                    [
-                        'q' => '4. When pairing wine with rich Wagyu Ribeye steak, what structural wine characteristic balances the marbling fat?',
-                        'options' => [
-                            'High residual sugar',
-                            'High tannin and robust acidity',
-                            'Low alcohol content',
-                            'Effervescence'
-                        ],
-                        'correct' => 1
-                    ],
-                    [
-                        'q' => '5. What is the primary purpose of decanting an aged vintage red wine before service?',
-                        'options' => [
-                            'Chilling the wine quickly',
-                            'Separate sediment and aerate the wine to open complex aromas',
-                            'Dilute the alcohol concentration',
-                            'Change the wine color'
-                        ],
-                        'correct' => 1
-                    ]
+                    ['q' => 'Which wine pairing is recommended for Prime Dry-Aged Ribeye steak?', 'options' => ['Full-bodied Cabernet Sauvignon', 'Sweet Moscato', 'Light Pinot Grigio', 'Prosecco'], 'correct' => 0],
+                    ['q' => 'What is the standard serving temperature for vintage Bordeaux red wines?', 'options' => ['16°C - 18°C (60°F - 65°F)', '4°C (40°F)', '25°C (77°F)', '0°C (32°F)'], 'correct' => 0]
                 ]
             ]
         ];
-        $this->seedIfEmpty($initial);
     }
 }

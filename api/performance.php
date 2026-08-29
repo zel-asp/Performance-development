@@ -139,6 +139,18 @@ try {
             break;
 
         // 10. Evaluation & Multi-Factor Appraisal (Database Driven)
+        case 'get_performance_data':
+            $evalsRes = $controller->getEvaluations($payload);
+            $planRes = $controller->getPlanningData($payload);
+            $response = [
+                'success' => true,
+                'data' => [
+                    'evaluations' => $evalsRes['data'] ?? [],
+                    'planning'    => $planRes['data'] ?? []
+                ]
+            ];
+            break;
+
         case 'get_evaluations':
             $response = $controller->getEvaluations($payload);
             break;

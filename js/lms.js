@@ -1075,6 +1075,10 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                 // Render Compliance Chart if canvas exists
                 const canvas = document.getElementById('chart-lms-compliance');
                 if (canvas && typeof Chart !== 'undefined') {
+                    const existingChart = Chart.getChart(canvas);
+                    if (existingChart) {
+                        existingChart.destroy();
+                    }
                     if (window._chartLmsCompliance) {
                         window._chartLmsCompliance.destroy();
                     }

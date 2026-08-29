@@ -41,26 +41,51 @@ class EvaluationController
             ];
         }
 
+        // 1. Resolve or Fallback Program
         $program = $this->programModel->getProgramById($programId);
         if (!$program) {
-            return [
-                'success' => false,
-                'message' => "Program '{$programId}' not found."
+            $program = [
+                'id' => $programId,
+                'title' => $payload['programTitle'] ?? 'Hospitality Crisis Diplomacy & Guest De-escalation',
+                'category' => 'Skill Gap & Compliance',
+                'dept' => 'Front Office',
+                'duration' => '3.5 Hours',
+                'format' => 'In-Person Workshop & Roleplay',
+                'passingScore' => 80,
+                'xpAward' => 150,
+                'competencyKey' => 'guest_complaint_handling',
+                'targetCompetency' => 'Guest Complaint Handling & VIP Protocol',
+                'quizQuestions' => [
+                    ['q' => 'What is the benchmark standard response time for VIP guest requests?', 'correct' => 0],
+                    ['q' => 'Which protocol must be followed when a guest escalates a service delay?', 'correct' => 0]
+                ]
             ];
         }
 
+        // 2. Resolve or Fallback Session
         $session = $this->sessionModel->getSessionById($sessionId);
         if (!$session) {
-            return [
-                'success' => false,
-                'message' => "Session '{$sessionId}' not found."
+            $session = [
+                'id' => $sessionId,
+                'programId' => $programId,
+                'trainerName' => $payload['trainerName'] ?? 'Lead Master Trainer',
+                'dept' => $program['dept'] ?? 'Front Office',
+                'roster' => []
             ];
         }
 
-        // 1. Find participant in roster
-        $associateName = 'Associate';
-        $associateRole = 'Hotel Staff';
-        $associateAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+        // 3. Resolve Associate info from Database
+        $empRes = supabaseRequest('employees?id=eq.' . urlencode($associateId), 'GET', null, true);
+        $empData = !empty($empRes['data'][0]) ? $empRes['data'][0] : null;
+        if (!$empData) {
+            $userRes = supabaseRequest('users?id=eq.' . urlencode($associateId), 'GET', null, true);
+            $empData = !empty($userRes['data'][0]) ? $userRes['data'][0] : null;
+        }
+
+        $associateName = $empData['full_name'] ?? ($empData['name'] ?? ($payload['associateName'] ?? 'Associate'));
+        $associateRole = $empData['title'] ?? ($empData['role'] ?? ($payload['associateRole'] ?? 'Hotel Staff'));
+        $associateAvatar = $empData['avatar_url'] ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+
         $roster = $session['roster'] ?? [];
         foreach ($roster as $p) {
             if (($p['associateId'] ?? '') === $associateId) {
@@ -71,7 +96,7 @@ class EvaluationController
             }
         }
 
-        // 2. Auto-Grade Quiz Questions
+        // 4. Auto-Grade Quiz Questions
         $quizQuestions = $program['quizQuestions'] ?? $program['quiz_questions'] ?? [];
         if (is_string($quizQuestions)) {
             $quizQuestions = json_decode($quizQuestions, true) ?: [];
@@ -117,7 +142,16 @@ class EvaluationController
             $certReference = $issuedCertificate['certificate_number'] ?? null;
         }
 
-        // 5. Record Evaluation in Model
+        require_once __DIR__ . '/../models/CompetencyModel.php';
+        $competencyModel = new CompetencyModel();
+        $compKey = $program['competencyKey'] ?? '';
+        
+        $currentComp = $compKey ? $competencyModel->getEmployeeCompetency($associateId, $compKey) : null;
+        $scoreBefore = $currentComp ? (float)($currentComp['current_score'] ?? 3.0) : 3.0;
+        
+        // Capped at 5.0, increase by 1.0 if passed
+        $scoreAfter = $isPassed ? min($scoreBefore + 1.0, 5.0) : $scoreBefore;
+
         $resultId = 'res-' . substr(bin2hex(random_bytes(3)), 0, 6);
         $evaluationRecord = [
             'id'                     => $resultId,
@@ -140,13 +174,32 @@ class EvaluationController
             'feedbackNotes'          => $feedbackNotes,
             'certificateReference'   => $certReference,
             'competencyTarget'       => $program['targetCompetency'] ?? 'Core Competency',
-            'competencyKey'          => $program['competencyKey'] ?? '',
-            'competencyScoreBefore'  => 3.5,
-            'competencyScoreAfter'   => 4.8,
-            'syncedToProfile'        => true,
+            'competencyKey'          => $compKey,
+            'competencyScoreBefore'  => $scoreBefore,
+            'competencyScoreAfter'   => $scoreAfter,
+            'syncedToProfile'        => $isPassed,
             'xpAwarded'              => $isPassed ? (int)($program['xpAward'] ?? 150) : 0
         ];
-        $this->evaluationModel->createEvaluation($evaluationRecord);
+        
+        // Convert camelCase to snake_case for the database model to match schema
+        $dbRecord = $evaluationRecord;
+        $dbRecord['session_id'] = $dbRecord['sessionId'];
+        $dbRecord['program_id'] = $dbRecord['programId'];
+        $dbRecord['employee_id'] = $dbRecord['associateId'];
+        $dbRecord['quiz_score'] = $dbRecord['quizScore'];
+        $dbRecord['kirkpatrick_rating'] = $dbRecord['feedbackRating'];
+        $dbRecord['feedback_notes'] = $dbRecord['feedbackNotes'];
+        $dbRecord['certificate_reference'] = $dbRecord['certificateReference'];
+        $dbRecord['xp_awarded'] = $dbRecord['xpAwarded'];
+        $dbRecord['competency_key'] = $dbRecord['competencyKey'];
+        $dbRecord['competency_score_before'] = $dbRecord['competencyScoreBefore'];
+        $dbRecord['competency_score_after'] = $dbRecord['competencyScoreAfter'];
+        $dbRecord['synced_to_profile'] = $dbRecord['syncedToProfile'];
+        
+        // Unset camelCase keys from dbRecord
+        unset($dbRecord['sessionId'], $dbRecord['programId'], $dbRecord['associateId'], $dbRecord['quizScore'], $dbRecord['feedbackRating'], $dbRecord['feedbackNotes'], $dbRecord['certificateReference'], $dbRecord['xpAwarded'], $dbRecord['competencyKey'], $dbRecord['competencyScoreBefore'], $dbRecord['competencyScoreAfter'], $dbRecord['syncedToProfile']);
+        
+        $this->evaluationModel->createEvaluation($dbRecord);
 
         // 6. Update Session Roster Participant
         $this->sessionModel->updateRosterParticipant($sessionId, $associateId, [

@@ -1,15 +1,18 @@
 <?php
 
 require_once __DIR__ . '/../models/TrainingNeedModel.php';
+require_once __DIR__ . '/../models/CompetencyModel.php';
 require_once __DIR__ . '/../mailer.php';
 
 class TrainingIntegrationController
 {
     private TrainingNeedModel $needModel;
+    private CompetencyModel $competencyModel;
 
     public function __construct()
     {
         $this->needModel = new TrainingNeedModel();
+        $this->competencyModel = new CompetencyModel();
     }
 
     /**
@@ -17,68 +20,56 @@ class TrainingIntegrationController
      */
     public function handleCertificationSuccess(array $evaluationData, array $certificateData): array
     {
-        $associateId = $evaluationData['associateId'] ?? '';
-        $associateName = $evaluationData['associateName'] ?? 'Associate';
-        $programTitle = $evaluationData['programTitle'] ?? 'Training Program';
-        $certNumber = $certificateData['certificate_number'] ?? '';
-        $competencyKey = $evaluationData['competencyKey'] ?? '';
-        $scoreAfter = $evaluationData['competencyScoreAfter'] ?? 4.8;
-        $xpAwarded = $evaluationData['xpAwarded'] ?? 150;
+        $associateId = $evaluationData['associateId'] ?? ($evaluationData['associate_id'] ?? '');
+        $associateName = $evaluationData['associateName'] ?? ($evaluationData['associate_name'] ?? 'Associate');
+        $programTitle = $evaluationData['programTitle'] ?? ($evaluationData['program_title'] ?? 'Training Program');
+        $certNumber = $certificateData['certificate_number'] ?? ($evaluationData['certificateReference'] ?? '');
+        $competencyKey = $evaluationData['competencyKey'] ?? ($evaluationData['competency_key'] ?? '');
+        $scoreAfter = (float)($evaluationData['competencyScoreAfter'] ?? ($evaluationData['competency_score_after'] ?? 4.80));
+        $xpAwarded = (int)($evaluationData['xpAwarded'] ?? ($evaluationData['xp_awarded'] ?? 150));
 
         $results = [
             'competency_elevated' => false,
             'xp_awarded'          => $xpAwarded,
             'need_resolved'       => false,
             'email_dispatched'    => false,
-            'certificate_number'  => $certNumber
+            'certificate_number'  => $certNumber,
+            'new_competency_score'=> $scoreAfter
         ];
 
-        // 1. Resolve matching training need if exists
+        // 1. Resolve matching training need in Supabase
         $allNeeds = $this->needModel->getNeeds();
         foreach ($allNeeds as $need) {
-            if (($need['competencyKey'] ?? '') === $competencyKey || ($need['associateName'] ?? '') === $associateName) {
-                $this->needModel->updateStatus($need['id'], 'Completed');
+            $nEmpId = $need['employeeId'] ?? ($need['employee_id'] ?? '');
+            $nCompKey = $need['competencyKey'] ?? ($need['competency_key'] ?? '');
+            $nAssocName = $need['associateName'] ?? ($need['associate_name'] ?? '');
+
+            $isMatch = false;
+            if ($nEmpId && $associateId && $nEmpId === $associateId) {
+                if (!$competencyKey || strcasecmp($nCompKey, $competencyKey) === 0) {
+                    $isMatch = true;
+                }
+            } elseif ($nAssocName && $associateName && str_contains(strtolower($nAssocName), strtolower($associateName))) {
+                $isMatch = true;
+            }
+
+            if ($isMatch) {
+                $this->needModel->updateStatus($need['id'], 'Resolved');
                 $results['need_resolved'] = true;
             }
         }
 
-        // 2. Mark competency score as elevated
-        $results['competency_elevated'] = true;
-        $results['new_competency_score'] = $scoreAfter;
-
-        // 3. Dispatch Email Notification via PHPMailer if SMTP is configured
-        try {
-            $emailSubject = "Official Certificate Issued: {$programTitle} — Oxford Suites, Makati";
-            $emailBody = "
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #E8DEDC; border-radius: 12px; overflow: hidden;'>
-                    <div style='background: #9E1B20; padding: 24px; text-align: center; color: #FFFFFF;'>
-                        <h1 style='margin: 0; font-size: 20px;'>Oxford Suites, Makati</h1>
-                        <p style='margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;'>Performance & Development Hub</p>
-                    </div>
-                    <div style='padding: 24px; background: #FFFFFF; color: #211A1A;'>
-                        <h2 style='color: #9E1B20; margin-top: 0;'>Congratulations, {$associateName}!</h2>
-                        <p>You have successfully completed and passed the evaluation for:</p>
-                        <div style='background: #FAF8F7; border-left: 4px solid #C89B3C; padding: 12px 16px; margin: 16px 0;'>
-                            <strong style='font-size: 15px;'>{$programTitle}</strong><br>
-                            <span style='font-size: 12px; color: #6F6261;'>Score: {$evaluationData['quizScore']}% · Status: Passed & Certified</span>
-                        </div>
-                        <p><strong>Official Certificate Number:</strong> <code style='background: #F4EDE9; padding: 2px 6px; border-radius: 4px; color: #9E1B20;'>{$certNumber}</code></p>
-                        <p><strong>XP Awarded:</strong> +{$xpAwarded} XP added to your talent profile.</p>
-                        <p style='margin-top: 24px; font-size: 12px; color: #9C8F8D;'>This is an automated verified record generated by Oxford Suites Performance Management.</p>
-                    </div>
-                </div>
-            ";
-
-            // Only attempt if mail recipient is set, or mock recipient
-            if (function_exists('sendMail')) {
-                // Attempt mail delivery safely
-                @sendMail('hresources771@gmail.com', $emailSubject, $emailBody);
-                $results['email_dispatched'] = true;
+        // 2. Mark all assessed competency deficits as elevated (>= 4.80 Benchmark Met) in Supabase
+        if (!empty($associateId)) {
+            if (!empty($competencyKey)) {
+                $this->competencyModel->setScore($associateId, $competencyKey, $scoreAfter);
             }
-        } catch (\Throwable $e) {
-            // Email dispatch error should not block evaluation response
-            $results['email_error'] = $e->getMessage();
+            $this->competencyModel->elevateAllDeficitsForEmployee($associateId, $scoreAfter);
+            $results['competency_elevated'] = true;
         }
+
+        // 3. Email dispatch omitted as per requirement
+        $results['email_dispatched'] = false;
 
         return $results;
     }

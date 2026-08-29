@@ -2075,7 +2075,7 @@
                         <div>
                             <span class="badge-terracotta text-[10px]">Stage 5: Post-Training Evaluation</span>
                             <h3 id="eval-modal-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Post-Training Knowledge &amp; Practical Assessment</h3>
-                            <p id="eval-modal-subtitle" class="text-slate-500 text-[11px]">Associate: Maria Santos · Passing Score: 80%</p>
+                            <p id="eval-modal-subtitle" class="text-slate-500 text-[11px]">Associate Evaluation</p>
                         </div>
                     </div>
                     <button onclick="closeModal('modal-training-evaluation')" class="w-8 h-8 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition shadow-sm border border-[#E8DEDC]">
@@ -2092,7 +2092,7 @@
                                 <span class="w-2 h-2 rounded-full bg-primary"></span>
                                 <span>Part A: Practical Knowledge Assessment (5 Questions · 20 Points Each)</span>
                             </h4>
-                            <span class="badge-sage text-[10px]">Passing Threshold &ge; 80% (4/5)</span>
+                            <span class="badge-sage text-[10px]">Evaluation Form</span>
                         </div>
 
                         <!-- Dynamic Questions Container -->
