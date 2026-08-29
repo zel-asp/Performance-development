@@ -158,8 +158,12 @@ const PerformanceAPI = {
         return this.request('calibrate_evaluation', 'POST', data);
     },
 
+    setNeedsTraining(data) {
+        return this.request('set_needs_training', 'POST', data);
+    },
+
     incrementRetryCount(data) {
-        return this.request('increment_retry_count', 'POST', data);
+        return this.request('set_needs_training', 'POST', data);
     },
 
     retryPlan(data) {
@@ -204,6 +208,38 @@ window.dbGoals = [];
 window.dbGeneralTasks = [];
 window.dbEvaluations = [];
 window.dbGoalTasks = [];
+
+/**
+ * Universal safe helper to get dbEvaluations as an Array
+ */
+function getDbEvaluations() {
+    if (Array.isArray(window.dbEvaluations)) return window.dbEvaluations;
+    if (window.dbEvaluations && Array.isArray(window.dbEvaluations.evaluations)) return window.dbEvaluations.evaluations;
+    if (window.dbEvaluations && Array.isArray(window.dbEvaluations.data)) return window.dbEvaluations.data;
+    if (window.dbEvaluations && typeof window.dbEvaluations === 'object') {
+        const values = Object.values(window.dbEvaluations).filter(v => v && typeof v === 'object' && (v.employee_id || v.id));
+        if (values.length > 0) return values;
+    }
+    return [];
+}
+window.getDbEvaluations = getDbEvaluations;
+
+/**
+ * Universal safe helper to update or push evaluation record in dbEvaluations
+ */
+function updateDbEvaluationRecord(record) {
+    if (!record || !record.employee_id) return;
+    if (!Array.isArray(window.dbEvaluations)) {
+        window.dbEvaluations = getDbEvaluations();
+    }
+    const idx = window.dbEvaluations.findIndex(ev => isSameEmployee(ev.employee_id, record.employee_id));
+    if (idx >= 0) {
+        window.dbEvaluations[idx] = Object.assign({}, window.dbEvaluations[idx], record);
+    } else {
+        window.dbEvaluations.push(record);
+    }
+}
+window.updateDbEvaluationRecord = updateDbEvaluationRecord;
 window.planningStatusFilter = 'pending';
 window.planningSearchQuery = '';
 window.approvedSearchQuery = '';
@@ -553,24 +589,24 @@ async function loadAndRenderPlanningGoals() {
         // Fetch dynamic evaluations directly from database
         try {
             const evalData = await PerformanceAPI.getEvaluations();
-            if (evalData && Array.isArray(evalData.evaluations)) {
-                window.dbEvaluations = evalData.evaluations;
-                evalData.evaluations.forEach(ev => {
-                    const emp = window.perfRoster.find(e => e.id === ev.employee_id || (ev.employee_id === 'emp-101' && (e.id === 'emp-1' || e.id === 'OXF-EMP-1001')) || (ev.employee_id === 'emp-102' && (e.id === 'emp-2' || e.id === 'OXF-SUP-2001')));
-                    if (emp) {
-                        emp.evaluationRecord = ev;
-                        emp.evaluationStatus = ev.status || 'Pending';
-                        if (ev.self_rating) emp.selfRating = parseFloat(ev.self_rating);
-                        if (ev.supervisor_rating) {
-                            emp.supervisorRating = parseFloat(ev.supervisor_rating);
-                            emp.managerRating = parseFloat(ev.supervisor_rating);
-                        }
-                        if (ev.tier_label) emp.tierLabel = ev.tier_label;
+            const evList = Array.isArray(evalData) ? evalData : (Array.isArray(evalData?.evaluations) ? evalData.evaluations : (Array.isArray(evalData?.data) ? evalData.data : []));
+            window.dbEvaluations = evList;
+            evList.forEach(ev => {
+                const emp = window.perfRoster.find(e => isSameEmployee(e.id, ev.employee_id));
+                if (emp) {
+                    emp.evaluationRecord = ev;
+                    emp.evaluationStatus = ev.status || 'Pending';
+                    if (ev.self_rating) emp.selfRating = parseFloat(ev.self_rating);
+                    if (ev.supervisor_rating) {
+                        emp.supervisorRating = parseFloat(ev.supervisor_rating);
+                        emp.managerRating = parseFloat(ev.supervisor_rating);
                     }
-                });
-            }
+                    if (ev.tier_label) emp.tierLabel = ev.tier_label;
+                }
+            });
         } catch (e) {
             console.warn('Database evaluations load note:', e);
+            if (!Array.isArray(window.dbEvaluations)) window.dbEvaluations = [];
         }
 
         // Update Planning Hero KPI Cards
@@ -714,7 +750,7 @@ function renderEmployeePulseGoals(goals) {
         return;
     }
 
-    const evalRec = (window.dbEvaluations || []).find(ev => {
+    const evalRec = getDbEvaluations().find(ev => {
         const evEmpId = (ev.employee_id || '').toLowerCase().trim();
         return evEmpId === currentUserId ||
             (currentUserId === 'emp-101' && (evEmpId === 'emp-1' || evEmpId.includes('101') || evEmpId.includes('maria'))) ||
@@ -1020,7 +1056,7 @@ window.renderEmployeePulseGoals = renderEmployeePulseGoals;
 function openEmployeeSelfEvalModal(goalId, empId) {
     const goal = (window.dbGoals || []).find(g => String(g.id) === String(goalId));
     const targetEmpId = empId || goal?.employee_id || 'emp-101';
-    const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, targetEmpId));
+    const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, targetEmpId));
 
     const goalIdInput = document.getElementById('self-eval-goal-id');
     const empIdInput = document.getElementById('self-eval-emp-id');
@@ -1085,18 +1121,11 @@ async function handleEmployeeSelfEvalSubmit(event) {
                 }
 
                 // Update dbEvaluations in memory
-                if (window.dbEvaluations) {
-                    const idx = window.dbEvaluations.findIndex(ev => isSameEmployee(ev.employee_id, empId));
-                    if (idx >= 0) {
-                        window.dbEvaluations[idx].self_evaluation = rating;
-                    } else {
-                        window.dbEvaluations.push({
-                            employee_id: empId,
-                            self_evaluation: rating,
-                            status: 'Self-Reviewed'
-                        });
-                    }
-                }
+                updateDbEvaluationRecord({
+                    employee_id: empId,
+                    self_evaluation: rating,
+                    status: 'Self-Reviewed'
+                });
 
                 await loadAndRenderPlanningGoals();
                 renderEvaluationRosterTable();
@@ -3041,7 +3070,7 @@ function renderMonitoringRosterTable() {
         const progressColor = emp.monitoringProgress >= 90 ? 'bg-emerald-500' : (emp.monitoringProgress >= 70 ? 'bg-primary' : 'bg-amber-500');
         
         // Find existing evaluation if any
-        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const hasEval = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0;
         const supScore = hasEval ? parseFloat(evalRec.supervisor_rating) : (emp.supervisorRating || 0);
 
@@ -3655,7 +3684,7 @@ function renderEvaluationRosterTable() {
         const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
         // Read evaluation record directly from Database
-        const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id));
+        const evalRec = emp.evaluationRecord || getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id));
         const isRated = evalRec && (evalRec.status === 'Rated' || evalRec.status === 'Calibrated');
         const selfEvaluation = evalRec && typeof evalRec.self_evaluation !== 'undefined' && evalRec.self_evaluation !== null ? parseFloat(evalRec.self_evaluation) : null;
         const supervisorRating = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null ? parseFloat(evalRec.supervisor_rating) : (isRated ? (emp.supervisorRating || 0) : 0);
@@ -3767,7 +3796,7 @@ function showEmployeeEvalDetail(empId, openModalImmediately = false) {
     window.selectedEvalEmpId = emp.id;
 
     // Read DB evaluation record from database store
-    const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id));
+    const evalRec = emp.evaluationRecord || getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id));
 
     // Header info (Support both modal and inline IDs if present)
     const titleEl = document.getElementById('eval-modal-emp-title') || document.getElementById('eval-detail-emp-title');
@@ -3971,7 +4000,7 @@ function openAppraisalModalInternal(empId) {
     if (!criteriaContainer) return;
 
     // Load approved goals and DB evaluation criteria
-    const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id));
+    const evalRec = emp.evaluationRecord || getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id));
     const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
 
     let criteriaList = [];
@@ -4099,8 +4128,8 @@ async function handleAppraisalSubmit(e) {
         const supervisorNotes = document.getElementById('eval-supervisor-notes')?.value.trim() || 'Appraisal successfully endorsed with positive hospitality benchmarking.';
 
         const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, empId));
-        const maxRetry = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
-        const isRetry = maxRetry > 0;
+        const needsTraining = empGoals.some(g => !!g.needs_training);
+        const isRetry = needsTraining;
 
         // Save directly to Database via PerformanceAPI
         const saved = await PerformanceAPI.submitAppraisal({
@@ -4126,12 +4155,7 @@ async function handleAppraisalSubmit(e) {
         }
 
         // Update dbEvaluations array
-        const existingIdx = (window.dbEvaluations || []).findIndex(ev => ev.employee_id === empId);
-        if (existingIdx >= 0) {
-            window.dbEvaluations[existingIdx] = saved;
-        } else {
-            window.dbEvaluations.push(saved);
-        }
+        updateDbEvaluationRecord(saved);
 
         if (typeof showToast === 'function') {
             showToast(`🎉 Formal appraisal successfully saved to database for ${emp ? emp.name : 'Employee'}! (${finalScore.toFixed(2)} / 5.0)`, 'success');
@@ -4173,7 +4197,7 @@ window.getKudosXP = getKudosXP;
 
 function triggerSendKudosForEmployee(empId) {
     const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || { id: empId, name: 'Associate' };
-    const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+    const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
     const rating = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : (emp.supervisorRating || 4.5));
     const xpPoints = getKudosXP(rating);
     const evalId = evalRec?.id || null;
@@ -4224,7 +4248,7 @@ function renderReviewRosterTable() {
     // ONLY display employees who have active approved goals (exclude Completed) AND a completed Stage 4 evaluation
     let evaluatedEmployees = (window.perfRoster || []).filter(emp => {
         const hasGoal = (window.dbGoals || []).some(g => g.status === 'Approved' && isSameEmployee(g.employee_id, emp.id));
-        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const hasEval = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0;
         return hasGoal && hasEval;
     });
@@ -4258,7 +4282,7 @@ function renderReviewRosterTable() {
     showCalibrationDetail(window.selectedCalibEmpId, false);
 
     evaluatedEmployees.forEach(emp => {
-        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
 
         const rawSupScore = evalRec ? parseFloat(evalRec.supervisor_rating || 0) : (parseFloat(emp.supervisorRating || emp.managerRating || 0));
         const calibScore = evalRec && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : (rawSupScore > 0 ? rawSupScore : null);
@@ -4393,7 +4417,7 @@ function showCalibrationDetail(empId, openModalImmediately = false) {
     }
 
     const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
-    const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+    const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
 
     if (empGoals.length === 0 || !evalRec) {
         showEmptyCalibrationDetail();
@@ -4516,7 +4540,7 @@ function renderIDPRosterTable() {
     container.innerHTML = '';
 
     const evaluatedEmployees = (window.perfRoster || []).filter(emp => {
-        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
         return score > 0;
     });
@@ -4543,7 +4567,7 @@ function renderIDPRosterTable() {
     showIDPDetail(window.selectedEvalEmpId);
 
     evaluatedEmployees.forEach(emp => {
-        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
         const isPIP = score < 3.0;
         const isSelected = isSameEmployee(emp.id, window.selectedEvalEmpId);
@@ -4614,7 +4638,7 @@ function open1on1CalibrationModal(empId) {
     }
 
     // 2. Guard check: Employee must have a completed Stage 4 evaluation in the database
-    const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+    const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
     const hasEval = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0;
     if (!hasEval) {
         if (typeof showToast === 'function') {
@@ -4742,8 +4766,8 @@ async function handleCalibrationSubmit(e) {
 
             try {
                 const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, empId));
-                const maxRetry = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
-                const isRetry = maxRetry > 0;
+                const needsTraining = empGoals.some(g => !!g.needs_training);
+                const isRetry = needsTraining;
 
                 const saved = await PerformanceAPI.calibrateEvaluation({
                     employee_id: empId,
@@ -4766,12 +4790,7 @@ async function handleCalibrationSubmit(e) {
                 }
 
                 // Update dbEvaluations array
-                const existingIdx = (window.dbEvaluations || []).findIndex(ev => ev.employee_id === empId);
-                if (existingIdx >= 0) {
-                    window.dbEvaluations[existingIdx] = saved;
-                } else {
-                    window.dbEvaluations.push(saved);
-                }
+                updateDbEvaluationRecord(saved);
 
                 if (typeof showToast === 'function') {
                     showToast(`🎉 1-on-1 Calibration successfully recorded and locked to database for ${emp ? emp.name : 'Employee'}! (${calibratedScore.toFixed(2)} / 5.0)`, 'success');
@@ -4812,7 +4831,7 @@ function openPIPModal(empId) {
     const emp = (window.perfRoster || []).find(e => e.id === empId) || (window.perfRoster || [])[0];
     if (!emp) return;
 
-    const evalRec = (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
+    const evalRec = getDbEvaluations().find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
 
     const targetInput = document.getElementById('pip-target-emp-id');
     const titleEl = document.getElementById('pip-modal-title');
@@ -4849,7 +4868,7 @@ async function handlePIPSubmit(e) {
     const milestones = document.getElementById('pip-milestones')?.value.trim() || 'Complete remedial requirements.';
 
     try {
-        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, empId));
+        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, empId));
         const currentRating = evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 2.50;
 
         const updatedEval = await PerformanceAPI.calibrateEvaluation({
@@ -4865,12 +4884,7 @@ async function handlePIPSubmit(e) {
             emp.evaluationRecord = updatedEval;
         }
 
-        const existingIdx = (window.dbEvaluations || []).findIndex(ev => isSameEmployee(ev.employee_id, empId));
-        if (existingIdx >= 0) {
-            window.dbEvaluations[existingIdx] = updatedEval;
-        } else {
-            window.dbEvaluations.push(updatedEval);
-        }
+        updateDbEvaluationRecord(updatedEval);
 
         closeModal('modal-pip-action');
 
@@ -4905,7 +4919,7 @@ function openViewIDPPlanModal(empId) {
 
     window.selectedEvalEmpId = emp.id;
 
-    const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+    const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
     const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
 
     const avatarEl = document.getElementById('modal-idp-emp-avatar');
@@ -5150,7 +5164,7 @@ function renderIDPRosterTable() {
     // Show employees who have goals and evaluated ratings in database (Phase 4 / 5 evaluation)
     let roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster.filter(emp => {
         const hasGoal = (window.dbGoals || []).some(g => isSameEmployee(g.employee_id, emp.id));
-        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const score = (evalRec && evalRec.calibrated_score !== undefined && evalRec.calibrated_score !== null && parseFloat(evalRec.calibrated_score) > 0)
             ? parseFloat(evalRec.calibrated_score)
             : ((evalRec && evalRec.supervisor_rating !== undefined && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0)
@@ -5174,7 +5188,7 @@ function renderIDPRosterTable() {
     }
 
     roster.forEach(emp => {
-        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const score = (evalRec && evalRec.calibrated_score !== undefined && evalRec.calibrated_score !== null && parseFloat(evalRec.calibrated_score) > 0)
             ? parseFloat(evalRec.calibrated_score)
             : ((evalRec && evalRec.supervisor_rating !== undefined && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0)
@@ -5263,7 +5277,7 @@ function showIDPDetail(empId, openModalImmediately = false) {
         return;
     }
 
-    const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+    const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
     const score = (evalRec && evalRec.calibrated_score !== undefined && evalRec.calibrated_score !== null && parseFloat(evalRec.calibrated_score) > 0)
         ? parseFloat(evalRec.calibrated_score)
         : ((evalRec && evalRec.supervisor_rating !== undefined && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0)
@@ -5570,12 +5584,7 @@ async function passPIPEmployee(empId) {
         emp.tierLabel = 'Proficient';
         emp.evaluationRecord = updated;
 
-        const existingIdx = (window.dbEvaluations || []).findIndex(ev => isSameEmployee(ev.employee_id, emp.id));
-        if (existingIdx >= 0) {
-            window.dbEvaluations[existingIdx] = updated;
-        } else {
-            window.dbEvaluations.push(updated);
-        }
+        updateDbEvaluationRecord(updated);
 
         if (typeof showToast === 'function') {
             showToast(`🎉 Outstanding! ${emp.name} passed PIP retry (⭐ 3.50 / 5.0). Opening Kudos recognition...`, 'success');
@@ -5621,7 +5630,7 @@ function renderCycleRosterTable() {
     // Only show active goals (exclude Completed)
     let roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster.filter(emp => {
         const hasGoal = (window.dbGoals || []).some(g => g.status === 'Approved' && isSameEmployee(g.employee_id, emp.id));
-        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
         return hasGoal && score > 0;
     }) : [];
@@ -5639,7 +5648,7 @@ function renderCycleRosterTable() {
     }
 
     roster.forEach(emp => {
-        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
         const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
         const hasPassed = score >= 3.0;
@@ -5746,7 +5755,7 @@ function showCycleDetail(empId, openModalImmediately = false) {
         return;
     }
 
-    const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+    const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
     const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
 
     if (score === 0) {
@@ -5763,7 +5772,7 @@ function showCycleDetail(empId, openModalImmediately = false) {
     const hasPassed = effectiveScore >= 3.0;
 
     const empGoals = (window.dbGoals || []).filter(g => g.status === 'Approved' && isSameEmployee(g.employee_id, emp.id));
-    const retryCount = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
+    const needsTraining = empGoals.some(g => !!g.needs_training);
 
     const titleEl = document.getElementById('cycle-detail-title');
     const transitionCard = document.getElementById('cycle-detail-transition-card');
@@ -5792,17 +5801,17 @@ function showCycleDetail(empId, openModalImmediately = false) {
                 </div>
             `;
         } else if (isCalibrated && !hasPassed) {
-            if (retryCount > 2) {
+            if (needsTraining) {
                 transitionCard.innerHTML = `
                     <div class="p-6 bg-rose-50 rounded-2xl border border-rose-300 space-y-4 text-xs">
                         <div class="flex items-center justify-between flex-wrap gap-2">
                             <div class="flex items-center space-x-2.5">
                                 <div class="w-10 h-10 rounded-2xl bg-rose-200 text-rose-800 flex items-center justify-center font-bold text-base shadow-2xs">
-                                    <i class="fas fa-ban"></i>
+                                    <i class="fas fa-graduation-cap"></i>
                                 </div>
                                 <div>
                                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-200 text-rose-900 border border-rose-300">
-                                        Need Training (Retry Attempts Exceeded: ${retryCount} Retries)
+                                        Needs Training: Flagged (True)
                                     </span>
                                     <h4 class="font-heading font-bold text-base text-slate-900 mt-0.5">Mandatory Departmental Training Required: ${emp.name}</h4>
                                 </div>
@@ -5810,43 +5819,53 @@ function showCycleDetail(empId, openModalImmediately = false) {
                             <span class="text-xl font-bold text-rose-700 font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.0</span>
                         </div>
                         <p class="text-slate-700 leading-relaxed text-xs">
-                            Associate has completed <strong>${retryCount} retry attempts</strong> without meeting the minimum 3.0 benchmark. <strong>Stage 3 re-monitoring loop is suspended.</strong> The associate must be assigned to mandatory formal training curriculum and intensive re-skilling.
+                            Associate has been flagged for <strong>Needs Training</strong>. <strong>Stage 3 re-monitoring loop is suspended.</strong> The associate must be assigned to mandatory formal training curriculum and intensive re-skilling in LMS.
                         </p>
                         <div class="pt-3 border-t border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <span class="text-xs text-rose-800 font-bold"><i class="fas fa-graduation-cap mr-1 text-rose-600"></i> Action required: Mandatory Training enrollment</span>
-                            <button onclick="openRemedialBooksModal('${emp.id}')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
-                                <i class="fas fa-graduation-cap"></i>
-                                <span>Need Training &rarr; Assign Formal Curriculum</span>
-                            </button>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="toggleNeedsTrainingFlag('${emp.id}', false)" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl font-bold transition text-xs">
+                                    <span>Clear Flag</span>
+                                </button>
+                                <button onclick="openRemedialBooksModal('${emp.id}')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    <span>Need Training &rarr; Assign Formal Curriculum</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
             } else {
                 transitionCard.innerHTML = `
-                    <div class="p-6 bg-rose-50 rounded-2xl border border-rose-200 space-y-4 text-xs">
+                    <div class="p-6 bg-amber-50/70 rounded-2xl border border-amber-200 space-y-4 text-xs">
                         <div class="flex items-center justify-between flex-wrap gap-2">
                             <div class="flex items-center space-x-2.5">
-                                <div class="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-base shadow-2xs">
+                                <div class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-base shadow-2xs">
                                     <i class="fas fa-triangle-exclamation"></i>
                                 </div>
                                 <div>
-                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-200 text-rose-900">
-                                        Performance Standard Incomplete (Retried ${retryCount}/2)
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-200 text-amber-900 border border-amber-300">
+                                        Needs Training: False (Corrective Monitoring Active)
                                     </span>
                                     <h4 class="font-heading font-bold text-base text-slate-900 mt-0.5">Corrective Action Plan Required: ${emp.name}</h4>
                                 </div>
                             </div>
-                            <span class="text-xl font-bold text-rose-700 font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.0</span>
+                            <span class="text-xl font-bold text-amber-800 font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.0</span>
                         </div>
                         <p class="text-slate-700 leading-relaxed text-xs">
-                            Associate score is below the required 3.0 benchmark. To ensure standard compliance before rollover, review assigned action tasks, reset completed items for employee re-execution, and proceed to continuous monitoring.
+                            Associate score is below the required 3.0 benchmark. To ensure standard compliance before rollover, review assigned action tasks, reset completed items for employee re-execution in Stage 3 Monitoring, or flag as Needs Training.
                         </p>
-                        <div class="pt-3 border-t border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <span class="text-xs text-rose-800 font-semibold"><i class="fas fa-rotate mr-1 text-rose-600"></i> Retry count: ${retryCount} · Tasks can be reset for employee to re-do in Stage 3 Monitoring</span>
-                            <button onclick="openReviewTasksModal('${emp.id}')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
-                                <i class="fas fa-list-check"></i>
-                                <span>Review Plan &amp; Tasks &rarr;</span>
-                            </button>
+                        <div class="pt-3 border-t border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <span class="text-xs text-amber-900 font-semibold"><i class="fas fa-rotate mr-1 text-amber-700"></i> Tasks can be reset for employee to re-do in Stage 3 Monitoring</span>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="toggleNeedsTrainingFlag('${emp.id}', true)" class="px-3 py-2 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-xl font-bold transition text-xs border border-rose-200">
+                                    <i class="fas fa-flag mr-1"></i><span>Flag as Needs Training</span>
+                                </button>
+                                <button onclick="openReviewTasksModal('${emp.id}')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
+                                    <i class="fas fa-list-check"></i>
+                                    <span>Review Plan &amp; Tasks &rarr;</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -5863,7 +5882,7 @@ function showCycleDetail(empId, openModalImmediately = false) {
     }
 
     if (openModalImmediately) {
-        if (!hasPassed && retryCount <= 2) {
+        if (!hasPassed && !needsTraining) {
             openReviewTasksModal(emp.id);
         } else if (typeof openModal === 'function') {
             openModal('modal-cycle-detail');
@@ -5871,6 +5890,27 @@ function showCycleDetail(empId, openModalImmediately = false) {
     }
 }
 window.showCycleDetail = showCycleDetail;
+
+/**
+ * Toggle needs_training boolean flag on employee's goals
+ */
+async function toggleNeedsTrainingFlag(empId, needsTraining) {
+    try {
+        await PerformanceAPI.setNeedsTraining({ employee_id: empId, needs_training: needsTraining });
+        if (typeof showToast === 'function') {
+            showToast(needsTraining ? 'Flagged employee goal as Needs Training.' : 'Cleared Needs Training flag.', 'info');
+        }
+        await loadAndRenderPlanningGoals();
+        if (typeof showCycleDetail === 'function') {
+            showCycleDetail(empId, false);
+        }
+    } catch (err) {
+        console.error('Error toggling needs_training flag:', err);
+        if (typeof showToast === 'function') showToast('Failed to update needs_training flag.', 'error');
+    }
+}
+window.toggleNeedsTrainingFlag = toggleNeedsTrainingFlag;
+
 function openReviewTasksModal(empId) {
     const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || (window.perfRoster || [])[0];
     if (!emp) return;
@@ -5879,13 +5919,14 @@ function openReviewTasksModal(empId) {
 
     const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
     const retryCount = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
+    const needsTraining = empGoals.some(g => !!g.needs_training) || retryCount > 2;
 
     const titleEl = document.getElementById('modal-review-tasks-title');
     const listEl = document.getElementById('review-tasks-modal-list');
     const footerActions = document.getElementById('review-tasks-footer-actions');
 
     if (titleEl) {
-        titleEl.innerHTML = `Review Plan &amp; Tasks: ${emp.name} <span class="ml-2 text-xs font-mono font-normal px-2 py-0.5 rounded-full ${retryCount > 2 ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">Retry ${retryCount}/2</span>`;
+        titleEl.innerHTML = `Review Plan &amp; Tasks: ${emp.name} <span class="ml-2 text-xs font-mono font-normal px-2 py-0.5 rounded-full ${needsTraining ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}">Retry: ${retryCount} · Needs Training: ${needsTraining ? 'True' : 'False'}</span>`;
     }
 
     const allTasks = [];
@@ -5937,7 +5978,7 @@ function openReviewTasksModal(empId) {
     }
 
     if (footerActions) {
-        if (retryCount > 2) {
+        if (needsTraining) {
             footerActions.innerHTML = `
                 <button onclick="closeModal('modal-review-tasks'); openRemedialBooksModal('${emp.id}');" class="btn-primary px-5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 border-rose-600 shadow-xs flex items-center space-x-2">
                     <i class="fas fa-graduation-cap"></i>
@@ -6006,12 +6047,13 @@ window.deleteTaskFromGoal = deleteTaskFromGoal;
 async function proceedFromTasksToMonitoring() {
     const empId = window.selectedEvalEmpId || 'emp-101';
     const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, empId));
-    const currentRetry = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
+    const retryCount = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
+    const needsTraining = empGoals.some(g => !!g.needs_training) || retryCount >= 2;
 
-    if (currentRetry > 2) {
+    if (needsTraining) {
         closeModal('modal-review-tasks');
         if (typeof showToast === 'function') {
-            showToast('⚠️ Maximum retry limit reached (more than 2 retries). Associate requires formal training curriculum.', 'error');
+            showToast('⚠️ Associate is flagged for Needs Training (Retry limit exceeded or flagged). Formal training curriculum is required before monitoring rollover.', 'error');
         }
         if (typeof showCycleDetail === 'function') {
             showCycleDetail(empId);
@@ -6020,16 +6062,14 @@ async function proceedFromTasksToMonitoring() {
     }
 
     try {
-        await PerformanceAPI.retryPlan({ employee_id: empId });
-        if (typeof loadAndRenderPlanningGoals === 'function') {
-            await loadAndRenderPlanningGoals();
-        }
+        const res = await PerformanceAPI.retryPlan({ employee_id: empId });
+        await loadAndRenderPlanningGoals();
         closeModal('modal-review-tasks');
         if (typeof switchSubTab === 'function') {
             switchSubTab('perf', 'monitor');
         }
         if (typeof showToast === 'function') {
-            showToast(`🔄 Plan retry registered (Retry Attempt ${currentRetry + 1}). Returned to Stage 3 Continuous Monitoring.`, 'info');
+            showToast(`🔄 Plan retry registered (Retry Count updated to ${res?.retry_count || (retryCount + 1)} in database). Returned to Stage 3 Continuous Monitoring.`, 'info');
         }
     } catch (err) {
         console.error('Error retrying plan:', err);
@@ -6213,8 +6253,8 @@ function updateAllPerfStepperBadges() {
     const planCount = (window.dbGoals || []).length;
     const approvedGoalsCount = (window.dbGoals || []).filter(g => g.status === 'Approved' || g.status === 'Completed').length;
     const monitoredEmployeesCount = (window.perfRoster || []).filter(e => (window.dbGoals || []).some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, e.id))).length;
-    const evaluatedEmployeesCount = (window.dbEvaluations || []).filter(ev => typeof ev.supervisor_rating !== 'undefined' && ev.supervisor_rating !== null && parseFloat(ev.supervisor_rating) > 0).length;
-    const calibratedEmployeesCount = (window.dbEvaluations || []).filter(ev => ev.status === 'Calibrated' && typeof ev.calibrated_score !== 'undefined' && ev.calibrated_score !== null && parseFloat(ev.calibrated_score) > 0).length;
+    const evaluatedEmployeesCount = getDbEvaluations().filter(ev => typeof ev.supervisor_rating !== 'undefined' && ev.supervisor_rating !== null && parseFloat(ev.supervisor_rating) > 0).length;
+    const calibratedEmployeesCount = getDbEvaluations().filter(ev => ev.status === 'Calibrated' && typeof ev.calibrated_score !== 'undefined' && ev.calibrated_score !== null && parseFloat(ev.calibrated_score) > 0).length;
     const idpCount = evaluatedEmployeesCount;
     const cycleCount = evaluatedEmployeesCount;
 

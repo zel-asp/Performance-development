@@ -458,28 +458,27 @@ class CompetencyController
 
             // Compute Goal & Performance Objective Status & Retry Warning
             $empGoals = $goalsByEmp[$eId] ?? [];
-            $maxRetries = 0;
+            $needsTrainingFlag = false;
             $unmetCount = 0;
             $unmetTitles = [];
             
             foreach ($empGoals as $g) {
-                $retries = isset($g['retry_count']) ? (int)$g['retry_count'] : 0;
-                if ($retries > $maxRetries) {
-                    $maxRetries = $retries;
+                $isNeedsTraining = !empty($g['needs_training']);
+                if ($isNeedsTraining) {
+                    $needsTrainingFlag = true;
                 }
                 $gStatus = $g['status'] ?? 'Pending Approval';
-                if ($gStatus === 'Needs Revision' || $retries >= 2) {
+                if ($gStatus === 'Needs Revision' || $isNeedsTraining) {
                     $unmetCount++;
                     $unmetTitles[] = $g['title'];
                 }
             }
 
-            $needsTraining = ($maxRetries >= 2);
+            $needsTraining = $needsTrainingFlag;
             $hasUnmetObjectives = ($unmetCount > 0 || $needsTraining);
 
             $goalsSummary = [
                 'total_goals' => count($empGoals),
-                'max_retries' => $maxRetries,
                 'needs_training' => $needsTraining,
                 'has_unmet_objectives' => $hasUnmetObjectives,
                 'unmet_count' => $unmetCount,

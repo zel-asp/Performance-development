@@ -1048,15 +1048,50 @@ class PerformanceController
     }
 
     /**
-     * Increment retry_count for a goal or for all goals of an employee
+     * Set needs_training boolean for a goal or for all goals of an employee
+     */
+    public function setNeedsTraining(array $payload): array
+    {
+        $goalId = $payload['goal_id'] ?? $payload['id'] ?? null;
+        $empId = $payload['employee_id'] ?? null;
+        $needsTraining = isset($payload['needs_training']) ? (bool)$payload['needs_training'] : true;
+
+        if (!empty($goalId)) {
+            $updated = $this->goalModel->setNeedsTraining($goalId, $needsTraining);
+            return [
+                'success' => true,
+                'data'    => $updated,
+                'message' => "Goal needs_training flag updated."
+            ];
+        }
+
+        if (!empty($empId)) {
+            $updated = $this->goalModel->setEmployeeGoalsNeedsTraining($empId, $needsTraining);
+            return [
+                'success' => true,
+                'data'    => $updated,
+                'message' => "Employee active goals needs_training updated."
+            ];
+        }
+
+        return [
+            'success' => false,
+            'data'    => null,
+            'message' => "Goal ID or Employee ID required to update needs_training."
+        ];
+    }
+
+    /**
+     * Increment retry_count for a goal or for all goals of an employee in database
      */
     public function incrementRetryCount(array $payload): array
     {
         $goalId = $payload['goal_id'] ?? $payload['id'] ?? null;
         $empId = $payload['employee_id'] ?? null;
+        $increment = isset($payload['increment']) ? (int)$payload['increment'] : 1;
 
         if (!empty($goalId)) {
-            $updated = $this->goalModel->incrementRetryCount($goalId);
+            $updated = $this->goalModel->incrementRetryCount($goalId, $increment);
             return [
                 'success' => true,
                 'data'    => $updated,
@@ -1065,7 +1100,7 @@ class PerformanceController
         }
 
         if (!empty($empId)) {
-            $updated = $this->goalModel->incrementEmployeeGoalsRetryCount($empId);
+            $updated = $this->goalModel->incrementEmployeeGoalsRetryCount($empId, $increment);
             return [
                 'success' => true,
                 'data'    => $updated,
@@ -1081,7 +1116,7 @@ class PerformanceController
     }
 
     /**
-     * Execute retry plan: increment retry count and reset completed tasks for re-execution
+     * Execute retry / remediation plan: increment retry_count and update needs_training
      */
     public function retryPlan(array $payload): array
     {
@@ -1094,25 +1129,18 @@ class PerformanceController
             if ($r > $maxRetry) $maxRetry = $r;
         }
 
-        // If retry_count is more than 2 (> 2, i.e. 3 or more), do not allow monitoring loop
-        if ($maxRetry >= 2) {
-            return [
-                'success' => false,
-                'needs_formal_training' => true,
-                'retry_count' => $maxRetry,
-                'message' => "Retry limit exceeded ({$maxRetry}/2). Mandatory formal training required instead of monitoring."
-            ];
-        }
-
-        // Increment retry count on all goals
-        $updatedGoals = $this->goalModel->incrementEmployeeGoalsRetryCount($empId);
+        // Increment retry_count on all goals in Supabase
+        $updatedGoals = $this->goalModel->incrementEmployeeGoalsRetryCount($empId, 1);
+        $newRetryCount = $maxRetry + 1;
+        $needsTraining = ($newRetryCount > 2);
 
         return [
             'success' => true,
-            'needs_formal_training' => false,
-            'retry_count' => $maxRetry + 1,
+            'needs_formal_training' => $needsTraining,
+            'needs_training' => $needsTraining,
+            'retry_count' => $newRetryCount,
             'data'    => $updatedGoals,
-            'message' => "Plan retried (Attempt " . ($maxRetry + 1) . "). Tasks prepared for re-monitoring."
+            'message' => "Plan retried (Retry count updated to {$newRetryCount} in database). Tasks prepared for re-monitoring."
         ];
     }
 

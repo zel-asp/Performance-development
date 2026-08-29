@@ -83,7 +83,8 @@ class PerformanceGoalModel extends BaseModel
             'status'        => $statusVal,
             'supervisor_id' => !empty($data['supervisor_id']) ? trim($data['supervisor_id']) : null,
             'supervisor_notes' => !empty($data['supervisor_notes']) ? trim($data['supervisor_notes']) : null,
-            'retry_count'   => isset($data['retry_count']) ? (int)$data['retry_count'] : 0
+            'retry_count'    => isset($data['retry_count']) ? (int)$data['retry_count'] : 0,
+            'needs_training' => isset($data['needs_training']) ? (bool)$data['needs_training'] : false
         ];
 
         // Direct Supabase insert
@@ -120,30 +121,58 @@ class PerformanceGoalModel extends BaseModel
     }
 
     /**
-     * Increment retry_count for a goal in Supabase
+     * Update needs_training flag for a goal in Supabase
      */
-    public function incrementRetryCount(string $goalId, int $increment = 1): ?array
+    public function setNeedsTraining(string|int $goalId, bool $needsTraining = true): ?array
     {
-        $goal = $this->find($goalId);
-        $current = isset($goal['retry_count']) ? (int)$goal['retry_count'] : 0;
-        $newCount = $current + $increment;
-
-        return $this->update($goalId, [
-            'retry_count' => $newCount,
-            'updated_at'  => date('c')
+        return $this->update((string)$goalId, [
+            'needs_training' => $needsTraining,
+            'updated_at'     => date('c')
         ]);
     }
 
     /**
-     * Increment retry_count for all active goals of an employee
+     * Update needs_training flag for all active goals of an employee
      */
-    public function incrementEmployeeGoalsRetryCount(string $empId): array
+    public function setEmployeeGoalsNeedsTraining(string $empId, bool $needsTraining = true): array
     {
         $goals = $this->getGoalsByEmployee($empId);
         $updated = [];
         foreach ($goals as $g) {
             if (!empty($g['id'])) {
-                $up = $this->incrementRetryCount($g['id']);
+                $up = $this->setNeedsTraining($g['id'], $needsTraining);
+                if ($up) $updated[] = $up;
+            }
+        }
+        return $updated;
+    }
+
+    /**
+     * Increment retry_count for a goal in Supabase and sync needs_training
+     */
+    public function incrementRetryCount(string|int $goalId, int $increment = 1): ?array
+    {
+        $goal = $this->find((string)$goalId);
+        $current = isset($goal['retry_count']) ? (int)$goal['retry_count'] : 0;
+        $newCount = $current + $increment;
+
+        return $this->update((string)$goalId, [
+            'retry_count'    => $newCount,
+            'needs_training' => ($newCount > 2),
+            'updated_at'     => date('c')
+        ]);
+    }
+
+    /**
+     * Increment retry_count for all active goals of an employee in Supabase
+     */
+    public function incrementEmployeeGoalsRetryCount(string $empId, int $increment = 1): array
+    {
+        $goals = $this->getGoalsByEmployee($empId);
+        $updated = [];
+        foreach ($goals as $g) {
+            if (!empty($g['id'])) {
+                $up = $this->incrementRetryCount($g['id'], $increment);
                 if ($up) $updated[] = $up;
             }
         }
@@ -170,6 +199,7 @@ class PerformanceGoalModel extends BaseModel
         if (isset($data['status'])) $update['status'] = trim($data['status']);
         if (isset($data['supervisor_notes'])) $update['supervisor_notes'] = trim($data['supervisor_notes']);
         if (isset($data['retry_count'])) $update['retry_count'] = (int)$data['retry_count'];
+        if (isset($data['needs_training'])) $update['needs_training'] = (bool)$data['needs_training'];
 
         return $this->update($id, $update);
     }

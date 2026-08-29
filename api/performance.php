@@ -172,8 +172,10 @@ try {
             $response = $controller->calibrateEvaluation($payload);
             break;
 
+        case 'set_needs_training':
+        case 'update_needs_training':
         case 'increment_retry_count':
-            $response = $controller->incrementRetryCount($payload);
+            $response = $controller->setNeedsTraining($payload);
             break;
 
         case 'retry_plan':
