@@ -31,46 +31,6 @@
         </div>
     </div>
 
-    <!-- 4-Step Process Visualizer Banner -->
-    <div class="card-clean p-4 bg-white border border-[#E8DEDC] space-y-3">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E8DEDC] pb-2.5">
-            <div>
-                <h3 class="font-heading font-bold text-sm text-slate-900 flex items-center space-x-2">
-                    <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
-                    <span>Succession Planning &amp; Readiness Calculation Workflow</span>
-                </h3>
-                <p class="text-slate-500 text-xs">Closed Performance + Competencies &rarr; Computed Matrix &rarr; HR Review &rarr; Manual Readiness Flag</p>
-            </div>
-            <span class="badge-primary text-[10px] font-bold">Data-Informed Pipeline</span>
-        </div>
-
-        <!-- 4-Step Track -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
-            <div class="p-2.5 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] space-y-0.5">
-                <span class="text-[10px] font-bold text-primary block">STEP 1: DATA PULL</span>
-                <span class="font-bold text-slate-900 block text-xs">Closed Ratings &amp; Competencies</span>
-                <span class="text-[10px] text-slate-500 block">Performance reviews &amp; evaluated skill levels</span>
-            </div>
-
-            <div class="p-2.5 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] space-y-0.5">
-                <span class="text-[10px] font-bold text-dusty-dark block">STEP 2: COMPUTATION</span>
-                <span class="font-bold text-slate-900 block text-xs">Readiness Matrix (Employee × Role)</span>
-                <span class="text-[10px] text-slate-500 block">Automated % fit against role requirements</span>
-            </div>
-
-            <div class="p-2.5 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] space-y-0.5">
-                <span class="text-[10px] font-bold text-gold-dark block">STEP 3: HR REVIEW</span>
-                <span class="font-bold text-slate-900 block text-xs">Bench Calibration &amp; Audit</span>
-                <span class="text-[10px] text-slate-500 block">Evaluate leadership readiness and gaps</span>
-            </div>
-
-            <div class="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-0.5">
-                <span class="text-[10px] font-bold text-emerald-700 block">STEP 4: HR FLAG</span>
-                <span class="font-bold text-emerald-900 block text-xs">Set Readiness Horizon</span>
-                <span class="text-[10px] text-emerald-600 block">Ready Now / 1–2 Yrs / Not Ready</span>
-            </div>
-        </div>
-    </div>
 
     <!-- Navigation Tabs & Filter Bar -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -154,19 +114,8 @@
     <!-- SUB-PANEL 3: 9-BOX TALENT CALIBRATION GRID               -->
     <!-- ======================================================== -->
     <div id="sub-succession-ninebox" class="sub-panel sub-panel-succession space-y-4 text-xs">
-        <div class="card-clean p-4 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-[#E8DEDC]">
-            <div>
-                <h4 class="font-heading font-bold text-sm text-slate-900">Hospitality 9-Box Talent Calibration Grid</h4>
-                <p class="text-slate-500 text-xs">Calibrating Performance (X-Axis) vs. Leadership Potential (Y-Axis) for bench mobility</p>
-            </div>
-            <button onclick="showToast('Exporting 9-Box Executive Talent Matrix (PDF)...', 'info')" class="btn-secondary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1">
-                <i class="fas fa-file-arrow-down"></i>
-                <span>Export 9-Box Matrix</span>
-            </button>
-        </div>
-
         <div id="nine-box-grid-container">
-            <!-- Rendered by js/succession.js -->
+            <!-- Rendered dynamically by js/succession.js with unified header, legend & export button -->
         </div>
     </div>
 

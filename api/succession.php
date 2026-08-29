@@ -33,8 +33,8 @@ try {
 
         case 'update_flag':
         case 'calibrate_flag':
-            $candidateId = $payload['candidateId'] ?? '';
-            $flag = $payload['hrReadinessFlag'] ?? $payload['flag'] ?? '';
+            $candidateId = $payload['candidateId'] ?? ($payload['candidate_id'] ?? '');
+            $flag = $payload['hrReadinessFlag'] ?? ($payload['hr_readiness_flag'] ?? ($payload['flag'] ?? ''));
             $notes = $payload['notes'] ?? '';
             $res = $controller->updateHRFlag($candidateId, $flag, $notes);
             echo json_encode($res);
@@ -42,6 +42,12 @@ try {
 
         case 'create_position':
             $res = $controller->createPosition($payload);
+            echo json_encode($res);
+            break;
+
+        case 'delete_position':
+            $positionId = $payload['positionId'] ?? ($payload['id'] ?? '');
+            $res = $controller->deletePosition($positionId);
             echo json_encode($res);
             break;
 

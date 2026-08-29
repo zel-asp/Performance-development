@@ -3605,6 +3605,21 @@
                         </div>
                     </div>
 
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label class="font-bold text-slate-800 text-[11px]">Primary Successor</label>
+                            <select id="succ-role-primary-successor" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                <option value="">-- Select Primary Successor --</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="font-bold text-slate-800 text-[11px]">Emergency Backup</label>
+                            <select id="succ-role-backup-successor" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                <option value="">-- Optional Emergency Backup --</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="pt-3 border-t border-[#E8DEDC] flex items-center justify-end space-x-2">
                         <button type="button" onclick="closeModal('modal-add-succession-role')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
                         <button type="submit" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-sm">
