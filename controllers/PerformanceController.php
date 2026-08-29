@@ -133,9 +133,11 @@ class PerformanceController
             return [
                 'success' => false,
                 'data'    => null,
-                'message' => "Employee {$employeeId} already has an active in-progress goal. Employees can only create 1 goal at a time, and can only set a new goal once existing goals are completed."
+                'message' => "Employees can create only 1 max in-progress goal. Complete or finish existing active goals before setting a new one."
             ];
         }
+
+        $targetScope = $payload['target_scope'] ?? 'single';
 
         $data = [
             'employee_id'   => $employeeId,
@@ -824,10 +826,10 @@ class PerformanceController
         $allTasks = $this->taskModel->all();
         $users = $this->authModel->all();
 
-        // Filter ONLY approved/completed goals for Phase 3-7 Monitoring and Evaluation
+        // Filter ONLY approved (active, not completed) goals for Phase 3-7 Monitoring and Evaluation
         $approvedGoals = array_values(array_filter($enrichedGoals, function ($g) {
             $st = strtolower(trim($g['status'] ?? ''));
-            return in_array($st, ['approved', 'completed']);
+            return $st === 'approved';
         }));
 
         // Map users by id and employee_code
@@ -1081,6 +1083,170 @@ class PerformanceController
             'retry_count' => $maxRetry + 1,
             'data'    => $updatedGoals,
             'message' => "Plan retried (Attempt " . ($maxRetry + 1) . "). Tasks prepared for re-monitoring."
+        ];
+    }
+
+    /**
+     * Delete a single performance goal
+     */
+    public function deleteGoal(array $payload): array
+    {
+        $id = $payload['id'] ?? $payload['goal_id'] ?? null;
+        if (empty($id)) {
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => 'Validation error: Goal ID is required for deletion.'
+            ];
+        }
+
+        $deleted = $this->goalModel->deleteGoal((string)$id);
+        return [
+            'success' => $deleted,
+            'data'    => ['id' => $id],
+            'message' => $deleted ? "Performance objective #{$id} deleted successfully." : "Failed to delete goal #{$id}."
+        ];
+    }
+
+    /**
+     * Bulk delete multiple performance goals
+     */
+    public function bulkDeleteGoals(array $payload): array
+    {
+        $ids = $payload['ids'] ?? [];
+        if (empty($ids) || !is_array($ids)) {
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => 'Validation error: List of Goal IDs is required for bulk deletion.'
+            ];
+        }
+
+        $deleted = $this->goalModel->bulkDeleteGoals($ids);
+        $count = count($ids);
+        return [
+            'success' => $deleted,
+            'count'   => $count,
+            'message' => "{$count} performance objectives deleted successfully."
+        ];
+    }
+
+    /**
+     * Get list of supervisors/leaders from users table for goal assignment
+     */
+    public function getSupervisors(array $payload = []): array
+    {
+        $users = $this->authModel->all();
+        $supervisors = array_values(array_filter($users, function ($u) {
+            $role = strtolower($u['role'] ?? '');
+            $roleKey = strtolower($u['role_key'] ?? '');
+            return in_array($role, ['supervisor', 'manager', 'lead', 'hradmin', 'generalmanager', 'depthead', 'director']) ||
+                   in_array($roleKey, ['manager', 'hr', 'executive', 'lead']);
+        }));
+
+        // If filtered list is empty, fallback to returning all active users
+        if (empty($supervisors)) {
+            $supervisors = $users;
+        }
+
+        return [
+            'success' => true,
+            'data'    => $supervisors,
+            'count'   => count($supervisors),
+            'message' => 'Supervisors retrieved successfully from database.'
+        ];
+    }
+
+    /**
+     * Award Performance XP to xp_ledger based on rating
+     * 3.0-3.9: 5 pts, 4.0-4.9: 8 pts, 5.0: 20 pts
+     */
+    public function awardPerformanceXP(array $payload): array
+    {
+        $employeeId = $payload['employee_id'] ?? 'emp-101';
+        $evalId = $payload['performance_eval_id'] ?? $payload['eval_id'] ?? null;
+        $rating = isset($payload['rating']) ? (float)$payload['rating'] : 4.5;
+
+        // Deterministic XP calculation:
+        // 5 points if 3-3.9 rating, 8 points if 4-4.9, 20 pts if 5.0
+        if ($rating >= 5.0) {
+            $points = 20;
+        } elseif ($rating >= 4.0) {
+            $points = 8;
+        } elseif ($rating >= 3.0) {
+            $points = 5;
+        } else {
+            $points = 0;
+        }
+
+        if (isset($payload['points']) && is_numeric($payload['points'])) {
+            $points = (int)$payload['points'];
+        }
+
+        // Get employee current balance
+        $user = $this->authModel->find($employeeId) ?: $this->authModel->findByEmployeeCode($employeeId);
+        $currentXP = isset($user['total_xp']) ? (int)$user['total_xp'] : 450;
+        $balanceAfter = $currentXP + $points;
+
+        $ledgerEntry = [
+            'id'                  => 'xp-' . substr(bin2hex(random_bytes(6)), 0, 10),
+            'employee_id'         => $employeeId,
+            'source_type'         => 'performance',
+            'performance_eval_id' => $evalId,
+            'points'              => $points,
+            'balance_after'       => $balanceAfter,
+            'description'         => $payload['description'] ?? "Performance appraisal recognition kudos (+{$points} XP)",
+            'created_at'          => date('c')
+        ];
+
+        // Insert into xp_ledger in Supabase
+        $res = supabaseRequest('xp_ledger', 'POST', $ledgerEntry, true);
+
+        // Update user's total_xp
+        if ($user && isset($user['id'])) {
+            $this->authModel->update($user['id'], [
+                'total_xp' => $balanceAfter
+            ]);
+        }
+
+        // Mark active goals for the employee to 'Completed' in performance_goals
+        try {
+            $this->goalModel->markEmployeeGoalsCompleted($employeeId);
+        } catch (\Throwable $e) {
+            error_log('Error marking goals completed during awardPerformanceXP: ' . $e->getMessage());
+        }
+
+        return [
+            'success'       => true,
+            'data'          => $ledgerEntry,
+            'points_awarded'=> $points,
+            'balance_after' => $balanceAfter,
+            'message'       => "Awarded +{$points} XP to {$employeeId} and set performance goal to Completed."
+        ];
+    }
+
+    /**
+     * Mark performance goal as completed (transitions cycle & frees employee to set new goal)
+     */
+    public function markGoalCompleted(array $payload): array
+    {
+        $id = $payload['id'] ?? $payload['goal_id'] ?? null;
+        $empId = $payload['employee_id'] ?? null;
+
+        if (empty($id)) {
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => 'Goal ID is required to mark as completed.'
+            ];
+        }
+
+        $updated = $this->goalModel->updateStatus((string)$id, 'Completed', 'Performance cycle finished and archived.');
+
+        return [
+            'success' => true,
+            'data'    => $updated,
+            'message' => "Performance goal #{$id} successfully marked as Completed! Next cycle is now ready."
         ];
     }
 }

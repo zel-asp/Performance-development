@@ -16,7 +16,16 @@
         "password_hash": null,
         "department": "Front Office",
         "created_at": "2026-08-25T17:00:53.288564+00:00",
-        "updated_at": "2026-08-25T18:09:14+00:00"
+        "updated_at": "2026-08-25T18:09:14+00:00",
+        "employeeCode": "OXF-EMP-1001",
+        "fullName": "Maria Santos",
+        "roleKey": "Associate",
+        "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        "currentLevel": 3,
+        "totalXp": 450,
+        "passwordHash": null,
+        "createdAt": "2026-08-25T17:00:53.288564+00:00",
+        "updatedAt": "2026-08-25T18:09:14+00:00"
     },
     {
         "id": "emp-102",
@@ -26,12 +35,25 @@
         "password": "oxford2026",
         "role": "Supervisor",
         "role_key": "manager",
-        "title": "Executive Sous Chef",
+        "title": "Kitchen Staff",
         "dept": "Culinary & F&B",
         "avatar_url": "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80",
         "current_level": 5,
-        "total_xp": 820,
-        "status": "Active"
+        "total_xp": 828,
+        "status": "Active",
+        "employeeCode": "OXF-SUP-2001",
+        "fullName": "Chef Marco Rossi",
+        "roleKey": "manager",
+        "avatarUrl": "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80",
+        "currentLevel": 5,
+        "totalXp": 828,
+        "password_hash": "$2y$10$iHw4uQ5xohRDzOp0fwkaWuOd6D5QAswdEYby18YEyK3f.wtqrp7/W",
+        "department": "Kitchen",
+        "created_at": "2026-08-25T17:00:53.288564+00:00",
+        "updated_at": "2026-08-29T01:08:38+00:00",
+        "passwordHash": "$2y$10$iHw4uQ5xohRDzOp0fwkaWuOd6D5QAswdEYby18YEyK3f.wtqrp7/W",
+        "createdAt": "2026-08-25T17:00:53.288564+00:00",
+        "updatedAt": "2026-08-29T01:08:38+00:00"
     },
     {
         "id": "emp-103",
@@ -46,7 +68,13 @@
         "avatar_url": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
         "current_level": 7,
         "total_xp": 1200,
-        "status": "Active"
+        "status": "Active",
+        "employeeCode": "OXF-HR-3001",
+        "fullName": "Elena Vance",
+        "roleKey": "hr",
+        "avatarUrl": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+        "currentLevel": 7,
+        "totalXp": 1200
     },
     {
         "id": "emp-104",
@@ -61,6 +89,12 @@
         "avatar_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
         "current_level": 10,
         "total_xp": 2500,
-        "status": "Active"
+        "status": "Active",
+        "employeeCode": "OXF-GM-4001",
+        "fullName": "Robert Sterling",
+        "roleKey": "executive",
+        "avatarUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+        "currentLevel": 10,
+        "totalXp": 2500
     }
 ]

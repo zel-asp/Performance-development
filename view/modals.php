@@ -1,3 +1,24 @@
+<!-- Universal Reusable Action Confirmation Modal -->
+<div id="modal-action-confirmation" class="fixed inset-0 modal-overlay z-[999] hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-scaleUp">
+        <div id="confirm-modal-icon-container" class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl font-bold mx-auto">
+            <i id="confirm-modal-icon" class="fas fa-triangle-exclamation"></i>
+        </div>
+        <div class="text-center space-y-1.5">
+            <h3 id="confirm-modal-title" class="font-heading font-bold text-base text-slate-900">Confirm Action</h3>
+            <p id="confirm-modal-message" class="text-xs text-slate-500 leading-relaxed">Are you sure you want to proceed with this action?</p>
+        </div>
+        <div class="flex items-center justify-end space-x-2.5 pt-2">
+            <button type="button" id="btn-cancel-action-confirm" onclick="closeModal('modal-action-confirmation')" class="btn-secondary px-4 py-2 text-xs font-bold flex-1">
+                Cancel
+            </button>
+            <button type="button" id="btn-proceed-action-confirm" class="btn-primary px-4 py-2 text-xs font-bold flex-1 shadow-xs">
+                Confirm
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- 1. Modal: Create Goal -->
 <div id="modal-create-goal" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-2xl w-full overflow-hidden max-h-[92vh] flex flex-col">
@@ -77,19 +98,19 @@
 
             <form id="form-create-goal" onsubmit="handleGoalSubmit(event)" class="space-y-4 text-xs">
 
-                <!-- HR Target Assignment Scope -->
+                <!-- HR Target Assignment Scope / Supervisor from DB -->
                 <div class="p-3 bg-purple-50/60 rounded-xl border border-purple-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <label class="font-bold text-purple-950 text-[11px] flex items-center shrink-0">
-                        <i class="fas fa-bullseye text-purple-600 mr-1.5"></i> Assign Goal To:
+                        <i class="fas fa-user-tie text-purple-600 mr-1.5"></i> Assign Goal To (Supervisor / Leader):
                     </label>
                     <select id="goal-target-scope" onchange="if(typeof handleGoalScopeChange === 'function') handleGoalScopeChange(this)"
                         class="w-full sm:w-auto flex-1 px-3 py-1.5 rounded-lg border border-purple-200 text-xs font-semibold text-purple-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary">
-                        <option value="emp-101" data-scope="single" data-name="Maria Santos" data-dept="Front Office & Guest Experience" data-role="Associate">Maria Santos (Associate · Front Desk Host)</option>
-                        <option value="emp-102" data-scope="single" data-name="Chef Marco Rossi" data-dept="Culinary & F&B" data-role="Supervisor">Chef Marco Rossi (Supervisor · Executive Sous Chef)</option>
+                        <option value="emp-102" data-scope="single" data-name="Chef Marco Rossi" data-dept="Culinary & Kitchen Brigade" data-role="Supervisor">Chef Marco Rossi (Supervisor · Executive Sous Chef)</option>
                         <option value="emp-103" data-scope="single" data-name="Elena Vance" data-dept="Human Resources" data-role="HRAdmin">Elena Vance (HRAdmin · Director of People)</option>
                         <option value="emp-104" data-scope="single" data-name="Robert Sterling" data-dept="Executive Office" data-role="GeneralManager">Robert Sterling (GeneralManager · Managing Director)</option>
+                        <option value="emp-101" data-scope="single" data-name="Maria Santos" data-dept="Front Office & Guest Experience" data-role="Associate">Maria Santos (Associate · Front Desk Host)</option>
                         <option value="dept" data-scope="dept" data-name="Entire Front Office Department" data-dept="Front Office & Guest Experience" data-role="Associate">Entire Front Office Department (12 Staff)</option>
-                        <option value="property" data-scope="property" data-name="Hotel-wide Benchmark" data-dept="Front Office & Guest Experience" data-role="Associate">Hotel-wide Benchmark (All 100 Staff)</option>
+                        <option value="property" data-scope="property" data-name="Hotel-wide Benchmark" data-dept="Front Office & Guest Experience" data-role="Associate">Hotel-wide Benchmark (All Staff)</option>
                     </select>
                 </div>
 
@@ -122,18 +143,26 @@
                     </div>
                 </div>
 
-                <!-- Simplified Target Metric (Replaces Confusing KPI Formula) -->
+                <!-- Target Metric as Select Dropdown -->
                 <div class="space-y-1.5 p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80">
                     <div class="flex justify-between items-center">
                         <label class="font-bold text-slate-800 text-[11px] flex items-center space-x-1.5">
                             <i class="fas fa-chart-line text-primary"></i>
                             <span>4. Target / Success Metric *</span>
                         </label>
-                        <span class="text-[10px] text-slate-400">Clear target result</span>
+                        <span class="text-[10px] text-slate-400">Select standard metric</span>
                     </div>
-                    <input type="text" id="goal-kpi-input" required
-                        placeholder="e.g., Score >= 92%, +18% Average Check, or Zero Defects"
+                    <select id="goal-kpi-input" required
                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none bg-white transition">
+                        <option value="NPS >= +92 Score">⭐ VIP NPS Lift (Target >= +92 NPS Score)</option>
+                        <option value="+18% Beverage Rev/Cover">📈 Wine & Beverage Pairing (+18% Avg Check Revenue)</option>
+                        <option value="100% Audit Score (Zero Violations)">✅ HACCP Hygiene & Safety (100% Audit Pass)</option>
+                        <option value="< 22 mins / suite turnover">⏱️ Suite Turnover Efficiency (&lt; 22m per suite)</option>
+                        <option value="Guest Satisfaction >= 95%">🌟 Guest Satisfaction Index (&ge; 95% Rating)</option>
+                        <option value="Zero Safety Incidents">🛡️ Risk & Safety Compliance (Zero Incidents)</option>
+                        <option value="Upsell Conversion Rate >= 25%">💰 Room Upsell Conversion (&ge; 25% Arrival Upgrade)</option>
+                        <option value="Food Cost Variance <= 1.5%">🍽️ Culinary Margin Control (Variance &le; 1.5%)</option>
+                    </select>
 
                     <div class="flex items-center space-x-1.5 pt-1 flex-wrap gap-y-1">
                         <span class="text-[10px] text-slate-400 font-medium">Quick Presets:</span>
@@ -491,6 +520,91 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- 3.5 Modal: Employee Objective Self Evaluation -->
+<div id="modal-submit-self-evaluation" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+    <div class="modal-card max-w-lg w-full overflow-hidden flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-100 animate-scaleUp">
+        <!-- Header -->
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            <div class="flex items-center space-x-3.5">
+                <div class="w-11 h-11 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-lg font-bold border border-purple-200 shadow-2xs">
+                    <i class="fas fa-user-pen"></i>
+                </div>
+                <div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">Employee Self Assessment</span>
+                    <h3 id="self-eval-modal-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Self Evaluation: Performance Objective</h3>
+                </div>
+            </div>
+            <button onclick="closeModal('modal-submit-self-evaluation')"
+                class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+
+        <form id="form-submit-self-eval" onsubmit="handleEmployeeSelfEvalSubmit(event)" class="flex flex-col flex-1">
+            <input type="hidden" id="self-eval-goal-id" value="">
+            <input type="hidden" id="self-eval-emp-id" value="">
+
+            <div class="p-6 space-y-4 text-xs bg-white">
+                <!-- Goal Reference Card -->
+                <div class="p-3 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-1">
+                    <div class="flex items-center justify-between text-[10px] text-slate-500 font-bold">
+                        <span>ACTIVE PERFORMANCE OBJECTIVE</span>
+                        <span id="self-eval-target-metric" class="font-mono text-primary font-bold">CSAT > 90%</span>
+                    </div>
+                    <h4 id="self-eval-goal-title" class="font-bold text-slate-900 text-xs">Deliver five-star service standard</h4>
+                </div>
+
+                <!-- 1-5 Rating Slider -->
+                <div class="p-4 bg-purple-50/60 rounded-2xl border border-purple-100 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-purple-950 text-xs flex items-center space-x-1.5">
+                            <i class="fas fa-star text-amber-500"></i>
+                            <span>Your Self Evaluation Rating (1.0 – 5.0) *</span>
+                        </label>
+                        <span id="self-eval-score-preview" class="text-sm font-bold font-mono text-purple-900 bg-white px-2.5 py-0.5 rounded-lg border border-purple-200 shadow-2xs">
+                            ⭐ 4.50 / 5.0
+                        </span>
+                    </div>
+                    <input type="range" id="self-eval-rating-input" min="1.0" max="5.0" step="0.1" value="4.5"
+                        oninput="document.getElementById('self-eval-score-preview').textContent = `⭐ ${parseFloat(this.value).toFixed(2)} / 5.0`"
+                        class="w-full h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer accent-purple-600">
+                    <div class="grid grid-cols-5 gap-1 text-center font-medium text-[9px] text-slate-600">
+                        <span class="p-0.5 rounded bg-rose-50 text-rose-800">1: Below</span>
+                        <span class="p-0.5 rounded bg-amber-50 text-amber-800">2: Dev</span>
+                        <span class="p-0.5 rounded bg-blue-50 text-blue-800">3: Prof</span>
+                        <span class="p-0.5 rounded bg-emerald-50 text-emerald-800 font-bold">4: Adv</span>
+                        <span class="p-0.5 rounded bg-purple-100 text-purple-900 font-bold">5: Mast</span>
+                    </div>
+                </div>
+
+                <!-- Self Reflection / Key Achievements Textarea -->
+                <div class="space-y-1.5">
+                    <label class="font-bold text-slate-700 text-xs flex items-center space-x-1.5">
+                        <i class="fas fa-feather-pointed text-primary"></i>
+                        <span>Self Reflections &amp; Key Achievements *</span>
+                    </label>
+                    <textarea id="self-eval-notes-input" required rows="3"
+                        placeholder="Highlight your key shift deliverables, improvements made, SOP compliance, or areas where you excelled..."
+                        class="w-full p-3 bg-white rounded-xl border border-slate-200 text-xs text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar">Consistently achieved 95%+ shift guest satisfaction, completed all assigned SOP matrices, and supported onboarding team members.</textarea>
+                </div>
+            </div>
+
+            <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
+                <span class="text-[11px] text-slate-500">Recorded directly in calibration record.</span>
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="closeModal('modal-submit-self-evaluation')"
+                        class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
+                    <button type="submit" id="btn-submit-self-eval"
+                        class="btn-primary px-5 py-2 text-xs font-bold shadow-xs bg-purple-600 hover:bg-purple-700 text-white">
+                        <i class="fas fa-check mr-1.5"></i>
+                        <span>Submit Self Evaluation</span>
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 

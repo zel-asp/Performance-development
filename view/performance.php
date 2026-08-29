@@ -212,8 +212,22 @@
                                                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                 </svg>
-                                                <input type="text" placeholder="Search objectives..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-700 w-44 sm:w-48 transition" />
+                                                <input id="search-planning-goals" oninput="onPlanningGoalsSearch(this.value)" type="text" placeholder="Search objectives..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-700 w-44 sm:w-48 transition" />
                                             </div>
+                                            <select id="filter-planning-status" onchange="filterPlanningByStatus(this.value)" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none shadow-2xs">
+                                                <option value="all">All Goals</option>
+                                                <option value="pending" selected>Pending Approval</option>
+                                                <option value="approved">Approved</option>
+                                                <option value="completed">Completed</option>
+                                            </select>
+                                            <button onclick="confirmApproveAllPendingGoals()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
+                                                <i class="fas fa-check-double"></i>
+                                                <span>Approve All Pending Goals</span>
+                                            </button>
+                                            <button id="btn-stage1-bulk-delete" onclick="confirmBulkDeleteStage1()" class="hidden px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
+                                                <i class="fas fa-trash-can"></i>
+                                                <span>Delete (<span id="stage1-selected-count">0</span>)</span>
+                                            </button>
                                             <button onclick="openModal('modal-create-goal')" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1.5 shadow-xs">
                                                 <i class="fas fa-plus text-[11px]"></i>
                                                 <span>Define Objective</span>
@@ -226,6 +240,9 @@
                                         <table class="w-full text-left text-xs border-collapse">
                                             <thead class="bg-slate-50/80 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-200/80">
                                                 <tr>
+                                                    <th class="px-4 py-3 w-8 text-center">
+                                                        <input type="checkbox" id="stage1-select-all" onchange="toggleSelectAllStage1(this.checked)" class="rounded border-slate-300 text-primary focus:ring-primary">
+                                                    </th>
                                                     <th class="px-5 py-3">Employee</th>
                                                     <th class="px-5 py-3">Objective &amp; Dept</th>
                                                     <th class="px-5 py-3">Target Metric / KPI</th>
@@ -266,7 +283,7 @@
                                                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                 </svg>
-                                                <input type="text" placeholder="Search tasks..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-700 w-44 sm:w-48 transition" />
+                                                <input id="search-general-tasks" oninput="onGeneralTasksSearch(this.value)" type="text" placeholder="Search tasks..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-700 w-44 sm:w-48 transition" />
                                             </div>
                                             <button onclick="openCreateGeneralTaskModal()" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1.5 shadow-xs">
                                                 <i class="fas fa-plus text-[11px]"></i>
@@ -323,22 +340,28 @@
                                                     Phase 2 Stepper
                                                 </span>
                                                 <span class="text-xs text-slate-400 font-medium">•</span>
-                                                <span class="text-xs text-slate-500 font-medium">Supervisor Calibration</span>
+                                                <span class="text-xs text-slate-500 font-medium">Approved Objectives Baseline</span>
                                             </div>
                                             <h3 class="font-heading font-bold text-base text-slate-900">Stage 2: Goal Calibration &amp; Formal Approval Roster</h3>
-                                            <p class="text-slate-500 text-xs">Supervisors review employee goals against departmental quotas before locking the baseline.</p>
+                                            <p class="text-slate-500 text-xs">Approved performance objectives forming the locked baseline for continuous shift monitoring.</p>
                                         </div>
 
                                         <!-- Header Action Controls -->
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
-                                            <button onclick="approveAllPendingGoals()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
-                                                <i class="fas fa-check-double"></i>
-                                                <span>Approve All Pending Goals</span>
+                                            <div class="relative">
+                                                <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                                </svg>
+                                                <input id="search-approved-goals" oninput="onApprovedGoalsSearch(this.value)" type="text" placeholder="Search approved goals..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-slate-700 w-44 sm:w-48 transition" />
+                                            </div>
+                                            <button id="btn-stage2-bulk-delete" onclick="confirmBulkDeleteStage2()" class="hidden px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
+                                                <i class="fas fa-trash-can"></i>
+                                                <span>Delete Selected (<span id="stage2-selected-count">0</span>)</span>
                                             </button>
                                         </div>
                                     </div>
 
-                                    <!-- Dynamic Calibration Workflow Cards (Pending Goals Roster) -->
+                                    <!-- Dynamic Calibration Workflow Cards (Approved Goals Roster) -->
                                     <div class="p-5 bg-slate-50/30">
                                         <div id="approval-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <!-- Rendered dynamically by js/performance.js -->
@@ -375,7 +398,7 @@
                                                 <span class="text-xs text-slate-500 font-medium">Continuous Shift Monitoring</span>
                                             </div>
                                             <h3 class="font-heading font-bold text-base text-slate-900">Stage 3: Continuous Shift Performance Monitoring</h3>
-                                            <p class="text-slate-500 text-xs">Live shift monitoring, task completions, attendance records, and guest feedback ratings.</p>
+                                            <p class="text-slate-500 text-xs">Live shift monitoring, task completions, and supervisor ratings.</p>
                                         </div>
 
                                         <!-- Header Action Controls -->
@@ -384,7 +407,7 @@
                                                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                 </svg>
-                                                <input type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-700 w-44 sm:w-48 transition" />
+                                                <input id="search-monitoring-emp" oninput="onMonitoringEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-700 w-44 sm:w-48 transition" />
                                             </div>
                                             <select id="filter-monitoring-dept" onchange="filterMonitoringByDept(this.value)" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none shadow-2xs">
                                                 <option value="all">All Departments</option>
@@ -407,8 +430,7 @@
                                                 <tr>
                                                     <th class="px-5 py-3">Employee &amp; Position</th>
                                                     <th class="px-5 py-3">Department</th>
-                                                    <th class="px-5 py-3">Attendance</th>
-                                                    <th class="px-5 py-3">Ratings (Mgr / Cust)</th>
+                                                    <th class="px-5 py-3">Supervisor Rating</th>
                                                     <th class="px-5 py-3">KPI Target Progress</th>
                                                     <th class="px-5 py-3 text-right">Actions</th>
                                                 </tr>
@@ -448,14 +470,8 @@
                                                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                 </svg>
-                                                <input type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-slate-700 w-44 sm:w-48 transition" />
+                                                <input id="search-eval-emp" oninput="onEvalEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-slate-700 w-44 sm:w-48 transition" />
                                             </div>
-                                            <button class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition shadow-2xs">
-                                                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                                                </svg>
-                                                Filter
-                                            </button>
                                         </div>
                                     </div>
 
@@ -467,6 +483,7 @@
                                                     <th class="px-5 py-3">Employee &amp; Position</th>
                                                     <th class="px-5 py-3">Department</th>
                                                     <th class="px-5 py-3">Objectives Progress</th>
+                                                    <th class="px-5 py-3">Self Evaluation</th>
                                                     <th class="px-5 py-3">Supervisor Rating</th>
                                                     <th class="px-5 py-3 text-center">Status</th>
                                                     <th class="px-5 py-3 text-right">Actions</th>
@@ -507,14 +524,8 @@
                                                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                 </svg>
-                                                <input type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-700 w-44 sm:w-48 transition" />
+                                                <input id="search-review-emp" oninput="onReviewEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-700 w-44 sm:w-48 transition" />
                                             </div>
-                                            <button class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition shadow-2xs">
-                                                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                                                </svg>
-                                                Filter
-                                            </button>
                                         </div>
                                     </div>
 
@@ -557,7 +568,7 @@
                                                 <span class="text-xs text-slate-500 font-medium">Development Planning (IDP)</span>
                                             </div>
                                             <h3 class="font-heading font-bold text-base text-slate-900">Stage 6: Individual Development Plan (IDP) Roster</h3>
-                                            <p class="text-slate-500 text-xs">70-20-10 experiential, social, and formal learning plans with competency uplift and remediation.</p>
+                                            <p class="text-slate-500 text-xs">70-20-10 experiential, social, and formal learning plans with competency uplift and rewards.</p>
                                         </div>
 
                                         <!-- Header Action Controls -->
@@ -566,14 +577,8 @@
                                                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                 </svg>
-                                                <input type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 w-44 sm:w-48 transition" />
+                                                <input id="search-idp-emp" oninput="onIDPEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 w-44 sm:w-48 transition" />
                                             </div>
-                                            <button class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition shadow-2xs">
-                                                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                                                </svg>
-                                                Filter
-                                            </button>
                                         </div>
                                     </div>
 
@@ -624,14 +629,8 @@
                                                 <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                                 </svg>
-                                                <input type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-slate-700 w-44 sm:w-48 transition" />
+                                                <input id="search-cycle-emp" oninput="onCycleEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-slate-700 w-44 sm:w-48 transition" />
                                             </div>
-                                            <button class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition shadow-2xs">
-                                                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                                                </svg>
-                                                Filter
-                                            </button>
                                         </div>
                                     </div>
 

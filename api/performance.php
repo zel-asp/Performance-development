@@ -53,6 +53,30 @@ try {
             $response = $controller->updateGoal($payload);
             break;
 
+        // 4b. Delete / Bulk Delete Goals
+        case 'delete_goal':
+            $response = $controller->deleteGoal($payload);
+            break;
+
+        case 'bulk_delete_goals':
+            $response = $controller->bulkDeleteGoals($payload);
+            break;
+
+        // 4c. Supervisors / Leaders for Goal Assignment
+        case 'get_supervisors':
+            $response = $controller->getSupervisors($payload);
+            break;
+
+        // 4d. Award Performance XP to xp_ledger
+        case 'award_performance_xp':
+            $response = $controller->awardPerformanceXP($payload);
+            break;
+
+        // 4e. Mark Goal as Completed
+        case 'mark_goal_completed':
+            $response = $controller->markGoalCompleted($payload);
+            break;
+
         // 5. Planning Tab Data & Aggregates
         case 'get_planning_data':
             $response = $controller->getPlanningData($payload);

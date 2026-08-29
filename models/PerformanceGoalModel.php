@@ -173,4 +173,73 @@ class PerformanceGoalModel extends BaseModel
 
         return $this->update($id, $update);
     }
+
+    /**
+     * Check if an employee has any active (non-completed) goal
+     */
+    public function hasActiveGoal(string $empId): bool
+    {
+        $goals = $this->getGoalsByEmployee($empId);
+        foreach ($goals as $g) {
+            $status = strtolower(trim($g['status'] ?? ''));
+            if ($status !== 'completed') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Mark a goal as completed
+     */
+    public function markCompleted(string $id): ?array
+    {
+        return $this->update($id, [
+            'status'     => 'Completed',
+            'updated_at' => date('c')
+        ]);
+    }
+
+    /**
+     * Mark all active goals for an employee as completed
+     */
+    public function markEmployeeGoalsCompleted(string $empId): array
+    {
+        $goals = $this->getGoalsByEmployee($empId);
+        $completed = [];
+        foreach ($goals as $g) {
+            if (!empty($g['id'])) {
+                $status = strtolower(trim($g['status'] ?? ''));
+                if ($status !== 'completed') {
+                    $up = $this->markCompleted($g['id']);
+                    if ($up) $completed[] = $up;
+                }
+            }
+        }
+        return $completed;
+    }
+
+    /**
+     * Delete a single performance goal
+     */
+    public function deleteGoal(string $id): bool
+    {
+        return $this->delete($id);
+    }
+
+    /**
+     * Bulk delete multiple performance goals
+     */
+    public function bulkDeleteGoals(array $ids): bool
+    {
+        $success = true;
+        foreach ($ids as $id) {
+            if (!empty($id)) {
+                $deleted = $this->delete((string)$id);
+                if (!$deleted) $success = false;
+            }
+        }
+        return $success;
+    }
 }
+

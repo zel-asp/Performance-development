@@ -164,6 +164,38 @@ const PerformanceAPI = {
 
     retryPlan(data) {
         return this.request('retry_plan', 'POST', data);
+    },
+
+    // 11. Delete and Bulk Delete Goals
+    deleteGoal(id) {
+        return this.request('delete_goal', 'POST', { id });
+    },
+
+    bulkDeleteGoals(ids) {
+        return this.request('bulk_delete_goals', 'POST', { ids });
+    },
+
+    // 12. Supervisors List from Database
+    getSupervisors() {
+        return this.request('get_supervisors', 'GET');
+    },
+
+    // 13. Award XP into XP Ledger
+    awardPerformanceXP(employeeId, points, evalId, reason = 'Performance Kudos') {
+        return this.request('award_performance_xp', 'POST', {
+            employee_id: employeeId,
+            points: points,
+            eval_id: evalId,
+            reason: reason
+        });
+    },
+
+    // 14. Mark Goal as Completed
+    markGoalCompleted(employeeId, goalId = null) {
+        return this.request('mark_goal_completed', 'POST', {
+            employee_id: employeeId,
+            goal_id: goalId
+        });
     }
 };
 
@@ -172,6 +204,109 @@ window.dbGoals = [];
 window.dbGeneralTasks = [];
 window.dbEvaluations = [];
 window.dbGoalTasks = [];
+window.planningStatusFilter = 'pending';
+window.planningSearchQuery = '';
+window.approvedSearchQuery = '';
+window.monitoringSearchQuery = '';
+window.evalSearchQuery = '';
+window.reviewSearchQuery = '';
+window.idpSearchQuery = '';
+window.cycleSearchQuery = '';
+
+// Universal Reusable Action Confirmation Modal Helper
+window.showActionConfirmModal = function({
+    title = 'Confirm Action',
+    message = 'Are you sure you want to proceed with this action?',
+    confirmBtnText = 'Confirm',
+    confirmBtnClass = 'btn-primary',
+    iconClass = 'fas fa-triangle-exclamation',
+    iconContainerClass = 'bg-amber-100 text-amber-700',
+    onConfirm = null
+} = {}) {
+    const modal = document.getElementById('modal-action-confirmation');
+    if (!modal) {
+        if (confirm(message)) {
+            if (typeof onConfirm === 'function') onConfirm();
+        }
+        return;
+    }
+    const titleEl = document.getElementById('confirm-modal-title');
+    const msgEl = document.getElementById('confirm-modal-message');
+    const iconEl = document.getElementById('confirm-modal-icon');
+    const iconContEl = document.getElementById('confirm-modal-icon-container');
+    const proceedBtn = document.getElementById('btn-proceed-action-confirm');
+
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.textContent = message;
+    if (iconEl) iconEl.className = iconClass;
+    if (iconContEl) iconContEl.className = `w-12 h-12 rounded-2xl ${iconContainerClass} flex items-center justify-center text-xl font-bold mx-auto`;
+    if (proceedBtn) {
+        proceedBtn.textContent = confirmBtnText;
+        proceedBtn.className = `${confirmBtnClass} px-4 py-2 text-xs font-bold flex-1 shadow-xs`;
+        proceedBtn.onclick = function() {
+            closeModal('modal-action-confirmation');
+            if (typeof onConfirm === 'function') onConfirm();
+        };
+    }
+    openModal('modal-action-confirmation');
+};
+
+// Stage Navigation and Cross-Stage Filter Helper
+window.searchEmployeeInStage = function(stageKey, employeeName) {
+    switchSubTab('perf', stageKey);
+    setTimeout(() => {
+        let inputId = '';
+        let searchFunc = null;
+        if (stageKey === 'monitor') {
+            inputId = 'search-monitoring-emp';
+            searchFunc = window.onMonitoringEmployeeSearch;
+        } else if (stageKey === 'eval') {
+            inputId = 'search-eval-emp';
+            searchFunc = window.onEvalEmployeeSearch;
+        } else if (stageKey === 'review') {
+            inputId = 'search-review-emp';
+            searchFunc = window.onReviewEmployeeSearch;
+        } else if (stageKey === 'idp') {
+            inputId = 'search-idp-emp';
+            searchFunc = window.onIDPEmployeeSearch;
+        } else if (stageKey === 'cycle') {
+            inputId = 'search-cycle-emp';
+            searchFunc = window.onCycleEmployeeSearch;
+        }
+        if (inputId) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.value = employeeName || '';
+                if (typeof searchFunc === 'function') {
+                    searchFunc(employeeName || '');
+                }
+            }
+        }
+    }, 150);
+};
+
+// Dynamic Supervisors loader
+window.loadSupervisorsForModal = async function() {
+    try {
+        const select = document.getElementById('goal-target-scope');
+        if (!select) return;
+        const res = await PerformanceAPI.getSupervisors();
+        if (res && Array.isArray(res) && res.length > 0) {
+            select.innerHTML = res.map(s => `
+                <option value="${s.id}" data-scope="single" data-name="${s.name}" data-dept="${s.department}" data-role="${s.role}">
+                    ${s.name} (${s.role} · ${s.position || s.department})
+                </option>
+            `).join('');
+            select.innerHTML += `
+                <option value="dept" data-scope="dept" data-name="Entire Department" data-dept="Front Office" data-role="Associate">Entire Department Team</option>
+                <option value="property" data-scope="property" data-name="Hotel-wide Benchmark" data-dept="Hotel Operations" data-role="Associate">Hotel-wide Benchmark (All Staff)</option>
+            `;
+        }
+    } catch (e) {
+        console.warn('Supervisors load note:', e);
+    }
+};
+
 
 // Dynamic Performance Roster State strictly matching users with performance goals
 window.perfRoster = [
@@ -229,6 +364,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initPerformanceViews() {
+    if (typeof loadSupervisorsForModal === 'function') {
+        loadSupervisorsForModal().catch(() => {});
+    }
     await loadAndRenderPlanningGoals();
     renderApprovalRosterTable();
     renderMonitoringRosterTable();
@@ -842,10 +980,17 @@ function renderEmployeePulseGoals(goals) {
                             <i class="fas fa-eye text-[9px] text-slate-500"></i>
                             <span>View</span>
                         </button>
-                        <button onclick="openReviseGoalModal('${g.id}')" class="text-amber-700 hover:text-amber-900 text-[10px] font-bold inline-flex items-center space-x-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md transition shadow-2xs" title="Edit Objective">
-                            <i class="fas fa-pen-to-square text-[9px]"></i>
-                            <span>Edit</span>
-                        </button>
+                        ${(g.status === 'Completed' || statusLower === 'completed') ? `
+                            <button disabled class="text-slate-400 text-[10px] font-bold inline-flex items-center space-x-1 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-md cursor-not-allowed opacity-50 shadow-2xs" title="Performance objective is completed. Self evaluation is finalized.">
+                                <i class="fas fa-lock text-[9px]"></i>
+                                <span>Self Evaluation</span>
+                            </button>
+                        ` : `
+                            <button onclick="openEmployeeSelfEvalModal('${g.id}', '${g.employee_id || currentUserId}')" class="text-purple-700 hover:text-purple-900 text-[10px] font-bold inline-flex items-center space-x-1 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-0.5 rounded-md transition shadow-2xs" title="Submit Self Evaluation Rating & Reflections">
+                                <i class="fas fa-user-pen text-[9px] text-purple-600"></i>
+                                <span>Self Evaluation</span>
+                            </button>
+                        `}
                     </div>
                 </div>
             </div>
@@ -853,6 +998,107 @@ function renderEmployeePulseGoals(goals) {
     }).join('');
 }
 window.renderEmployeePulseGoals = renderEmployeePulseGoals;
+
+function openEmployeeSelfEvalModal(goalId, empId) {
+    const goal = (window.dbGoals || []).find(g => String(g.id) === String(goalId));
+    const targetEmpId = empId || goal?.employee_id || 'emp-101';
+    const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, targetEmpId));
+
+    const goalIdInput = document.getElementById('self-eval-goal-id');
+    const empIdInput = document.getElementById('self-eval-emp-id');
+    const goalTitleEl = document.getElementById('self-eval-goal-title');
+    const metricEl = document.getElementById('self-eval-target-metric');
+    const ratingInput = document.getElementById('self-eval-rating-input');
+    const previewEl = document.getElementById('self-eval-score-preview');
+    const notesInput = document.getElementById('self-eval-notes-input');
+
+    if (goalIdInput) goalIdInput.value = goalId || '';
+    if (empIdInput) empIdInput.value = targetEmpId;
+    if (goalTitleEl) goalTitleEl.textContent = goal ? goal.title : 'Performance Objective';
+    if (metricEl) metricEl.textContent = goal ? goal.target_metric : 'CSAT > 90%';
+
+    const currentScore = evalRec?.self_evaluation ? parseFloat(evalRec.self_evaluation) : 4.5;
+    if (ratingInput) ratingInput.value = currentScore;
+    if (previewEl) previewEl.textContent = `⭐ ${currentScore.toFixed(2)} / 5.0`;
+
+    if (typeof openModal === 'function') {
+        openModal('modal-submit-self-evaluation');
+    }
+}
+window.openEmployeeSelfEvalModal = openEmployeeSelfEvalModal;
+
+async function handleEmployeeSelfEvalSubmit(event) {
+    if (event) event.preventDefault();
+
+    const goalId = document.getElementById('self-eval-goal-id')?.value;
+    const empId = document.getElementById('self-eval-emp-id')?.value || 'emp-101';
+    const rating = parseFloat(document.getElementById('self-eval-rating-input')?.value || '4.5');
+    const notes = document.getElementById('self-eval-notes-input')?.value || '';
+
+    showActionConfirmModal({
+        title: 'Submit Self Evaluation',
+        message: `Submit a self evaluation rating of ⭐ ${rating.toFixed(2)} / 5.0 for this performance objective? This will be recorded directly into your calibration record.`,
+        confirmBtnText: 'Submit Self Evaluation',
+        confirmBtnClass: 'btn-primary bg-purple-600 hover:bg-purple-700 text-white',
+        iconClass: 'fas fa-user-pen',
+        iconContainerClass: 'bg-purple-100 text-purple-700',
+        onConfirm: async () => {
+            const btn = document.getElementById('btn-submit-self-eval');
+            const origHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Submitting...</span>';
+            }
+
+            try {
+                const res = await PerformanceAPI.submitSelfAssessment({
+                    employee_id: empId,
+                    goal_id: goalId,
+                    self_evaluation: rating,
+                    notes: notes
+                });
+
+                if (typeof showToast === 'function') {
+                    showToast(`⭐ Self evaluation of ${rating.toFixed(2)}/5.0 submitted successfully!`, 'success');
+                }
+
+                if (typeof closeModal === 'function') {
+                    closeModal('modal-submit-self-evaluation');
+                }
+
+                // Update dbEvaluations in memory
+                if (window.dbEvaluations) {
+                    const idx = window.dbEvaluations.findIndex(ev => isSameEmployee(ev.employee_id, empId));
+                    if (idx >= 0) {
+                        window.dbEvaluations[idx].self_evaluation = rating;
+                    } else {
+                        window.dbEvaluations.push({
+                            employee_id: empId,
+                            self_evaluation: rating,
+                            status: 'Self-Reviewed'
+                        });
+                    }
+                }
+
+                await loadAndRenderPlanningGoals();
+                renderEvaluationRosterTable();
+                renderReviewRosterTable();
+            } catch (err) {
+                console.error('Self evaluation error:', err);
+                if (typeof showToast === 'function') {
+                    showToast(err.message || 'Failed to submit self evaluation.', 'error');
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
+            }
+        }
+    });
+}
+window.handleEmployeeSelfEvalSubmit = handleEmployeeSelfEvalSubmit;
+
 window.loadAndRenderPlanningGoals = loadAndRenderPlanningGoals;
 
 // ============================================================================
@@ -939,21 +1185,47 @@ function renderPlanningRosterTable() {
     if (!tbody) return;
 
     tbody.innerHTML = '';
-    const allGoals = window.dbGoals || [];
+    let allGoals = window.dbGoals || [];
+
+    // Filter by search query
+    if (window.planningSearchQuery && window.planningSearchQuery.trim()) {
+        const q = window.planningSearchQuery.toLowerCase().trim();
+        allGoals = allGoals.filter(g => {
+            const title = (g.title || '').toLowerCase();
+            const dept = (g.department || '').toLowerCase();
+            const metric = (g.target_metric || '').toLowerCase();
+            let emp = window.perfRoster.find(e => isSameEmployee(e.id, g.employee_id));
+            const empName = emp ? emp.name.toLowerCase() : '';
+            return title.includes(q) || dept.includes(q) || metric.includes(q) || empName.includes(q);
+        });
+    }
+
+    // Filter by status dropdown (pending / approved / completed / all)
+    if (window.planningStatusFilter && window.planningStatusFilter !== 'all') {
+        const sf = window.planningStatusFilter.toLowerCase();
+        if (sf === 'pending') {
+            allGoals = allGoals.filter(g => (g.status || '').toLowerCase() !== 'approved' && (g.status || '').toLowerCase() !== 'completed');
+        } else if (sf === 'approved') {
+            allGoals = allGoals.filter(g => (g.status || '').toLowerCase() === 'approved');
+        } else if (sf === 'completed') {
+            allGoals = allGoals.filter(g => (g.status || '').toLowerCase() === 'completed');
+        }
+    }
 
     if (allGoals.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="p-8 text-center text-slate-400">
+                <td colspan="9" class="p-8 text-center text-slate-400">
                     <div class="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-2 text-slate-300">
                         <i class="fas fa-bullseye text-xl"></i>
                     </div>
                     <p class="font-bold text-slate-700 text-xs">No Performance Objectives Found</p>
-                    <p class="text-[11px] text-slate-400">Click "Define New Objective" to create baseline goals for your team.</p>
+                    <p class="text-[11px] text-slate-400">Click "Define Objective" to create baseline goals for your team.</p>
                 </td>
             </tr>
         `;
         renderPaginationControls('planning-pagination-container', 1, 0, planningPageSize, 'setPlanningPage');
+        updateStage1BulkDeleteState();
         return;
     }
 
@@ -982,7 +1254,9 @@ function renderPlanningRosterTable() {
                 avatarBg: isSup ? 'bg-amber-600' : 'bg-primary'
             };
         }
-        const isApproved = goal.status === 'Approved';
+        const goalStatus = (goal.status || '').toLowerCase();
+        const isCompleted = goalStatus === 'completed';
+        const isApproved = goalStatus === 'approved';
         const isRevised = !!goal.supervisor_notes || (goal.updated_at && goal.created_at && goal.updated_at !== goal.created_at);
 
         const tr = document.createElement('tr');
@@ -991,9 +1265,14 @@ function renderPlanningRosterTable() {
         const tasks = goal.tasks || [];
         const completedTasks = tasks.filter(t => t.status === 'completed').length;
         const totalTasks = tasks.length;
-        const taskProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : (goal.status === 'Completed' ? 100 : 0);
+        const taskProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : (isCompleted ? 100 : 0);
 
         tr.innerHTML = `
+            <!-- Checkbox Column -->
+            <td class="px-4 py-4 text-center">
+                <input type="checkbox" class="stage1-goal-checkbox rounded border-slate-300 text-primary focus:ring-primary" value="${goal.id}" onchange="updateStage1BulkDeleteState()">
+            </td>
+
             <!-- 1. Employee Column -->
             <td class="px-5 py-4">
                 <div class="flex items-center space-x-3">
@@ -1052,9 +1331,13 @@ function renderPlanningRosterTable() {
                 </div>
             </td>
 
-            <!-- 7. Status Badge (Pending / Approved) -->
+            <!-- 7. Status Badge (Pending / Approved / Completed) -->
             <td class="px-5 py-4 text-center whitespace-nowrap">
-                ${isApproved ? `
+                ${isCompleted ? `
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 inline-flex items-center space-x-1">
+                        <i class="fas fa-circle-check text-indigo-600 text-[9px]"></i><span>Completed</span>
+                    </span>
+                ` : (isApproved ? `
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 inline-flex items-center space-x-1">
                         <i class="fas fa-check-circle text-emerald-600 text-[9px]"></i><span>Approved</span>
                     </span>
@@ -1062,24 +1345,33 @@ function renderPlanningRosterTable() {
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 inline-flex items-center space-x-1">
                         <i class="fas fa-clock text-amber-600 text-[9px]"></i><span>Pending</span>
                     </span>
-                `}
+                `)}
             </td>
 
-            <!-- 8. Actions (Compact Icon Buttons with Tooltips) -->
-            <td class="px-5 py-4 text-right space-x-1.5 whitespace-nowrap">
-                <button onclick="openViewGoalModal('${goal.id || emp.id}')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex items-center justify-center transition shadow-2xs" title="View Full Details & Checklist">
+            <!-- 8. Actions -->
+            <td class="px-5 py-4 text-right space-x-1 whitespace-nowrap">
+                <button onclick="openViewGoalModal('${goal.id || emp.id}')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex items-center justify-center transition shadow-2xs" title="View Full Details">
                     <i class="fas fa-eye text-xs"></i>
                 </button>
-                <button onclick="openReviseGoalModal('${goal.id || emp.id}')" class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center justify-center transition shadow-2xs" title="Edit / Revise Objective">
-                    <i class="fas fa-pen-to-square text-xs"></i>
+                ${(isApproved || isCompleted) ? `
+                    <button disabled class="w-7 h-7 rounded-lg bg-slate-100 text-slate-300 inline-flex items-center justify-center cursor-not-allowed opacity-40 shadow-2xs" title="Revise disabled for approved/completed goals">
+                        <i class="fas fa-pen-to-square text-xs"></i>
+                    </button>
+                ` : `
+                    <button onclick="openReviseGoalModal('${goal.id || emp.id}')" class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center justify-center transition shadow-2xs" title="Edit / Revise Objective">
+                        <i class="fas fa-pen-to-square text-xs"></i>
+                    </button>
+                `}
+                <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}')" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 inline-flex items-center justify-center transition shadow-2xs" title="Delete Objective">
+                    <i class="fas fa-trash text-xs"></i>
                 </button>
-                ${!isApproved ? `
-                    <button onclick="approveGoalViaAPI('${goal.id}', '${emp.id}', this)" class="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white inline-flex items-center justify-center shadow-xs transition" title="Approve Objective">
+                ${(!isApproved && !isCompleted) ? `
+                    <button onclick="confirmApproveSingleGoal('${goal.id}', '${emp.id}', '${(goal.title || '').replace(/'/g, "\\'")}')" class="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white inline-flex items-center justify-center shadow-xs transition" title="Approve Objective">
                         <i class="fas fa-check text-xs"></i>
                     </button>
                 ` : `
-                    <span class="w-7 h-7 rounded-lg text-emerald-700 bg-emerald-50 border border-emerald-200 inline-flex items-center justify-center text-xs" title="Objective Approved & Locked">
-                        <i class="fas fa-lock"></i>
+                    <span class="w-7 h-7 rounded-lg text-emerald-700 bg-emerald-50 border border-emerald-200 inline-flex items-center justify-center text-xs" title="${isCompleted ? 'Objective Completed' : 'Objective Approved & Locked'}">
+                        <i class="fas ${isCompleted ? 'fa-circle-check' : 'fa-lock'}"></i>
                     </span>
                 `}
             </td>
@@ -1089,8 +1381,145 @@ function renderPlanningRosterTable() {
     });
 
     renderPaginationControls('planning-pagination-container', planningCurrentPage, allGoals.length, planningPageSize, 'setPlanningPage');
+    updateStage1BulkDeleteState();
 }
 window.renderPlanningRosterTable = renderPlanningRosterTable;
+
+// Stage 1 Filter & Search Handlers
+window.filterPlanningByStatus = function(status) {
+    window.planningStatusFilter = status;
+    planningCurrentPage = 1;
+    renderPlanningRosterTable();
+};
+
+window.onPlanningGoalsSearch = function(query) {
+    window.planningSearchQuery = query;
+    planningCurrentPage = 1;
+    renderPlanningRosterTable();
+};
+
+// Stage 1 Bulk Delete and Single Delete Handlers
+window.toggleSelectAllStage1 = function(checked) {
+    const checkboxes = document.querySelectorAll('.stage1-goal-checkbox');
+    checkboxes.forEach(cb => { cb.checked = checked; });
+    updateStage1BulkDeleteState();
+};
+
+window.updateStage1BulkDeleteState = function() {
+    const checkboxes = document.querySelectorAll('.stage1-goal-checkbox:checked');
+    const count = checkboxes.length;
+    const btn = document.getElementById('btn-stage1-bulk-delete');
+    const countEl = document.getElementById('stage1-selected-count');
+    if (countEl) countEl.textContent = count;
+    if (btn) {
+        if (count > 0) {
+            btn.classList.remove('hidden');
+        } else {
+            btn.classList.add('hidden');
+        }
+    }
+    const selectAllCb = document.getElementById('stage1-select-all');
+    const allCbs = document.querySelectorAll('.stage1-goal-checkbox');
+    if (selectAllCb) {
+        selectAllCb.checked = allCbs.length > 0 && count === allCbs.length;
+    }
+};
+
+window.confirmDeleteGoal = function(goalId, goalTitle = 'Objective') {
+    showActionConfirmModal({
+        title: 'Delete Performance Objective',
+        message: `Are you sure you want to delete "${goalTitle}"? This will permanently remove this goal and its associated tasks.`,
+        confirmBtnText: 'Delete Objective',
+        confirmBtnClass: 'btn-danger bg-rose-600 hover:bg-rose-700 text-white',
+        iconClass: 'fas fa-trash-can',
+        iconContainerClass: 'bg-rose-100 text-rose-700',
+        onConfirm: async () => {
+            try {
+                await PerformanceAPI.deleteGoal(goalId);
+                showToast('Performance objective deleted successfully.', 'success');
+                await loadAndRenderPlanningGoals();
+            } catch (err) {
+                console.error('Delete goal error:', err);
+                showToast(err.message || 'Failed to delete goal', 'error');
+            }
+        }
+    });
+};
+
+window.confirmBulkDeleteStage1 = function() {
+    const selected = Array.from(document.querySelectorAll('.stage1-goal-checkbox:checked')).map(cb => cb.value);
+    if (selected.length === 0) return;
+
+    showActionConfirmModal({
+        title: 'Bulk Delete Objectives',
+        message: `Are you sure you want to delete ${selected.length} selected objective(s)?`,
+        confirmBtnText: `Delete ${selected.length} Goals`,
+        confirmBtnClass: 'btn-danger bg-rose-600 hover:bg-rose-700 text-white',
+        iconClass: 'fas fa-trash-can',
+        iconContainerClass: 'bg-rose-100 text-rose-700',
+        onConfirm: async () => {
+            try {
+                await PerformanceAPI.bulkDeleteGoals(selected);
+                showToast(`${selected.length} objectives deleted successfully.`, 'success');
+                await loadAndRenderPlanningGoals();
+            } catch (err) {
+                console.error('Bulk delete error:', err);
+                showToast(err.message || 'Failed to delete goals', 'error');
+            }
+        }
+    });
+};
+
+window.confirmApproveSingleGoal = function(goalId, empId, goalTitle = 'Objective') {
+    showActionConfirmModal({
+        title: 'Approve Performance Objective',
+        message: `Approve "${goalTitle}" and lock it into the performance baseline?`,
+        confirmBtnText: 'Approve Goal',
+        confirmBtnClass: 'btn-primary bg-emerald-600 hover:bg-emerald-700 text-white',
+        iconClass: 'fas fa-check-circle',
+        iconContainerClass: 'bg-emerald-100 text-emerald-700',
+        onConfirm: async () => {
+            try {
+                await PerformanceAPI.updateGoalStatus(goalId, 'Approved');
+                showToast(`Goal approved and locked into baseline!`, 'success');
+                await loadAndRenderPlanningGoals();
+            } catch (err) {
+                console.error('Approve error:', err);
+                showToast(err.message || 'Failed to approve goal', 'error');
+            }
+        }
+    });
+};
+
+window.confirmApproveAllPendingGoals = function() {
+    const pendingGoals = (window.dbGoals || []).filter(g => g.status !== 'Approved' && g.status !== 'Completed');
+    if (pendingGoals.length === 0) {
+        showToast('All goals are already approved!', 'info');
+        return;
+    }
+
+    showActionConfirmModal({
+        title: 'Approve All Pending Goals',
+        message: `Are you sure you want to approve all ${pendingGoals.length} pending performance goals?`,
+        confirmBtnText: `Approve All (${pendingGoals.length})`,
+        confirmBtnClass: 'btn-primary bg-emerald-600 hover:bg-emerald-700 text-white',
+        iconClass: 'fas fa-check-double',
+        iconContainerClass: 'bg-emerald-100 text-emerald-700',
+        onConfirm: async () => {
+            try {
+                for (const g of pendingGoals) {
+                    await PerformanceAPI.updateGoalStatus(g.id, 'Approved');
+                }
+                showToast(`All ${pendingGoals.length} pending goals have been approved!`, 'success');
+                await loadAndRenderPlanningGoals();
+            } catch (err) {
+                console.error('Approve all error:', err);
+                showToast(err.message || 'Failed to approve all goals', 'error');
+            }
+        }
+    });
+};
+
 
 /**
  * -------------------------------------------------------------
@@ -1719,6 +2148,15 @@ async function handleGoalSubmit(e) {
     let role = isAssociate ? 'Associate' : (selectedOpt ? (selectedOpt.getAttribute('data-role') || currentRole) : currentRole);
     const targetScope = selectedOpt ? (selectedOpt.getAttribute('data-scope') || 'single') : 'single';
 
+    // Requirement 0: 1 Max in-progress goal constraint check
+    const existingRunningGoal = (window.dbGoals || []).find(g => isSameEmployee(g.employee_id, employeeId) && g.status !== 'Completed');
+    if (existingRunningGoal) {
+        if (typeof showToast === 'function') {
+            showToast(`⚠️ Cannot create goal: This employee already has an active in-progress goal ("${existingRunningGoal.title}"). Employees can only create a new goal if they have no active goals or their set goals are marked as Completed.`, 'error');
+        }
+        return;
+    }
+
     const payload = {
         employee_id: employeeId,
         target_scope: targetScope,
@@ -1732,54 +2170,53 @@ async function handleGoalSubmit(e) {
         status: 'Pending Approval'
     };
 
-    // Button loading state
-    const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Setting Objective...</span>';
-    }
+    showActionConfirmModal({
+        title: 'Confirm Performance Objective',
+        message: `Set "${title}" as the official performance objective for this cycle?`,
+        confirmBtnText: 'Set Objective',
+        confirmBtnClass: 'btn-primary bg-primary hover:bg-primary-dark text-white',
+        iconClass: 'fas fa-bullseye',
+        iconContainerClass: 'bg-purple-100 text-purple-700',
+        onConfirm: async () => {
+            const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Setting Objective...</span>';
+            }
 
-    try {
-        const result = await PerformanceAPI.createGoal(payload);
+            try {
+                const result = await PerformanceAPI.createGoal(payload);
 
-        if (typeof showToast === 'function') {
-            showToast(`Performance objective "${title}" successfully set and saved to database!`, 'success');
-        }
+                if (typeof showToast === 'function') {
+                    showToast(`Performance objective "${title}" successfully set and saved to database!`, 'success');
+                }
 
-        // Close modal & reset form
-        if (typeof closeModal === 'function') {
-            closeModal('modal-create-goal');
-        }
-        const form = document.getElementById('form-create-goal');
-        if (form) form.reset();
+                // Close modal & reset form
+                if (typeof closeModal === 'function') {
+                    closeModal('modal-create-goal');
+                }
+                const form = document.getElementById('form-create-goal');
+                if (form) form.reset();
 
-        // Refresh Planning Tab & Employee Dashboard with Database Live State
-        await loadAndRenderPlanningGoals();
-        if (typeof loadLiveNotifications === 'function') {
-            loadLiveNotifications(window.activePersonaRole || 'Supervisor');
-        }
-
-        // If user is supervisor/manager, switch to Planning tab; if Associate, stay on Shift Focus & My Pulse
-        const isAssociate = (typeof activePersonaKey !== 'undefined' && (activePersonaKey === 'associate' || activePersonaKey === 'employee'));
-        if (!isAssociate) {
-            if (typeof switchSubTab === 'function') {
-                switchSubTab('perf', 'plan');
+                // Refresh Planning Tab & Employee Dashboard with Database Live State
+                await loadAndRenderPlanningGoals();
+                if (typeof loadLiveNotifications === 'function') {
+                    loadLiveNotifications(window.activePersonaRole || 'Supervisor');
+                }
+            } catch (err) {
+                console.error('Goal submit error:', err);
+                if (typeof showToast === 'function') {
+                    showToast(err.message || 'Failed to save goal to database.', 'error');
+                }
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHtml;
+                }
             }
         }
-
-    } catch (error) {
-        console.error('Failed to create goal:', error);
-        if (typeof showToast === 'function') {
-            showToast(error.message || 'Failed to save performance goal to database.', 'error');
-        }
-    } finally {
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnHtml;
-        }
-    }
+    });
 }
-
 window.handleGoalSubmit = handleGoalSubmit;
 
 function handleGoalScopeChange(selectEl) {
@@ -2140,120 +2577,157 @@ function renderApprovalRosterTable() {
 
     container.innerHTML = '';
 
-    if (!window.dbGoals || window.dbGoals.length === 0) {
+    // Show only Approved goals that are not completed
+    let approvedGoals = (window.dbGoals || []).filter(g => g.status === 'Approved');
+
+    // Filter by search query
+    if (window.approvedSearchQuery && window.approvedSearchQuery.trim()) {
+        const q = window.approvedSearchQuery.toLowerCase().trim();
+        approvedGoals = approvedGoals.filter(g => {
+            const title = (g.title || '').toLowerCase();
+            const dept = (g.department || '').toLowerCase();
+            let emp = window.perfRoster.find(e => isSameEmployee(e.id, g.employee_id));
+            const empName = emp ? emp.name.toLowerCase() : '';
+            return title.includes(q) || dept.includes(q) || empName.includes(q);
+        });
+    }
+
+    if (approvedGoals.length === 0) {
         container.innerHTML = `
             <div class="p-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center space-y-2 col-span-2">
                 <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-lg mx-auto font-bold">
                     <i class="fas fa-clipboard-check"></i>
                 </div>
-                <h4 class="font-bold text-slate-800 text-sm">No Pending Goals for Approval</h4>
-                <p class="text-xs text-slate-500">No performance goals have been submitted for supervisor calibration yet.</p>
+                <h4 class="font-bold text-slate-800 text-sm">No Approved Goals Found</h4>
+                <p class="text-xs text-slate-500">Goals approved in Stage 1 will appear here as the active baseline for monitoring.</p>
             </div>
         `;
+        updateStage2BulkDeleteState();
         return;
     }
 
-    const pendingStaff = window.perfRoster.filter(e => e.approvalStatus !== 'Approved' && (e.goalsCount || 0) > 0);
+    approvedGoals.forEach(goal => {
+        let emp = window.perfRoster.find(e => isSameEmployee(e.id, goal.employee_id));
+        if (!emp) {
+            emp = {
+                id: goal.employee_id || 'emp-101',
+                name: goal.role === 'Supervisor' ? 'Chef Marco Rossi' : 'Maria Santos',
+                position: goal.role === 'Supervisor' ? 'Executive Sous Chef' : 'Front Desk Host',
+                department: goal.department || 'Front Office',
+                avatarBg: 'bg-primary'
+            };
+        }
 
-    if (pendingStaff.length === 0) {
-        container.innerHTML = `
-            <div class="p-6 bg-emerald-50 rounded-2xl border border-emerald-200 text-center space-y-2 col-span-2">
-                <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl mx-auto font-bold">
-                    <i class="fas fa-shield-check"></i>
-                </div>
-                <h4 class="font-bold text-slate-900 text-sm">All Department Goals Calibrated & Approved!</h4>
-                <p class="text-xs text-slate-600">Zero pending goal approvals remaining in Q3 performance planning cycle.</p>
-            </div>
-        `;
-        return;
-    }
+        const tasks = goal.tasks || [];
+        const completedTasks = tasks.filter(t => t.status === 'completed').length;
+        const totalTasks = tasks.length;
+        const taskProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-    pendingStaff.forEach(emp => {
         const div = document.createElement('div');
         div.className = 'p-5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs space-y-3';
-        const att = emp.attendance || { present: 23, absent: 0, percentage: '100%' };
-        const mgrRating = typeof emp.managerRating === 'number' ? emp.managerRating.toFixed(1) : '4.8';
-        const custRating = typeof emp.customerRating === 'number' ? emp.customerRating.toFixed(1) : '4.9';
-
         div.innerHTML = `
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div class="flex items-center space-x-3">
+                    <input type="checkbox" class="stage2-goal-checkbox rounded border-slate-300 text-amber-600 focus:ring-amber-500" value="${goal.id}" onchange="updateStage2BulkDeleteState()">
                     <div class="w-9 h-9 rounded-full ${emp.avatarBg || 'bg-primary'} text-white font-bold text-xs flex items-center justify-center">
                         ${emp.avatar || emp.name.slice(0, 2).toUpperCase()}
                     </div>
                     <div>
                         <h4 class="font-bold text-slate-900 text-sm">${emp.name}</h4>
-                        <p class="text-[11px] text-slate-500">${emp.position} · <span class="text-primary font-bold">${emp.department}</span></p>
+                        <p class="text-[11px] text-slate-500">${emp.position} · <span class="text-primary font-bold">${goal.department || emp.department}</span></p>
                     </div>
                 </div>
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                    Awaiting Endorsement
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center space-x-1">
+                    <i class="fas fa-circle-check text-emerald-600 text-[9px]"></i>
+                    <span>Approved Baseline</span>
                 </span>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-xl">
-                <div>
-                    <span class="text-slate-400 text-[10px] block">Attendance Score:</span>
-                    <span class="font-bold text-slate-800">${att.percentage} (${att.present}P / ${att.absent}A)</span>
+            <div class="p-3 bg-slate-50 rounded-xl space-y-1.5 text-xs">
+                <div class="flex justify-between items-start">
+                    <span class="font-bold text-slate-900 text-xs">${goal.title}</span>
+                    <span class="font-mono text-primary font-bold">${goal.target_metric || goal.kpi || 'N/A'}</span>
                 </div>
-                <div>
-                    <span class="text-slate-400 text-[10px] block">Historical Rating:</span>
-                    <span class="font-bold text-amber-600">⭐ ${mgrRating} Mgr / ⭐ ${custRating} Cust</span>
+                <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                    <span>Target Date: <strong>${goal.target_date || 'Q3 2026'}</strong></span>
+                    <span>Weight: <strong>${goal.weight || '20%'}</strong></span>
                 </div>
-            </div>
-
-            <div class="space-y-2 text-xs">
-                <span class="font-bold text-slate-800 text-[11px] block">Proposed Objectives (${emp.goalsCount || 0}):</span>
-                ${emp.goals.map(g => {
-            const isRevised = !!g.supervisor_notes || (g.updated_at && g.created_at && g.updated_at !== g.created_at);
-            const isApproved = (g.status === 'Approved');
-            return `
-                        <div class="p-2.5 bg-slate-50/90 rounded-xl text-[11px] space-y-1.5 border border-slate-200/70">
-                            <div class="flex justify-between items-center gap-2">
-                                <div class="flex items-center space-x-1.5 truncate">
-                                    <span class="font-semibold text-slate-900 truncate">${g.title}</span>
-                                    ${isRevised ? `<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-200 flex-shrink-0">Revised</span>` : ''}
-                                </div>
-                                <div class="flex items-center space-x-1.5 flex-shrink-0">
-                                    <span class="font-mono text-primary font-bold">${g.kpi}</span>
-                                    ${isApproved ? `
-                                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 flex items-center space-x-0.5">
-                                            <i class="fas fa-check-circle text-emerald-600"></i><span>Approved</span>
-                                        </span>
-                                    ` : `
-                                        <button onclick="approveGoal('${g.id}')" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-bold rounded-md shadow-2xs transition flex items-center space-x-0.5 cursor-pointer">
-                                            <i class="fas fa-check text-[8px]"></i><span>Approve</span>
-                                        </button>
-                                    `}
-                                </div>
-                            </div>
-                            ${g.supervisor_notes ? `
-                                <div class="text-[10px] text-purple-800 bg-purple-50/80 px-2 py-0.5 rounded border border-purple-100 leading-tight italic">
-                                    <span class="font-bold font-normal not-italic text-purple-900"><i class="fas fa-comment-dots mr-1"></i>Supervisor Note:</span> ${g.supervisor_notes}
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
-        }).join('')}
+                <div class="pt-1.5 space-y-1">
+                    <div class="flex justify-between text-[10px] font-bold">
+                        <span class="text-slate-600">Tasks Checklist: ${completedTasks}/${totalTasks}</span>
+                        <span class="text-primary font-mono">${taskProgress}%</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                        <div class="${taskProgress >= 100 ? 'bg-emerald-500' : 'bg-primary'} h-1.5 rounded-full" style="width: ${taskProgress}%"></div>
+                    </div>
+                </div>
             </div>
 
             <div class="pt-2 flex items-center justify-end space-x-2 border-t border-slate-100">
-                <button onclick="openViewGoalModal('${emp.goals[0]?.id || emp.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+                <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition flex items-center space-x-1" title="Delete Objective">
+                    <i class="fas fa-trash text-xs"></i>
+                    <span>Delete</span>
+                </button>
+                <button onclick="openViewGoalModal('${goal.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
                     View Details
                 </button>
-                <button onclick="openReviseGoalModal('${emp.goals[0]?.id || emp.id}')" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold rounded-xl transition">
-                    <i class="fas fa-pen-to-square mr-1"></i>Revise &amp; Notes
-                </button>
-                <button onclick="approveEmployeeGoals('${emp.id}')" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1.5">
-                    <i class="fas fa-check-double text-[11px]"></i><span>Approve All (${emp.goalsCount || 0})</span>
+                <button onclick="searchEmployeeInStage('monitor', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1.5">
+                    <i class="fas fa-chart-line text-[11px]"></i>
+                    <span>See Progress &rarr;</span>
                 </button>
             </div>
         `;
-
         container.appendChild(div);
     });
+
+    updateStage2BulkDeleteState();
 }
 window.renderApprovalRosterTable = renderApprovalRosterTable;
+
+window.onApprovedGoalsSearch = function(query) {
+    window.approvedSearchQuery = query;
+    renderApprovalRosterTable();
+};
+
+window.updateStage2BulkDeleteState = function() {
+    const checkboxes = document.querySelectorAll('.stage2-goal-checkbox:checked');
+    const count = checkboxes.length;
+    const btn = document.getElementById('btn-stage2-bulk-delete');
+    const countEl = document.getElementById('stage2-selected-count');
+    if (countEl) countEl.textContent = count;
+    if (btn) {
+        if (count > 0) {
+            btn.classList.remove('hidden');
+        } else {
+            btn.classList.add('hidden');
+        }
+    }
+};
+
+window.confirmBulkDeleteStage2 = function() {
+    const selected = Array.from(document.querySelectorAll('.stage2-goal-checkbox:checked')).map(cb => cb.value);
+    if (selected.length === 0) return;
+
+    showActionConfirmModal({
+        title: 'Bulk Delete Approved Objectives',
+        message: `Are you sure you want to delete ${selected.length} selected approved objective(s)?`,
+        confirmBtnText: `Delete ${selected.length} Goals`,
+        confirmBtnClass: 'btn-danger bg-rose-600 hover:bg-rose-700 text-white',
+        iconClass: 'fas fa-trash-can',
+        iconContainerClass: 'bg-rose-100 text-rose-700',
+        onConfirm: async () => {
+            try {
+                await PerformanceAPI.bulkDeleteGoals(selected);
+                showToast(`${selected.length} objectives deleted successfully.`, 'success');
+                await loadAndRenderPlanningGoals();
+            } catch (err) {
+                console.error('Bulk delete error:', err);
+                showToast(err.message || 'Failed to delete goals', 'error');
+            }
+        }
+    });
+};
+
 
 /**
  * Approve all pending goals for a specific employee
@@ -2394,17 +2868,24 @@ function renderMonitoringRosterTable() {
     container.innerHTML = '';
     const deptFilter = document.getElementById('filter-monitoring-dept')?.value || 'all';
 
-    // Only display employees who have approved performance objectives in the database (Phase 3-7 requirement)
-    let list = (window.perfRoster || []).filter(e => (window.dbGoals || []).some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, e.id)));
+    // Requirement 5: Do not show goals with status of 'Completed'
+    let list = (window.perfRoster || []).filter(e => (window.dbGoals || []).some(g => g.status === 'Approved' && isSameEmployee(g.employee_id, e.id)));
+    
     if (deptFilter !== 'all') {
-        list = list.filter(e => e.department.toLowerCase() === deptFilter.toLowerCase());
+        list = list.filter(e => e.department.toLowerCase().includes(deptFilter.toLowerCase()));
+    }
+
+    // Filter by employee search query
+    if (window.monitoringSearchQuery && window.monitoringSearchQuery.trim()) {
+        const q = window.monitoringSearchQuery.toLowerCase().trim();
+        list = list.filter(e => (e.name || '').toLowerCase().includes(q) || (e.position || '').toLowerCase().includes(q) || (e.department || '').toLowerCase().includes(q));
     }
 
     if (list.length === 0) {
         document.getElementById('monitoring-employee-detail-card')?.classList.add('hidden');
         container.innerHTML = `
             <tr>
-                <td colspan="6" class="p-8 text-center bg-white text-slate-500 text-xs">
+                <td colspan="5" class="p-8 text-center bg-white text-slate-500 text-xs">
                     <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2 text-base">
                         <i class="fas fa-bullseye"></i>
                     </div>
@@ -2436,9 +2917,11 @@ function renderMonitoringRosterTable() {
         emp.monitoringStatus = emp.monitoringProgress >= 90 ? 'Exceeding' : (emp.monitoringProgress >= 70 ? 'On Track' : 'Needs Support');
 
         const progressColor = emp.monitoringProgress >= 90 ? 'bg-emerald-500' : (emp.monitoringProgress >= 70 ? 'bg-primary' : 'bg-amber-500');
-        const att = emp.attendance || { present: 23, absent: 0, percentage: '100%' };
-        const mgrRating = typeof emp.managerRating === 'number' ? emp.managerRating.toFixed(1) : '4.8';
-        const custRating = typeof emp.customerRating === 'number' ? emp.customerRating.toFixed(1) : '4.9';
+        
+        // Find existing evaluation if any
+        const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const hasEval = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0;
+        const supScore = hasEval ? parseFloat(evalRec.supervisor_rating) : (emp.supervisorRating || 0);
 
         tr.innerHTML = `
             <td class="px-5 py-4">
@@ -2456,22 +2939,17 @@ function renderMonitoringRosterTable() {
                 <span class="font-semibold text-slate-700 max-w-[130px] truncate block" title="${emp.department}">${emp.department}</span>
             </td>
             <td class="px-5 py-4">
-                <div class="space-y-0.5">
-                    <span class="font-bold text-slate-800 text-xs block">${att.present} Present / ${att.absent} Absent</span>
-                    <span class="text-[10px] text-emerald-700 font-bold">${att.percentage} Rate</span>
-                </div>
-            </td>
-            <td class="px-5 py-4">
-                <div class="space-y-1">
-                    <div class="flex items-center space-x-1.5">
-                        <span class="text-slate-400 text-[10px]">Manager:</span>
-                        <span class="font-bold text-slate-900">⭐ ${mgrRating}</span>
+                ${hasEval ? `
+                    <div class="space-y-0.5">
+                        <span class="font-bold text-slate-900 text-xs flex items-center space-x-1">
+                            <span class="text-amber-500">⭐</span>
+                            <span>${supScore.toFixed(2)} / 5.0</span>
+                        </span>
+                        <span class="text-[10px] text-emerald-700 font-semibold block">${evalRec.tier_label || 'Appraised'}</span>
                     </div>
-                    <div class="flex items-center space-x-1.5">
-                        <span class="text-slate-400 text-[10px]">Customer:</span>
-                        <span class="font-bold text-amber-600">⭐ ${custRating}</span>
-                    </div>
-                </div>
+                ` : `
+                    <span class="text-slate-400 italic text-[11px]">Pending Appraisal</span>
+                `}
             </td>
             <td class="px-5 py-4 min-w-[140px]">
                 <div class="space-y-1">
@@ -2491,8 +2969,9 @@ function renderMonitoringRosterTable() {
                 <button onclick="openLogMilestoneModal('${emp.id}')" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-xl transition inline-flex items-center space-x-1">
                     <i class="fas fa-plus text-[10px]"></i><span>Log KPI</span>
                 </button>
-                <button onclick="triggerEvaluationForEmployee('${emp.id}')" class="px-3 py-1.5 bg-primary text-white text-xs font-bold rounded-xl shadow-xs hover:bg-primary-dark transition flex items-center space-x-1 inline-flex">
-                    <i class="fas fa-star-half-stroke"></i><span>Evaluate</span>
+                <button onclick="triggerEvaluationForEmployee('${emp.id}')" class="px-3.5 py-1.5 ${hasEval ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-primary hover:bg-primary-dark'} text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1 inline-flex">
+                    <i class="fas fa-star-half-stroke"></i>
+                    <span>${hasEval ? 'Re-Evaluate' : 'Evaluate'}</span>
                 </button>
             </td>
         `;
@@ -2504,11 +2983,20 @@ function renderMonitoringRosterTable() {
 }
 window.renderMonitoringRosterTable = renderMonitoringRosterTable;
 
+window.onMonitoringEmployeeSearch = function(query) {
+    window.monitoringSearchQuery = query;
+    monitoringCurrentPage = 1;
+    renderMonitoringRosterTable();
+};
+
 function filterMonitoringByDept(dept) {
     const el = document.getElementById('filter-monitoring-dept');
     if (el) el.value = dept;
+    monitoringCurrentPage = 1;
     renderMonitoringRosterTable();
 }
+window.filterMonitoringByDept = filterMonitoringByDept;
+
 window.filterMonitoringByDept = filterMonitoringByDept;
 
 function toggleEmployeeMonitoringDetail(empId) {
@@ -2987,40 +3475,39 @@ function applyAiFeedbackToNotes() {
         showToast('AI coaching feedback synchronized to employee stream! 🚀', 'success');
     }
 }
-window.applyAiFeedbackToNotes = applyAiFeedbackToNotes;
-
 function triggerEvaluationForEmployee(empId) {
     const emp = window.perfRoster.find(e => e.id === empId);
     if (emp) {
         window.selectedEmployeeContext = emp;
-        switchSubTab('perf', 'eval');
-        if (typeof showToast === 'function') {
-            showToast(`Opened formal appraisal evaluation form for ${emp.name}`, 'info');
+        const progress = calculateEmployeeProgress(emp);
+        if (progress === 0 && typeof showToast === 'function') {
+            showToast(`Proceeding to evaluation with current progress (${progress}% tasks completed)...`, 'info');
         }
+        searchEmployeeInStage('eval', emp.name);
     }
 }
-
-/**
- * -------------------------------------------------------------
- * 4. STAGE 4 — FORMAL EVALUATION & MULTI-FACTOR APPRAISAL CONTROLLER
- * -------------------------------------------------------------
- */
-window.selectedEvalEmpId = 'emp-101';
+window.triggerEvaluationForEmployee = triggerEvaluationForEmployee;
 
 function renderEvaluationRosterTable() {
     const container = document.getElementById('eval-roster-tbody');
     if (!container) return;
     container.innerHTML = '';
 
-    // Only show employees who actually have approved performance goals in database
-    const rosterWithGoals = (window.perfRoster || []).filter(emp => (window.dbGoals || []).some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id)));
+    // Only show employees who have active approved performance goals (exclude Completed)
+    let rosterWithGoals = (window.perfRoster || []).filter(emp => (window.dbGoals || []).some(g => g.status === 'Approved' && isSameEmployee(g.employee_id, emp.id)));
+
+    // Search query filter
+    if (window.evalSearchQuery && window.evalSearchQuery.trim()) {
+        const q = window.evalSearchQuery.toLowerCase().trim();
+        rosterWithGoals = rosterWithGoals.filter(emp => (emp.name || '').toLowerCase().includes(q) || (emp.position || '').toLowerCase().includes(q) || (emp.department || '').toLowerCase().includes(q));
+    }
 
     if (rosterWithGoals.length === 0) {
         container.innerHTML = `
             <tr>
                 <td colspan="6" class="px-5 py-8 text-center text-slate-400 italic bg-slate-50">
                     <i class="fas fa-bullseye text-2xl mb-2 block text-slate-300"></i>
-                    No employees with approved performance goals found in the database. Add and approve goals in Stages 1 &amp; 2 before appraisal evaluation.
+                    No active employees with approved performance goals found. Add and approve goals in Stages 1 &amp; 2 before appraisal evaluation.
                 </td>
             </tr>
         `;
@@ -3033,7 +3520,7 @@ function renderEvaluationRosterTable() {
         tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
 
         // Calculate actual task progress for this employee from Database Approved Goals
-        const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+        const empGoals = (window.dbGoals || []).filter(g => g.status === 'Approved' && isSameEmployee(g.employee_id, emp.id));
         let totalTasks = 0;
         let completedTasks = 0;
         empGoals.forEach(g => {
@@ -3045,9 +3532,10 @@ function renderEvaluationRosterTable() {
         const allTasksDone = totalTasks > 0 && completedTasks === totalTasks;
         const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-        // Read evaluation record directly from Database / Supabase
+        // Read evaluation record directly from Database
         const evalRec = emp.evaluationRecord || (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id));
         const isRated = evalRec && (evalRec.status === 'Rated' || evalRec.status === 'Calibrated');
+        const selfEvaluation = evalRec && typeof evalRec.self_evaluation !== 'undefined' && evalRec.self_evaluation !== null ? parseFloat(evalRec.self_evaluation) : null;
         const supervisorRating = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null ? parseFloat(evalRec.supervisor_rating) : (isRated ? (emp.supervisorRating || 0) : 0);
         const isBelowBenchmark = isRated && supervisorRating > 0 && supervisorRating < 3.0;
         const tierLabel = evalRec && evalRec.tier_label ? evalRec.tier_label : (supervisorRating >= 4.5 ? 'Master Tier' : (supervisorRating >= 3.5 ? 'Advanced Tier' : (supervisorRating >= 3.0 ? 'Proficient' : 'Needs PIP')));
@@ -3078,6 +3566,20 @@ function renderEvaluationRosterTable() {
                     </div>
                 </div>
             </td>
+            <!-- Self Evaluation Column -->
+            <td class="px-5 py-4 whitespace-nowrap">
+                ${selfEvaluation !== null ? `
+                    <span class="font-bold text-purple-900 text-xs bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200 inline-flex items-center space-x-1 shadow-2xs">
+                        <i class="fas fa-user-pen text-purple-600 text-[10px]"></i>
+                        <span>⭐ ${selfEvaluation.toFixed(2)} / 5.0</span>
+                    </span>
+                ` : `
+                    <span class="text-[10px] text-slate-400 italic bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                        Pending Self-Review
+                    </span>
+                `}
+            </td>
+            <!-- Supervisor Rating Column -->
             <td class="px-5 py-4 whitespace-nowrap">
                 ${isRated ? (isBelowBenchmark ? `
                     <div class="space-y-1">
@@ -3118,26 +3620,17 @@ function renderEvaluationRosterTable() {
                 `}
             </td>
             <td class="px-5 py-4 text-right space-x-1.5 whitespace-nowrap">
-                <button onclick="viewEmployeeCompetencyRadar('${emp.id}')" class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 rounded-lg text-[11px] font-bold transition shadow-2xs inline-flex items-center space-x-1" title="Inspect Competency Radar &amp; Skills Gap">
-                    <i class="fas fa-chart-radar text-indigo-600 text-[10px]"></i>
-                    <span>Radar</span>
-                </button>
                 <button onclick="showEmployeeEvalDetail('${emp.id}', true)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition shadow-2xs" title="View Full Appraisal">
                     <i class="fas fa-eye mr-1"></i>View
                 </button>
-                ${!allTasksDone ? `
-                    <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed rounded-lg text-[11px] font-bold shadow-none opacity-60 inline-flex items-center space-x-1" title="Cannot evaluate: Tasks are still not done (${completedTasks}/${totalTasks} completed). Complete all tasks in Stage 3 Continuous Monitoring first.">
-                        <i class="fas fa-lock text-[10px] mr-1"></i><span>Evaluate</span>
-                    </button>
-                ` : (isRated ? `
-                    <button onclick="openAppraisalModal('${emp.id}')" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[11px] font-bold transition shadow-2xs" title="View or Adjust Appraisal Scoring Form">
-                        <i class="fas fa-check text-emerald-600 mr-1"></i>Evaluated
-                    </button>
-                ` : `
-                    <button onclick="openAppraisalModal('${emp.id}')" class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-[11px] font-bold shadow-xs transition" title="Open Appraisal Scoring Form">
-                        <i class="fas fa-star-half-stroke mr-1"></i>Evaluate
-                    </button>
-                `)}
+                <button onclick="openAppraisalModal('${emp.id}')" class="px-3 py-1.5 ${isRated ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-primary hover:bg-primary-dark'} text-white rounded-lg text-[11px] font-bold shadow-xs transition inline-flex items-center space-x-1" title="Open Appraisal Scoring Form">
+                    <i class="fas fa-star-half-stroke"></i>
+                    <span>${isRated ? 'Re-Evaluate' : 'Evaluate'}</span>
+                </button>
+                <button onclick="searchEmployeeInStage('review', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-[11px] font-bold transition inline-flex items-center space-x-1" title="Proceed to Stage 5 Calibration & 1-on-1 Review">
+                    <i class="fas fa-comments text-purple-600"></i>
+                    <span>Review &rarr;</span>
+                </button>
             </td>
         `;
         container.appendChild(tr);
@@ -3230,20 +3723,14 @@ function showEmployeeEvalDetail(empId, openModalImmediately = false) {
 
     const allTasksDone = totalAllTasks > 0 && completedAllTasks === totalAllTasks;
 
-    // Enable / Disable Open Appraisal Button depending on task completion
+    // Enable Open Appraisal Button (openAppraisalModal handles notice confirmation if tasks < 100%)
     const btnOpenAppraisal = document.getElementById('btn-open-eval-appraisal');
     if (btnOpenAppraisal) {
-        if (!allTasksDone) {
-            btnOpenAppraisal.disabled = true;
-            btnOpenAppraisal.className = 'px-4 py-2 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed rounded-xl text-xs font-bold shadow-none opacity-60 inline-flex items-center space-x-1.5';
-            btnOpenAppraisal.innerHTML = '<i class="fas fa-lock text-[10px]"></i><span>Appraisal Locked (Tasks Incomplete)</span>';
-            btnOpenAppraisal.title = `Associate has incomplete monitoring tasks (${completedAllTasks}/${totalAllTasks} done). Complete all tasks in Stage 3 Continuous Monitoring before appraisal.`;
-        } else {
-            btnOpenAppraisal.disabled = false;
-            btnOpenAppraisal.className = 'btn-primary px-4 py-2 text-xs font-bold shadow-xs inline-flex items-center space-x-1.5';
-            btnOpenAppraisal.innerHTML = '<i class="fas fa-edit mr-1"></i><span>Open Appraisal Form</span>';
-            btnOpenAppraisal.title = 'Open Appraisal Form';
-        }
+        btnOpenAppraisal.disabled = false;
+        btnOpenAppraisal.className = 'btn-primary px-4 py-2 text-xs font-bold shadow-xs inline-flex items-center space-x-1.5';
+        btnOpenAppraisal.innerHTML = `<i class="fas fa-star-half-stroke mr-1"></i><span>${isRated ? 'Re-Evaluate Appraisal' : 'Open Appraisal Form'}</span>`;
+        btnOpenAppraisal.title = 'Open Appraisal Form';
+        btnOpenAppraisal.onclick = () => openAppraisalModal(emp.id);
     }
 
     // Supervisor Assessment Score from Database
@@ -3553,33 +4040,78 @@ async function handleAppraisalSubmit(e) {
 }
 window.handleAppraisalSubmit = handleAppraisalSubmit;
 
+function getKudosXP(rating) {
+    const r = parseFloat(rating) || 0;
+    if (r >= 5.0) return 20;
+    if (r >= 4.0) return 8;
+    if (r >= 3.0) return 5;
+    return 0;
+}
+window.getKudosXP = getKudosXP;
+
 function triggerSendKudosForEmployee(empId) {
     const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || { id: empId, name: 'Associate' };
-    if (typeof initKudosRosterModal === 'function' && typeof selectedKudosRecipients !== 'undefined') {
-        initKudosRosterModal();
-        selectedKudosRecipients.clear();
-        selectedKudosRecipients.add(emp.id);
-        if (typeof renderKudosRoster === 'function') renderKudosRoster();
-    }
-    openModal('modal-kudos');
-    if (typeof showToast === 'function') {
-        showToast(`👏 Opening Kudos recognition for ${emp.name}...`, 'info');
-    }
+    const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+    const rating = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : (emp.supervisorRating || 4.5));
+    const xpPoints = getKudosXP(rating);
+    const evalId = evalRec?.id || null;
+
+    showActionConfirmModal({
+        title: 'Send Colleague Kudos & Finalize Goal',
+        message: `Award +${xpPoints} Performance XP to ${emp.name} for achieving ⭐ ${rating.toFixed(2)} / 5.0 rating? This will log points in xp_ledger, disable further kudos, and mark their performance goal as Completed.`,
+        confirmBtnText: `Award +${xpPoints} XP & Complete Goal`,
+        confirmBtnClass: 'btn-primary bg-amber-500 hover:bg-amber-600 text-white',
+        iconClass: 'fas fa-award',
+        iconContainerClass: 'bg-amber-100 text-amber-700',
+        onConfirm: async () => {
+            try {
+                await PerformanceAPI.awardPerformanceXP(emp.id, rating, evalId);
+                emp.kudosSent = true;
+
+                // Update local memory goals for this employee to Completed
+                (window.dbGoals || []).forEach(g => {
+                    if (isSameEmployee(g.employee_id, emp.id)) {
+                        g.status = 'Completed';
+                    }
+                });
+
+                if (typeof showToast === 'function') {
+                    showToast(`🎉 +${xpPoints} XP awarded to ${emp.name}! Performance goal marked as Completed.`, 'success');
+                }
+
+                renderIDPRosterTable();
+                showIDPDetail(emp.id);
+                await loadAndRenderPlanningGoals();
+            } catch (err) {
+                console.error('Award XP error:', err);
+                if (typeof showToast === 'function') {
+                    showToast(err.message || 'Failed to award XP', 'error');
+                }
+            }
+        }
+    });
 }
 window.triggerSendKudosForEmployee = triggerSendKudosForEmployee;
+
 
 function renderReviewRosterTable() {
     const container = document.getElementById('review-roster-tbody');
     if (!container) return;
     container.innerHTML = '';
 
-    // ONLY display employees who have approved goals in database AND a completed Stage 4 evaluation
-    const evaluatedEmployees = (window.perfRoster || []).filter(emp => {
-        const hasGoal = (window.dbGoals || []).some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+    // ONLY display employees who have active approved goals (exclude Completed) AND a completed Stage 4 evaluation
+    let evaluatedEmployees = (window.perfRoster || []).filter(emp => {
+        const hasGoal = (window.dbGoals || []).some(g => g.status === 'Approved' && isSameEmployee(g.employee_id, emp.id));
         const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const hasEval = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0;
         return hasGoal && hasEval;
     });
+
+    // Search query filter
+    if (window.reviewSearchQuery && window.reviewSearchQuery.trim()) {
+        const q = window.reviewSearchQuery.toLowerCase().trim();
+        evaluatedEmployees = evaluatedEmployees.filter(emp => (emp.name || '').toLowerCase().includes(q) || (emp.position || '').toLowerCase().includes(q) || (emp.department || '').toLowerCase().includes(q));
+    }
 
     if (evaluatedEmployees.length === 0) {
         container.innerHTML = `
@@ -3589,7 +4121,7 @@ function renderReviewRosterTable() {
                         <i class="fas fa-sliders"></i>
                     </div>
                     <p class="font-bold text-slate-700 mb-0.5">No Calibrations Available</p>
-                    <p class="text-slate-400 text-[11px]">Employees must have approved performance goals in the database and completed Stage 4 supervisor evaluations before 1-on-1 calibration can occur.</p>
+                    <p class="text-slate-400 text-[11px]">Employees must have active approved performance goals and completed Stage 4 supervisor evaluations before 1-on-1 calibration can occur.</p>
                 </td>
             </tr>
         `;
@@ -3630,7 +4162,7 @@ function renderReviewRosterTable() {
             <td class="px-5 py-4">
                 ${rawSupScore > 0 ? `
                     <span class="font-mono font-bold text-xs ${rawSupScore < 3.0 ? 'text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200' : 'text-slate-800'}">
-                        ${rawSupScore < 3.0 ? '⚠️ ' : ''}⭐ ${rawSupScore.toFixed(2)} / 5.0
+                        ⭐ ${rawSupScore.toFixed(2)} / 5.0
                     </span>
                 ` : `<span class="text-slate-400 italic text-[11px]">Unrated</span>`}
             </td>
@@ -3638,7 +4170,7 @@ function renderReviewRosterTable() {
                 ${calibScore ? `
                     <div class="space-y-0.5">
                         <span class="font-bold font-mono text-xs ${calibScore < 3.0 ? 'text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200' : 'text-indigo-700'}">
-                            ${calibScore < 3.0 ? '⚠️ ' : ''}⭐ ${calibScore.toFixed(2)} / 5.0
+                            ⭐ ${calibScore.toFixed(2)} / 5.0
                         </span>
                         <span class="text-[10px] text-slate-500 block font-medium">(${tierLabel})</span>
                     </div>
@@ -3651,10 +4183,6 @@ function renderReviewRosterTable() {
             </td>
             <td class="px-5 py-4 text-right">
                 <div class="flex items-center justify-end space-x-1.5">
-                    <button onclick="viewEmployeeCompetencyRadar('${emp.id}')" class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl text-xs border border-indigo-200/80 transition flex items-center space-x-1" title="Inspect Competency Radar &amp; Skills Gap">
-                        <i class="fas fa-chart-radar text-indigo-600"></i>
-                        <span>Radar</span>
-                    </button>
                     <button onclick="showCalibrationDetail('${emp.id}', true)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition flex items-center space-x-1" title="View Calibration Detail Card">
                         <i class="fas fa-eye text-indigo-600"></i>
                         <span>View</span>
@@ -3670,14 +4198,10 @@ function renderReviewRosterTable() {
                             <span>Create Dev Plan</span>
                         </button>
                     `}
-                    <button onclick="open1on1MinutesModal('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition flex items-center space-x-1" title="View 1-on-1 Discussion Minutes">
-                        <i class="fas fa-file-lines text-indigo-600"></i>
-                        <span>Minutes</span>
-                    </button>
                     ${isCalibrated ? `
-                        <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-xl text-xs border border-emerald-200 transition flex items-center space-x-1" title="View or Adjust Calibration">
-                            <i class="fas fa-check text-emerald-600"></i>
-                            <span>Calibrated</span>
+                        <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="Re-Calibrate 1-on-1 Review">
+                            <i class="fas fa-sliders"></i>
+                            <span>Re-Calibrate</span>
                         </button>
                     ` : `
                         <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="Calibrate and Record 1-on-1 Review">
@@ -3692,6 +4216,11 @@ function renderReviewRosterTable() {
     });
 }
 window.renderReviewRosterTable = renderReviewRosterTable;
+
+window.onReviewEmployeeSearch = function(query) {
+    window.reviewSearchQuery = query;
+    renderReviewRosterTable();
+};
 
 function showEmptyCalibrationDetail() {
     const titleEl = document.getElementById('calib-detail-emp-title');
@@ -3979,7 +4508,9 @@ function open1on1CalibrationModal(empId) {
     const nameEl = document.getElementById('calib-emp-name');
     const roleEl = document.getElementById('calib-emp-role');
     const avatarEl = document.getElementById('calib-emp-avatar');
-    const rawSupEl = document.getElementById('calib-raw-supervisor-score');
+    const selfScoreEl = document.getElementById('calib-self-score-display');
+    const supScoreEl = document.getElementById('calib-supervisor-score-display');
+    const avgScoreEl = document.getElementById('calib-average-score-display');
     const sliderEl = document.getElementById('calib-score-slider');
     const minutesEl = document.getElementById('calib-discussion-minutes');
     const tierSelect = document.getElementById('calib-tier-select');
@@ -3991,17 +4522,21 @@ function open1on1CalibrationModal(empId) {
     if (avatarEl) avatarEl.textContent = emp.avatar || emp.name.split(' ').map(n => n[0]).join('').substring(0, 2);
 
     const supScore = evalRec ? parseFloat(evalRec.supervisor_rating || 0) : 0;
-    if (rawSupEl) {
-        rawSupEl.textContent = supScore > 0 ? `⭐ ${supScore.toFixed(2)} / 5.0 (${evalRec?.tier_label || 'Appraised'})` : 'Unrated Draft';
-    }
+    const selfScore = evalRec?.self_evaluation ? parseFloat(evalRec.self_evaluation) : 4.50;
+    const computedAvg = (selfScore + supScore) / 2;
 
-    const defaultCalibScore = evalRec && evalRec.status === 'Calibrated' && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : (supScore > 0 ? supScore : 4.50);
+    if (selfScoreEl) selfScoreEl.textContent = `⭐ ${selfScore.toFixed(2)} / 5.0`;
+    if (supScoreEl) supScoreEl.textContent = `⭐ ${supScore.toFixed(2)} / 5.0`;
+    if (avgScoreEl) avgScoreEl.textContent = `⭐ ${computedAvg.toFixed(2)} / 5.0`;
+
+    // Initialize calibration value to average of self evaluation + supervisor rating
+    const defaultCalibScore = evalRec && evalRec.status === 'Calibrated' && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : computedAvg;
     if (sliderEl) {
         sliderEl.value = defaultCalibScore.toFixed(2);
     }
 
     if (minutesEl) {
-        minutesEl.value = evalRec?.digital_signoffs?.discussion_minutes || `Conducted 1-on-1 performance review discussion with ${emp.name}. Reviewed deliverable outcomes and agreed on hospitality development targets for next cycle.`;
+        minutesEl.value = evalRec?.digital_signoffs?.discussion_minutes || `Conducted 1-on-1 performance review discussion with ${emp.name}. Reviewed deliverable outcomes (Self: ${selfScore.toFixed(2)}, Supervisor: ${supScore.toFixed(2)}, Avg: ${computedAvg.toFixed(2)}) and agreed on hospitality development targets.`;
     }
 
     onCalibrationScoreInput(defaultCalibScore, true);
@@ -4068,146 +4603,88 @@ async function handleCalibrationSubmit(e) {
     const tierLabel = tierSelect ? tierSelect.value : (calibratedScore >= 4.5 ? 'Master Tier' : 'Advanced Tier');
     const discussionMinutes = document.getElementById('calib-discussion-minutes')?.value.trim() || '1-on-1 review session completed.';
 
-    const submitBtn = document.getElementById('btn-submit-calibration');
-    const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Saving to Database...</span>';
-    }
-
-    try {
-        const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, empId));
-        const maxRetry = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
-        const isRetry = maxRetry > 0;
-
-        const saved = await PerformanceAPI.calibrateEvaluation({
-            employee_id: empId,
-            calibrated_score: calibratedScore,
-            new_calibrated_score: isRetry ? calibratedScore : undefined,
-            is_retry: isRetry,
-            tier_label: tierLabel,
-            discussion_minutes: discussionMinutes
-        });
-
-        // Update local memory and cache
-        if (emp) {
-            emp.reviewStatus = 'Calibrated';
-            emp.calibratedScore = calibratedScore;
-            if (isRetry) {
-                emp.newCalibratedScore = calibratedScore;
+    showActionConfirmModal({
+        title: 'Confirm 1-on-1 Calibration',
+        message: `Lock calibrated score of ⭐ ${calibratedScore.toFixed(2)} / 5.0 (${tierLabel}) for ${emp ? emp.name : 'Employee'}?`,
+        confirmBtnText: 'Lock Calibration',
+        confirmBtnClass: 'btn-primary bg-indigo-600 hover:bg-indigo-700 text-white',
+        iconClass: 'fas fa-sliders',
+        iconContainerClass: 'bg-indigo-100 text-indigo-700',
+        onConfirm: async () => {
+            const submitBtn = document.getElementById('btn-submit-calibration');
+            const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Saving to Database...</span>';
             }
-            emp.tierLabel = tierLabel;
-            emp.evaluationRecord = saved;
-        }
 
-        // Update dbEvaluations array
-        const existingIdx = (window.dbEvaluations || []).findIndex(ev => ev.employee_id === empId);
-        if (existingIdx >= 0) {
-            window.dbEvaluations[existingIdx] = saved;
-        } else {
-            window.dbEvaluations.push(saved);
-        }
+            try {
+                const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, empId));
+                const maxRetry = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
+                const isRetry = maxRetry > 0;
 
-        if (typeof showToast === 'function') {
-            showToast(`🎉 1-on-1 Calibration successfully recorded and locked to database for ${emp ? emp.name : 'Employee'}! (${calibratedScore.toFixed(2)} / 5.0)`, 'success');
-        }
+                const saved = await PerformanceAPI.calibrateEvaluation({
+                    employee_id: empId,
+                    calibrated_score: calibratedScore,
+                    new_calibrated_score: isRetry ? calibratedScore : undefined,
+                    is_retry: isRetry,
+                    tier_label: tierLabel,
+                    discussion_minutes: discussionMinutes
+                });
 
-        // Sync Performance Calibration score directly with Competency Management Radar
-        if (typeof window.syncCompetencyWithPerformance === 'function') {
-            window.syncCompetencyWithPerformance(empId);
-        }
+                // Update local memory and cache
+                if (emp) {
+                    emp.reviewStatus = 'Calibrated';
+                    emp.calibratedScore = calibratedScore;
+                    if (isRetry) {
+                        emp.newCalibratedScore = calibratedScore;
+                    }
+                    emp.tierLabel = tierLabel;
+                    emp.evaluationRecord = saved;
+                }
 
-        closeModal('modal-1on1-calibration');
-        renderReviewRosterTable();
-        showCalibrationDetail(empId);
-        renderIDPRosterTable();
-        renderCycleRosterTable();
-        updateAllPerfStepperBadges();
+                // Update dbEvaluations array
+                const existingIdx = (window.dbEvaluations || []).findIndex(ev => ev.employee_id === empId);
+                if (existingIdx >= 0) {
+                    window.dbEvaluations[existingIdx] = saved;
+                } else {
+                    window.dbEvaluations.push(saved);
+                }
 
-        if (typeof loadLiveNotifications === 'function') {
-            loadLiveNotifications(window.activePersonaRole || 'Supervisor');
+                if (typeof showToast === 'function') {
+                    showToast(`🎉 1-on-1 Calibration successfully recorded and locked to database for ${emp ? emp.name : 'Employee'}! (${calibratedScore.toFixed(2)} / 5.0)`, 'success');
+                }
+
+                // Sync Performance Calibration score directly with Competency Management Radar
+                if (typeof window.syncCompetencyWithPerformance === 'function') {
+                    window.syncCompetencyWithPerformance(empId);
+                }
+
+                closeModal('modal-1on1-calibration');
+                renderReviewRosterTable();
+                showCalibrationDetail(empId);
+                renderIDPRosterTable();
+                renderCycleRosterTable();
+                updateAllPerfStepperBadges();
+
+                if (typeof loadLiveNotifications === 'function') {
+                    loadLiveNotifications(window.activePersonaRole || 'Supervisor');
+                }
+            } catch (err) {
+                console.error('Calibration database submission error:', err);
+                if (typeof showToast === 'function') {
+                    showToast(err.message || 'Failed to save calibration to database.', 'error');
+                }
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origBtnHtml;
+                }
+            }
         }
-    } catch (err) {
-        console.error('Calibration database submission error:', err);
-        if (typeof showToast === 'function') {
-            showToast(err.message || 'Failed to save calibration to database.', 'error');
-        }
-    } finally {
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = origBtnHtml;
-        }
-    }
+    });
 }
 window.handleCalibrationSubmit = handleCalibrationSubmit;
-
-function open1on1MinutesModal(empId) {
-    const emp = (window.perfRoster || []).find(e => e.id === empId) || (window.perfRoster || [])[0];
-    if (!emp) return;
-
-    window.selectedEvalEmpId = emp.id;
-
-    const evalRec = (window.dbEvaluations || []).find(ev => ev.employee_id === emp.id || (emp.id === 'emp-101' && (ev.employee_id === 'emp-1' || ev.employee_id === 'OXF-EMP-1001')) || (emp.id === 'emp-102' && (ev.employee_id === 'emp-2' || ev.employee_id === 'OXF-SUP-2001')));
-
-    const nameEl = document.getElementById('minutes-modal-emp-name');
-    const roleEl = document.getElementById('minutes-modal-emp-role');
-    const avatarEl = document.getElementById('minutes-modal-avatar');
-    const scoreEl = document.getElementById('minutes-modal-score');
-    const bodyEl = document.getElementById('minutes-modal-body');
-    const calibBtn = document.getElementById('minutes-modal-btn-calibrate');
-
-    if (nameEl) nameEl.textContent = emp.name;
-    if (roleEl) roleEl.textContent = `${emp.position} · ${emp.department}`;
-    if (avatarEl) avatarEl.textContent = emp.name.split(' ').map(n => n[0]).join('').substring(0, 2);
-
-    const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
-    const tier = evalRec?.tier_label || (score > 0 ? (score >= 4.5 ? 'Master Tier' : (score >= 3.5 ? 'Advanced Tier' : (score >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)'))) : 'Unrated');
-
-    if (scoreEl) {
-        if (score > 0) {
-            scoreEl.textContent = `⭐ ${score.toFixed(2)} / 5.0 (${tier})`;
-            scoreEl.className = `text-sm font-bold font-mono ${score < 3.0 ? 'text-rose-600' : 'text-indigo-700'}`;
-        } else {
-            scoreEl.textContent = 'Evaluation Pending';
-            scoreEl.className = 'text-xs font-bold text-amber-600';
-        }
-    }
-
-    if (bodyEl) {
-        const recordedMinutes = evalRec?.digital_signoffs?.discussion_minutes;
-        if (recordedMinutes) {
-            bodyEl.innerHTML = `
-                <div class="space-y-2">
-                    <p class="font-bold text-slate-900 text-xs">Summary of 1-on-1 Review Dialogue &amp; Commitments:</p>
-                    <p class="italic text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">"${recordedMinutes}"</p>
-                </div>
-            `;
-        } else if (evalRec && evalRec.supervisor_notes) {
-            bodyEl.innerHTML = `
-                <div class="space-y-2">
-                    <p class="font-bold text-slate-900 text-xs">Supervisor Initial Appraisal Notes:</p>
-                    <p class="italic text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">"${evalRec.supervisor_notes}"</p>
-                    <p class="text-amber-700 text-[11px] font-semibold bg-amber-50 p-2 rounded-lg border border-amber-200">⚠️ Formal 1-on-1 calibration minutes pending recording.</p>
-                </div>
-            `;
-        } else {
-            bodyEl.innerHTML = `
-                <div class="p-6 text-center text-slate-400 italic bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5">
-                    <i class="fas fa-file-circle-question text-2xl text-slate-300 block"></i>
-                    <p class="font-semibold text-slate-600 text-xs">No formal 1-on-1 discussion minutes recorded in database yet.</p>
-                    <p class="text-[11px] text-slate-400">Click "Edit / Calibrate 1-on-1" below to conduct session and save minutes.</p>
-                </div>
-            `;
-        }
-    }
-
-    if (calibBtn) {
-        calibBtn.setAttribute('onclick', `closeModal('modal-1on1-minutes-viewer'); open1on1CalibrationModal('${emp.id}');`);
-    }
-
-    openModal('modal-1on1-minutes-viewer');
-}
-window.open1on1MinutesModal = open1on1MinutesModal;
 
 function openPIPModal(empId) {
     const emp = (window.perfRoster || []).find(e => e.id === empId) || (window.perfRoster || [])[0];
@@ -4548,9 +5025,9 @@ function renderIDPRosterTable() {
     if (!container) return;
     container.innerHTML = '';
 
-    // ONLY show employees who have approved goals AND evaluated ratings in database (Phase 4 / 5 evaluation)
-    const roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster.filter(emp => {
-        const hasGoal = (window.dbGoals || []).some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+    // Show employees who have goals and evaluated ratings in database (Phase 4 / 5 evaluation)
+    let roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster.filter(emp => {
+        const hasGoal = (window.dbGoals || []).some(g => isSameEmployee(g.employee_id, emp.id));
         const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const score = (evalRec && evalRec.calibrated_score !== undefined && evalRec.calibrated_score !== null && parseFloat(evalRec.calibrated_score) > 0)
             ? parseFloat(evalRec.calibrated_score)
@@ -4561,6 +5038,12 @@ function renderIDPRosterTable() {
                     : ((emp.managerRating && parseFloat(emp.managerRating) > 0) ? parseFloat(emp.managerRating) : 0)));
         return hasGoal && score > 0;
     }) : [];
+
+    // Search query filter
+    if (window.idpSearchQuery && window.idpSearchQuery.trim()) {
+        const q = window.idpSearchQuery.toLowerCase().trim();
+        roster = roster.filter(emp => (emp.name || '').toLowerCase().includes(q) || (emp.position || '').toLowerCase().includes(q) || (emp.department || '').toLowerCase().includes(q));
+    }
 
     if (roster.length === 0) {
         container.innerHTML = `<tr><td colspan="5" class="px-5 py-6 text-center text-slate-400 italic">No employees with evaluated ratings found in IDP roster. Complete Stage 4 appraisals and Stage 5 calibration first.</td></tr>`;
@@ -4578,6 +5061,9 @@ function renderIDPRosterTable() {
                     ? parseFloat(emp.supervisorRating)
                     : ((emp.managerRating && parseFloat(emp.managerRating) > 0) ? parseFloat(emp.managerRating) : 0)));
         const hasPassed = score >= 3.0;
+        const xpPts = getKudosXP(score);
+        const isGoalCompleted = (window.dbGoals || []).some(g => isSameEmployee(g.employee_id, emp.id) && g.status === 'Completed');
+        const isKudosDisabled = !!(emp.kudosSent || isGoalCompleted);
 
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
@@ -4593,12 +5079,12 @@ function renderIDPRosterTable() {
             <td class="px-5 py-4 text-slate-500 max-w-[150px] truncate" title="${emp.position} · ${emp.department}">${emp.position} · ${emp.department}</td>
             <td class="px-5 py-4 font-bold text-slate-800">
                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${!hasPassed && score > 0 ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
-                    ${!hasPassed && score > 0 ? `⚠️ PIP Remediation (${score.toFixed(2)}/5.0)` : `⭐ Proficient (${score.toFixed(2)}/5.0)`}
+                    ${!hasPassed && score > 0 ? `PIP Remediation (${score.toFixed(2)}/5.0)` : `⭐ Proficient (${score.toFixed(2)}/5.0)`}
                 </span>
             </td>
             <td class="px-5 py-4">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${hasPassed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                    ${hasPassed ? 'Clearance Active' : 'Action Plan Active'}
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isGoalCompleted ? 'bg-indigo-100 text-indigo-800' : (hasPassed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}">
+                    ${isGoalCompleted ? 'Goal Completed ✓' : (hasPassed ? 'Clearance Active' : 'Action Plan Active')}
                 </span>
             </td>
             <td class="px-5 py-4 text-right">
@@ -4607,12 +5093,22 @@ function renderIDPRosterTable() {
                         <i class="fas fa-eye"></i>
                         <span>View IDP</span>
                     </button>
-                    ${hasPassed ? `
-                        <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Send Colleague Kudos">
-                            <i class="fas fa-award text-amber-600"></i>
-                            <span>Send Kudos</span>
+                    ${hasPassed ? (isKudosDisabled ? `
+                        <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-bold cursor-not-allowed inline-flex items-center space-x-1" title="Kudos already awarded &amp; performance goal marked as completed">
+                            <i class="fas fa-check text-emerald-600"></i>
+                            <span>Kudos Sent (+${xpPts} XP)</span>
                         </button>
-                    ` : ''}
+                    ` : `
+                        <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Send Colleague Kudos & Award XP">
+                            <i class="fas fa-award text-amber-600"></i>
+                            <span>Send Kudos (+${xpPts} XP)</span>
+                        </button>
+                    `) : `
+                        <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Proceed to Phase 7 Transition & Rollover">
+                            <i class="fas fa-arrow-right text-rose-600"></i>
+                            <span>Proceed to Phase 7</span>
+                        </button>
+                    `}
                 </div>
             </td>
         `;
@@ -4627,6 +5123,11 @@ function renderIDPRosterTable() {
     }
 }
 window.renderIDPRosterTable = renderIDPRosterTable;
+
+window.onIDPEmployeeSearch = function(query) {
+    window.idpSearchQuery = query;
+    renderIDPRosterTable();
+};
 
 function showIDPDetail(empId, openModalImmediately = false) {
     if (!empId) {
@@ -4668,40 +5169,63 @@ function showIDPDetail(empId, openModalImmediately = false) {
 
     const isPIP = score < 3.0;
     const hasPassedBenchmark = score >= 3.0;
+    const xpPts = getKudosXP(score);
+    const isGoalCompleted = (window.dbGoals || []).some(g => isSameEmployee(g.employee_id, emp.id) && g.status === 'Completed');
+    const isKudosDisabled = !!(emp.kudosSent || isGoalCompleted);
 
     if (titleEl) titleEl.textContent = isPIP ? `Performance Improvement Plan (PIP) & IDP: ${emp.name}` : `70-20-10 Individual Development Plan (IDP): ${emp.name}`;
     if (subtitleEl) subtitleEl.textContent = `Position: ${emp.position} · ${emp.department} · Review Cycle ${evalRec?.cycle_period || '2026-Q3'}`;
 
     if (headerActions) {
         if (hasPassedBenchmark) {
-            headerActions.innerHTML = `
-                <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition">
-                    <i class="fas fa-award"></i>
-                    <span>Send Colleague Kudos</span>
-                </button>
-            `;
+            if (isKudosDisabled) {
+                headerActions.innerHTML = `
+                    <button disabled class="px-4 py-2 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-bold cursor-not-allowed flex items-center space-x-1.5">
+                        <i class="fas fa-check text-emerald-600"></i>
+                        <span>Kudos Sent (+${xpPts} XP) · Goal Completed</span>
+                    </button>
+                `;
+            } else {
+                headerActions.innerHTML = `
+                    <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition">
+                        <i class="fas fa-award"></i>
+                        <span>Send Colleague Kudos (+${xpPts} XP)</span>
+                    </button>
+                `;
+            }
         } else {
             headerActions.innerHTML = `
+                <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition">
+                    <i class="fas fa-arrow-right"></i>
+                    <span>Proceed to Phase 7 Transition &rarr;</span>
+                </button>
                 <button onclick="openRemedialBooksModal('${emp.id}')" class="px-3.5 py-2 bg-gold hover:bg-gold-dark text-white rounded-xl text-xs font-semibold shadow-xs flex items-center space-x-1.5 transition">
                     <i class="fas fa-book-medical"></i>
                     <span>Prescribe LMS Books</span>
-                </button>
-                <button onclick="openModal('modal-ai-feedback')" class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5">
-                    <i class="fas fa-plus"></i>
-                    <span>Add IDP Action</span>
                 </button>
             `;
         }
     }
 
+
+
     if (headerLmsAction) {
         if (hasPassedBenchmark) {
-            headerLmsAction.innerHTML = `
-                <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="text-xs text-amber-600 font-bold hover:underline flex items-center space-x-1">
-                    <i class="fas fa-award text-[11px]"></i>
-                    <span>Send Colleague Kudos &rarr;</span>
-                </button>
-            `;
+            if (isKudosDisabled) {
+                headerLmsAction.innerHTML = `
+                    <span class="text-xs text-slate-400 font-bold flex items-center space-x-1">
+                        <i class="fas fa-check text-emerald-600 text-[11px]"></i>
+                        <span>Kudos Awarded (+${xpPts} XP)</span>
+                    </span>
+                `;
+            } else {
+                headerLmsAction.innerHTML = `
+                    <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="text-xs text-amber-600 font-bold hover:underline flex items-center space-x-1">
+                        <i class="fas fa-award text-[11px]"></i>
+                        <span>Send Colleague Kudos &rarr;</span>
+                    </button>
+                `;
+            }
         } else {
             headerLmsAction.innerHTML = `
                 <button onclick="openRemedialBooksModal('${emp.id}')" class="text-xs text-primary font-bold hover:underline flex items-center space-x-1">
@@ -4972,12 +5496,19 @@ function renderCycleRosterTable() {
     if (!container) return;
     container.innerHTML = '';
 
-    const roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster.filter(emp => {
-        const hasGoal = (window.dbGoals || []).some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+    // Only show active goals (exclude Completed)
+    let roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster.filter(emp => {
+        const hasGoal = (window.dbGoals || []).some(g => g.status === 'Approved' && isSameEmployee(g.employee_id, emp.id));
         const evalRec = (window.dbEvaluations || []).find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
         return hasGoal && score > 0;
     }) : [];
+
+    // Search query filter
+    if (window.cycleSearchQuery && window.cycleSearchQuery.trim()) {
+        const q = window.cycleSearchQuery.toLowerCase().trim();
+        roster = roster.filter(emp => (emp.name || '').toLowerCase().includes(q) || (emp.position || '').toLowerCase().includes(q) || (emp.department || '').toLowerCase().includes(q));
+    }
 
     if (roster.length === 0) {
         container.innerHTML = `<tr><td colspan="5" class="px-5 py-6 text-center text-slate-400 italic">No evaluated employees found in next cycle transition roster. Complete Stage 4-6 evaluations and IDP first.</td></tr>`;
@@ -5004,7 +5535,7 @@ function renderCycleRosterTable() {
             </td>
             <td class="px-5 py-4 text-slate-500 max-w-[130px] truncate" title="${emp.department}">${emp.department}</td>
             <td class="px-5 py-4 font-bold ${isCalibrated ? (hasPassed ? 'text-emerald-700' : 'text-rose-600') : 'text-slate-400 font-normal italic'}">
-                ${isCalibrated ? `${hasPassed ? '⭐' : '⚠️'} ${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || (hasPassed ? 'Calibrated' : 'Needs PIP')})` : 'Pending Review'}
+                ${isCalibrated ? `⭐ ${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || (hasPassed ? 'Calibrated' : 'Needs PIP')})` : 'Pending Review'}
             </td>
             <td class="px-5 py-4">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${hasPassed ? 'bg-teal-100 text-teal-800' : 'bg-rose-100 text-rose-800'}">
@@ -5028,6 +5559,58 @@ function renderCycleRosterTable() {
     }
 }
 window.renderCycleRosterTable = renderCycleRosterTable;
+
+window.onCycleEmployeeSearch = function(query) {
+    window.cycleSearchQuery = query;
+    renderCycleRosterTable();
+};
+
+function confirmMarkGoalCompleted(empId) {
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId));
+    if (!emp) return;
+
+    const empGoals = (window.dbGoals || []).filter(g => g.status === 'Approved' && isSameEmployee(g.employee_id, emp.id));
+    const targetGoal = empGoals[0];
+
+    showActionConfirmModal({
+        title: 'Mark Performance Objective Completed',
+        message: `Mark "${targetGoal ? targetGoal.title : 'Performance Goal'}" for ${emp.name} as Completed? This finalizes the review cycle and allows the employee to set their next performance objective.`,
+        confirmBtnText: 'Mark as Completed',
+        confirmBtnClass: 'btn-primary bg-emerald-600 hover:bg-emerald-700 text-white',
+        iconClass: 'fas fa-circle-check',
+        iconContainerClass: 'bg-emerald-100 text-emerald-700',
+        onConfirm: async () => {
+            const btn = document.getElementById('btn-mark-cycle-completed');
+            const origHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Marking as Completed...</span>';
+            }
+
+            try {
+                if (targetGoal) {
+                    await PerformanceAPI.markGoalCompleted(targetGoal.id);
+                }
+                if (typeof showToast === 'function') {
+                    showToast(`🎉 Goal for ${emp.name} marked as Completed! The cycle is finalized and the employee can now establish their next objective.`, 'success');
+                }
+                closeModal('modal-cycle-detail');
+                await loadAndRenderPlanningGoals();
+            } catch (err) {
+                console.error('Mark completed error:', err);
+                if (typeof showToast === 'function') {
+                    showToast(err.message || 'Failed to mark goal as completed.', 'error');
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
+            }
+        }
+    });
+}
+window.confirmMarkGoalCompleted = confirmMarkGoalCompleted;
 
 function showCycleDetail(empId, openModalImmediately = false) {
     if (!empId) {
@@ -5057,7 +5640,7 @@ function showCycleDetail(empId, openModalImmediately = false) {
         : (evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.new_supervisor_rating ? parseFloat(evalRec.new_supervisor_rating) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0)));
     const hasPassed = effectiveScore >= 3.0;
 
-    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+    const empGoals = (window.dbGoals || []).filter(g => g.status === 'Approved' && isSameEmployee(g.employee_id, emp.id));
     const retryCount = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
 
     const titleEl = document.getElementById('cycle-detail-title');
@@ -5080,9 +5663,9 @@ function showCycleDetail(empId, openModalImmediately = false) {
                 </p>
                 <div class="pt-3 border-t border-[#E8DEDC] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <span class="text-xs text-slate-500"><i class="fas fa-check text-sage-dark mr-1.5"></i> All 7 lifecycle phases completed for 2026 Q3</span>
-                    <button onclick="switchSubTab('perf', 'plan'); showToast('Initiated next performance planning cycle for ${emp.name}!', 'success');" class="btn-primary px-5 py-2.5 text-xs font-bold transition flex items-center space-x-2">
-                        <span>Initiate Next Performance Cycle (Q4)</span>
-                        <i class="fas fa-arrow-right text-[10px]"></i>
+                    <button id="btn-mark-cycle-completed" onclick="confirmMarkGoalCompleted('${emp.id}')" class="btn-primary px-5 py-2.5 text-xs font-bold transition flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white">
+                        <i class="fas fa-circle-check text-xs"></i>
+                        <span>Mark as Completed</span>
                     </button>
                 </div>
             `;
@@ -5097,7 +5680,7 @@ function showCycleDetail(empId, openModalImmediately = false) {
                                 </div>
                                 <div>
                                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-200 text-rose-900 border border-rose-300">
-                                        ⚠️ Need Training (Retry Attempts Exceeded: ${retryCount} Retries)
+                                        Need Training (Retry Attempts Exceeded: ${retryCount} Retries)
                                     </span>
                                     <h4 class="font-heading font-bold text-base text-slate-900 mt-0.5">Mandatory Departmental Training Required: ${emp.name}</h4>
                                 </div>

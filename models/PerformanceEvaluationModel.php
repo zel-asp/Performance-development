@@ -133,7 +133,8 @@ class PerformanceEvaluationModel extends BaseModel
         $evaluatorId = $data['evaluator_id'] ?? ($existing['evaluator_id'] ?? 'emp-102');
 
         $supervisorRating = isset($data['supervisor_rating']) ? round((float)$data['supervisor_rating'], 2) : 4.60;
-        $calibratedScore = isset($data['calibrated_score']) ? round((float)$data['calibrated_score'], 2) : ($existing['calibrated_score'] ?? $supervisorRating);
+        $selfEvaluation = isset($data['self_evaluation']) ? round((float)$data['self_evaluation'], 2) : ($existing['self_evaluation'] ?? 4.50);
+        $calibratedScore = isset($data['calibrated_score']) ? round((float)$data['calibrated_score'], 2) : round(($selfEvaluation + $supervisorRating) / 2, 2);
 
         $isRetry = !empty($data['is_retry']) || isset($data['new_supervisor_rating']) || isset($data['new_calibrated_score']);
         $newSupervisorRating = isset($data['new_supervisor_rating']) ? round((float)$data['new_supervisor_rating'], 2) : ($isRetry ? $supervisorRating : ($existing['new_supervisor_rating'] ?? null));
@@ -167,6 +168,7 @@ class PerformanceEvaluationModel extends BaseModel
             'evaluator_id'           => $evaluatorId,
             'cycle_period'           => $cycle,
             'supervisor_rating'      => $supervisorRating,
+            'self_evaluation'        => $selfEvaluation,
             'calibrated_score'       => $calibratedScore,
             'new_supervisor_rating'  => $newSupervisorRating,
             'new_calibrated_score'   => $newCalibratedScore,
@@ -192,6 +194,44 @@ class PerformanceEvaluationModel extends BaseModel
     }
 
     /**
+     * Save Self-Assessment Evaluation
+     */
+    public function saveSelfAssessment(array $data): array
+    {
+        $empId = $data['employee_id'] ?? 'emp-101';
+        $existing = $this->getEvaluationByEmployee($empId);
+
+        $selfEvaluation = isset($data['self_evaluation']) ? round((float)$data['self_evaluation'], 2) : 4.50;
+        $evalId = $existing['id'] ?? ($data['id'] ?? ('eval-' . substr(bin2hex(random_bytes(4)), 0, 8)));
+        $supervisorRating = isset($existing['supervisor_rating']) ? (float)$existing['supervisor_rating'] : (isset($data['supervisor_rating']) ? (float)$data['supervisor_rating'] : 4.60);
+        $calibratedScore = round(($selfEvaluation + $supervisorRating) / 2, 2);
+
+        $record = [
+            'id'                => $evalId,
+            'employee_id'       => $empId,
+            'self_evaluation'   => $selfEvaluation,
+            'calibrated_score'  => $calibratedScore,
+            'updated_at'        => date('c')
+        ];
+
+        if (isset($data['self_breakdown'])) {
+            $record['self_breakdown'] = $data['self_breakdown'];
+        }
+
+        if ($existing) {
+            $this->update($evalId, $record);
+            return array_merge($existing, $record);
+        } else {
+            $record['cycle_period'] = $data['cycle_period'] ?? '2026 Q3';
+            $record['supervisor_rating'] = $supervisorRating;
+            $record['tier_label'] = 'Proficient';
+            $record['status'] = 'Pending';
+            $this->create($record);
+            return $record;
+        }
+    }
+
+    /**
      * Save 1-on-1 Calibration Discussion
      */
     public function calibrateEvaluation(array $data): array
@@ -203,23 +243,23 @@ class PerformanceEvaluationModel extends BaseModel
             $existing = $this->saveSupervisorAppraisal($data);
         }
 
+        $selfEvaluation = isset($data['self_evaluation']) ? round((float)$data['self_evaluation'], 2) : (isset($existing['self_evaluation']) ? (float)$existing['self_evaluation'] : 4.50);
+        $supervisorRating = isset($existing['supervisor_rating']) ? (float)$existing['supervisor_rating'] : 4.60;
+
         $isRetry = !empty($data['is_retry']) || isset($data['new_calibrated_score']);
-        $calibratedScore = isset($data['calibrated_score']) ? round((float)$data['calibrated_score'], 2) : ($existing['supervisor_rating'] ?? 4.60);
+        $defaultCalibrated = round(($selfEvaluation + $supervisorRating) / 2, 2);
+        $calibratedScore = isset($data['calibrated_score']) ? round((float)$data['calibrated_score'], 2) : $defaultCalibrated;
         $newCalibratedScore = isset($data['new_calibrated_score']) ? round((float)$data['new_calibrated_score'], 2) : ($isRetry ? $calibratedScore : ($existing['new_calibrated_score'] ?? null));
 
         $effectiveScore = $isRetry && $newCalibratedScore ? $newCalibratedScore : $calibratedScore;
-        $discussionMinutes = $data['discussion_minutes'] ?? '1-on-1 performance calibration completed.';
         $tierLabel = $data['tier_label'] ?? ($effectiveScore >= 4.5 ? 'Master Tier' : ($effectiveScore >= 3.5 ? 'Advanced Tier' : ($effectiveScore >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)')));
 
-        $digitalSignoffs = is_array($existing['digital_signoffs']) ? $existing['digital_signoffs'] : [];
-        $digitalSignoffs['discussion_minutes'] = $discussionMinutes;
-
         $record = [
+            'self_evaluation'       => $selfEvaluation,
             'calibrated_score'      => $calibratedScore,
             'new_calibrated_score'  => $newCalibratedScore,
             'tier_label'            => $tierLabel,
             'status'                => 'Calibrated',
-            'digital_signoffs'      => $digitalSignoffs,
             'updated_at'            => date('c')
         ];
 
