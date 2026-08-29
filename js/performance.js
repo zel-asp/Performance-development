@@ -923,17 +923,35 @@ function renderEmployeePulseGoals(goals) {
                                 ${specificTasks.length > 0 ? specificTasks.map(t => {
             const isDone = t.status === 'completed';
             const completedDateStr = t.completed_at ? new Date(t.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+            const lmsInfo = checkLmsTaskProgress(t, g.employee_id);
             return `
                                         <div class="p-2.5 rounded-xl border ${isDone ? 'bg-emerald-50/60 border-emerald-200/90 text-emerald-950 shadow-2xs' : 'bg-purple-50/30 border-purple-200 text-slate-800 hover:border-purple-300'} text-[11px] space-y-1.5 transition">
                                             <div class="flex items-start justify-between gap-2">
                                                 <label class="flex items-start space-x-2.5 cursor-pointer flex-1 select-none">
                                                     <input type="checkbox" ${isDone ? 'checked disabled' : `onchange="triggerTaskCompletionModal('${t.id}', '${g.id}', this)"`} class="mt-0.5 w-4 h-4 rounded border-purple-300 text-purple-600 focus:ring-purple-500 cursor-pointer">
-                                                    <span class="${isDone ? 'line-through text-slate-500 font-medium' : 'font-semibold text-slate-900'} leading-snug">${t.title}</span>
+                                                    <div class="space-y-0.5">
+                                                        <span class="${isDone ? 'line-through text-slate-500 font-medium' : 'font-semibold text-slate-900'} leading-snug block">${t.title}</span>
+                                                        ${lmsInfo.isLmsTask ? `
+                                                            <div class="flex items-center space-x-1.5 pt-0.5">
+                                                                <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${lmsInfo.canComplete ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-900 border border-amber-200'}" title="${lmsInfo.canComplete ? 'LMS progress 100% complete' : 'Must reach 100% progress in LMS before checking done'}">
+                                                                    <i class="fas fa-book-open text-[8px]"></i>
+                                                                    <span>LMS: ${lmsInfo.progress}%</span>
+                                                                    ${!lmsInfo.canComplete ? '<span class="text-[8px] font-extrabold text-amber-700">(Req: 100%)</span>' : '<i class="fas fa-check text-[8px] text-emerald-600 ml-0.5"></i>'}
+                                                                </span>
+                                                                ${!lmsInfo.canComplete && lmsInfo.lmsId ? `
+                                                                    <button type="button" onclick="openBookReader('${lmsInfo.lmsId}')" class="text-primary hover:underline font-bold text-[9px] inline-flex items-center space-x-0.5">
+                                                                        <i class="fas fa-book-reader"></i>
+                                                                        <span>Read SOP &rarr;</span>
+                                                                    </button>
+                                                                ` : ''}
+                                                            </div>
+                                                        ` : ''}
+                                                    </div>
                                                 </label>
                                                 <div class="flex items-center space-x-1.5 flex-shrink-0">
                                                     ${isDone ? `
                                                         <span class="text-[9px] font-mono text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-bold">
-                                                            ✓ Done ${completedDateStr ? `(${completedDateStr})` : ''}
+                                                             Done ${completedDateStr ? `(${completedDateStr})` : ''}
                                                         </span>
                                                     ` : `
                                                         <button type="button" onclick="openCompleteTaskModal('${t.id}', '${g.id}')" class="px-2 py-0.5 rounded text-[9px] font-bold bg-purple-100/80 hover:bg-purple-200 text-purple-900 border border-purple-200 transition inline-flex items-center space-x-1 shadow-2xs" title="Click to log reflections and complete task">
@@ -1890,7 +1908,85 @@ window.handleSpecificTaskSubmit = handleSpecificTaskSubmit;
  * 2D. EMPLOYEE TASK COMPLETION WITH AUTO-DETECTED DATE/TIME & LEARNINGS
  * -------------------------------------------------------------
  */
+
+/**
+ * Check if a task is linked to an LMS Prescription and whether it has achieved 100% progress
+ */
+function checkLmsTaskProgress(task, empId = null) {
+    if (!task) return { isLmsTask: false, canComplete: true, progress: 100 };
+
+    const desc = task.description || '';
+    const title = task.title || '';
+    let lmsId = task.lms_id || null;
+
+    if (!lmsId) {
+        const match = desc.match(/\[LMS:([^\]]+)\]/i);
+        if (match) {
+            lmsId = match[1].trim();
+        }
+    }
+
+    // Also check if task title matches an LMS document
+    if (!lmsId && (title.toLowerCase().includes('lms') || title.toLowerCase().includes('handbook') || title.toLowerCase().includes('sop:'))) {
+        const docs = window.dynamicLmsState?.documents || [];
+        const matchedDoc = docs.find(d => {
+            const cleanTitle = title.toLowerCase().replace('complete lms:', '').replace('lms:', '').trim();
+            return d.title.toLowerCase().includes(cleanTitle) || cleanTitle.includes(d.title.toLowerCase());
+        });
+        if (matchedDoc) {
+            lmsId = matchedDoc.id;
+        }
+    }
+
+    if (!lmsId) {
+        return { isLmsTask: false, canComplete: true, progress: 100 };
+    }
+
+    // Find employee ID
+    const targetEmpId = empId || task.employee_id || window.selectedEvalEmpId || 'emp-101';
+    
+    // Look up in prescribed list
+    const prescribedList = window.dynamicLmsState?.prescribed || [];
+    const record = prescribedList.find(p => isSameEmployee(p.employee, targetEmpId) && String(p.lms_id) === String(lmsId));
+
+    const progress = record ? (parseInt(record.progress, 10) || 0) : 0;
+    const status = (record?.status || '').toLowerCase();
+    const isPassed = progress >= 100 || status === 'passed' || status === 'completed' || status.includes('cert');
+
+    return {
+        isLmsTask: true,
+        lmsId: lmsId,
+        lmsTitle: record?.document_title || title,
+        canComplete: isPassed,
+        progress: progress,
+        status: record?.status || 'Pending'
+    };
+}
+window.checkLmsTaskProgress = checkLmsTaskProgress;
+
 function triggerTaskCompletionModal(taskId, goalId, checkboxEl) {
+    let goal = (window.dbGoals || []).find(g => String(g.id) === String(goalId));
+    let task = null;
+    if (goal && goal.tasks) task = goal.tasks.find(t => String(t.id) === String(taskId));
+    if (!task && goal && goal.specific_tasks) task = goal.specific_tasks.find(t => String(t.id) === String(taskId));
+    if (!task) {
+        (window.dbGoals || []).forEach(g => {
+            if (!task && g.tasks) {
+                const found = g.tasks.find(t => String(t.id) === String(taskId));
+                if (found) { task = found; if (!goal) goal = g; }
+            }
+        });
+    }
+
+    const lmsInfo = checkLmsTaskProgress(task, goal?.employee_id);
+    if (lmsInfo.isLmsTask && !lmsInfo.canComplete) {
+        if (checkboxEl) checkboxEl.checked = false;
+        if (typeof showToast === 'function') {
+            showToast(`⚠️ LMS 100% Progress Required: You must complete the LMS Handbook ("${task?.title || 'Prescribed Module'}") with 100% progress before completing this task! (Current LMS Progress: ${lmsInfo.progress}%)`, 'warning');
+        }
+        return;
+    }
+
     if (checkboxEl) {
         window.lastActiveTaskCheckbox = checkboxEl;
         checkboxEl.checked = false; // keep unchecked until modal submission is confirmed
@@ -1943,6 +2039,15 @@ function openCompleteTaskModal(taskId, goalId) {
         });
     }
 
+    const lmsInfo = checkLmsTaskProgress(task, goal?.employee_id);
+    if (lmsInfo.isLmsTask && !lmsInfo.canComplete) {
+        if (window.lastActiveTaskCheckbox) window.lastActiveTaskCheckbox.checked = false;
+        if (typeof showToast === 'function') {
+            showToast(`⚠️ LMS 100% Progress Required: You must reach 100% progress in LMS ("${task?.title || 'Prescribed Module'}") before completing this task! Current progress: ${lmsInfo.progress}%.`, 'warning');
+        }
+        return;
+    }
+
     const idInput = document.getElementById('complete-task-id');
     const goalIdInput = document.getElementById('complete-task-goal-id');
     if (idInput) idInput.value = taskId;
@@ -1993,6 +2098,23 @@ async function handleTaskCompletionSubmit(e) {
         if (typeof showToast === 'function') showToast('Please record your key learnings and reflections.', 'error');
         const learningsField = document.getElementById('complete-task-learnings');
         if (learningsField) learningsField.focus();
+        return;
+    }
+
+    // Double check LMS progress before submitting API
+    let task = null;
+    (window.dbGoals || []).forEach(g => {
+        if (!task && g.tasks) {
+            const found = g.tasks.find(t => String(t.id) === String(taskId));
+            if (found) task = found;
+        }
+    });
+
+    const lmsInfo = checkLmsTaskProgress(task);
+    if (lmsInfo.isLmsTask && !lmsInfo.canComplete) {
+        if (typeof showToast === 'function') {
+            showToast(`⚠️ LMS 100% Progress Required: You must reach 100% in LMS before completing this task! (Current progress: ${lmsInfo.progress}%)`, 'warning');
+        }
         return;
     }
 

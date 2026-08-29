@@ -589,6 +589,36 @@ class PerformanceController
             ];
         }
 
+        // Enforce 100% LMS progress check if this task is an LMS module
+        $existingTask = $this->taskModel->find($taskId);
+        if ($existingTask) {
+            $desc = $existingTask['description'] ?? '';
+            $title = $existingTask['title'] ?? '';
+            $lmsId = null;
+            if (preg_match('/\[LMS:([^\]]+)\]/', $desc, $matches)) {
+                $lmsId = trim($matches[1]);
+            }
+
+            if (!empty($lmsId)) {
+                $empId = $existingTask['employee_id'] ?? 'emp-101';
+                $checkPres = supabaseRequest('lms_prescribed?employee=eq.' . urlencode($empId) . '&lms_id=eq.' . urlencode($lmsId), 'GET', null, true);
+                $presList = is_array($checkPres['data'] ?? null) ? $checkPres['data'] : [];
+                $pres = !empty($presList) ? $presList[0] : null;
+
+                $progress = $pres ? (int)($pres['progress'] ?? 0) : 0;
+                $status = strtolower($pres['status'] ?? '');
+                $isCompleted = ($progress >= 100) || in_array($status, ['passed', 'completed', 'cert']);
+
+                if (!$isCompleted) {
+                    return [
+                        'success' => false,
+                        'data'    => null,
+                        'message' => "LMS Progress Requirement: You must achieve 100% progress in the prescribed LMS Handbook (\"{$title}\") before completing this task! (Current progress: {$progress}%)"
+                    ];
+                }
+            }
+        }
+
         $updatedTask = $this->taskModel->completeTask($taskId, $learnings, $feedback, $completedAt);
         if (!$updatedTask) {
             return [

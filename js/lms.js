@@ -1407,6 +1407,12 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                 const emp = remedialAssociates[currentRemedialKey] || remedialAssociates['maria'];
                 const empId = window.selectedEvalEmpId || (currentRemedialKey === 'maria' ? 'emp-101' : (currentRemedialKey === 'antonio' ? 'emp-102' : currentRemedialKey));
 
+                let targetGoalId = goalId;
+                if (!targetGoalId && window.dbGoals && Array.isArray(window.dbGoals)) {
+                    const activeGoal = window.dbGoals.find(g => isSameEmployee(g.employee_id, empId) && (g.status === 'Approved' || g.status === 'In Progress' || g.status === 'Draft'));
+                    if (activeGoal) targetGoalId = activeGoal.id;
+                }
+
                 // 1. Insert prescription into lms_prescribed database table in Supabase
                 try {
                     const res = await fetch('api/lms.php', {
@@ -1416,8 +1422,8 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                             action: 'prescribe_document',
                             employee: empId,
                             lms_id: bookId,
-                            goal_id: goalId || null,
-                            for: goalId ? 'goal' : 'both',
+                            goal_id: targetGoalId || null,
+                            for: targetGoalId ? 'goal' : 'both',
                             status: 'Needs Retake',
                             scores: 0,
                             ratings: 0,
@@ -1471,7 +1477,13 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                 if (typeof showIDPDetail === 'function') {
                     showIDPDetail(currentRemedialKey);
                 }
-                showToast(`📚 Handbook "${book.title}" prescribed & enrolled into lms_prescribed for ${emp.name.split('·')[0].trim()}!`, 'success');
+                if (typeof loadAndRenderPlanningGoals === 'function') {
+                    loadAndRenderPlanningGoals();
+                }
+                if (typeof loadAndRenderMonitoringData === 'function') {
+                    loadAndRenderMonitoringData();
+                }
+                showToast(`📚 Handbook "${book.title}" prescribed & assigned as Specific Action Task for ${emp.name.split('·')[0].trim()}!`, 'success');
             }
             window.assignBookToIdp = assignBookToIdp;
 

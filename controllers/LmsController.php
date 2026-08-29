@@ -477,6 +477,15 @@ class LmsController
         }
 
         $goalId = isset($postData['goal_id']) && !empty($postData['goal_id']) ? (int)$postData['goal_id'] : null;
+        
+        // Auto-resolve active performance goal for employee if goal_id not explicitly supplied
+        if (empty($goalId)) {
+            $goalRes = supabaseRequest('performance_goals?employee_id=eq.' . urlencode($employee) . '&order=created_at.desc&limit=1', 'GET', null, true);
+            if (!empty($goalRes['data']) && is_array($goalRes['data']) && isset($goalRes['data'][0]['id'])) {
+                $goalId = (int)$goalRes['data'][0]['id'];
+            }
+        }
+
         $scores = isset($postData['scores']) ? (float)$postData['scores'] : (isset($postData['score']) ? (float)$postData['score'] : 0.00);
         $ratings = isset($postData['ratings']) ? (float)$postData['ratings'] : (isset($postData['rating']) ? (float)$postData['rating'] : 0.00);
         $progress = isset($postData['progress']) ? (int)$postData['progress'] : 0;
@@ -517,6 +526,10 @@ class LmsController
         $insertRes = supabaseRequest('lms_prescribed', 'POST', $record, true);
         if ($insertRes['status'] >= 200 && $insertRes['status'] < 300 && !empty($insertRes['data'])) {
             $created = is_array($insertRes['data']) && isset($insertRes['data'][0]) ? $insertRes['data'][0] : $record;
+            
+            // Auto-create Specific Task in Performance Management for this employee & goal
+            $this->addLmsSpecificTaskToPerformance($employee, $lmsId, $goalId);
+
             return [
                 'success' => true,
                 'already_enrolled' => false,
@@ -529,6 +542,58 @@ class LmsController
             'success' => false,
             'message' => 'Failed to insert prescription into lms_prescribed database: ' . ($insertRes['error'] ?? 'Database error')
         ];
+    }
+
+    /**
+     * Automatically create a specific task in performance_tasks when an LMS document is prescribed
+     */
+    public function addLmsSpecificTaskToPerformance(string $employee, string $lmsId, ?int $goalId = null): void
+    {
+        try {
+            // 1. Fetch document title
+            $docRes = supabaseRequest('lms_documents?id=eq.' . urlencode($lmsId), 'GET', null, true);
+            $doc = is_array($docRes['data'] ?? null) && !empty($docRes['data']) ? $docRes['data'][0] : null;
+            $docTitle = $doc['title'] ?? 'Operational Handbook';
+
+            // 2. If no goalId provided, find active goal for employee
+            $targetGoalId = $goalId;
+            $targetDate = date('Y-m-d', strtotime('+14 days'));
+
+            if (empty($targetGoalId)) {
+                $goalRes = supabaseRequest('performance_goals?employee_id=eq.' . urlencode($employee) . '&status=in.(Approved,In Progress,Draft)&order=created_at.desc&limit=1', 'GET', null, true);
+                if (!empty($goalRes['data']) && is_array($goalRes['data'])) {
+                    $targetGoalId = $goalRes['data'][0]['id'] ?? null;
+                    if (!empty($goalRes['data'][0]['target_date'])) {
+                        $targetDate = $goalRes['data'][0]['target_date'];
+                    }
+                }
+            }
+
+            // 3. Check if specific task for this LMS already exists for this employee
+            require_once __DIR__ . '/../models/PerformanceTaskModel.php';
+            $taskModel = new PerformanceTaskModel();
+            
+            $existingTasks = $taskModel->getTasksForEmployee($employee);
+            foreach ($existingTasks as $t) {
+                if (strpos($t['description'] ?? '', "[LMS:{$lmsId}]") !== false || 
+                    (strpos($t['title'] ?? '', $docTitle) !== false && ($t['task_type'] ?? '') === 'specific')) {
+                    // Task already created
+                    return;
+                }
+            }
+
+            // 4. Create the specific task in performance_tasks
+            $taskModel->createSpecificTask([
+                'goal_id' => $targetGoalId,
+                'employee_id' => $employee,
+                'task_type' => 'specific',
+                'title' => "Complete LMS: {$docTitle}",
+                'description' => "Mandatory learning module prescribed to IDP. Read the handbook and achieve 100% progress in LMS before completing this task. [LMS:{$lmsId}]",
+                'target_date' => $targetDate
+            ]);
+        } catch (\Throwable $e) {
+            error_log('Error adding LMS specific task: ' . $e->getMessage());
+        }
     }
 
     /**
