@@ -122,7 +122,20 @@ class PerformanceController
             $role = $payload['role'] ?? 'Associate';
         }
 
-        $targetScope = $payload['target_scope'] ?? 'single';
+        // Check if employee already has an active (non-completed) goal
+        $existingGoals = $this->goalModel->getGoalsByEmployee($employeeId);
+        $activeGoals = array_filter($existingGoals, function($g) {
+            $status = strtolower(trim($g['status'] ?? ''));
+            return $status !== 'completed';
+        });
+
+        if (!empty($activeGoals)) {
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => "Employee {$employeeId} already has an active in-progress goal. Employees can only create 1 goal at a time, and can only set a new goal once existing goals are completed."
+            ];
+        }
 
         $data = [
             'employee_id'   => $employeeId,
