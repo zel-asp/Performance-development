@@ -251,7 +251,30 @@ function filterLmsBooks() {
 }
 
 /**
- * Open Document in Reader Modal with Live Supabase File Link
+ * Switch Reader Modal Tabs (Viewer vs Details)
+ */
+function switchReaderTab(tabKey) {
+    const btnViewer = document.getElementById('tab-btn-reader-viewer');
+    const btnDetails = document.getElementById('tab-btn-reader-details');
+    const panelViewer = document.getElementById('reader-panel-viewer');
+    const panelDetails = document.getElementById('reader-panel-details');
+
+    if (tabKey === 'viewer') {
+        if (btnViewer) btnViewer.className = 'px-3 py-1.5 rounded-xl font-bold bg-primary text-white shadow-2xs transition text-xs flex items-center space-x-1.5';
+        if (btnDetails) btnDetails.className = 'px-3 py-1.5 rounded-xl font-semibold bg-white text-slate-700 border border-[#E8DEDC] hover:bg-slate-100 transition text-xs flex items-center space-x-1.5';
+        if (panelViewer) panelViewer.classList.remove('hidden');
+        if (panelDetails) panelDetails.classList.add('hidden');
+    } else {
+        if (btnViewer) btnViewer.className = 'px-3 py-1.5 rounded-xl font-semibold bg-white text-slate-700 border border-[#E8DEDC] hover:bg-slate-100 transition text-xs flex items-center space-x-1.5';
+        if (btnDetails) btnDetails.className = 'px-3 py-1.5 rounded-xl font-bold bg-primary text-white shadow-2xs transition text-xs flex items-center space-x-1.5';
+        if (panelViewer) panelViewer.classList.add('hidden');
+        if (panelDetails) panelDetails.classList.remove('hidden');
+    }
+}
+window.switchReaderTab = switchReaderTab;
+
+/**
+ * Open Document in Reader Modal with Live Supabase File Link & Actual Content
  */
 function openBookReader(docId) {
     const doc = (window.dynamicLmsState.documents || []).find(d => d.id === docId);
@@ -260,13 +283,30 @@ function openBookReader(docId) {
     currentReadingBookId = doc.id;
 
     // Update Header
-    document.getElementById('reader-book-title').textContent = doc.title || 'SOP Document';
+    const titleEl = document.getElementById('reader-book-title');
+    if (titleEl) titleEl.textContent = doc.title || 'SOP Document';
+
     const deptName = doc.department_name || 'Property-Wide';
     const pages = doc.estimated_pages ? `${doc.estimated_pages} Pages` : '18 Pages';
     const time = doc.estimated_reading_minutes ? `${doc.estimated_reading_minutes} min read` : '20 min read';
-    document.getElementById('reader-book-author').textContent = `${deptName} · ${pages} · ${time}`;
-    document.getElementById('reader-book-xp-badge').textContent = `+${doc.exp_reward || 100} XP Completion`;
     
+    const authorEl = document.getElementById('reader-book-author');
+    if (authorEl) authorEl.textContent = `${deptName} · ${doc.category || 'SOP Manual'} · ${pages} · ${time}`;
+
+    const xpEl = document.getElementById('reader-book-xp-badge');
+    if (xpEl) xpEl.textContent = `+${doc.exp_reward || 100} XP Completion`;
+
+    // Mandatory Badge
+    const mandBadge = document.getElementById('reader-book-mandatory-badge');
+    if (mandBadge) {
+        const isMand = !!doc.manatory || !!doc.is_mandatory;
+        if (isMand) {
+            mandBadge.classList.remove('hidden');
+        } else {
+            mandBadge.classList.add('hidden');
+        }
+    }
+
     // Update Download Link
     const dlBtn = document.getElementById('reader-download-btn');
     if (dlBtn) {
@@ -278,43 +318,114 @@ function openBookReader(docId) {
         }
     }
 
-    // Update Tip / Highlight
-    document.getElementById('reader-tip-text').textContent = doc.learning_outcomes || 'Review all mandatory procedures and maintain 5-star standard compliance across all touchpoints.';
+    const fileInfoBadge = document.getElementById('reader-file-info-badge');
+    if (fileInfoBadge) {
+        const sizeStr = doc.file_size ? `${Math.round(doc.file_size / 1024)} KB` : '';
+        fileInfoBadge.textContent = `${doc.file_name || 'document.pdf'} ${sizeStr ? `(${sizeStr})` : ''}`;
+    }
 
-    // Update TOC & Step-by-Step Procedure Content
-    const tocEl = document.getElementById('reader-toc');
-    if (tocEl) {
-        const chapters = [
-            'Chapter 1: Standard Operating Overview',
-            'Chapter 2: Essential Execution Protocols',
-            'Chapter 3: Quality Assurance & Safety Benchmarks',
-            'Chapter 4: Digital Audit & Daily Sign-off'
-        ];
-        tocEl.innerHTML = chapters.map((ch, idx) => `
-            <div class="p-2 rounded-lg bg-slate-50 border border-slate-200/70 hover:bg-amber-50/50 hover:border-amber-300 transition cursor-pointer flex items-center justify-between text-xs">
-                <span class="font-medium text-slate-700"><i class="fas fa-bookmark text-amber-500 text-[10px] mr-1.5"></i> ${ch}</span>
-                <span class="text-[10px] font-bold text-slate-400">p.${(idx + 1) * 4}</span>
+    // Embed Actual Document Viewer
+    const iframeContainer = document.getElementById('reader-iframe-container');
+    if (iframeContainer) {
+        const filePath = doc.file_path || '';
+        const fileType = (doc.file_type || '').toLowerCase();
+        const isPdf = fileType.includes('pdf') || filePath.toLowerCase().endsWith('.pdf');
+        const isOfficeDoc = fileType.includes('word') || fileType.includes('officedocument') || filePath.toLowerCase().endsWith('.docx') || filePath.toLowerCase().endsWith('.doc') || filePath.toLowerCase().endsWith('.pptx');
+
+        if (filePath && filePath !== '#') {
+            if (isPdf) {
+                iframeContainer.innerHTML = `
+                    <iframe src="${filePath}#toolbar=1&navpanes=0" 
+                        class="w-full h-[540px] rounded-xl border border-slate-200 bg-slate-50" 
+                        title="${doc.title}"
+                        loading="lazy">
+                    </iframe>
+                `;
+            } else if (isOfficeDoc) {
+                // Use Microsoft Office Online Embed Viewer with fallback link
+                const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(filePath)}`;
+                iframeContainer.innerHTML = `
+                    <div class="w-full space-y-3">
+                        <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-xs">
+                            <span class="text-blue-900 font-semibold flex items-center"><i class="fas fa-file-word text-blue-600 mr-1.5"></i> DOCX Document Preview</span>
+                            <a href="${filePath}" target="_blank" download class="btn-primary px-3 py-1 text-xs font-bold shadow-2xs">Download Original &darr;</a>
+                        </div>
+                        <iframe src="${officeViewerUrl}" 
+                            class="w-full h-[480px] rounded-xl border border-slate-200 bg-white" 
+                            title="${doc.title}">
+                        </iframe>
+                    </div>
+                `;
+            } else {
+                iframeContainer.innerHTML = `
+                    <iframe src="${filePath}" 
+                        class="w-full h-[540px] rounded-xl border border-slate-200 bg-white" 
+                        title="${doc.title}">
+                    </iframe>
+                `;
+            }
+        } else {
+            iframeContainer.innerHTML = `
+                <div class="py-16 text-center text-slate-400 space-y-3">
+                    <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-300 text-2xl">
+                        <i class="fas fa-file-circle-question"></i>
+                    </div>
+                    <p class="font-bold text-slate-700 text-sm">No Document File Uploaded</p>
+                    <p class="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">This standard operating procedure manual does not have an attached PDF or document file.</p>
+                </div>
+            `;
+        }
+    }
+
+    // Set Structured SOP Guide Content with Actual Data
+    const descEl = document.getElementById('reader-full-description');
+    if (descEl) {
+        descEl.innerHTML = `
+            <p class="font-bold text-slate-900 text-xs">${doc.title}</p>
+            <p class="text-xs text-slate-600 leading-relaxed">${doc.description || 'Standard operating procedure manual and operational workflow guidance.'}</p>
+            <div class="pt-2 flex items-center space-x-2 text-[11px] font-semibold text-slate-500">
+                <span class="badge-secondary text-[10px]">${deptName}</span>
+                <span>·</span>
+                <span>${doc.category || 'SOP Manual'}</span>
+            </div>
+        `;
+    }
+
+    const outcomesEl = document.getElementById('reader-full-outcomes');
+    if (outcomesEl) {
+        const outcomesList = (doc.learning_outcomes || 'Understand operational hospitality standards and procedural benchmarks.')
+            .split('\n')
+            .filter(Boolean);
+        outcomesEl.innerHTML = outcomesList.map(o => `
+            <div class="flex items-start space-x-2 text-xs text-slate-700 leading-relaxed">
+                <i class="fas fa-circle-check text-emerald-600 text-[11px] mt-1 flex-shrink-0"></i>
+                <span>${o}</span>
             </div>
         `).join('');
     }
 
-    const contentEl = document.getElementById('reader-page-content');
-    if (contentEl) {
-        contentEl.innerHTML = `
-            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <p class="font-bold text-slate-900 text-xs text-primary">1. Operational Description</p>
-                <p class="text-xs text-slate-600 leading-relaxed">${doc.description || 'Master standard operating procedures and operational compliance.'}</p>
-            </div>
-            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <p class="font-bold text-slate-900 text-xs text-primary">2. Key Learning Outcomes</p>
-                <p class="text-xs text-slate-600 leading-relaxed">${doc.learning_outcomes || 'Demonstrate mastery of hospitality guidelines and quality verification.'}</p>
-            </div>
-            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <p class="font-bold text-slate-900 text-xs text-primary">3. Storage Object &amp; File Verification</p>
-                <p class="text-xs text-slate-600 leading-relaxed font-mono text-[11px] break-all">${doc.file_name || 'document.pdf'} (${Math.round((doc.file_size || 0) / 1024)} KB)</p>
-            </div>
-        `;
+    const tipEl = document.getElementById('reader-tip-text');
+    if (tipEl) {
+        tipEl.textContent = doc.learning_outcomes 
+            ? doc.learning_outcomes.split('\n')[0] 
+            : 'Always maintain 5-star standard compliance and hospitality excellence across all touchpoints.';
     }
+
+    // Specs
+    const specCat = document.getElementById('reader-spec-category');
+    if (specCat) specCat.textContent = doc.category || 'SOP Manual';
+
+    const specDept = document.getElementById('reader-spec-dept');
+    if (specDept) specDept.textContent = deptName;
+
+    const specReading = document.getElementById('reader-spec-reading');
+    if (specReading) specReading.textContent = `${pages} · ${time}`;
+
+    const specXp = document.getElementById('reader-spec-xp');
+    if (specXp) specXp.textContent = `+${doc.exp_reward || 100} XP`;
+
+    // Default to Document Viewer Tab
+    switchReaderTab('viewer');
 
     openModal('modal-book-reader');
 }
@@ -400,7 +511,7 @@ function initLmsDropzone() {
 }
 
 /**
- * Submit Document Upload with Multipart / Supabase Storage
+ * Submit Document Upload with Multipart / Supabase Storage & is_mandatory Auto-Prescribe
  */
 async function submitLmsDocUpload(e) {
     if (e && e.preventDefault) e.preventDefault();
@@ -409,6 +520,8 @@ async function submitLmsDocUpload(e) {
     const fileInput = document.getElementById('lms-file-input');
     const titleInput = document.getElementById('lms-doc-title');
     const submitBtn = document.getElementById('btn-submit-lms-upload');
+    const mandatoryInput = document.getElementById('lms-doc-mandatory');
+    const isMandatory = mandatoryInput ? mandatoryInput.checked : false;
 
     let file = null;
     if (fileInput && fileInput.files && fileInput.files[0]) {
@@ -461,7 +574,7 @@ async function submitLmsDocUpload(e) {
 
         const publicUrl = `https://jvxnrgcxegzhyaekxdok.supabase.co/storage/v1/object/public/documents/${storagePath}`;
 
-        // 2. Publish document record into Supabase SQL database
+        // 2. Publish document record into Supabase SQL database (with is_mandatory support)
         const metadataPayload = {
             action: 'publish_document',
             title: title,
@@ -475,6 +588,8 @@ async function submitLmsDocUpload(e) {
             exp_reward: parseInt(document.getElementById('lms-doc-xp')?.value, 10) || 100,
             description: (document.getElementById('lms-doc-desc')?.value || '').trim(),
             learning_outcomes: (document.getElementById('lms-doc-outcomes')?.value || '').trim(),
+            is_mandatory: isMandatory,
+            manatory: isMandatory,
             status: 'Published',
             uploaded_by: 'emp-103'
         };
@@ -489,7 +604,7 @@ async function submitLmsDocUpload(e) {
 
         if (json.success) {
             closeModal('modal-lms-upload');
-            showToast(`Handbook "${title}" uploaded directly to Supabase Storage & published!`, 'success');
+            showToast(json.message || `Handbook "${title}" uploaded to Supabase Storage & published!`, 'success');
             
             // Reset form & state
             if (form) form.reset();
@@ -497,8 +612,14 @@ async function submitLmsDocUpload(e) {
             const chosenEl = document.getElementById('lms-file-chosen');
             if (chosenEl) chosenEl.classList.add('hidden');
 
-            // Refresh Bookshelf immediately without page reload
+            // Refresh Bookshelf & TNA Category Cards immediately without page reload
             await fetchDynamicLmsDocuments();
+            if (typeof fetchNeedsAnalysisData === 'function') {
+                await fetchNeedsAnalysisData();
+            }
+            if (typeof fetchPrescribedLms === 'function') {
+                await fetchPrescribedLms();
+            }
         } else {
             showToast(json.message || 'Failed to save document metadata.', 'error');
         }
@@ -533,6 +654,9 @@ async function deleteLmsDocument(docId, docTitle) {
         if (json.success) {
             showToast(json.message || 'Document removed successfully.', 'success');
             await fetchDynamicLmsDocuments();
+            if (typeof fetchNeedsAnalysisData === 'function') {
+                await fetchNeedsAnalysisData();
+            }
         } else {
             showToast(json.message || 'Failed to delete document.', 'error');
         }
@@ -541,10 +665,168 @@ async function deleteLmsDocument(docId, docTitle) {
     }
 }
 
+/**
+ * Fetch and Render Top 4 Needs Analysis (TNA) Category Cards from Supabase
+ */
+async function fetchNeedsAnalysisData() {
+    const container = document.getElementById('tna-category-cards-container');
+    if (!container) return;
+
+    try {
+        const res = await fetch('api/lms.php?action=get_needs_analysis');
+        const json = await res.json();
+        if (json.success && json.data && Array.isArray(json.data.categories)) {
+            window.dynamicLmsState.tnaCategories = json.data.categories;
+        }
+    } catch (err) {
+        console.warn('Error fetching TNA category data from API:', err);
+    } finally {
+        renderTnaCategoryCards();
+    }
+}
+window.fetchNeedsAnalysisData = fetchNeedsAnalysisData;
+
+function renderTnaCategoryCards() {
+    const container = document.getElementById('tna-category-cards-container');
+    if (!container) return;
+
+    let categories = window.dynamicLmsState.tnaCategories || [];
+
+    // Fallback calculation from client state if API data not available
+    if (categories.length === 0) {
+        const docs = window.dynamicLmsState.documents || [];
+        const prescribed = window.dynamicLmsState.prescribed || [];
+        
+        const standardCats = ['SOP Manual', 'Compliance Standard', 'Masterclass Guide', 'Safety Protocol'];
+        const catMap = {};
+        standardCats.forEach(c => { catMap[c.toLowerCase()] = { category: c, docs: [], prescribed: [] }; });
+
+        docs.forEach(d => {
+            const cat = d.category || 'SOP Manual';
+            const k = cat.toLowerCase();
+            if (!catMap[k]) catMap[k] = { category: cat, docs: [], prescribed: [] };
+            catMap[k].docs.push(d);
+        });
+
+        prescribed.forEach(p => {
+            const lId = p.lms_id;
+            const doc = docs.find(d => d.id === lId);
+            const cat = doc ? (doc.category || 'SOP Manual') : 'SOP Manual';
+            const k = cat.toLowerCase();
+            if (catMap[k]) catMap[k].prescribed.push(p);
+        });
+
+        categories = Object.values(catMap).map(data => {
+            const docCount = data.docs.length;
+            const enrolledCount = data.prescribed.length;
+            let totalScores = 0;
+            data.prescribed.forEach(p => { totalScores += (p.scores || 0); });
+            const avgScore = enrolledCount > 0 ? Math.round(totalScores / enrolledCount) : 0;
+            const topDoc = docCount > 0 ? data.docs[0] : null;
+
+            return {
+                category: data.category,
+                display_name: data.category,
+                subtitle: 'Operational training and quality assurance.',
+                documents_count: docCount,
+                enrolled_count: enrolledCount,
+                avg_score: avgScore,
+                is_empty: docCount === 0,
+                top_document: topDoc,
+                border_color: 'border-l-dusty',
+                text_color: 'text-dusty-dark',
+                badge_class: 'bg-gold text-slate-900',
+                icon: 'fa-book-bookmark'
+            };
+        });
+
+        categories.sort((a, b) => {
+            if (a.enrolled_count === b.enrolled_count) return b.documents_count - a.documents_count;
+            return b.enrolled_count - a.enrolled_count;
+        });
+        categories = categories.slice(0, 4);
+    }
+
+    if (categories.length === 0) {
+        container.innerHTML = `
+            <div class="col-span-full py-8 text-center text-slate-400">
+                <i class="fas fa-book-bookmark text-2xl text-slate-300 mb-2 block"></i>
+                <p class="font-bold text-slate-700 text-xs">No LMS Document Categories Found</p>
+                <p class="text-[11px] text-slate-400">Upload your first SOP handbook to start tracking employee training needs.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = categories.map(cat => {
+        const isEmpty = cat.is_empty || cat.documents_count === 0;
+        const topDoc = cat.top_document;
+        const enrolledText = `${cat.enrolled_count || 0} Enrolled`;
+
+        if (isEmpty) {
+            return `
+                <!-- Category Empty State Card -->
+                <div class="card-clean p-5 border-l-4 ${cat.border_color || 'border-l-slate-300'} space-y-2 hover:shadow-md transition bg-white/70 flex flex-col justify-between">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <p class="font-bold ${cat.text_color || 'text-slate-600'} uppercase text-[10px] tracking-wider flex items-center">
+                                <i class="fas ${cat.icon || 'fa-book-bookmark'} mr-1.5"></i> ${cat.display_name || cat.category}
+                            </p>
+                            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-500 border border-slate-200">0 Enrolled</span>
+                        </div>
+                        <p class="text-sm font-bold text-slate-400 italic">No Documents in Category</p>
+                        <p class="text-slate-400 text-[11px] leading-relaxed">No training manuals or SOPs uploaded for ${cat.category} yet.</p>
+                    </div>
+                    <div class="pt-2 flex items-center justify-between border-t border-[#E8DEDC] mt-2">
+                        <button onclick="openModal('modal-lms-upload')" class="text-primary font-bold hover:underline text-[11px] flex items-center space-x-1">
+                            <i class="fas fa-plus text-[10px]"></i>
+                            <span>Upload SOP &rarr;</span>
+                        </button>
+                        <span class="text-[10px] font-semibold text-slate-400">Empty State</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        const topDocTitle = topDoc ? topDoc.title : `${cat.category} Standard Guide`;
+        const topDocId = topDoc ? topDoc.id : '';
+        const avgScoreText = (cat.avg_score && cat.avg_score > 0) ? `Avg Score: ${cat.avg_score} pts` : `${cat.documents_count} Document${cat.documents_count > 1 ? 's' : ''}`;
+
+        return `
+            <!-- Top Enrolled Category Card -->
+            <div class="card-clean p-5 border-l-4 ${cat.border_color || 'border-l-terracotta'} space-y-2 hover:shadow-md transition bg-white flex flex-col justify-between">
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <p class="font-bold ${cat.text_color || 'text-terracotta-dark'} uppercase text-[10px] tracking-wider flex items-center">
+                            <i class="fas ${cat.icon || 'fa-book-bookmark'} mr-1.5"></i> ${cat.display_name || cat.category}
+                        </p>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${cat.badge_class || 'badge-terracotta'}">${enrolledText}</span>
+                    </div>
+                    <p class="text-sm font-bold text-slate-900 leading-snug line-clamp-1" title="${topDocTitle}">${topDocTitle}</p>
+                    <p class="text-slate-500 text-[11px] leading-relaxed line-clamp-2">${cat.subtitle || 'Operational training manual & standard verification.'}</p>
+                </div>
+                <div class="pt-2 flex items-center justify-between border-t border-[#E8DEDC] mt-2">
+                    ${topDocId ? `
+                        <button onclick="openBookReader('${topDocId}')" class="text-primary font-bold hover:underline text-[11px] flex items-center space-x-1">
+                            <span>Open Manual</span>
+                            <i class="fas fa-arrow-right text-[9px] ml-0.5"></i>
+                        </button>
+                    ` : `
+                        <button onclick="switchSubTab('lms', 'modules')" class="text-primary font-bold hover:underline text-[11px]">View Library &rarr;</button>
+                    `}
+                    <span class="text-[10px] font-semibold text-slate-400">${avgScoreText}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+window.renderTnaCategoryCards = renderTnaCategoryCards;
+
 // Auto-initialize LMS on DOM load
 document.addEventListener('DOMContentLoaded', () => {
     loadLmsDepartments();
     fetchDynamicLmsDocuments();
+    fetchNeedsAnalysisData();
     initLmsDropzone();
 });
 
@@ -552,6 +834,7 @@ document.addEventListener('DOMContentLoaded', () => {
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
     loadLmsDepartments();
     fetchDynamicLmsDocuments();
+    fetchNeedsAnalysisData();
     initLmsDropzone();
 }
 

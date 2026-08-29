@@ -248,6 +248,7 @@
                     }
                 } else if (pillarPrefix === 'lms' && subKey === 'tna') {
                     if (typeof renderTnaEnrollments === 'function') renderTnaEnrollments();
+                    if (typeof fetchNeedsAnalysisData === 'function') fetchNeedsAnalysisData();
                 } else if (pillarPrefix === 'lms' && subKey === 'modules') {
                     if (typeof renderLmsBooks === 'function') renderLmsBooks();
                 }

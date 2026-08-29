@@ -133,6 +133,7 @@ class LmsController
         $learningOutcomes = trim($postData['learning_outcomes'] ?? '');
         $status = in_array($postData['status'] ?? '', ['Draft', 'Published', 'Archived']) ? $postData['status'] : 'Published';
         $uploadedBy = $postData['uploaded_by'] ?? 'emp-103';
+        $isMandatory = !empty($postData['is_mandatory']) || !empty($postData['manatory']) || (isset($postData['mandatory']) && ($postData['mandatory'] === true || $postData['mandatory'] === 1 || $postData['mandatory'] === '1' || $postData['mandatory'] === 'true'));
 
         $now = date('c');
         $docRecord = [
@@ -150,6 +151,7 @@ class LmsController
             'learning_outcomes' => $learningOutcomes ?: 'Understand operational hospitality standards and procedural benchmarks.',
             'status' => $status,
             'uploaded_by' => $uploadedBy,
+            'manatory' => $isMandatory,
             'created_at' => $now,
             'updated_at' => $now
         ];
@@ -157,9 +159,17 @@ class LmsController
         $insertRes = supabaseRequest('lms_documents', 'POST', $docRecord, true);
         if ($insertRes['status'] >= 200 && $insertRes['status'] < 300 && !empty($insertRes['data'])) {
             $created = is_array($insertRes['data']) && isset($insertRes['data'][0]) ? $insertRes['data'][0] : $docRecord;
+            $createdId = $created['id'] ?? ($insertRes['data'][0]['id'] ?? null);
+
+            $prescribeMsg = '';
+            if ($isMandatory && $createdId) {
+                $count = $this->prescribeToAllEmployees($createdId);
+                $prescribeMsg = " (Mandatory SOP auto-prescribed to all {$count} employees)";
+            }
+
             return [
                 'success' => true,
-                'message' => "Handbook \"{$title}\" successfully published to LMS library!",
+                'message' => "Handbook \"{$title}\" successfully published to LMS library!{$prescribeMsg}",
                 'data' => $created
             ];
         }
@@ -254,6 +264,7 @@ class LmsController
         $learningOutcomes = trim($postData['learning_outcomes'] ?? '');
         $status = in_array($postData['status'] ?? '', ['Draft', 'Published', 'Archived']) ? $postData['status'] : 'Published';
         $uploadedBy = $postData['uploaded_by'] ?? 'emp-103';
+        $isMandatory = !empty($postData['is_mandatory']) || !empty($postData['manatory']) || (isset($postData['mandatory']) && ($postData['mandatory'] === true || $postData['mandatory'] === 1 || $postData['mandatory'] === '1' || $postData['mandatory'] === 'true'));
 
         // 1. Upload to Supabase Storage in "documents" bucket
         $sanitizedName = preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $origFileName);
@@ -287,6 +298,7 @@ class LmsController
             'learning_outcomes' => $learningOutcomes ?: 'Understand operational hospitality standards and procedural benchmarks.',
             'status' => $status,
             'uploaded_by' => $uploadedBy,
+            'manatory' => $isMandatory,
             'created_at' => $now,
             'updated_at' => $now
         ];
@@ -294,9 +306,17 @@ class LmsController
         $insertRes = supabaseRequest('lms_documents', 'POST', $docRecord, true);
         if ($insertRes['status'] >= 200 && $insertRes['status'] < 300 && !empty($insertRes['data'])) {
             $created = is_array($insertRes['data']) && isset($insertRes['data'][0]) ? $insertRes['data'][0] : $docRecord;
+            $createdId = $created['id'] ?? ($insertRes['data'][0]['id'] ?? null);
+
+            $prescribeMsg = '';
+            if ($isMandatory && $createdId) {
+                $count = $this->prescribeToAllEmployees($createdId);
+                $prescribeMsg = " (Mandatory SOP auto-prescribed to all {$count} employees)";
+            }
+
             return [
                 'success' => true,
-                'message' => "Handbook \"{$title}\" successfully uploaded to Supabase Storage and published to LMS library!",
+                'message' => "Handbook \"{$title}\" successfully uploaded to Supabase Storage and published to LMS library!{$prescribeMsg}",
                 'data' => $created
             ];
         }
@@ -305,6 +325,40 @@ class LmsController
             'success' => false,
             'message' => 'Failed to save document metadata in Supabase database: ' . ($insertRes['error'] ?? 'Database error')
         ];
+    }
+
+    /**
+     * Prescribe an LMS Document to All Active Employees (Mandatory SOP)
+     */
+    public function prescribeToAllEmployees(string $lmsId): int
+    {
+        $empRes = supabaseRequest('employees', 'GET', null, true);
+        $employees = is_array($empRes['data'] ?? null) ? $empRes['data'] : [];
+        if (empty($employees)) {
+            $employees = [
+                ['id' => 'emp-101', 'full_name' => 'Maria Santos'],
+                ['id' => 'emp-102', 'full_name' => 'Chef Marco Rossi'],
+                ['id' => 'emp-103', 'full_name' => 'John Marco']
+            ];
+        }
+
+        $prescribedCount = 0;
+        foreach ($employees as $emp) {
+            $empId = $emp['id'] ?? null;
+            if (!$empId) continue;
+            $this->prescribeDocument([
+                'employee' => $empId,
+                'lms_id' => $lmsId,
+                'goal_id' => null,
+                'scores' => 0.00,
+                'ratings' => 0.00,
+                'progress' => 0,
+                'status' => 'Pending',
+                'for' => 'both',
+                'time_consumed' => 0
+            ]);
+        }
+        return $prescribedCount;
     }
 
     /**
@@ -565,15 +619,208 @@ class LmsController
 
 
     /**
+     * Get Needs Analysis (TNA) Category Cards with Highest Enrolled from Supabase
+     */
+    public function getNeedsAnalysisData(): array
+    {
+        // 1. Fetch all documents from Supabase
+        $docRes = supabaseRequest('lms_documents?order=created_at.desc', 'GET', null, true);
+        $allDocs = is_array($docRes['data'] ?? null) ? $docRes['data'] : [];
+
+        // 2. Fetch all prescribed enrollments from Supabase
+        $presRes = supabaseRequest('lms_prescribed', 'GET', null, true);
+        $allPres = is_array($presRes['data'] ?? null) ? $presRes['data'] : [];
+
+        // 3. Define Standard Categories & detect any additional custom ones from DB
+        $standardCategories = [
+            'SOP Manual',
+            'Compliance Standard',
+            'Masterclass Guide',
+            'Safety Protocol'
+        ];
+
+        $categoriesMap = [];
+        foreach ($standardCategories as $cat) {
+            $categoriesMap[strtolower($cat)] = [
+                'category' => $cat,
+                'docs' => [],
+                'prescribed' => []
+            ];
+        }
+
+        // Map documents into categories
+        foreach ($allDocs as $doc) {
+            $cat = trim($doc['category'] ?? 'SOP Manual');
+            $key = strtolower($cat);
+            if (!isset($categoriesMap[$key])) {
+                $categoriesMap[$key] = [
+                    'category' => $cat,
+                    'docs' => [],
+                    'prescribed' => []
+                ];
+            }
+            $categoriesMap[$key]['docs'][] = $doc;
+        }
+
+        // Build document-to-category lookup
+        $docToCatKey = [];
+        foreach ($allDocs as $doc) {
+            $dId = $doc['id'] ?? '';
+            if ($dId) {
+                $docToCatKey[$dId] = strtolower(trim($doc['category'] ?? 'SOP Manual'));
+            }
+        }
+
+        // Map prescribed records into categories
+        foreach ($allPres as $pres) {
+            $lmsId = $pres['lms_id'] ?? '';
+            if ($lmsId && isset($docToCatKey[$lmsId])) {
+                $catKey = $docToCatKey[$lmsId];
+                if (isset($categoriesMap[$catKey])) {
+                    $categoriesMap[$catKey]['prescribed'][] = $pres;
+                }
+            }
+        }
+
+        // 4. Calculate aggregated metrics per category
+        $categoryCards = [];
+        foreach ($categoriesMap as $key => $data) {
+            $catName = $data['category'];
+            $docs = $data['docs'];
+            $pres = $data['prescribed'];
+
+            $docCount = count($docs);
+            $enrolledCount = count($pres);
+            $passedCount = 0;
+            $totalScore = 0;
+
+            foreach ($pres as $p) {
+                $score = isset($p['scores']) ? (float)$p['scores'] : 0;
+                $totalScore += $score;
+                $status = strtolower($p['status'] ?? '');
+                if ($status === 'passed' || strpos($status, 'cert') !== false) {
+                    $passedCount++;
+                }
+            }
+
+            $avgScore = $enrolledCount > 0 ? round($totalScore / $enrolledCount, 1) : 0;
+
+            // Find top document in this category (with most enrollments or newest)
+            $topDoc = null;
+            if ($docCount > 0) {
+                // Count enrollments per doc
+                $docEnrollCounts = [];
+                foreach ($pres as $p) {
+                    $lId = $p['lms_id'] ?? '';
+                    $docEnrollCounts[$lId] = ($docEnrollCounts[$lId] ?? 0) + 1;
+                }
+
+                usort($docs, function($a, $b) use ($docEnrollCounts) {
+                    $cntA = $docEnrollCounts[$a['id'] ?? ''] ?? 0;
+                    $cntB = $docEnrollCounts[$b['id'] ?? ''] ?? 0;
+                    if ($cntA === $cntB) {
+                        return strcmp($b['created_at'] ?? '', $a['created_at'] ?? '');
+                    }
+                    return $cntB - $cntA;
+                });
+                $topDoc = $docs[0];
+            }
+
+            $categoryCards[] = [
+                'category' => $catName,
+                'display_name' => $this->getCategoryDisplayName($catName),
+                'subtitle' => $this->getCategorySubtitle($catName),
+                'documents_count' => $docCount,
+                'enrolled_count' => $enrolledCount,
+                'passed_count' => $passedCount,
+                'avg_score' => $avgScore,
+                'is_empty' => ($docCount === 0),
+                'top_document' => $topDoc ? [
+                    'id' => $topDoc['id'] ?? '',
+                    'title' => $topDoc['title'] ?? '',
+                    'department_id' => $topDoc['department_id'] ?? null,
+                    'estimated_pages' => $topDoc['estimated_pages'] ?? 18,
+                    'estimated_reading_minutes' => $topDoc['estimated_reading_minutes'] ?? 20,
+                    'exp_reward' => $topDoc['exp_reward'] ?? 100,
+                    'file_path' => $topDoc['file_path'] ?? '#'
+                ] : null,
+                'border_color' => $this->getCategoryBorderColor($catName),
+                'text_color' => $this->getCategoryTextColor($catName),
+                'badge_class' => $this->getCategoryBadge($catName),
+                'icon' => $this->getCategoryIcon($catName, '')
+            ];
+        }
+
+        // 5. Sort by enrolled_count DESC, then documents_count DESC
+        usort($categoryCards, function ($a, $b) {
+            if ($a['enrolled_count'] === $b['enrolled_count']) {
+                return $b['documents_count'] - $a['documents_count'];
+            }
+            return $b['enrolled_count'] - $a['enrolled_count'];
+        });
+
+        // 6. Return top 4 categories
+        $top4 = array_slice($categoryCards, 0, 4);
+
+        return [
+            'success' => true,
+            'data' => [
+                'categories' => $top4,
+                'total_documents' => count($allDocs),
+                'total_prescribed' => count($allPres)
+            ]
+        ];
+    }
+
+    private function getCategoryDisplayName(string $category): string
+    {
+        $cat = strtolower($category);
+        if (strpos($cat, 'sop') !== false) return 'SOP Operations';
+        if (strpos($cat, 'compliance') !== false || strpos($cat, 'hygiene') !== false) return 'Compliance & Hygiene';
+        if (strpos($cat, 'masterclass') !== false) return 'Service Masterclass';
+        if (strpos($cat, 'safety') !== false || strpos($cat, 'emergency') !== false) return 'Safety & Protocols';
+        return $category;
+    }
+
+    private function getCategorySubtitle(string $category): string
+    {
+        $cat = strtolower($category);
+        if (strpos($cat, 'sop') !== false) return 'Standard workflow benchmarks & operational excellence.';
+        if (strpos($cat, 'compliance') !== false || strpos($cat, 'hygiene') !== false) return 'Mandatory quality audits, health & sanitation standards.';
+        if (strpos($cat, 'masterclass') !== false) return 'Upskilling, premium guest pacing & sommelier expertise.';
+        if (strpos($cat, 'safety') !== false || strpos($cat, 'emergency') !== false) return 'Fire safety, emergency readiness & licensing renewals.';
+        return 'Training handbooks and departmental procedure manuals.';
+    }
+
+    private function getCategoryBorderColor(string $category): string
+    {
+        $cat = strtolower($category);
+        if (strpos($cat, 'compliance') !== false) return 'border-l-sage';
+        if (strpos($cat, 'masterclass') !== false) return 'border-l-gold';
+        if (strpos($cat, 'safety') !== false) return 'border-l-terracotta';
+        return 'border-l-dusty';
+    }
+
+    private function getCategoryTextColor(string $category): string
+    {
+        $cat = strtolower($category);
+        if (strpos($cat, 'compliance') !== false) return 'text-sage-dark';
+        if (strpos($cat, 'masterclass') !== false) return 'text-gold-dark';
+        if (strpos($cat, 'safety') !== false) return 'text-terracotta-dark';
+        return 'text-dusty-dark';
+    }
+
+    /**
      * Get Badge Class for Category
      */
     private function getCategoryBadge(string $category): string
     {
         $cat = strtolower($category);
-        if (strpos($cat, 'compliance') !== false) return 'bg-emerald-400 text-emerald-950';
-        if (strpos($cat, 'masterclass') !== false) return 'bg-amber-400 text-amber-950';
-        if (strpos($cat, 'safety') !== false) return 'bg-rose-400 text-rose-950';
-        return 'bg-gold text-slate-900';
+        if (strpos($cat, 'compliance') !== false) return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+        if (strpos($cat, 'masterclass') !== false) return 'bg-amber-100 text-amber-800 border border-amber-200';
+        if (strpos($cat, 'safety') !== false) return 'bg-rose-100 text-rose-800 border border-rose-200';
+        return 'bg-gold-50 text-gold-dark border border-gold-200';
     }
 }
+
 

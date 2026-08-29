@@ -1022,6 +1022,24 @@
                     </div>
                 </div>
 
+                <!-- Mandatory SOP Auto-Prescribe Toggle -->
+                <div class="p-3 bg-amber-50/70 border border-amber-200/90 rounded-2xl flex items-start space-x-3">
+                    <div class="flex items-center h-5 mt-0.5">
+                        <input id="lms-doc-mandatory" name="is_mandatory" type="checkbox" value="1"
+                            class="w-4 h-4 text-primary bg-white border-slate-300 rounded focus:ring-primary focus:ring-2 cursor-pointer">
+                    </div>
+                    <label for="lms-doc-mandatory" class="cursor-pointer select-none">
+                        <span class="block font-bold text-slate-900 text-xs flex items-center space-x-1.5">
+                            <i class="fas fa-shield-halved text-amber-600 text-xs"></i>
+                            <span>Mark as Mandatory Training Document</span>
+                            <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-200/80 text-amber-900 uppercase tracking-wider">Auto-Prescribe</span>
+                        </span>
+                        <span class="block text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                            If enabled (<strong>True</strong>), this document will be automatically prescribed and enrolled for <strong>all hotel employees</strong> in their training and continuous development roster.
+                        </span>
+                    </label>
+                </div>
+
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block font-bold text-slate-800 text-[11px] mb-1">Estimated Reading Pages</label>
@@ -1065,26 +1083,27 @@
     </div>
 </div>
 
-<!-- 7c. Modal: Interactive 3D Book & SOP Document Reader -->
+<!-- 7c. Modal: Interactive 3D Book & Actual SOP Document Reader -->
 <div id="modal-book-reader" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-    <div class="modal-card max-w-3xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-[#FAF8F7] rounded-3xl shadow-2xl border border-[#E8DEDC]">
+    <div class="modal-card max-w-4xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-[#FAF8F7] rounded-3xl shadow-2xl border border-[#E8DEDC]">
 
         <!-- Header -->
         <div class="px-6 py-4 border-b border-[#E8DEDC] flex items-center justify-between bg-white flex-shrink-0">
-            <div class="flex items-center space-x-3">
-                <div id="reader-book-icon-badge" class="w-10 h-10 rounded-xl bg-primary-50 text-primary flex items-center justify-center text-lg font-bold">
+            <div class="flex items-center space-x-3 min-w-0">
+                <div id="reader-book-icon-badge" class="w-11 h-11 rounded-2xl bg-primary-50 text-primary flex items-center justify-center text-xl font-bold flex-shrink-0 shadow-2xs">
                     <i class="fas fa-book-open"></i>
                 </div>
-                <div>
-                    <div class="flex items-center space-x-2">
-                        <h3 id="reader-book-title" class="font-heading font-bold text-base text-slate-900">Hospitality Standard SOP Codex</h3>
-                        <span id="reader-book-xp-badge" class="badge-gold">+100 XP Completion</span>
+                <div class="min-w-0">
+                    <div class="flex items-center space-x-2 flex-wrap">
+                        <h3 id="reader-book-title" class="font-heading font-bold text-base text-slate-900 truncate">Hospitality Standard SOP Codex</h3>
+                        <span id="reader-book-xp-badge" class="badge-gold text-[10px] font-bold">+100 XP Completion</span>
+                        <span id="reader-book-mandatory-badge" class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200 hidden"><i class="fas fa-shield-halved mr-1"></i>Mandatory SOP</span>
                     </div>
-                    <p id="reader-book-author" class="text-xs text-slate-500">Oxford Suites, Makati Operations Manual · Standard Edition 2026</p>
+                    <p id="reader-book-author" class="text-xs text-slate-500 truncate mt-0.5">Oxford Suites Operations Manual · Standard Edition</p>
                 </div>
             </div>
-            <div class="flex items-center space-x-2">
-                <a id="reader-download-btn" href="#" target="_blank" class="btn-secondary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5 hover:bg-slate-100">
+            <div class="flex items-center space-x-2 flex-shrink-0">
+                <a id="reader-download-btn" href="#" target="_blank" class="btn-secondary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5 hover:bg-slate-100 shadow-2xs">
                     <i class="fas fa-arrow-up-right-from-square text-primary text-xs"></i>
                     <span class="hidden sm:inline">Open / Download File</span>
                 </a>
@@ -1095,33 +1114,89 @@
             </div>
         </div>
 
-        <!-- Book Reading Body (Dual-Page Open Book Aesthetic) -->
+        <!-- Mode Switcher Tabs (File Viewer vs Structured Procedure Guide) -->
+        <div class="px-6 py-2.5 bg-slate-50 border-b border-[#E8DEDC] flex items-center justify-between gap-3 text-xs flex-shrink-0">
+            <div class="flex items-center space-x-1.5">
+                <button id="tab-btn-reader-viewer" onclick="switchReaderTab('viewer')"
+                    class="px-3 py-1.5 rounded-xl font-bold bg-primary text-white shadow-2xs transition text-xs flex items-center space-x-1.5">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>Document Viewer</span>
+                </button>
+                <button id="tab-btn-reader-details" onclick="switchReaderTab('details')"
+                    class="px-3 py-1.5 rounded-xl font-semibold bg-white text-slate-700 border border-[#E8DEDC] hover:bg-slate-100 transition text-xs flex items-center space-x-1.5">
+                    <i class="fas fa-list-check"></i>
+                    <span>SOP Specifications &amp; Outcomes</span>
+                </button>
+            </div>
+            <span id="reader-file-info-badge" class="text-[11px] font-mono text-slate-500 truncate hidden sm:inline"></span>
+        </div>
+
+        <!-- Book Reading Body -->
         <div class="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1 bg-[#FAF8F7]">
-            <div class="bg-white rounded-2xl border border-[#E8DEDC] p-6 sm:p-8">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-xs">
-                    <!-- Left Page: Table of Contents & Chapter Overview -->
-                    <div class="space-y-4 md:border-r md:border-[#E8DEDC] md:pr-6">
-                        <div class="border-b border-slate-100 pb-3">
-                            <span class="text-[10px] font-bold text-gold-dark uppercase tracking-widest">CHAPTER OVERVIEW</span>
-                            <h4 id="reader-chapter-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Chapter 1: Standard Operating Principles</h4>
+            
+            <!-- 1. Actual Document Embedded Viewer Panel -->
+            <div id="reader-panel-viewer" class="space-y-3">
+                <div id="reader-iframe-container" class="w-full bg-white rounded-2xl border border-[#E8DEDC] p-2 shadow-2xs overflow-hidden min-h-[480px] flex items-center justify-center">
+                    <!-- Dynamic iframe / document object inserted here -->
+                </div>
+            </div>
+
+            <!-- 2. Structured SOP Procedure Guide & Outcomes Panel -->
+            <div id="reader-panel-details" class="space-y-4 hidden">
+                <div class="bg-white rounded-2xl border border-[#E8DEDC] p-6 sm:p-8 space-y-6">
+                    <!-- Top Operational Highlight -->
+                    <div class="p-4 bg-gold-50/70 rounded-2xl border border-gold-200/80 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <p class="font-bold text-gold-dark text-xs uppercase tracking-wider flex items-center">
+                                <i class="fas fa-lightbulb text-gold-dark mr-1.5"></i> Quality &amp; Compliance Benchmark
+                            </p>
+                            <span class="badge-sage text-[10px]">Active Standard</span>
                         </div>
-                        <div id="reader-toc" class="space-y-2 text-slate-600">
-                            <!-- Dynamic chapters -->
+                        <p id="reader-tip-text" class="text-xs text-slate-700 leading-relaxed font-medium">Always maintain 5-star standard compliance across all touchpoints.</p>
+                    </div>
+
+                    <!-- Dual Grid Description & Outcomes -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                        <!-- Left Page: Overview & Description -->
+                        <div class="space-y-3 md:border-r md:border-[#E8DEDC] md:pr-6">
+                            <div class="border-b border-slate-100 pb-2">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">SECTION 1</span>
+                                <h4 class="font-heading font-bold text-sm text-slate-900 mt-0.5">Operational Overview &amp; Procedures</h4>
+                            </div>
+                            <div id="reader-full-description" class="p-3.5 bg-[#FAF8F7] rounded-xl border border-slate-200/70 text-slate-700 leading-relaxed space-y-2">
+                                <!-- Dynamic Description -->
+                            </div>
                         </div>
-                        <div class="p-3 bg-gold-50/60 rounded-xl border border-gold-100 space-y-1">
-                            <p class="font-bold text-gold-dark text-[11px]"><i class="fas fa-lightbulb text-gold-dark mr-1"></i> Quality Standard Tip</p>
-                            <p id="reader-tip-text" class="text-[11px] text-slate-700 leading-relaxed">Always maintain eye contact and warm smile within 10 feet of approaching guests.</p>
+
+                        <!-- Right Page: Key Learning Outcomes & Competencies -->
+                        <div class="space-y-3">
+                            <div class="border-b border-slate-100 pb-2">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">SECTION 2</span>
+                                <h4 class="font-heading font-bold text-sm text-slate-900 mt-0.5">Learning Outcomes &amp; Core Standards</h4>
+                            </div>
+                            <div id="reader-full-outcomes" class="p-3.5 bg-[#FAF8F7] rounded-xl border border-slate-200/70 text-slate-700 leading-relaxed space-y-2">
+                                <!-- Dynamic Outcomes -->
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Right Page: Step-by-Step Procedure Content -->
-                    <div class="space-y-4">
-                        <div class="border-b border-slate-100 pb-3 flex justify-between items-center">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">PROCEDURE SPECIFICATION</span>
-                            <span class="badge-sage">SOP Approved</span>
+                    <!-- Document Metadata Specification Box -->
+                    <div class="pt-4 border-t border-[#E8DEDC] grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">Category</span>
+                            <span id="reader-spec-category" class="font-bold text-slate-900 text-xs">SOP Manual</span>
                         </div>
-                        <div id="reader-page-content" class="space-y-3 text-slate-700 leading-relaxed">
-                            <!-- Dynamic page content -->
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">Target Department</span>
+                            <span id="reader-spec-dept" class="font-bold text-slate-900 text-xs">Property-Wide</span>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">Reading Scope</span>
+                            <span id="reader-spec-reading" class="font-bold text-slate-900 text-xs">18 Pages · 20 min</span>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">XP Award</span>
+                            <span id="reader-spec-xp" class="font-bold text-gold-dark text-xs">+100 XP</span>
                         </div>
                     </div>
                 </div>
@@ -1130,12 +1205,12 @@
 
         <!-- Footer Reader Controls -->
         <div class="p-4 sm:px-6 border-t border-[#E8DEDC] bg-white flex items-center justify-between flex-shrink-0 text-xs">
-            <span class="text-slate-500 font-semibold hidden sm:inline"><i class="fas fa-book-bookmark text-gold-dark mr-1.5"></i> Interactive Digital Handbook Reader</span>
+            <span class="text-slate-500 font-semibold hidden sm:inline"><i class="fas fa-book-bookmark text-gold-dark mr-1.5"></i> Interactive Digital LMS Handbook Reader</span>
             <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
                 <button onclick="closeModal('modal-book-reader')"
                     class="btn-secondary px-4 py-2 text-xs font-semibold">Close Reader</button>
                 <button id="reader-quiz-btn" onclick="launchQuizFromReader()"
-                    class="btn-primary px-5 py-2 font-bold flex items-center space-x-1.5">
+                    class="btn-primary px-5 py-2 font-bold flex items-center space-x-1.5 shadow-2xs">
                     <i class="fas fa-graduation-cap"></i>
                     <span>Take Knowledge Quiz (+100 XP)</span>
                 </button>

@@ -67,9 +67,14 @@ try {
             $response = $controller->updatePrescriptionStatus($payload);
             break;
 
+        // 4c. Get Needs Analysis (TNA) Top 4 Category Cards
+        case 'get_needs_analysis':
+        case 'get_tna_categories':
+        case 'get_tna_cards':
+            $response = $controller->getNeedsAnalysisData();
+            break;
+
         // 5. Delete Document from Supabase SQL & Storage
-
-
         case 'delete_document':
         case 'remove_document':
             $id = $payload['id'] ?? $payload['document_id'] ?? '';

@@ -1,44 +1,35 @@
-CREATE TABLE public.lms_documents (
-    id varchar(100) NOT NULL
-        DEFAULT (extensions.uuid_generate_v4())::text,
-
-    title varchar(255) NOT NULL,
-
-    file_name varchar(255) NOT NULL,
-
-    file_path text NOT NULL,
-
-    file_type varchar(50) NOT NULL,
-
-    file_size bigint NULL,
-
-    department_id varchar(100) NULL,
-
-    category varchar(100) NOT NULL,
-
-    estimated_reading_minutes integer NULL,
-
-    estimated_pages integer NULL,
-
-    exp_reward integer NOT NULL DEFAULT 20,
-
-    description text NULL,
-
-    learning_outcomes text NULL,
-
-    status varchar(20) NOT NULL DEFAULT 'Draft'
-        CHECK (status IN ('Draft', 'Published', 'Archived')),
-
-    uploaded_by varchar(64) NULL,
-
-    created_at timestamptz NOT NULL DEFAULT now(),
-
-    updated_at timestamptz NOT NULL DEFAULT now(),
-
-    CONSTRAINT lms_documents_pkey PRIMARY KEY (id),
-
-    CONSTRAINT lms_documents_department_id_fkey
-        FOREIGN KEY (department_id)
-        REFERENCES public.departments(id)
-        ON DELETE SET NULL
-);
+create table public.lms_documents (
+  id character varying(100) not null default (extensions.uuid_generate_v4 ())::text,
+  title character varying(255) not null,
+  file_name character varying(255) not null,
+  file_path text not null,
+  file_type text not null,
+  file_size bigint null,
+  department_id character varying(100) null,
+  category text not null,
+  estimated_reading_minutes integer null,
+  estimated_pages integer null,
+  exp_reward integer not null default 20,
+  description text null,
+  learning_outcomes text null,
+  status character varying(20) not null default 'Draft'::character varying,
+  uploaded_by character varying(64) null,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  manatory boolean null default false,
+  constraint lms_documents_pkey primary key (id),
+  constraint lms_documents_department_id_fkey foreign KEY (department_id) references departments (id) on delete set null,
+  constraint lms_documents_status_check check (
+    (
+      (status)::text = any (
+        (
+          array[
+            'Draft'::character varying,
+            'Published'::character varying,
+            'Archived'::character varying
+          ]
+        )::text[]
+      )
+    )
+  )
+) TABLESPACE pg_default;

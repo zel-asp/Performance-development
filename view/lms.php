@@ -63,45 +63,12 @@
 
                             <!-- Sub-tab 2: Needs Analysis (TNA) -->
                             <div id="sub-lms-tna" class="sub-panel sub-panel-lms space-y-5">
-                                <!-- Top Priority TNA Highlights -->
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                                    <div class="card-clean p-5 border-l-4 border-l-terracotta space-y-1.5 hover:shadow-md transition">
-                                        <div class="flex items-center justify-between">
-                                            <p class="font-bold text-terracotta-dark uppercase text-[10px] tracking-wider"><i class="fas fa-triangle-exclamation mr-1"></i> High Priority TNA</p>
-                                            <span class="badge-terracotta">3 Enrolled</span>
-                                        </div>
-                                        <p class="text-base font-bold text-slate-900">HACCP Cold-Chain Log</p>
-                                        <p class="text-slate-500 text-[11px] leading-relaxed">Triggered by Kitchen hygiene audit findings &amp; temp breaches.</p>
-                                        <div class="pt-2 flex items-center justify-between border-t border-[#E8DEDC]">
-                                            <button onclick="openBookReader('book_haccp')" class="text-primary font-bold hover:underline text-[11px]">Open Manual &rarr;</button>
-                                            <span class="text-[10px] font-semibold text-slate-400">Avg Score: 68 pts</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="card-clean p-5 border-l-4 border-l-gold space-y-1.5 hover:shadow-md transition">
-                                        <div class="flex items-center justify-between">
-                                            <p class="font-bold text-gold-dark uppercase text-[10px] tracking-wider"><i class="fas fa-wine-glass mr-1"></i> Service Excellence</p>
-                                            <span class="badge-gold">4 Enrolled</span>
-                                        </div>
-                                        <p class="text-base font-bold text-slate-900">Wine Upselling Pacing</p>
-                                        <p class="text-slate-500 text-[11px] leading-relaxed">Triggered by F&amp;B check average benchmark &amp; sommelier gap.</p>
-                                        <div class="pt-2 flex items-center justify-between border-t border-[#E8DEDC]">
-                                            <button onclick="openBookReader('book_sommelier')" class="text-primary font-bold hover:underline text-[11px]">Open Wine Guide &rarr;</button>
-                                            <span class="text-[10px] font-semibold text-slate-400">Avg Score: 62 pts</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="card-clean p-5 border-l-4 border-l-dusty space-y-1.5 hover:shadow-md transition">
-                                        <div class="flex items-center justify-between">
-                                            <p class="font-bold text-dusty-dark uppercase text-[10px] tracking-wider"><i class="fas fa-shield-halved mr-1"></i> Mandatory Annual</p>
-                                            <span class="badge-dusty">24 Enrolled</span>
-                                        </div>
-                                        <p class="text-base font-bold text-slate-900">Fire Safety &amp; Crisis Codex</p>
-                                        <p class="text-slate-500 text-[11px] leading-relaxed">Annual hospitality license renewal for all hotel associates.</p>
-                                        <div class="pt-2 flex items-center justify-between border-t border-[#E8DEDC]">
-                                            <button onclick="openBookReader('book_crisis')" class="text-primary font-bold hover:underline text-[11px]">Open Emergency Codex &rarr;</button>
-                                            <span class="text-[10px] font-semibold text-slate-400">Avg Score: 78 pts</span>
-                                        </div>
+                                <!-- Top 4 Priority TNA Category Cards (Highest Enrolled from Supabase lms_documents & lms_prescribed) -->
+                                <div id="tna-category-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                                    <!-- Dynamic 4 Categories rendered via JS -->
+                                    <div class="col-span-full py-8 text-center text-slate-400">
+                                        <i class="fas fa-spinner fa-spin text-2xl text-primary mb-2"></i>
+                                        <p class="text-xs font-semibold text-slate-500">Loading top enrolled TNA categories from Supabase...</p>
                                     </div>
                                 </div>
 
