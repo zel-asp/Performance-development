@@ -205,6 +205,7 @@ function switchPillar(pillarKey) {
             if (typeof loadLiveNotifications === 'function') loadLiveNotifications(window.activePersonaRole || 'Associate');
         } else if (pillarKey === 'pillar-reports') {
             if (typeof renderAuditLogExports === 'function') renderAuditLogExports();
+            if (typeof initReportsHub === 'function') initReportsHub();
         }
     }, 80);
 }
