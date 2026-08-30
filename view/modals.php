@@ -452,73 +452,247 @@
     </div>
 </div>
 
-<!-- 3. Modal: Gemini AI Coaching Refiner -->
-<div id="modal-ai-feedback" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-    <div class="modal-card max-w-lg w-full overflow-hidden flex flex-col">
+<!-- 3. Modal: Gemini AI Coaching Refiner (2026 Liquid Glass GenUI) -->
+<div id="modal-ai-feedback" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-3 sm:p-4 backdrop-blur-md bg-slate-950/40">
+    <div class="modal-card max-w-xl w-full overflow-hidden flex flex-col bg-white/95 rounded-3xl shadow-2xl border border-slate-200/80 animate-scaleUp">
 
-        <div
-            class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <!-- Frosted Liquid Glass Header -->
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-amber-500/5 via-rose-500/5 to-purple-500/5 backdrop-blur-xs flex-shrink-0">
             <div class="flex items-center space-x-3">
-                <div
-                    class="w-11 h-11 rounded-full bg-dusty-50 text-dusty-dark flex items-center justify-center text-lg font-bold border border-dusty-100">
-                    <i class="fas fa-robot"></i>
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 via-primary/20 to-purple-500/20 text-primary flex items-center justify-center text-base font-bold shadow-2xs border border-primary/20">
+                    <i class="fas fa-sparkles"></i>
                 </div>
                 <div>
-                    <span class="badge-dusty">AI Copilot</span>
-                    <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">SBI Feedback Refiner</h3>
+                    <div class="flex items-center space-x-2">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-primary/10 text-primary border border-primary/20">
+                            ✦ Copilot 1.5
+                        </span>
+                        <span id="ai-rate-limit-badge" class="text-[10px] font-bold text-slate-400">
+                            ⚡ 20/20 req left
+                        </span>
+                    </div>
+                    <h3 class="font-heading font-extrabold text-base text-slate-900 mt-0.5">SBI Feedback Refiner</h3>
                 </div>
             </div>
-            <button onclick="closeModal('modal-ai-feedback')"
-                class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
+            <button onclick="closeModal('modal-ai-feedback')" aria-label="Close modal"
+                class="w-8 h-8 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
                 <i class="fas fa-times text-xs"></i>
             </button>
         </div>
 
-        <div class="p-6 space-y-4 text-xs bg-white">
-            <!-- 1-Click Observation Chips -->
-            <div class="p-3 bg-dusty-50/60 rounded-2xl border border-dusty-100 text-xs">
-                <p class="text-[11px] font-bold text-dusty-dark mb-1.5">Try a quick shift observation scenario:
-                </p>
+        <!-- Scrollable Modal Body -->
+        <div class="p-5 sm:p-6 space-y-4.5 text-xs overflow-y-auto max-h-[80vh] custom-scrollbar">
+
+            <!-- Subordinate Context Pill -->
+            <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
+                <div class="flex items-center space-x-2.5 min-w-0">
+                    <div id="ai-modal-emp-avatar" class="w-7 h-7 rounded-full bg-primary text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0 shadow-2xs">
+                        MS
+                    </div>
+                    <div class="truncate">
+                        <p id="ai-modal-emp-name" class="font-bold text-slate-800 text-xs truncate leading-tight">Maria Santos</p>
+                        <p id="ai-modal-emp-dept" class="text-[10px] text-slate-500 truncate leading-tight">Front Office · Subordinate Coaching</p>
+                    </div>
+                </div>
+                <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex-shrink-0">
+                    Active Shift Touchpoint
+                </span>
+            </div>
+
+            <!-- 1-Click Floor Observation Chips -->
+            <div class="p-3 bg-amber-50/40 rounded-2xl border border-amber-200/60 space-y-2">
+                <div class="flex items-center justify-between">
+                    <p class="text-[11px] font-bold text-amber-900 flex items-center space-x-1.5">
+                        <i class="fas fa-lightbulb text-amber-500 text-xs"></i>
+                        <span>Try a 1-Click Floor Observation Scenario:</span>
+                    </p>
+                    <span class="text-[9px] font-semibold text-amber-700 uppercase tracking-wider">Zero Latency</span>
+                </div>
                 <div class="flex flex-wrap gap-1.5">
-                    <button type="button"
-                        onclick="setRoughNote('Peak dinner rush was hectic. Maria calmed down an angry VIP guest whose suite was delayed, but junior hosts were standing idle.')"
-                        class="px-3 py-1 rounded-full bg-white border border-dusty-100 text-dusty-dark text-[10px] font-semibold hover:bg-slate-100 transition shadow-2xs">
+                    <button type="button" data-scenario="rush_hour"
+                        onclick="AIRefiner.setScenario('rush_hour')"
+                        class="ai-scenario-chip px-3 py-1.5 rounded-xl bg-white border border-amber-200/80 text-slate-700 text-[10px] font-semibold hover:border-primary hover:text-primary transition shadow-2xs">
                         ⚡ Rush Hour Composure
                     </button>
-                    <button type="button"
-                        onclick="setRoughNote('Pierre recommended the reserve vintage to presidential suites and exceeded beverage targets by 20% tonight.')"
-                        class="px-3 py-1 rounded-full bg-white border border-dusty-100 text-dusty-dark text-[10px] font-semibold hover:bg-slate-100 transition shadow-2xs">
+                    <button type="button" data-scenario="sommelier_upsell"
+                        onclick="AIRefiner.setScenario('sommelier_upsell')"
+                        class="ai-scenario-chip px-3 py-1.5 rounded-xl bg-white border border-amber-200/80 text-slate-700 text-[10px] font-semibold hover:border-primary hover:text-primary transition shadow-2xs">
                         🍷 Sommelier Upsell Win
+                    </button>
+                    <button type="button" data-scenario="housekeeping_turn"
+                        onclick="AIRefiner.setScenario('housekeeping_turn')"
+                        class="ai-scenario-chip px-3 py-1.5 rounded-xl bg-white border border-amber-200/80 text-slate-700 text-[10px] font-semibold hover:border-primary hover:text-primary transition shadow-2xs">
+                        🧹 Room Turnover
                     </button>
                 </div>
             </div>
 
-            <div class="space-y-2.5">
-                <label class="block font-bold text-slate-800 text-[11px]">Rough Observation / Floor Notes</label>
-                <textarea id="ai-rough-notes" rows="3"
-                    class="w-full p-3 rounded-xl border border-[#E8DEDC] focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-[#FAF8F7]"
-                    placeholder="Type or click an observation scenario above..."></textarea>
+            <!-- Rough Observation Input Area -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="block font-bold text-slate-800 text-[11px]">Rough Observation / Floor Notes</label>
+                    <span id="ai-char-counter" class="text-[10px] font-semibold text-slate-400">0/1200</span>
+                </div>
+                <textarea id="ai-rough-notes" rows="3" oninput="AIRefiner.updateCharCount()"
+                    class="w-full p-3.5 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-slate-50/50 text-slate-800 text-xs placeholder:text-slate-400 leading-relaxed"
+                    placeholder="Type what you observed during shift, or click a scenario chip above..."></textarea>
+            </div>
 
-                <button onclick="generateAIFeedback()"
-                    class="w-full py-2.5 btn-primary text-xs font-bold flex items-center justify-center space-x-2">
-                    <i class="fas fa-wand-magic-sparkles"></i>
-                    <span>Generate Structured SBI Coaching Model</span>
+            <!-- Interactive Tone Modifier Pills (Steering Controls) -->
+            <div class="space-y-1.5">
+                <label class="block font-bold text-slate-700 text-[10px] uppercase tracking-wider">Steer Coaching Tone:</label>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                    <button type="button" data-tone="balanced" onclick="AIRefiner.setTone('balanced')"
+                        class="ai-tone-pill px-2.5 py-1.5 rounded-xl text-[10px] font-bold border transition text-center flex items-center justify-center space-x-1 bg-primary text-white border-primary shadow-xs">
+                        <span>🌟 Balanced</span>
+                    </button>
+                    <button type="button" data-tone="direct" onclick="AIRefiner.setTone('direct')"
+                        class="ai-tone-pill px-2.5 py-1.5 rounded-xl text-[10px] font-bold border transition text-center flex items-center justify-center space-x-1 bg-slate-50 text-slate-600 border-slate-200">
+                        <span>🎯 Direct</span>
+                    </button>
+                    <button type="button" data-tone="growth" onclick="AIRefiner.setTone('growth')"
+                        class="ai-tone-pill px-2.5 py-1.5 rounded-xl text-[10px] font-bold border transition text-center flex items-center justify-center space-x-1 bg-slate-50 text-slate-600 border-slate-200">
+                        <span>🌱 Growth</span>
+                    </button>
+                    <button type="button" data-tone="empathy" onclick="AIRefiner.setTone('empathy')"
+                        class="ai-tone-pill px-2.5 py-1.5 rounded-xl text-[10px] font-bold border transition text-center flex items-center justify-center space-x-1 bg-slate-50 text-slate-600 border-slate-200">
+                        <span>🤝 Empathy</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Generate Action Button -->
+            <button id="ai-btn-generate" onclick="AIRefiner.generateDraft()"
+                class="w-full py-3 btn-primary text-xs font-extrabold flex items-center justify-center space-x-2 rounded-2xl shadow-xs transition active:scale-[0.99]">
+                <i class="fas fa-wand-magic-sparkles"></i>
+                <span>Refine into Structured SBI Model</span>
+            </button>
+
+            <!-- Shimmer Loading Pulse Skeleton -->
+            <div id="ai-shimmer-loader" class="hidden p-4 rounded-2xl border border-primary/20 bg-primary/5 space-y-2.5 animate-pulse">
+                <div class="flex items-center space-x-2 text-primary font-bold text-xs">
+                    <i class="fas fa-sparkles fa-spin"></i>
+                    <span>Gemini 1.5 is structuring your observation into SBI framework...</span>
+                </div>
+                <div class="h-3 bg-primary/20 rounded-full w-3/4"></div>
+                <div class="h-3 bg-primary/15 rounded-full w-5/6"></div>
+                <div class="h-3 bg-primary/10 rounded-full w-1/2"></div>
+            </div>
+
+            <!-- Rate Limit Banner (Calm Cooldown State) -->
+            <div id="ai-rate-limit-banner" class="hidden p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 space-y-2">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-hourglass-half text-amber-600"></i>
+                        <span class="font-bold text-xs" id="ai-rate-limit-msg">Hourly request limit reached (20/hr).</span>
+                    </div>
+                    <span id="ai-rate-limit-timer" class="text-[10px] font-extrabold bg-amber-200/80 px-2 py-0.5 rounded-full">
+                        Reset in ~25 min
+                    </span>
+                </div>
+                <p class="text-[11px] text-amber-800 leading-tight">
+                    You can continue writing and saving this coaching note manually without waiting.
+                </p>
+                <button type="button" onclick="AIRefiner.switchToManual()" class="w-full py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs transition">
+                    Switch to Manual Entry Mode
                 </button>
             </div>
 
-            <!-- Structured Output Box -->
-            <div id="ai-output-box"
-                class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] text-slate-700 space-y-2 hidden">
-                <div class="font-semibold text-primary flex items-center justify-between text-xs">
-                    <span>✦ Refined Coaching Feedback</span>
-                    <span class="badge-sage">SBI Model</span>
+            <!-- Error Banner -->
+            <div id="ai-error-banner" class="hidden p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-triangle-exclamation text-rose-600"></i>
+                    <span id="ai-error-msg" class="text-xs font-semibold">Service error occurred.</span>
                 </div>
-                <p class="leading-relaxed text-slate-800 text-xs" id="ai-generated-text">"Maria, during the evening rush (Situation), your calm de-escalation with the VIP guest protected satisfaction (Behavior). Moving forward, delegating table resets to junior attendants will enable faster seating turns (Impact)."</p>
-                <div class="flex justify-end pt-2 border-t border-[#E8DEDC]">
-                    <button onclick="copyAndApplyFeedback()"
-                        class="btn-primary px-4 py-1.5 text-xs font-bold">Post to Feedback Wall</button>
+                <button type="button" onclick="AIRefiner.switchToManual()" class="text-xs font-bold text-rose-700 underline">
+                    Edit Manually
+                </button>
+            </div>
+
+            <!-- Generative UI (GenUI): 3-Part Separately Editable SBI Cards Container -->
+            <div id="ai-genui-output-container" class="hidden space-y-3 pt-2 border-t border-slate-200/80">
+
+                <!-- Draft Header -->
+                <div class="flex items-center justify-between px-1">
+                    <div class="flex items-center space-x-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                        <span class="font-heading font-extrabold text-xs text-slate-900">Suggested SBI Draft</span>
+                        <span class="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Unsaved</span>
+                    </div>
+                    <span id="ai-draft-tone-tag" class="text-[9px] font-extrabold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full uppercase">
+                        BALANCED
+                    </span>
+                </div>
+
+                <!-- [S] Situation Card -->
+                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5 focus-within:border-primary/50 focus-within:bg-white transition shadow-2xs">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider flex items-center space-x-1">
+                            <span class="w-4 h-4 rounded-md bg-slate-200 text-slate-800 flex items-center justify-center text-[9px] font-black">S</span>
+                            <span>Situation (Context &amp; Setting)</span>
+                        </span>
+                        <span class="text-[9px] text-slate-400">Editable</span>
+                    </div>
+                    <textarea id="ai-card-situation" rows="2"
+                        class="w-full p-0 bg-transparent border-0 text-slate-800 text-xs focus:ring-0 focus:outline-none custom-scrollbar leading-relaxed resize-none"></textarea>
+                </div>
+
+                <!-- [B] Behavior Card -->
+                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5 focus-within:border-primary/50 focus-within:bg-white transition shadow-2xs">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider flex items-center space-x-1">
+                            <span class="w-4 h-4 rounded-md bg-slate-200 text-slate-800 flex items-center justify-center text-[9px] font-black">B</span>
+                            <span>Behavior (Observed Action)</span>
+                        </span>
+                        <span class="text-[9px] text-slate-400">Editable</span>
+                    </div>
+                    <textarea id="ai-card-behavior" rows="2"
+                        class="w-full p-0 bg-transparent border-0 text-slate-800 text-xs focus:ring-0 focus:outline-none custom-scrollbar leading-relaxed resize-none"></textarea>
+                </div>
+
+                <!-- [I] Impact & Guidance Card -->
+                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5 focus-within:border-primary/50 focus-within:bg-white transition shadow-2xs">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider flex items-center space-x-1">
+                            <span class="w-4 h-4 rounded-md bg-slate-200 text-slate-800 flex items-center justify-center text-[9px] font-black">I</span>
+                            <span>Impact &amp; Mentorship Guidance</span>
+                        </span>
+                        <span class="text-[9px] text-slate-400">Editable</span>
+                    </div>
+                    <textarea id="ai-card-impact" rows="2"
+                        class="w-full p-0 bg-transparent border-0 text-slate-800 text-xs focus:ring-0 focus:outline-none custom-scrollbar leading-relaxed resize-none"></textarea>
+                </div>
+
+                <!-- Action Controls: Equal Weight Drafting Controls + Separated Save Button -->
+                <div class="pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                    <!-- Left: Drafting Actions -->
+                    <div class="flex items-center space-x-1.5 w-full sm:w-auto">
+                        <button type="button" onclick="AIRefiner.copyDraftToClipboard()" title="Copy formatted draft"
+                            class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center space-x-1.5">
+                            <i class="fas fa-copy"></i>
+                            <span class="hidden sm:inline">Copy</span>
+                        </button>
+                        <button type="button" onclick="AIRefiner.generateDraft()" title="Regenerate with selected tone"
+                            class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center space-x-1.5">
+                            <i class="fas fa-rotate"></i>
+                            <span class="hidden sm:inline">Regenerate</span>
+                        </button>
+                        <button type="button" onclick="AIRefiner.discardDraft()" title="Discard draft"
+                            class="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition flex items-center space-x-1.5">
+                            <i class="fas fa-trash"></i>
+                            <span>Discard</span>
+                        </button>
+                    </div>
+
+                    <!-- Right: Separated Save to Record Action -->
+                    <button type="button" id="ai-btn-save-note" onclick="AIRefiner.saveCoachingNote()"
+                        class="w-full sm:w-auto px-5 py-2.5 btn-primary text-xs font-extrabold flex items-center justify-center space-x-2 rounded-xl shadow-xs transition">
+                        <i class="fas fa-floppy-disk"></i>
+                        <span>Save to Coaching Record</span>
+                    </button>
                 </div>
             </div>
+
         </div>
     </div>
 </div>
@@ -3572,9 +3746,9 @@
                 </div>
             </div>
             <div class="flex items-center space-x-2">
-                <button onclick="openModal('modal-ai-feedback')" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5 shadow-2xs">
+                <button onclick="openAIFeedbackModal(window.selectedEmployeeContext?.id || 'emp-101', window.selectedEmployeeContext?.name || 'Maria Santos', window.selectedEmployeeContext?.dept || 'Front Office')" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5 shadow-2xs">
                     <i class="fas fa-wand-magic-sparkles text-[10px]"></i>
-                    <span>AI Refiner</span>
+                    <span>AI Copilot</span>
                 </button>
                 <button onclick="openLogMilestoneModal(window.selectedEmployeeContext?.id || 'emp-101')" class="btn-secondary px-3 py-1.5 text-xs font-semibold hover:bg-slate-100 flex items-center space-x-1">
                     <i class="fas fa-flag-checkered text-emerald-600 text-xs"></i>

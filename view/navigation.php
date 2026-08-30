@@ -284,9 +284,9 @@
                         </div>
 
                         <!-- AI Copilot Trigger -->
-                        <button onclick="openModal('modal-ai-feedback')" title="Open AI Feedback Copilot"
+                        <button onclick="if (typeof openAIFeedbackModal === 'function') openAIFeedbackModal(window.selectedEmployeeContext?.id || 'emp-101', window.selectedEmployeeContext?.name || 'Maria Santos', window.selectedEmployeeContext?.dept || 'Front Office');" title="Open AI Feedback Copilot"
                             class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 border border-slate-200/80 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition text-xs shadow-2xs">
-                            <i class="fas fa-robot text-primary"></i>
+                            <i class="fas fa-wand-magic-sparkles text-primary"></i>
                             <span>AI Copilot</span>
                         </button>
 

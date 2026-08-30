@@ -418,6 +418,7 @@
         <!-- SheetJS: Real Excel .xlsx export -->
         <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
         <script src="js/reports.js"></script>
+        <script src="js/ai_refiner.js"></script>
         <script src="js/app.js"></script>
     </body>
 </html>
