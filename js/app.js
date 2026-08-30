@@ -586,12 +586,26 @@ function applyRoleVisibility(userRole) {
     }
 
     // Training Management Sub-tabs & Controls scoping for Associate
+    const trainingNeedsBtn = document.querySelector('button[data-sub="needs"].subnav-training');
     const trainingProgramsBtn = document.querySelector('button[data-sub="programs"].subnav-training');
     const trainingSchedulesBtn = document.querySelector('button[data-sub="schedules"].subnav-training');
+    const trainingAttendanceBtn = document.querySelector('button[data-sub="attendance"].subnav-training');
+    const trainingResultsBtn = document.querySelector('button[data-sub="results"].subnav-training');
+
+    const btnCreateProg = document.getElementById('btn-create-program');
+    const btnSchedSess = document.getElementById('btn-schedule-session');
+    const btnMarkAll = document.getElementById('btn-mark-all-attended');
     
     if (isAssociate) {
+        if (trainingNeedsBtn) trainingNeedsBtn.innerHTML = '<i class="fas fa-bullseye mr-1.5 text-terracotta-dark"></i><span>My Training Needs</span>';
         if (trainingProgramsBtn) trainingProgramsBtn.classList.add('hidden');
         if (trainingSchedulesBtn) trainingSchedulesBtn.classList.add('hidden');
+        if (trainingAttendanceBtn) trainingAttendanceBtn.innerHTML = '<i class="fas fa-user-check mr-1.5 text-sage-dark"></i><span>My Attendance</span>';
+        if (trainingResultsBtn) trainingResultsBtn.innerHTML = '<i class="fas fa-square-poll-vertical mr-1.5 text-primary"></i><span>My Results &amp; Certs</span>';
+
+        if (btnCreateProg) btnCreateProg.classList.add('hidden');
+        if (btnSchedSess) btnSchedSess.classList.add('hidden');
+        if (btnMarkAll) btnMarkAll.classList.add('hidden');
         
         // If associate is on a hidden tab, redirect to needs
         const activeTrainingSub = document.querySelector('.subnav-training.active')?.getAttribute('data-sub');
@@ -601,8 +615,15 @@ function applyRoleVisibility(userRole) {
             }
         }
     } else {
+        if (trainingNeedsBtn) trainingNeedsBtn.innerHTML = '<i class="fas fa-bullseye mr-1.5 text-terracotta-dark"></i><span>Needs &amp; Gaps</span>';
         if (trainingProgramsBtn) trainingProgramsBtn.classList.remove('hidden');
         if (trainingSchedulesBtn) trainingSchedulesBtn.classList.remove('hidden');
+        if (trainingAttendanceBtn) trainingAttendanceBtn.innerHTML = '<i class="fas fa-user-check mr-1.5 text-sage-dark"></i><span>Attendance</span>';
+        if (trainingResultsBtn) trainingResultsBtn.innerHTML = '<i class="fas fa-square-poll-vertical mr-1.5 text-primary"></i><span>Evaluation &amp; Results</span>';
+
+        if (btnCreateProg) btnCreateProg.classList.remove('hidden');
+        if (btnSchedSess) btnSchedSess.classList.remove('hidden');
+        if (btnMarkAll) btnMarkAll.classList.remove('hidden');
     }
 }
 

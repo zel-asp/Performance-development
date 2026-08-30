@@ -71,10 +71,10 @@
     <div id="sub-training-needs" class="sub-panel sub-panel-training active space-y-4 text-xs">
         <div class="card-clean p-4 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-[#E8DEDC]">
             <div>
-                <h4 class="font-heading font-bold text-sm text-slate-900">Skill Gap Audits &amp; Mandatory Compliance Requirements</h4>
-                <p class="text-slate-500 text-xs">Direct triggers identifying which associate requires training and linking to syllabus</p>
+                <h4 id="training-needs-header-title" class="font-heading font-bold text-sm text-slate-900">Skill Gap Audits &amp; Mandatory Compliance Requirements</h4>
+                <p id="training-needs-header-desc" class="text-slate-500 text-xs">Direct triggers identifying which associate requires training and linking to syllabus</p>
             </div>
-            <span class="badge-terracotta"><i class="fas fa-bolt mr-1"></i> Live Needs Queue</span>
+            <span id="training-needs-header-badge" class="badge-terracotta"><i class="fas fa-bolt mr-1"></i> Live Needs Queue</span>
         </div>
 
         <!-- Needs Filter Pill Bar -->
@@ -109,10 +109,10 @@
     <div id="sub-training-programs" class="sub-panel sub-panel-training space-y-4 text-xs">
         <div class="card-clean p-4 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-[#E8DEDC]">
             <div>
-                <h4 class="font-heading font-bold text-sm text-slate-900">Training Programs Catalog (Linked to Skill Gap or Mandatory Compliance)</h4>
-                <p class="text-slate-500 text-xs">Structured syllabi, passing thresholds, target competencies, and certified trainer requirements</p>
+                <h4 id="training-programs-header-title" class="font-heading font-bold text-sm text-slate-900">Training Programs Catalog (Linked to Skill Gap or Mandatory Compliance)</h4>
+                <p id="training-programs-header-desc" class="text-slate-500 text-xs">Structured syllabi, passing thresholds, target competencies, and certified trainer requirements</p>
             </div>
-            <button onclick="openCreateProgramModal()" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1">
+            <button id="btn-create-program" onclick="openCreateProgramModal()" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1">
                 <i class="fas fa-plus"></i>
                 <span>+ Create Program</span>
             </button>
@@ -129,10 +129,10 @@
     <div id="sub-training-schedules" class="sub-panel sub-panel-training space-y-4 text-xs">
         <div class="card-clean p-4 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-[#E8DEDC]">
             <div>
-                <h4 class="font-heading font-bold text-sm text-slate-900">Session Scheduling (Date, Time, Location, Trainer, Participant List)</h4>
-                <p class="text-slate-500 text-xs">Roster registrations, venue assignments, dates, and session status tracking</p>
+                <h4 id="training-schedules-header-title" class="font-heading font-bold text-sm text-slate-900">Session Scheduling (Date, Time, Location, Trainer, Participant List)</h4>
+                <p id="training-schedules-header-desc" class="text-slate-500 text-xs">Roster registrations, venue assignments, dates, and session status tracking</p>
             </div>
-            <button onclick="openScheduleModal()" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1">
+            <button id="btn-schedule-session" onclick="openScheduleModal()" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1">
                 <i class="fas fa-calendar-plus"></i>
                 <span>+ Schedule Session</span>
             </button>

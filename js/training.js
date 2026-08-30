@@ -526,19 +526,46 @@ function renderTrainingNeeds() {
                     : `Showing All Audit Triggers (${filteredNeeds.length})`;
     }
 
+    // Personalize Header and Filters for Associate vs Supervisor
+    const headTitle = document.getElementById('training-needs-header-title');
+    const headDesc = document.getElementById('training-needs-header-desc');
+    const headBadge = document.getElementById('training-needs-header-badge');
+    const btnActive = document.getElementById('btn-needs-filter-active');
+    const btnPerf = document.getElementById('btn-needs-filter-performance');
+    const btnResolved = document.getElementById('btn-needs-filter-resolved');
+    const btnAll = document.getElementById('btn-needs-filter-all');
+
+    if (isAssociate) {
+        if (headTitle) headTitle.textContent = 'My Training & Skill Development Plan';
+        if (headDesc) headDesc.textContent = 'Personalized learning assignments and mandatory compliance requirements to close skill gaps';
+        if (headBadge) headBadge.innerHTML = '<i class="fas fa-user-graduate mr-1"></i> My Learning Plan';
+        if (btnActive) btnActive.innerHTML = '<i class="fas fa-bolt mr-1 text-amber-300"></i> My Active Needs';
+        if (btnPerf) btnPerf.innerHTML = '<i class="fas fa-bullseye mr-1 text-indigo-600"></i> My Goal Referrals';
+        if (btnResolved) btnResolved.innerHTML = '<i class="fas fa-check-circle mr-1 text-emerald-600"></i> My Completed &amp; Certs';
+        if (btnAll) btnAll.textContent = 'All My Training';
+    } else {
+        if (headTitle) headTitle.textContent = 'Skill Gap Audits & Mandatory Compliance Requirements';
+        if (headDesc) headDesc.textContent = 'Direct triggers identifying which associate requires training and linking to syllabus';
+        if (headBadge) headBadge.innerHTML = '<i class="fas fa-bolt mr-1"></i> Live Needs Queue';
+        if (btnActive) btnActive.innerHTML = '<i class="fas fa-bolt mr-1 text-amber-300"></i> Active Deficits';
+        if (btnPerf) btnPerf.innerHTML = '<i class="fas fa-share-from-square mr-1 text-indigo-600"></i> Referrals';
+        if (btnResolved) btnResolved.innerHTML = '<i class="fas fa-check-circle mr-1 text-emerald-600"></i> Resolved History';
+        if (btnAll) btnAll.textContent = 'All Audit Triggers';
+    }
+
     if (filteredNeeds.length === 0) {
         const emptyMsg = needsActiveFilterTab === 'performance'
-            ? 'No formal training needs linked to Performance Goal Evaluations / IDP yet.'
+            ? (isAssociate ? 'No formal training needs linked to your Performance Goals yet.' : 'No formal training needs linked to Performance Goal Evaluations / IDP yet.')
             : needsActiveFilterTab === 'resolved'
-                ? 'No resolved training history recorded yet.'
-                : 'No active skill gap deficits or compliance requirements pending in the queue.';
+                ? (isAssociate ? 'No completed training certifications recorded on your profile yet.' : 'No resolved training history recorded yet.')
+                : (isAssociate ? 'Great job! You have no pending skill gaps or compliance deficits.' : 'No active skill gap deficits or compliance requirements pending in the queue.');
 
         container.innerHTML = `
             <div class="card-clean p-8 bg-white border border-[#E8DEDC] text-center space-y-3">
                 <div class="w-12 h-12 rounded-full bg-[#FAF8F7] border border-[#E8DEDC] text-slate-400 flex items-center justify-center mx-auto">
                     <i class="fas fa-check-double text-lg text-emerald-600"></i>
                 </div>
-                <h4 class="font-bold text-slate-800 text-sm">${needsActiveFilterTab === 'performance' ? 'No Performance Goal Needs' : (needsActiveFilterTab === 'resolved' ? 'No Resolved Items' : 'All Associate Competencies at Benchmark')}</h4>
+                <h4 class="font-bold text-slate-800 text-sm">${needsActiveFilterTab === 'performance' ? (isAssociate ? 'No Goal Referrals' : 'No Performance Goal Needs') : (needsActiveFilterTab === 'resolved' ? (isAssociate ? 'No Certifications Yet' : 'No Resolved Items') : (isAssociate ? 'All Your Competencies on Target' : 'All Associate Competencies at Benchmark'))}</h4>
                 <p class="text-slate-500 text-xs">${emptyMsg}</p>
             </div>
         `;
@@ -831,7 +858,28 @@ function renderTrainingSessions() {
     const container = document.getElementById('training-sessions-list');
     if (!container) return;
 
-    container.innerHTML = trainingSessionsState.map(sess => {
+    const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
+    const currentEmpId = window.currentUser?.id;
+
+    let sessionsToRender = trainingSessionsState;
+    if (isAssociate && currentEmpId) {
+        sessionsToRender = trainingSessionsState.filter(s => s.roster && s.roster.some(r => r.associateId === currentEmpId || (window.currentUser?.name && String(r.name).toLowerCase().includes(String(window.currentUser.name).toLowerCase()))));
+    }
+
+    if (sessionsToRender.length === 0) {
+        container.innerHTML = `
+            <div class="card-clean p-8 bg-white border border-[#E8DEDC] text-center space-y-3">
+                <div class="w-12 h-12 rounded-full bg-[#FAF8F7] border border-[#E8DEDC] text-slate-400 flex items-center justify-center mx-auto">
+                    <i class="fas fa-calendar-xmark text-lg text-slate-400"></i>
+                </div>
+                <h4 class="font-bold text-slate-800 text-sm">${isAssociate ? 'No Scheduled Sessions' : 'No Active Sessions'}</h4>
+                <p class="text-slate-500 text-xs">${isAssociate ? 'You do not have any upcoming training sessions scheduled at this time. Once assigned by your supervisor, details will appear here.' : 'No training sessions scheduled yet. Click "+ Schedule Session" above to create a new cohort.'}</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = sessionsToRender.map(sess => {
         const allCompleted = sess.roster && sess.roster.length > 0 && sess.roster.every(r => r.attendanceStatus === 'Completed' || r.evaluationStatus === 'Completed');
         const isCompleted = sess.status === 'Completed' || allCompleted;
         const isLive = !isCompleted && sess.status === 'In Progress';
@@ -1338,7 +1386,29 @@ function renderTrainingResults() {
     const tbody = document.getElementById('training-results-tbody');
     if (!tbody) return;
 
-    tbody.innerHTML = trainingResultsState.map(res => {
+    const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
+    const currentEmpId = window.currentUser?.id;
+
+    let resultsToRender = trainingResultsState;
+    if (isAssociate && currentEmpId) {
+        resultsToRender = trainingResultsState.filter(r => r.associateId === currentEmpId || (window.currentUser?.name && String(r.associateName).toLowerCase().includes(String(window.currentUser.name).toLowerCase())));
+    }
+
+    if (resultsToRender.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="px-5 py-8 text-center text-slate-400 text-xs italic">
+                    <div class="flex flex-col items-center justify-center space-y-2">
+                        <i class="fas fa-clipboard-list text-2xl text-slate-300"></i>
+                        <span>${isAssociate ? 'No evaluation results or certifications recorded for your account yet.' : 'No recorded training evaluation results yet.'}</span>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = resultsToRender.map(res => {
         const isPassed = res.resultStatus.includes('Passed');
 
         return `
