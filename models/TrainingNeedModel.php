@@ -242,12 +242,16 @@ class TrainingNeedModel extends BaseModel
         $existingNeedsRes = supabaseRequest('training_needs', 'GET', null, true);
         $existingNeeds = is_array($existingNeedsRes['data']) ? $existingNeedsRes['data'] : [];
         $needsByKey = [];
+        $needsByEmp = [];
 
         foreach ($existingNeeds as $n) {
             $eId = strtolower(trim($n['employee_id'] ?? ($n['employeeId'] ?? '')));
             $cKey = $n['competency_key'] ?? ($n['competencyKey'] ?? '');
             $gId = $n['target_goal_id'] ?? ($n['targetGoalId'] ?? '');
             if ($eId) {
+                if (!isset($needsByEmp[$eId])) {
+                    $needsByEmp[$eId] = $n;
+                }
                 $k = "{$eId}_{$cKey}_{$gId}";
                 if (!isset($needsByKey[$k])) {
                     $needsByKey[$k] = $n;

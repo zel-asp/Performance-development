@@ -76,7 +76,22 @@ class TrainingIntegrationController
             $results['xp_synced_to_ledger'] = true;
         }
 
-        // 4. Email dispatch omitted as per requirement
+        // 4. Update linked performance goals in Supabase
+        if (!empty($associateId)) {
+            require_once __DIR__ . '/../models/PerformanceGoalModel.php';
+            $goalModel = new PerformanceGoalModel();
+            foreach ($allNeeds as $need) {
+                $tGoalId = $need['target_goal_id'] ?? ($need['targetGoalId'] ?? null);
+                $nEmpId = $need['employeeId'] ?? ($need['employee_id'] ?? '');
+                if ($tGoalId && ($nEmpId === $associateId || empty($nEmpId))) {
+                    $goalModel->setNeedsTraining($tGoalId, false);
+                    $goalModel->setInTraining($tGoalId, false);
+                    $goalModel->updateStatus($tGoalId, 'Approved', "Training certification verified (Ref: {$certNumber}). Competency benchmark resolved.");
+                }
+            }
+        }
+
+        // 5. Email dispatch omitted as per requirement
         $results['email_dispatched'] = false;
 
         return $results;
