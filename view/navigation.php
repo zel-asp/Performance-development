@@ -305,5 +305,39 @@
                 <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-28 lg:pb-8 custom-scrollbar">
                     <div class="max-w-7xl mx-auto space-y-5 pb-6 lg:pb-0">
 
+<script>
+(function() {
+    try {
+        var rawUser = localStorage.getItem('oxford_session_user');
+        var user = rawUser ? JSON.parse(rawUser) : null;
+        var role = (localStorage.getItem('oxford_session_role') || 'associate').toLowerCase().trim();
+        var fallbackName = role === 'supervisor' ? 'Chef Marco Rossi' : (role === 'hradmin' ? 'Clara Higgins' : (role === 'generalmanager' ? 'Victoria Sterling' : 'Maria Santos'));
+        var fallbackRole = role === 'supervisor' ? 'Executive Sous Chef' : (role === 'hradmin' ? 'HR Director' : (role === 'generalmanager' ? 'General Manager' : 'Front Desk Host'));
+        var fallbackDept = role === 'supervisor' ? 'Culinary & Kitchen' : (role === 'hradmin' ? 'Human Resources' : (role === 'generalmanager' ? 'Executive Office' : 'Front Office'));
+        var fallbackTag = role === 'supervisor' ? 'Sup' : (role === 'hradmin' ? 'HR' : (role === 'generalmanager' ? 'GM' : 'Emp'));
+        var fallbackInitials = role === 'supervisor' ? 'MR' : (role === 'hradmin' ? 'CH' : (role === 'generalmanager' ? 'VS' : 'MS'));
+
+        var name = user?.name || user?.full_name || fallbackName;
+        var roleTitle = user?.role_title || user?.role || fallbackRole;
+        var dept = user?.department || user?.dept || fallbackDept;
+        var tag = user?.badge || fallbackTag;
+        var initials = user?.initials || fallbackInitials;
+
+        document.querySelectorAll('.sidebar-user-name').forEach(function(el) { el.textContent = name; });
+        document.querySelectorAll('.sidebar-user-dept').forEach(function(el) { el.textContent = roleTitle + ' · ' + dept; });
+        document.querySelectorAll('.role-badge-tag').forEach(function(el) { el.textContent = tag; });
+        document.querySelectorAll('.user-avatar-circle').forEach(function(el) { el.textContent = initials; });
+
+        var navName = document.getElementById('nav-user-name');
+        var navRole = document.getElementById('nav-user-role');
+        if (navName) navName.textContent = name;
+        if (navRole) navRole.textContent = roleTitle + ' · ' + dept;
+        
+        var heroGreet = document.getElementById('hero-greeting-text');
+        if (heroGreet) heroGreet.textContent = 'Good morning, ' + name + ' 👋';
+    } catch(e) {}
+})();
+</script>
+
                         <!-- ======================================================== -->
                         <!-- PILLAR 0: DASHBOARD (Overview Hub & System Analytics)     -->
