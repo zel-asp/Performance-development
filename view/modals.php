@@ -63,7 +63,7 @@
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
                     <button type="button" onclick="fillGoalTemplate('vip_nps')"
                         class="p-2 rounded-xl bg-white border border-slate-200 hover:border-primary hover:text-primary font-semibold transition text-left shadow-2xs hover:shadow-xs group">
-                        <span class="text-xs mb-0.5 block group-hover:scale-105 transition">🌟</span>
+                        <span class="text-xs mb-0.5 block group-hover:scale-105 transition"><i class="fas fa-star text-amber-500 text-xs"></i></span>
                         <span
                             class="font-bold block text-slate-800 group-hover:text-primary text-[11px] truncate">VIP
                             NPS Lift</span>
@@ -71,7 +71,7 @@
                     </button>
                     <button type="button" onclick="fillGoalTemplate('upsell_wine')"
                         class="p-2 rounded-xl bg-white border border-slate-200 hover:border-primary hover:text-primary font-semibold transition text-left shadow-2xs hover:shadow-xs group">
-                        <span class="text-xs mb-0.5 block group-hover:scale-105 transition">🍷</span>
+                        <span class="text-xs mb-0.5 block group-hover:scale-105 transition"><i class="fas fa-wine-glass text-rose-700 text-xs"></i></span>
                         <span
                             class="font-bold block text-slate-800 group-hover:text-primary text-[11px] truncate">Wine
                             Pairing</span>
@@ -79,7 +79,7 @@
                     </button>
                     <button type="button" onclick="fillGoalTemplate('haccp_audit')"
                         class="p-2 rounded-xl bg-white border border-slate-200 hover:border-primary hover:text-primary font-semibold transition text-left shadow-2xs hover:shadow-xs group">
-                        <span class="text-xs mb-0.5 block group-hover:scale-105 transition">🧼</span>
+                        <span class="text-xs mb-0.5 block group-hover:scale-105 transition"><i class="fas fa-shield-halved text-emerald-600 text-xs"></i></span>
                         <span
                             class="font-bold block text-slate-800 group-hover:text-primary text-[11px] truncate">HACCP
                             Hygiene</span>
@@ -87,7 +87,7 @@
                     </button>
                     <button type="button" onclick="fillGoalTemplate('room_turnaround')"
                         class="p-2 rounded-xl bg-white border border-slate-200 hover:border-primary hover:text-primary font-semibold transition text-left shadow-2xs hover:shadow-xs group">
-                        <span class="text-xs mb-0.5 block group-hover:scale-105 transition">🛏️</span>
+                        <span class="text-xs mb-0.5 block group-hover:scale-105 transition"><i class="fas fa-bed text-indigo-600 text-xs"></i></span>
                         <span
                             class="font-bold block text-slate-800 group-hover:text-primary text-[11px] truncate">Suite
                             Turnover</span>
@@ -154,33 +154,37 @@
                     </div>
                     <select id="goal-kpi-input" required
                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none bg-white transition">
-                        <option value="NPS >= +92 Score">⭐ VIP NPS Lift (Target >= +92 NPS Score)</option>
-                        <option value="+18% Beverage Rev/Cover">📈 Wine & Beverage Pairing (+18% Avg Check Revenue)</option>
-                        <option value="100% Audit Score (Zero Violations)">✅ HACCP Hygiene & Safety (100% Audit Pass)</option>
-                        <option value="< 22 mins / suite turnover">⏱️ Suite Turnover Efficiency (&lt; 22m per suite)</option>
-                        <option value="Guest Satisfaction >= 95%">🌟 Guest Satisfaction Index (&ge; 95% Rating)</option>
-                        <option value="Zero Safety Incidents">🛡️ Risk & Safety Compliance (Zero Incidents)</option>
-                        <option value="Upsell Conversion Rate >= 25%">💰 Room Upsell Conversion (&ge; 25% Arrival Upgrade)</option>
-                        <option value="Food Cost Variance <= 1.5%">🍽️ Culinary Margin Control (Variance &le; 1.5%)</option>
+                        <option value="NPS >= +92 Score">VIP NPS Lift (Target >= +92 NPS Score)</option>
+                        <option value="+18% Beverage Rev/Cover">Wine & Beverage Pairing (+18% Avg Check Revenue)</option>
+                        <option value="100% Audit Score (Zero Violations)">HACCP Hygiene & Safety (100% Audit Pass)</option>
+                        <option value="< 22 mins / suite turnover">Suite Turnover Efficiency (&lt; 22m per suite)</option>
+                        <option value="Guest Satisfaction >= 95%">Guest Satisfaction Index (&ge; 95% Rating)</option>
+                        <option value="Zero Safety Incidents">Risk & Safety Compliance (Zero Incidents)</option>
+                        <option value="Upsell Conversion Rate >= 25%">Room Upsell Conversion (&ge; 25% Arrival Upgrade)</option>
+                        <option value="Food Cost Variance <= 1.5%">Culinary Margin Control (Variance &le; 1.5%)</option>
                     </select>
 
                     <div class="flex items-center space-x-1.5 pt-1 flex-wrap gap-y-1">
                         <span class="text-[10px] text-slate-400 font-medium">Quick Presets:</span>
                         <button type="button" onclick="setKPIValue('NPS >= +92 Score')"
-                            class="text-[10px] bg-white border border-slate-200 hover:border-slate-400 text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
-                            ⭐ NPS &ge; +92
+                            class="text-[10px] bg-white border border-slate-200 hover:border-slate-400 text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs flex items-center space-x-1">
+                            <i class="fas fa-star text-amber-500 text-[10px]"></i>
+                            <span>NPS &ge; +92</span>
                         </button>
                         <button type="button" onclick="setKPIValue('+18% Beverage Rev/Cover')"
-                            class="text-[10px] bg-white border border-slate-200 hover:border-slate-400 text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
-                            📈 +18% Avg Check
+                            class="text-[10px] bg-white border border-slate-200 hover:border-slate-400 text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs flex items-center space-x-1">
+                            <i class="fas fa-arrow-trend-up text-emerald-600 text-[10px]"></i>
+                            <span>+18% Avg Check</span>
                         </button>
                         <button type="button" onclick="setKPIValue('100% Audit Score (Zero Violations)')"
-                            class="text-[10px] bg-white border border-slate-200 hover:border-slate-400 text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
-                            ✅ 100% Audit Pass
+                            class="text-[10px] bg-white border border-slate-200 hover:border-slate-400 text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs flex items-center space-x-1">
+                            <i class="fas fa-check-circle text-emerald-600 text-[10px]"></i>
+                            <span>100% Audit Pass</span>
                         </button>
                         <button type="button" onclick="setKPIValue('< 22 mins / suite turnover')"
-                            class="text-[10px] bg-white border border-slate-200 hover:border-slate-400 text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
-                            ⏱️ &lt; 22m Turnover
+                            class="text-[10px] bg-white border border-slate-200 hover:border-slate-400 text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs flex items-center space-x-1">
+                            <i class="fas fa-stopwatch text-indigo-600 text-[10px]"></i>
+                            <span>&lt; 22m Turnover</span>
                         </button>
                     </div>
                 </div>
@@ -482,13 +486,15 @@
                 <div class="flex flex-wrap gap-1.5">
                     <button type="button"
                         onclick="setRoughNote('Peak dinner rush was hectic. Maria calmed down an angry VIP guest whose suite was delayed, but junior hosts were standing idle.')"
-                        class="px-3 py-1 rounded-full bg-white border border-dusty-100 text-dusty-dark text-[10px] font-semibold hover:bg-slate-100 transition shadow-2xs">
-                        ⚡ Rush Hour Composure
+                        class="px-3 py-1 rounded-full bg-white border border-dusty-100 text-dusty-dark text-[10px] font-semibold hover:bg-slate-100 transition shadow-2xs flex items-center space-x-1">
+                        <i class="fas fa-bolt text-amber-500 text-[10px]"></i>
+                        <span>Rush Hour Composure</span>
                     </button>
                     <button type="button"
                         onclick="setRoughNote('Pierre recommended the reserve vintage to presidential suites and exceeded beverage targets by 20% tonight.')"
-                        class="px-3 py-1 rounded-full bg-white border border-dusty-100 text-dusty-dark text-[10px] font-semibold hover:bg-slate-100 transition shadow-2xs">
-                        🍷 Sommelier Upsell Win
+                        class="px-3 py-1 rounded-full bg-white border border-dusty-100 text-dusty-dark text-[10px] font-semibold hover:bg-slate-100 transition shadow-2xs flex items-center space-x-1">
+                        <i class="fas fa-wine-glass text-rose-700 text-[10px]"></i>
+                        <span>Sommelier Upsell Win</span>
                     </button>
                 </div>
             </div>
@@ -824,27 +830,27 @@
                         class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-slate-300 cursor-pointer transition">
                         <input type="radio" name="kudos_category" value="guest_service" checked
                             class="accent-primary">
-                        <span class="text-[11px] font-semibold text-slate-700">🌟 Great Guest Service</span>
+                        <span class="text-[11px] font-semibold text-slate-700 flex items-center space-x-1"><i class="fas fa-star text-amber-500 text-xs"></i> <span>Great Guest Service</span></span>
                     </label>
                     <label
                         class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-slate-300 cursor-pointer transition">
                         <input type="radio" name="kudos_category" value="collaboration" class="accent-primary">
-                        <span class="text-[11px] font-semibold text-slate-700">🤝 Team Collaboration</span>
+                        <span class="text-[11px] font-semibold text-slate-700 flex items-center space-x-1"><i class="fas fa-handshake text-indigo-600 text-xs"></i> <span>Team Collaboration</span></span>
                     </label>
                     <label
                         class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-slate-300 cursor-pointer transition">
                         <input type="radio" name="kudos_category" value="safety_haccp" class="accent-primary">
-                        <span class="text-[11px] font-semibold text-slate-700">🛡️ Safety &amp; HACCP</span>
+                        <span class="text-[11px] font-semibold text-slate-700 flex items-center space-x-1"><i class="fas fa-shield-halved text-emerald-600 text-xs"></i> <span>Safety &amp; HACCP</span></span>
                     </label>
                     <label
                         class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-slate-300 cursor-pointer transition">
                         <input type="radio" name="kudos_category" value="crisis_recovery" class="accent-primary">
-                        <span class="text-[11px] font-semibold text-slate-700">⚡ Crisis Recovery</span>
+                        <span class="text-[11px] font-semibold text-slate-700 flex items-center space-x-1"><i class="fas fa-bolt text-amber-500 text-xs"></i> <span>Crisis Recovery</span></span>
                     </label>
                     <label
                         class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-slate-300 cursor-pointer transition">
                         <input type="radio" name="kudos_category" value="operational_excellence" class="accent-primary">
-                        <span class="text-[11px] font-semibold text-slate-700">🏆 Operational Excellence</span>
+                        <span class="text-[11px] font-semibold text-slate-700 flex items-center space-x-1"><i class="fas fa-trophy text-amber-500 text-xs"></i> <span>Operational Excellence</span></span>
                     </label>
                 </div>
             </div>
@@ -902,21 +908,21 @@
 
             <div class="grid grid-cols-3 gap-3 text-center">
                 <button onclick="submitSentimentRating('Positive')"
-                    class="p-4 rounded-2xl border border-[#E8DEDC] hover:border-emerald-500 hover:bg-emerald-50/50 transition flex flex-col items-center group shadow-2xs">
-                    <span class="text-3xl mb-1.5 group-hover:scale-110 transition">😊</span>
+                    class="p-4 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 transition flex flex-col items-center group shadow-2xs">
+                    <i class="fas fa-face-smile text-emerald-500 text-2xl mb-1.5 group-hover:scale-110 transition"></i>
                     <span class="text-xs font-bold text-emerald-700">Smooth</span>
                     <span class="text-[10px] text-slate-400">Great flow (5★)</span>
                 </button>
                 <button onclick="submitSentimentRating('Neutral')"
-                    class="p-4 rounded-2xl border border-[#E8DEDC] hover:border-amber-500 hover:bg-amber-50/50 transition flex flex-col items-center group shadow-2xs">
-                    <span class="text-3xl mb-1.5 group-hover:scale-110 transition">😐</span>
+                    class="p-4 rounded-2xl border border-slate-200 hover:border-amber-500 hover:bg-amber-50/50 transition flex flex-col items-center group shadow-2xs">
+                    <i class="fas fa-face-meh text-amber-500 text-2xl mb-1.5 group-hover:scale-110 transition"></i>
                     <span class="text-xs font-bold text-amber-700">Manageable</span>
                     <span class="text-[10px] text-slate-400">Busy shift (3★)</span>
                 </button>
                 <button onclick="submitSentimentRating('Stressful')"
-                    class="p-4 rounded-2xl border border-[#E8DEDC] hover:border-red-500 hover:bg-red-50/50 transition flex flex-col items-center group shadow-2xs">
-                    <span class="text-3xl mb-1.5 group-hover:scale-110 transition">😓</span>
-                    <span class="text-xs font-bold text-red-600">Friction</span>
+                    class="p-4 rounded-2xl border border-slate-200 hover:border-rose-500 hover:bg-rose-50/50 transition flex flex-col items-center group shadow-2xs">
+                    <i class="fas fa-face-frown text-rose-500 text-2xl mb-1.5 group-hover:scale-110 transition"></i>
+                    <span class="text-xs font-bold text-rose-600">Friction</span>
                     <span class="text-[10px] text-slate-400">High stress (1★)</span>
                 </button>
             </div>
@@ -1513,9 +1519,9 @@
                 <div>
                     <label class="block font-bold text-slate-800 text-[11px] mb-1">Certification Status</label>
                     <select id="reeval-status" class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
-                        <option value="Certified" selected>✅ Passed &amp; Certified</option>
-                        <option value="Retake Required">⚠️ Retake Required</option>
-                        <option value="In Progress">⏳ In Progress</option>
+                        <option value="Certified" selected>Passed &amp; Certified</option>
+                        <option value="Retake Required">Retake Required</option>
+                        <option value="In Progress">In Progress</option>
                     </select>
                 </div>
             </div>
@@ -1702,8 +1708,11 @@
 
         <div class="p-6 overflow-y-auto custom-scrollbar space-y-5 text-xs bg-white">
 
-            <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] text-slate-700 space-y-1">
-                <p class="font-bold text-slate-900 text-sm">💡 What is a "Host"?</p>
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-slate-700 space-y-1">
+                <p class="font-bold text-slate-900 text-sm flex items-center space-x-1.5">
+                    <i class="fas fa-lightbulb text-amber-500"></i>
+                    <span>What is a "Host"?</span>
+                </p>
                 <p class="text-xs leading-relaxed text-slate-600">In hotel and fine dining operations, a
                     <strong>"Host"</strong> (e.g. Front Desk Host, Guest Relations Host, Restaurant Host) is an
                     **individual contributor/frontline employee**. They provide direct guest service.
@@ -3057,10 +3066,10 @@
                     <div class="space-y-1">
                         <label class="font-bold text-slate-800 text-[11px]">2. Calibrated Performance Tier</label>
                         <select id="calib-tier-select" onchange="onCalibrationTierSelect(this.value)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
-                            <option value="Master Tier">👑 Master Tier (4.50 – 5.00 Exceeds All Expectations)</option>
-                            <option value="Advanced Tier">🌟 Advanced Tier (3.50 – 4.49 Highly Proficient)</option>
-                            <option value="Proficient">✓ Proficient Tier (3.00 – 3.49 Meets All Standards)</option>
-                            <option value="Developing (Needs PIP)">⚠️ Developing (Below 3.00 Benchmark · Action Plan Required)</option>
+                            <option value="Master Tier">Master Tier (4.50 – 5.00 Exceeds All Expectations)</option>
+                            <option value="Advanced Tier">Advanced Tier (3.50 – 4.49 Highly Proficient)</option>
+                            <option value="Proficient">Proficient Tier (3.00 – 3.49 Meets All Standards)</option>
+                            <option value="Developing (Needs PIP)">Developing (Below 3.00 Benchmark · Action Plan Required)</option>
                         </select>
                     </div>
 
@@ -3593,8 +3602,14 @@
                 <div class="flex items-center space-x-1.5 flex-wrap gap-1">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Filter:</span>
                     <button type="button" onclick="setMonitoringStreamFilter('all')" id="btn-stream-filter-all" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-primary text-white shadow-2xs transition">All Tasks</button>
-                    <button type="button" onclick="setMonitoringStreamFilter('pending')" id="btn-stream-filter-pending" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">⏳ Pending</button>
-                    <button type="button" onclick="setMonitoringStreamFilter('completed')" id="btn-stream-filter-completed" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">✓ Completed</button>
+                    <button type="button" onclick="setMonitoringStreamFilter('pending')" id="btn-stream-filter-pending" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition flex items-center space-x-1">
+                        <i class="fas fa-hourglass-half text-amber-500 text-[10px]"></i>
+                        <span>Pending</span>
+                    </button>
+                    <button type="button" onclick="setMonitoringStreamFilter('completed')" id="btn-stream-filter-completed" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition flex items-center space-x-1">
+                        <i class="fas fa-check text-emerald-600 text-[10px]"></i>
+                        <span>Completed</span>
+                    </button>
                     <button type="button" onclick="setMonitoringStreamFilter('specific')" id="btn-stream-filter-specific" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">Specific Action</button>
                     <button type="button" onclick="setMonitoringStreamFilter('general')" id="btn-stream-filter-general" class="px-2.5 py-1 rounded-lg font-bold text-[10px] bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">General SOP</button>
                 </div>

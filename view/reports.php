@@ -201,16 +201,16 @@
                 <div>
                     <label class="block font-bold text-slate-800 text-[11px] mb-1">Export File Format</label>
                     <select id="custom-report-format" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
-                        <option value="csv">📄 CSV Spreadsheet (.csv)</option>
-                        <option value="excel">📊 Excel Workbook (.xlsx)</option>
-                        <option value="docx">📝 Word Document (.doc)</option>
-                        <option value="pdf">🖨️ Executive PDF (Print Preview)</option>
+                        <option value="csv">CSV Spreadsheet (.csv)</option>
+                        <option value="excel">Excel Workbook (.xlsx)</option>
+                        <option value="docx">Word Document (.doc)</option>
+                        <option value="pdf">Executive PDF (Print Preview)</option>
                     </select>
                 </div>
             </div>
 
             <!-- Metric Toggles -->
-            <div class="space-y-2 pt-2 border-t border-[#E8DEDC]">
+            <div class="space-y-2 pt-2 border-t border-slate-200">
                 <span class="block font-bold text-slate-800 text-[11px]">Included Data Dimensions</span>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <label class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-[#FAF8F7] cursor-pointer">

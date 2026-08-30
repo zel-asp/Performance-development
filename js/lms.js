@@ -190,7 +190,7 @@ function renderLmsBooks() {
                         <span class="hidden sm:inline">Quiz</span>
                     </button>
                     ${isSupervisorOrManager ? `
-                    <button onclick="deleteLmsDocument('${docId}', '${safeTitle}')" title="Remove Document from LMS"
+                    <button onclick="deleteLmsDocument('${docId}', '${safeTitle}', this)" title="Remove Document from LMS"
                         class="py-2 px-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition text-xs">
                         <i class="fas fa-trash-can"></i>
                     </button>
@@ -638,30 +638,55 @@ async function submitLmsDocUpload(e) {
 /**
  * Delete LMS Document
  */
-async function deleteLmsDocument(docId, docTitle) {
-    if (!confirm(`Are you sure you want to remove "${docTitle}" from the LMS library and Supabase storage?`)) {
-        return;
-    }
-
-    try {
-        const res = await fetch('api/lms.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'delete_document', id: docId })
-        });
-        const json = await res.json();
-
-        if (json.success) {
-            showToast(json.message || 'Document removed successfully.', 'success');
-            await fetchDynamicLmsDocuments();
-            if (typeof fetchNeedsAnalysisData === 'function') {
-                await fetchNeedsAnalysisData();
-            }
-        } else {
-            showToast(json.message || 'Failed to delete document.', 'error');
+async function deleteLmsDocument(docId, docTitle, btnEl = null) {
+    const doDelete = async () => {
+        let origHtml = '';
+        if (btnEl) {
+            origHtml = btnEl.innerHTML;
+            btnEl.disabled = true;
+            btnEl.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i>';
         }
-    } catch (err) {
-        showToast('Error deleting document: ' + err.message, 'error');
+        try {
+            const res = await fetch('api/lms.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete_document', id: docId })
+            });
+            const json = await res.json();
+
+            if (json.success) {
+                showToast(json.message || 'Document removed successfully.', 'success');
+                await fetchDynamicLmsDocuments();
+                if (typeof fetchNeedsAnalysisData === 'function') {
+                    await fetchNeedsAnalysisData();
+                }
+            } else {
+                showToast(json.message || 'Failed to delete document.', 'error');
+            }
+        } catch (err) {
+            showToast('Error deleting document: ' + err.message, 'error');
+        } finally {
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = origHtml;
+            }
+        }
+    };
+
+    if (typeof showActionConfirmModal === 'function') {
+        showActionConfirmModal({
+            title: 'Remove LMS Document',
+            message: `Are you sure you want to remove "${docTitle}" from the LMS library and Supabase storage?`,
+            confirmBtnText: 'Delete Document',
+            confirmBtnClass: 'btn-danger bg-rose-600 hover:bg-rose-700 text-white',
+            iconClass: 'fas fa-trash-can',
+            iconContainerClass: 'bg-rose-100 text-rose-700',
+            onConfirm: doDelete
+        });
+    } else {
+        if (confirm(`Are you sure you want to remove "${docTitle}" from the LMS library and Supabase storage?`)) {
+            await doDelete();
+        }
     }
 }
 

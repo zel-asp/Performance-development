@@ -38,7 +38,7 @@
                                             </div>
                                             <h2 id="hero-greeting-text"
                                                 class="font-heading font-bold text-2xl sm:text-3xl text-slate-900">
-                                                Good morning, Maria Santos 👋</h2>
+                                                Good morning, Maria Santos</h2>
                                             <p class="text-xs text-slate-500">You have <strong>1 milestone review</strong> and <strong>1 LMS handbook</strong> scheduled for calibration this week.</p>
                                         </div>
                                         <div class="flex items-center gap-2.5 flex-wrap">
@@ -457,8 +457,8 @@
                                                                     class="text-[9px] sm:text-[10px] font-bold text-white leading-tight">
                                                                     2,840</p>
                                                                 <span
-                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1 py-0.2 rounded-full inline-block">14
-                                                                    🏆</span>
+                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1.5 py-0.5 rounded-full inline-flex items-center space-x-0.5"><span>14</span>
+                                                                    <i class="fas fa-trophy text-[7px] text-amber-300"></i></span>
                                                             </div>
                                                         </div>
 
@@ -506,8 +506,8 @@
                                                                     class="text-[9px] sm:text-[10px] font-bold text-white leading-tight">
                                                                     2,450</p>
                                                                 <span
-                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1 py-0.2 rounded-full inline-block">12
-                                                                    🏆</span>
+                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1.5 py-0.5 rounded-full inline-flex items-center space-x-0.5"><span>12</span>
+                                                                    <i class="fas fa-trophy text-[7px] text-amber-300"></i></span>
                                                             </div>
                                                         </div>
 
@@ -555,8 +555,8 @@
                                                                     class="text-[9px] sm:text-[10px] font-bold text-white leading-tight">
                                                                     2,190</p>
                                                                 <span
-                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1 py-0.2 rounded-full inline-block">11
-                                                                    🏆</span>
+                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1.5 py-0.5 rounded-full inline-flex items-center space-x-0.5"><span>11</span>
+                                                                    <i class="fas fa-trophy text-[7px] text-amber-300"></i></span>
                                                             </div>
                                                         </div>
 
@@ -605,8 +605,8 @@
                                                                     class="text-[9px] sm:text-[10px] font-bold text-white leading-tight">
                                                                     300</p>
                                                                 <span
-                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1 py-0.2 rounded-full inline-block">1
-                                                                    🏆</span>
+                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1.5 py-0.5 rounded-full inline-flex items-center space-x-0.5"><span>1</span>
+                                                                    <i class="fas fa-trophy text-[7px] text-amber-300"></i></span>
                                                             </div>
                                                         </div>
 
@@ -654,8 +654,8 @@
                                                                     class="text-[9px] sm:text-[10px] font-bold text-white leading-tight">
                                                                     1,320</p>
                                                                 <span
-                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1 py-0.2 rounded-full inline-block">8
-                                                                    🏆</span>
+                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1.5 py-0.5 rounded-full inline-flex items-center space-x-0.5"><span>8</span>
+                                                                    <i class="fas fa-trophy text-[7px] text-amber-300"></i></span>
                                                             </div>
                                                         </div>
 

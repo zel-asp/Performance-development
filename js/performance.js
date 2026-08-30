@@ -360,17 +360,46 @@ window.showActionConfirmModal = function({
     const iconEl = document.getElementById('confirm-modal-icon');
     const iconContEl = document.getElementById('confirm-modal-icon-container');
     const proceedBtn = document.getElementById('btn-proceed-action-confirm');
+    const cancelBtn = document.getElementById('btn-cancel-action-confirm');
 
     if (titleEl) titleEl.textContent = title;
     if (msgEl) msgEl.textContent = message;
     if (iconEl) iconEl.className = iconClass;
     if (iconContEl) iconContEl.className = `w-12 h-12 rounded-2xl ${iconContainerClass} flex items-center justify-center text-xl font-bold mx-auto`;
+    if (cancelBtn) {
+        cancelBtn.disabled = false;
+        cancelBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
     if (proceedBtn) {
-        proceedBtn.textContent = confirmBtnText;
-        proceedBtn.className = `${confirmBtnClass} px-4 py-2 text-xs font-bold flex-1 shadow-xs`;
-        proceedBtn.onclick = function() {
-            closeModal('modal-action-confirmation');
-            if (typeof onConfirm === 'function') onConfirm();
+        proceedBtn.innerHTML = confirmBtnText;
+        proceedBtn.disabled = false;
+        proceedBtn.className = `${confirmBtnClass} px-4 py-2 text-xs font-bold flex-1 shadow-xs transition flex items-center justify-center space-x-1.5`;
+        proceedBtn.onclick = async function() {
+            if (typeof onConfirm === 'function') {
+                proceedBtn.disabled = true;
+                if (cancelBtn) {
+                    cancelBtn.disabled = true;
+                    cancelBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                const isDelete = (confirmBtnText || '').toLowerCase().includes('delete') || (iconClass || '').includes('trash');
+                const loadingText = isDelete ? 'Deleting...' : 'Processing...';
+                proceedBtn.innerHTML = `<i class="fas fa-spinner fa-spin text-xs"></i><span>${loadingText}</span>`;
+                try {
+                    await onConfirm();
+                    closeModal('modal-action-confirmation');
+                } catch (e) {
+                    console.error('Confirmation action error:', e);
+                } finally {
+                    proceedBtn.disabled = false;
+                    proceedBtn.innerHTML = confirmBtnText;
+                    if (cancelBtn) {
+                        cancelBtn.disabled = false;
+                        cancelBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                }
+            } else {
+                closeModal('modal-action-confirmation');
+            }
         };
     }
     openModal('modal-action-confirmation');
@@ -1704,7 +1733,7 @@ function renderPlanningRosterTable() {
                         <i class="fas fa-pen-to-square text-xs"></i>
                     </button>
                 `}
-                <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}')" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 inline-flex items-center justify-center transition shadow-2xs" title="Delete Objective">
+                <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}', this)" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 inline-flex items-center justify-center transition shadow-2xs" title="Delete Objective">
                     <i class="fas fa-trash text-xs"></i>
                 </button>
                 ${isFailed ? `
@@ -1771,7 +1800,7 @@ window.updateStage1BulkDeleteState = function() {
     }
 };
 
-window.confirmDeleteGoal = function(goalId, goalTitle = 'Objective') {
+window.confirmDeleteGoal = function(goalId, goalTitle = 'Objective', btnEl = null) {
     showActionConfirmModal({
         title: 'Delete Performance Objective',
         message: `Are you sure you want to delete "${goalTitle}"? This will permanently remove this goal and its associated tasks.`,
@@ -1780,6 +1809,12 @@ window.confirmDeleteGoal = function(goalId, goalTitle = 'Objective') {
         iconClass: 'fas fa-trash-can',
         iconContainerClass: 'bg-rose-100 text-rose-700',
         onConfirm: async () => {
+            let origBtnHtml = '';
+            if (btnEl) {
+                origBtnHtml = btnEl.innerHTML;
+                btnEl.disabled = true;
+                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i>';
+            }
             try {
                 await PerformanceAPI.deleteGoal(goalId);
                 showToast('Performance objective deleted successfully.', 'success');
@@ -1787,6 +1822,11 @@ window.confirmDeleteGoal = function(goalId, goalTitle = 'Objective') {
             } catch (err) {
                 console.error('Delete goal error:', err);
                 showToast(err.message || 'Failed to delete goal', 'error');
+            } finally {
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = origBtnHtml;
+                }
             }
         }
     });
@@ -1795,6 +1835,7 @@ window.confirmDeleteGoal = function(goalId, goalTitle = 'Objective') {
 window.confirmBulkDeleteStage1 = function() {
     const selected = Array.from(document.querySelectorAll('.stage1-goal-checkbox:checked')).map(cb => cb.value);
     if (selected.length === 0) return;
+    const bulkBtn = document.getElementById('btn-stage1-bulk-delete');
 
     showActionConfirmModal({
         title: 'Bulk Delete Objectives',
@@ -1804,6 +1845,12 @@ window.confirmBulkDeleteStage1 = function() {
         iconClass: 'fas fa-trash-can',
         iconContainerClass: 'bg-rose-100 text-rose-700',
         onConfirm: async () => {
+            let origBulkHtml = '';
+            if (bulkBtn) {
+                origBulkHtml = bulkBtn.innerHTML;
+                bulkBtn.disabled = true;
+                bulkBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Deleting...</span>';
+            }
             try {
                 await PerformanceAPI.bulkDeleteGoals(selected);
                 showToast(`${selected.length} objectives deleted successfully.`, 'success');
@@ -1811,6 +1858,11 @@ window.confirmBulkDeleteStage1 = function() {
             } catch (err) {
                 console.error('Bulk delete error:', err);
                 showToast(err.message || 'Failed to delete goals', 'error');
+            } finally {
+                if (bulkBtn) {
+                    bulkBtn.disabled = false;
+                    bulkBtn.innerHTML = origBulkHtml;
+                }
             }
         }
     });
@@ -3130,7 +3182,7 @@ function renderApprovalRosterTable() {
             </div>
 
             <div class="pt-2 flex items-center justify-end space-x-2 border-t border-slate-100">
-                <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition flex items-center space-x-1" title="Delete Objective">
+                <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}', this)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition flex items-center space-x-1" title="Delete Objective">
                     <i class="fas fa-trash text-xs"></i>
                     <span>Delete</span>
                 </button>
@@ -3175,6 +3227,7 @@ window.updateStage2BulkDeleteState = function() {
 window.confirmBulkDeleteStage2 = function() {
     const selected = Array.from(document.querySelectorAll('.stage2-goal-checkbox:checked')).map(cb => cb.value);
     if (selected.length === 0) return;
+    const bulkBtn = document.getElementById('btn-stage2-bulk-delete');
 
     showActionConfirmModal({
         title: 'Bulk Delete Approved Objectives',
@@ -3184,6 +3237,12 @@ window.confirmBulkDeleteStage2 = function() {
         iconClass: 'fas fa-trash-can',
         iconContainerClass: 'bg-rose-100 text-rose-700',
         onConfirm: async () => {
+            let origBulkHtml = '';
+            if (bulkBtn) {
+                origBulkHtml = bulkBtn.innerHTML;
+                bulkBtn.disabled = true;
+                bulkBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Deleting...</span>';
+            }
             try {
                 await PerformanceAPI.bulkDeleteGoals(selected);
                 showToast(`${selected.length} objectives deleted successfully.`, 'success');
@@ -3191,6 +3250,11 @@ window.confirmBulkDeleteStage2 = function() {
             } catch (err) {
                 console.error('Bulk delete error:', err);
                 showToast(err.message || 'Failed to delete goals', 'error');
+            } finally {
+                if (bulkBtn) {
+                    bulkBtn.disabled = false;
+                    bulkBtn.innerHTML = origBulkHtml;
+                }
             }
         }
     });
@@ -6888,12 +6952,12 @@ function openReviewTasksModal(empId) {
 
                         <div class="flex items-center space-x-2 flex-shrink-0 self-end sm:self-auto">
                             ${isDone ? `
-                                <button onclick="resetTaskForGoal('${t.id}', '${emp.id}')" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl text-xs border border-amber-200 transition flex items-center space-x-1" title="Reset to pending so employee can re-do task">
+                                <button onclick="resetTaskForGoal('${t.id}', '${emp.id}', this)" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl text-xs border border-amber-200 transition flex items-center space-x-1" title="Reset to pending so employee can re-do task">
                                     <i class="fas fa-rotate-left"></i>
                                     <span>Reset to Re-Do</span>
                                 </button>
                             ` : ''}
-                            <button onclick="deleteTaskFromGoal('${t.id}', '${emp.id}')" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs border border-rose-200 transition" title="Delete obsolete task">
+                            <button onclick="deleteTaskFromGoal('${t.id}', '${emp.id}', this)" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs border border-rose-200 transition" title="Delete obsolete task">
                                 <i class="fas fa-trash-can"></i>
                             </button>
                         </div>
@@ -6934,7 +6998,13 @@ window.openReviewTasksModal = openReviewTasksModal;
 /**
  * Reset a task back to pending for employee re-execution
  */
-async function resetTaskForGoal(taskId, empId) {
+async function resetTaskForGoal(taskId, empId, btnEl = null) {
+    let origHtml = '';
+    if (btnEl) {
+        origHtml = btnEl.innerHTML;
+        btnEl.disabled = true;
+        btnEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i><span>Resetting...</span>';
+    }
     try {
         await PerformanceAPI.resetTask(taskId);
         if (typeof showToast === 'function') {
@@ -6947,6 +7017,11 @@ async function resetTaskForGoal(taskId, empId) {
     } catch (err) {
         console.error('Error resetting task:', err);
         if (typeof showToast === 'function') showToast('Failed to reset task.', 'error');
+    } finally {
+        if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.innerHTML = origHtml;
+        }
     }
 }
 window.resetTaskForGoal = resetTaskForGoal;
@@ -6954,22 +7029,41 @@ window.resetTaskForGoal = resetTaskForGoal;
 /**
  * Delete an action task from a goal
  */
-async function deleteTaskFromGoal(taskId, empId) {
-    if (!confirm('Are you sure you want to delete this action task?')) return;
-
-    try {
-        await PerformanceAPI.deleteTask(taskId);
-        if (typeof showToast === 'function') {
-            showToast('Task successfully deleted from goal.', 'success');
+async function deleteTaskFromGoal(taskId, empId, btnEl = null) {
+    showActionConfirmModal({
+        title: 'Delete Action Task',
+        message: 'Are you sure you want to delete this action task from the objective?',
+        confirmBtnText: 'Delete Task',
+        confirmBtnClass: 'btn-danger bg-rose-600 hover:bg-rose-700 text-white',
+        iconClass: 'fas fa-trash-can',
+        iconContainerClass: 'bg-rose-100 text-rose-700',
+        onConfirm: async () => {
+            let origHtml = '';
+            if (btnEl) {
+                origHtml = btnEl.innerHTML;
+                btnEl.disabled = true;
+                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i>';
+            }
+            try {
+                await PerformanceAPI.deleteTask(taskId);
+                if (typeof showToast === 'function') {
+                    showToast('Task successfully deleted from goal.', 'success');
+                }
+                if (typeof loadAndRenderPlanningGoals === 'function') {
+                    await loadAndRenderPlanningGoals();
+                }
+                openReviewTasksModal(empId);
+            } catch (err) {
+                console.error('Error deleting task:', err);
+                if (typeof showToast === 'function') showToast('Failed to delete task.', 'error');
+            } finally {
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = origHtml;
+                }
+            }
         }
-        if (typeof loadAndRenderPlanningGoals === 'function') {
-            await loadAndRenderPlanningGoals();
-        }
-        openReviewTasksModal(empId);
-    } catch (err) {
-        console.error('Error deleting task:', err);
-        if (typeof showToast === 'function') showToast('Failed to delete task.', 'error');
-    }
+    });
 }
 window.deleteTaskFromGoal = deleteTaskFromGoal;
 
