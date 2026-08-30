@@ -209,7 +209,7 @@ USER_PROMPT;
     }
 
     /**
-     * Send cURL request to Gemini API endpoint with strict timeout
+     * Send cURL request to Gemini API endpoint with strict timeout and fallback models
      */
     private function callGeminiApi(array $payload): array
     {
@@ -217,46 +217,52 @@ USER_PROMPT;
             return ['success' => false, 'error' => 'GEMINI_API_KEY is not configured.'];
         }
 
-        $url = $this->endpoint . '?key=' . urlencode($this->apiKey);
+        $models = [
+            GEMINI_MODEL,
+            'gemini-3.1-flash-lite'
+        ];
+
         $jsonPayload = json_encode($payload);
 
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => $jsonPayload,
-            CURLOPT_HTTPHEADER     => [
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($jsonPayload)
-            ],
-            CURLOPT_TIMEOUT        => $this->timeout,
-            CURLOPT_CONNECTTIMEOUT => 2,
-            CURLOPT_SSL_VERIFYPEER => true
-        ]);
+        foreach ($models as $modelName) {
+            $endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' . $modelName . ':generateContent';
+            $url = $endpoint . '?key=' . urlencode($this->apiKey);
 
-        $rawResponse = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($ch);
-        curl_close($ch);
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => $jsonPayload,
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json',
+                    'Content-Length: ' . strlen($jsonPayload)
+                ],
+                CURLOPT_TIMEOUT        => $this->timeout,
+                CURLOPT_CONNECTTIMEOUT => 2,
+                CURLOPT_SSL_VERIFYPEER => false
+            ]);
 
-        if ($rawResponse === false || !empty($curlError)) {
-            return ['success' => false, 'error' => 'cURL Error: ' . $curlError];
+            $rawResponse = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($rawResponse !== false && empty($curlError) && $httpCode === 200) {
+                $decoded = json_decode($rawResponse, true);
+                $candidates = $decoded['candidates'] ?? [];
+                $text = $candidates[0]['content']['parts'][0]['text'] ?? '';
+                $tokens = $decoded['usageMetadata']['totalTokenCount'] ?? 0;
+
+                return [
+                    'success' => true,
+                    'text'    => $text,
+                    'tokens'  => $tokens,
+                    'model'   => $modelName
+                ];
+            }
         }
 
-        if ($httpCode !== 200) {
-            return ['success' => false, 'error' => "HTTP {$httpCode}: " . substr($rawResponse, 0, 200)];
-        }
-
-        $decoded = json_decode($rawResponse, true);
-        $candidates = $decoded['candidates'] ?? [];
-        $text = $candidates[0]['content']['parts'][0]['text'] ?? '';
-        $tokens = $decoded['usageMetadata']['totalTokenCount'] ?? 0;
-
-        return [
-            'success' => true,
-            'text'    => $text,
-            'tokens'  => $tokens
-        ];
+        return ['success' => false, 'error' => 'All Gemini flash endpoints failed or timed out.'];
     }
 
     /**
