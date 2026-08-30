@@ -21,6 +21,59 @@ class AIController
     }
 
     /**
+     * Handle conversational chat with history
+     */
+    public function chat(array $payload): array
+    {
+        $role = trim($payload['role'] ?? ($payload['user_role'] ?? 'Associate'));
+        $userId = trim($payload['user_id'] ?? ($payload['userId'] ?? ''));
+        $dept = trim($payload['dept'] ?? ($payload['department'] ?? 'Front Office'));
+        $employeeName = trim($payload['employee_name'] ?? ($payload['employeeName'] ?? 'Associate'));
+        $chatHistory = $payload['history'] ?? [];
+
+        if (empty($chatHistory) || !is_array($chatHistory)) {
+            http_response_code(400);
+            return [
+                'success' => false,
+                'code'    => 400,
+                'message' => 'Chat history is required.'
+            ];
+        }
+
+        // Sliding Window Rate Limiting (Per-User)
+        $rateCheck = $this->rateLimitService->checkRateLimit($userId ?: 'anonymous-supervisor');
+        if (!$rateCheck['allowed']) {
+            http_response_code(429);
+            return [
+                'success'   => false,
+                'code'      => 429,
+                'rateLimit' => $rateCheck,
+                'message'   => $rateCheck['message'] ?? 'Rate limit exceeded. Please retry later.'
+            ];
+        }
+
+        $result = $this->geminiService->chatWithContext($chatHistory, $employeeName, $dept);
+
+        $this->aiLogModel->logRequest([
+            'user_id'         => $userId ?: 'anonymous-supervisor',
+            'role'            => $role,
+            'feature'         => 'chatbot',
+            'input_reference' => substr(end($chatHistory)['content'] ?? '', 0, 150),
+            'tokens_used'     => $result['tokens'] ?? 0,
+            'status'          => 'SUCCESS'
+        ]);
+
+        return [
+            'success'   => true,
+            'data'      => [
+                'text'  => $result['text'] ?? '',
+                'model' => $result['model'] ?? 'gemini-1.5-flash'
+            ],
+            'rateLimit' => $rateCheck
+        ];
+    }
+
+    /**
      * Refine rough supervisor floor observation into 3-part SBI format
      */
     public function refineSBI(array $payload): array

@@ -209,6 +209,57 @@ USER_PROMPT;
     }
 
     /**
+     * Conversational Chat with history context
+     */
+    public function chatWithContext(array $chatHistory, string $employeeName, string $dept): array
+    {
+        // Add a system instruction explicitly setting the AI as a helpful hotel coaching assistant
+        $systemInstruction = "You are a highly professional AI Leadership Coach for Oxford Suites Makati. "
+            . "You assist hotel staff (like {$employeeName} in {$dept}) with performance coaching, de-escalation tips, "
+            . "and structuring their notes into the SBI (Situation-Behavior-Impact) format when asked. "
+            . "Be concise, encouraging, and use professional hospitality terminology.";
+
+        $contents = [];
+        foreach ($chatHistory as $msg) {
+            $role = $msg['role'] === 'user' ? 'user' : 'model';
+            $contents[] = [
+                'role' => $role,
+                'parts' => [['text' => $msg['content']]]
+            ];
+        }
+
+        $payload = [
+            'systemInstruction' => [
+                'role' => 'system',
+                'parts' => [['text' => $systemInstruction]]
+            ],
+            'contents' => $contents,
+            'generationConfig' => [
+                'temperature'     => 0.6,
+                'maxOutputTokens' => 800,
+                'responseMimeType'=> 'text/plain'
+            ]
+        ];
+
+        $response = $this->callGeminiApi($payload);
+
+        if (!$response['success']) {
+            return [
+                'success' => false,
+                'message' => 'The AI Coach is temporarily unavailable.',
+                'error'   => $response['error'] ?? 'API timeout'
+            ];
+        }
+
+        return [
+            'success' => true,
+            'text'    => $response['text'] ?? '',
+            'tokens'  => $response['tokens'] ?? 0,
+            'model'   => $response['model'] ?? GEMINI_MODEL
+        ];
+    }
+
+    /**
      * Send cURL request to Gemini API endpoint with strict timeout and fallback models
      */
     private function callGeminiApi(array $payload): array

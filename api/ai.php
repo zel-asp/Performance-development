@@ -28,6 +28,11 @@ try {
     $response = null;
 
     switch ($action) {
+        // Conversational AI Coach Chatbot
+        case 'chat':
+            $response = $controller->chat($payload);
+            break;
+
         // Refine rough observation into structured 3-part SBI format
         case 'refine_sbi':
         case 'refine_feedback':
