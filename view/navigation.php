@@ -266,18 +266,6 @@
                     <!-- Right: HR Quick Tools, Department/Staff Switcher, AI Copilot -->
                     <div class="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3 text-xs flex-shrink-0">
 
-                        <!-- Quick Role / Persona Switcher -->
-                        <div class="flex items-center space-x-1.5">
-                            <label for="quick-role-switcher" class="text-[10px] font-bold text-slate-400 hidden xl:inline">Role View:</label>
-                            <select id="quick-role-switcher" onchange="switchRole(this.value)"
-                                class="px-2.5 py-1.5 bg-[#FAF8F7] hover:bg-white text-slate-800 rounded-xl border border-[#E8DEDC] font-semibold transition text-xs shadow-2xs focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer">
-                                <option value="Associate">👤 Associate (Maria Santos)</option>
-                                <option value="Supervisor">👨‍🍳 Supervisor (Chef Marco)</option>
-                                <option value="HRAdmin">📊 HRAdmin (Elena Vance)</option>
-                                <option value="GeneralManager">🏨 GeneralManager (Sterling)</option>
-                            </select>
-                        </div>
-
                         <!-- Authenticated User Profile Badge -->
                         <div id="header-user-profile"
                             class="flex items-center space-x-2.5 bg-[#FAF8F7] border border-[#E8DEDC] px-3 py-1.5 rounded-2xl shadow-2xs">
@@ -316,34 +304,6 @@
                 <!-- Scrollable Viewport with Safe Bottom Spacing for Mobile Nav -->
                 <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-28 lg:pb-8 custom-scrollbar">
                     <div class="max-w-7xl mx-auto space-y-5 pb-6 lg:pb-0">
-
-                        <!-- Dynamic HR Governance Context & Department Scope Banner -->
-                        <div id="role-context-banner"
-                            class="p-3.5 bg-white border border-[#E8DEDC] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-slate-800 transition shadow-2xs">
-                            <div class="flex items-center space-x-3">
-                                <span id="role-context-icon"
-                                    class="w-8 h-8 rounded-xl bg-primary-50 border border-primary-100 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0 shadow-xs">
-                                    <i class="fas fa-shield-halved"></i>
-                                </span>
-                                <div>
-                                    <p class="font-bold text-slate-900" id="role-context-title">Centralized HR
-                                        Administration Hub · 100 Employees Managed</p>
-                                    <p class="text-[11px] text-slate-500" id="role-context-desc">Centrally sets
-                                        standard role frameworks, cascades goals to teams, enters evaluation ratings,
-                                        and manages 9-box succession.</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center space-x-2 self-start sm:self-auto flex-shrink-0">
-                                <span id="role-context-tag"
-                                    class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-primary-50 text-primary border border-primary-100">HR
-                                    Administrator</span>
-                                <button onclick="openModal('modal-create-goal')"
-                                    class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5">
-                                    <i class="fas fa-layer-group text-[10px]"></i>
-                                    <span>Cascade Goals</span>
-                                </button>
-                            </div>
-                        </div>
 
                         <!-- ======================================================== -->
                         <!-- PILLAR 0: DASHBOARD (Overview Hub & System Analytics)     -->
