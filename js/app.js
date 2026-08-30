@@ -772,49 +772,6 @@ async function handleLoginSubmit(e) {
     }
 }
 
-async function logOutToAuth() {
-    localStorage.removeItem('oxford_session_auth');
-    localStorage.removeItem('oxford_session_user');
-    localStorage.removeItem('oxford_session_role');
-
-    // Remove any injected hide-style element
-    const hideStyle = document.getElementById('auth-hide-style');
-    if (hideStyle) {
-        hideStyle.remove();
-    }
-
-    const authScreen = document.getElementById('auth-screen');
-    if (authScreen) {
-        authScreen.style.removeProperty('display');
-        authScreen.classList.remove('hidden');
-        authScreen.classList.add('flex');
-    }
-
-    showToast('Signed out of session', 'info');
-
-    try {
-        await AuthAPI.logout();
-    } catch (err) {
-        console.warn('Backend logout sync:', err);
-    }
-}
-window.logOutToAuth = logOutToAuth;
-
-// Restore user session on refresh
-document.addEventListener('DOMContentLoaded', () => {
-    const isAuth = localStorage.getItem('oxford_session_auth');
-    const savedRole = localStorage.getItem('oxford_session_role') || 'associate';
-    const authScreen = document.getElementById('auth-screen');
-    if (isAuth === 'true' && authScreen) {
-        authScreen.classList.add('hidden');
-    }
-    if (typeof switchRole === 'function') {
-        switchRole(savedRole);
-    } else if (typeof applyRoleVisibility === 'function') {
-        applyRoleVisibility(savedRole);
-    }
-});
-
 
 // Form Templates
 function fillGoalTemplate(type) {
