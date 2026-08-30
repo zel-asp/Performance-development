@@ -406,6 +406,11 @@ const AIRefiner = {
         }
     },
 
+    hideError() {
+        const errEl = document.getElementById('ai-error-banner');
+        if (errEl) errEl.classList.add('hidden');
+    },
+
     /**
      * Passive Department Sentiment Analytics Loader
      */
