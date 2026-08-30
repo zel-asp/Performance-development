@@ -95,6 +95,15 @@
                             </div>
                             <span class="nav-alert-badge hidden bg-primary text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-xs min-w-[18px] text-center">0</span>
                         </a>
+                        <a href="#" onclick="if (typeof openAIFeedbackModal === 'function') openAIFeedbackModal(window.selectedEmployeeContext?.id || 'emp-101', window.selectedEmployeeContext?.name || 'Maria Santos', window.selectedEmployeeContext?.dept || 'Front Office'); toggleMobileSidebar(false); return false;"
+                            class="nav-item flex items-center justify-between text-primary font-bold bg-primary/5 border border-primary/15 my-1"
+                            title="AI Feedback &amp; Reflection Copilot">
+                            <div class="flex items-center">
+                                <i class="fas fa-wand-magic-sparkles w-5 text-center text-sm text-primary"></i>
+                                <span class="ml-3 font-extrabold text-primary">AI Copilot</span>
+                            </div>
+                            <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-primary text-white shadow-2xs">1.5</span>
+                        </a>
                         <a href="#" onclick="switchPillar('pillar-reports'); toggleMobileSidebar(false); return false;"
                             class="nav-item"
                             data-pillar="pillar-reports">

@@ -33,15 +33,8 @@ class AIController
         $roughNotes = trim($payload['rough_notes'] ?? ($payload['rough_observation'] ?? ($payload['notes'] ?? '')));
         $tone = trim($payload['tone'] ?? 'balanced');
 
-        // 1. Strict RBAC Guard: Associates/Employees CANNOT initiate AI requests
-        if (strcasecmp($role, 'Associate') === 0 || strcasecmp($role, 'Employee') === 0) {
-            http_response_code(403);
-            return [
-                'success' => false,
-                'code'    => 403,
-                'message' => 'Role restriction: Associates cannot initiate AI feedback refinement. Self-assessments must remain unassisted to preserve authentic voice.'
-            ];
-        }
+        // 1. Role Context Handling: Associates, Supervisors, and HR all have access
+        $isAssociate = (strcasecmp($role, 'Associate') === 0 || strcasecmp($role, 'Employee') === 0);
 
         // 2. Validate Input
         if (empty($roughNotes)) {
@@ -119,14 +112,9 @@ class AIController
         $role = trim($payload['role'] ?? ($payload['user_role'] ?? 'Associate'));
         $dept = trim($payload['dept'] ?? ($payload['department'] ?? 'all'));
 
-        // Strict RBAC: Employees cannot view sentiment analytics
-        if (strcasecmp($role, 'Associate') === 0 || strcasecmp($role, 'Employee') === 0) {
-            http_response_code(403);
-            return [
-                'success' => false,
-                'code'    => 403,
-                'message' => 'Access denied: Sentiment analytics are restricted to Supervisor and HR roles.'
-            ];
+        // Department sentiment is accessible to all team members, scoped to department
+        if ($dept === 'all' && (strcasecmp($role, 'Associate') === 0 || strcasecmp($role, 'Employee') === 0)) {
+            $dept = 'Front Office'; // Default scope for associate
         }
 
         // Aggregate free-text notes from coaching notes and recent activity

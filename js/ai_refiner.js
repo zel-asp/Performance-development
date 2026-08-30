@@ -39,24 +39,22 @@ const AIRefiner = {
      * Open the AI Feedback Copilot Modal with target associate context
      */
     open(empId = 'emp-101', empName = 'Maria Santos', dept = 'Front Office') {
-        // Strict Role Check: Associates cannot open the AI Copilot
         const currentRole = window.activePersonaRole || (window.activePersonaKey === 'employee' ? 'Associate' : 'Supervisor');
-        if (currentRole === 'Associate') {
-            if (typeof showToast === 'function') {
-                showToast('AI Feedback Refiner is reserved for Floor Supervisors and HR.', 'error');
-            }
-            return;
-        }
+        const isAssociate = (currentRole === 'Associate');
 
-        this.currentEmployeeId = empId || 'emp-101';
-        this.currentEmployeeName = empName || 'Associate';
+        this.currentEmployeeId = empId || (window.currentUser?.id || 'emp-101');
+        this.currentEmployeeName = empName || (window.currentUser?.name || 'Associate');
         this.currentDept = dept || 'Operations';
 
         const nameEl = document.getElementById('ai-modal-emp-name');
         const deptEl = document.getElementById('ai-modal-emp-dept');
         const avatarEl = document.getElementById('ai-modal-emp-avatar');
         if (nameEl) nameEl.textContent = this.currentEmployeeName;
-        if (deptEl) deptEl.textContent = `${this.currentDept} · Subordinate Coaching`;
+        if (deptEl) {
+            deptEl.textContent = isAssociate
+                ? `${this.currentDept} · Personal Shift Reflection & Feedback`
+                : `${this.currentDept} · Subordinate Coaching`;
+        }
         if (avatarEl) {
             const initials = this.currentEmployeeName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
             avatarEl.textContent = initials || 'AS';
@@ -413,7 +411,6 @@ const AIRefiner = {
      */
     async loadDepartmentSentiment(dept = 'all') {
         const currentRole = window.activePersonaRole || (window.activePersonaKey === 'employee' ? 'Associate' : 'Supervisor');
-        if (currentRole === 'Associate') return; // Suppress for Associates
 
         try {
             const res = await fetch(`api/ai.php?action=department_sentiment&dept=${encodeURIComponent(dept)}&role=${encodeURIComponent(currentRole)}`);
