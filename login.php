@@ -115,16 +115,19 @@ require_once 'config/config.php';
         </script>
 
         <style>
+            .emp-card {
+                transition: all 0.15s ease;
+                cursor: pointer;
+            }
+            .emp-card:hover {
+                border-color: #CBD5E1;
+                background-color: #F8FAFC;
+            }
             .emp-card.selected {
                 border-color: #9E1B20 !important;
                 background-color: #FFF5F5 !important;
                 box-shadow: 0 0 0 2px #9E1B20, 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
-                transform: translateY(-2px);
-            }
-            .emp-card.disabled {
-                opacity: 0.35;
-                pointer-events: none;
-                filter: grayscale(80%);
+                transform: translateY(-1px);
             }
             .modal-backdrop {
                 background-color: rgba(15, 23, 42, 0.65);
@@ -357,13 +360,6 @@ require_once 'config/config.php';
                     </div>
 
                     <div class="flex items-center space-x-2">
-                        <button
-                            type="button"
-                            id="btn-cancel-selection"
-                            onclick="resetEmployeeSelection()"
-                            class="hidden px-4 py-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 text-xs font-bold transition">
-                            Change Selection
-                        </button>
                         <button
                             type="button"
                             id="btn-confirm-selection"
@@ -860,6 +856,16 @@ require_once 'config/config.php';
                 const roleBadge = document.getElementById('modal-role-badge');
                 const roleTitle = document.getElementById('modal-role-title');
                 const roleIcon = document.getElementById('modal-role-icon');
+                const searchInput = document.getElementById('employee-search-input');
+                const cardsContainer = document.getElementById('employee-cards-container');
+
+                if (searchInput) {
+                    searchInput.value = '';
+                    searchInput.disabled = false;
+                }
+                if (cardsContainer) {
+                    cardsContainer.style.pointerEvents = 'auto';
+                }
 
                 if (currentVerifiedRole === 'Supervisor') {
                     roleBadge.textContent = 'Supervisor Role';
@@ -943,21 +949,25 @@ require_once 'config/config.php';
             }
 
             function handleSelectEmployeeCard(emp) {
+                // If clicking the already selected employee card, toggle deselect!
+                if (selectedEmployee && selectedEmployee.id === emp.id) {
+                    resetEmployeeSelection();
+                    return;
+                }
+
                 selectedEmployee = emp;
 
-                // Highlight selected card and disable other cards
+                // Highlight selected card and keep all cards active/clickable for switching
                 const allCards = document.querySelectorAll('.emp-card');
                 allCards.forEach(c => {
                     if (c.id === `emp-card-${emp.id}`) {
                         c.classList.add('selected');
-                        c.classList.remove('disabled');
                         const radioInner = c.querySelector('.radio-inner');
                         if (radioInner) radioInner.classList.remove('hidden');
                         const radioBorder = c.querySelector('.select-radio');
                         if (radioBorder) radioBorder.classList.replace('border-slate-300', 'border-rose-600');
                     } else {
                         c.classList.remove('selected');
-                        c.classList.add('disabled'); // Disable unclicked employees!
                         const radioInner = c.querySelector('.radio-inner');
                         if (radioInner) radioInner.classList.add('hidden');
                         const radioBorder = c.querySelector('.select-radio');
@@ -968,15 +978,12 @@ require_once 'config/config.php';
                 // Update bottom action container
                 const preview = document.getElementById('selected-employee-preview');
                 const btnConfirm = document.getElementById('btn-confirm-selection');
-                const btnCancel = document.getElementById('btn-cancel-selection');
                 const btnText = document.getElementById('btn-confirm-text');
                 const btnIcon = document.getElementById('btn-confirm-icon');
 
                 if (preview) {
-                    preview.innerHTML = `Selected: <strong class="text-slate-900">${emp.full_name}</strong> (${emp.email})`;
+                    preview.innerHTML = `<span class="text-slate-700">Selected:</span> <strong class="text-slate-900">${emp.full_name}</strong> <span class="text-slate-400">(${emp.email})</span> <button type="button" onclick="resetEmployeeSelection()" class="ml-2 text-[11px] text-rose-600 hover:text-rose-700 underline font-semibold cursor-pointer">Deselect</button>`;
                 }
-
-                if (btnCancel) btnCancel.classList.remove('hidden');
 
                 if (btnConfirm) {
                     btnConfirm.disabled = false;
@@ -998,9 +1005,10 @@ require_once 'config/config.php';
 
             function resetEmployeeSelection() {
                 selectedEmployee = null;
+
                 const allCards = document.querySelectorAll('.emp-card');
                 allCards.forEach(c => {
-                    c.classList.remove('selected', 'disabled');
+                    c.classList.remove('selected');
                     const radioInner = c.querySelector('.radio-inner');
                     if (radioInner) radioInner.classList.add('hidden');
                     const radioBorder = c.querySelector('.select-radio');
@@ -1009,15 +1017,15 @@ require_once 'config/config.php';
 
                 const preview = document.getElementById('selected-employee-preview');
                 const btnConfirm = document.getElementById('btn-confirm-selection');
-                const btnCancel = document.getElementById('btn-cancel-selection');
                 const btnText = document.getElementById('btn-confirm-text');
+                const btnIcon = document.getElementById('btn-confirm-icon');
 
-                if (preview) preview.innerHTML = '<span class="italic">Please select an employee profile from above</span>';
-                if (btnCancel) btnCancel.classList.add('hidden');
+                if (preview) preview.innerHTML = '<span class="italic text-slate-400">Please select an employee profile from above</span>';
                 if (btnConfirm) {
                     btnConfirm.disabled = true;
                     btnConfirm.className = 'px-5 py-2.5 rounded-lg bg-slate-300 text-slate-500 text-xs font-bold transition flex items-center space-x-2 cursor-not-allowed';
                     btnText.textContent = 'Select Profile';
+                    if (btnIcon) btnIcon.className = 'fas fa-arrow-right text-[10px] ml-1';
                 }
             }
 
@@ -1036,10 +1044,30 @@ require_once 'config/config.php';
                     return;
                 }
 
-                // CASE 2: NOT REMEMBERED -> Send OTP & Open OTP Modal!
+                // CASE 2: NOT REMEMBERED -> Lock UI during sending OTP!
+                const cardsContainer = document.getElementById('employee-cards-container');
+                const searchInput = document.getElementById('employee-search-input');
+                const preview = document.getElementById('selected-employee-preview');
                 const btn = document.getElementById('btn-confirm-selection');
                 const btnText = document.getElementById('btn-confirm-text');
                 const btnIcon = document.getElementById('btn-confirm-icon');
+
+                // 1. Strict sending lock: disable deselect, disable search, disable all cards
+                if (cardsContainer) {
+                    cardsContainer.style.pointerEvents = 'none';
+                    const allCards = cardsContainer.querySelectorAll('.emp-card');
+                    allCards.forEach(c => {
+                        if (c.id !== `emp-card-${selectedEmployee.id}`) {
+                            c.style.opacity = '0.35';
+                            c.style.cursor = 'not-allowed';
+                        }
+                    });
+                }
+                if (searchInput) searchInput.disabled = true;
+                if (preview) {
+                    // Hide deselect button during sending
+                    preview.innerHTML = `<span class="text-slate-700">Sending to:</span> <strong class="text-slate-900">${selectedEmployee.full_name}</strong> <span class="text-slate-400">(${selectedEmployee.email})</span>`;
+                }
 
                 if (btn) btn.disabled = true;
                 if (btnText) btnText.textContent = 'Sending OTP...';
@@ -1063,6 +1091,20 @@ require_once 'config/config.php';
                     if (btn) btn.disabled = false;
                     if (btnText) btnText.textContent = 'Send OTP Code';
                     if (btnIcon) btnIcon.className = 'fas fa-paper-plane text-[10px] ml-1';
+                    
+                    // Restore UI interactivity if still on this modal
+                    if (cardsContainer) {
+                        cardsContainer.style.pointerEvents = 'auto';
+                        const allCards = cardsContainer.querySelectorAll('.emp-card');
+                        allCards.forEach(c => {
+                            c.style.opacity = '1';
+                            c.style.cursor = 'pointer';
+                        });
+                    }
+                    if (searchInput) searchInput.disabled = false;
+                    if (preview && selectedEmployee) {
+                        preview.innerHTML = `<span class="text-slate-700">Selected:</span> <strong class="text-slate-900">${selectedEmployee.full_name}</strong> <span class="text-slate-400">(${selectedEmployee.email})</span> <button type="button" onclick="resetEmployeeSelection()" class="ml-2 text-[11px] text-rose-600 hover:text-rose-700 underline font-semibold cursor-pointer">Deselect</button>`;
+                    }
                 }
             }
 
