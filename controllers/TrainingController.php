@@ -1,3 +1,5 @@
+<?php
+
 require_once __DIR__ . '/../models/TrainingNeedModel.php';
 require_once __DIR__ . '/../models/TrainingProgramModel.php';
 require_once __DIR__ . '/../models/TrainingSessionModel.php';
