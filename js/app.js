@@ -606,6 +606,41 @@ function applyRoleVisibility(userRole) {
     }
 }
 
+async function logOutToAuth() {
+    localStorage.removeItem('oxford_session_auth');
+    localStorage.removeItem('oxford_session_user');
+    localStorage.removeItem('oxford_session_role');
+
+    showToast('Signed out. Redirecting to login...', 'info');
+
+    try {
+        await AuthAPI.logout();
+    } catch (err) {
+        console.warn('Backend logout sync:', err);
+    }
+
+    // Redirect to standalone login page
+    setTimeout(() => {
+        window.location.replace('login.php?logout=1');
+    }, 300);
+}
+window.logOutToAuth = logOutToAuth;
+
+// Restore user session on refresh
+document.addEventListener('DOMContentLoaded', () => {
+    const isAuth = localStorage.getItem('oxford_session_auth');
+    if (isAuth !== 'true') {
+        window.location.replace('login.php');
+        return;
+    }
+    const savedRole = localStorage.getItem('oxford_session_role') || 'associate';
+    if (typeof switchRole === 'function') {
+        switchRole(savedRole);
+    } else if (typeof applyRoleVisibility === 'function') {
+        applyRoleVisibility(savedRole);
+    }
+});
+
 
 // HR Central Roster Management Helpers
 const departmentRosters = {
