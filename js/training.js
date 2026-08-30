@@ -345,13 +345,16 @@ function switchTrainingStage(stageSubTab) {
 
 function getAggregatedCertificates() {
     const list = [];
+    const seenAssociates = new Set();
     const seenRefs = new Set();
 
     // 1. From trainingResultsState
     trainingResultsState.forEach(r => {
         const ref = r.certificateReference || r.certificate_reference;
-        if (ref && !seenRefs.has(ref)) {
-            seenRefs.add(ref);
+        const assocKey = String(r.associateId || r.associateName || '').toLowerCase().trim();
+        if (ref && assocKey && !seenAssociates.has(assocKey)) {
+            seenAssociates.add(assocKey);
+            if (ref) seenRefs.add(ref);
             list.push({
                 id: r.id,
                 programTitle: r.programTitle || r.program_title || 'Hospitality Mastery Program',
@@ -369,8 +372,10 @@ function getAggregatedCertificates() {
     // 2. From trainingCertificatesState
     trainingCertificatesState.forEach(c => {
         const ref = c.certificateNumber || c.certificate_number;
-        if (ref && !seenRefs.has(ref)) {
-            seenRefs.add(ref);
+        const assocKey = String(c.employee_id || c.employeeId || c.associate_name || c.associateName || '').toLowerCase().trim();
+        if (ref && assocKey && !seenAssociates.has(assocKey)) {
+            seenAssociates.add(assocKey);
+            if (ref) seenRefs.add(ref);
             list.push({
                 id: c.id || ('cert-' + ref),
                 programTitle: c.programTitle || c.program_title || 'Hospitality Mastery Program',
@@ -390,8 +395,10 @@ function getAggregatedCertificates() {
         if (n.status === 'Resolved' || n.status === 'Completed') {
             const rawId = String(n.id || '').replace(/\D/g, '') || '9412';
             const ref = n.certificateReference || n.certificate_reference || `OXF-CERT-2026-${rawId.padStart(4, '0')}`;
-            if (!seenRefs.has(ref)) {
-                seenRefs.add(ref);
+            const assocKey = String(n.employeeId || n.employee_id || n.associateName || '').toLowerCase().trim();
+            if (assocKey && !seenAssociates.has(assocKey)) {
+                seenAssociates.add(assocKey);
+                if (ref) seenRefs.add(ref);
                 list.push({
                     id: 'need-cert-' + (n.id || ref),
                     programTitle: n.linkedProgramTitle || n.targetCompetency || 'Hospitality Mastery Program',
