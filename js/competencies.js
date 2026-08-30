@@ -852,8 +852,8 @@ function renderTeamRosterDeck() {
                             <div class="bg-primary h-2 rounded-full" style="width: ${(emp.overallCompetencyScore / 5.0) * 100}%"></div>
                         </div>
                         <div class="text-[11px] space-y-0.5 pt-1">
-                            <p class="text-slate-700">✦ <strong>Top Strength:</strong> <span class="text-sage-dark font-medium">${emp.topStrength}</span></p>
-                            <p class="text-slate-700">✦ <strong>Critical Gap:</strong> <span class="${emp.competencyGap < 0 ? 'text-terracotta' : 'text-slate-500'} font-medium">${emp.criticalGap}</span></p>
+                            <p class="text-slate-700"><i class="fas fa-circle-check text-emerald-600 mr-1 text-[10px]"></i><strong>Top Strength:</strong> <span class="text-sage-dark font-medium">${emp.topStrength}</span></p>
+                            <p class="text-slate-700"><i class="fas fa-circle-exclamation text-amber-500 mr-1 text-[10px]"></i><strong>Critical Gap:</strong> <span class="${emp.competencyGap < 0 ? 'text-terracotta' : 'text-slate-500'} font-medium">${emp.criticalGap}</span></p>
                         </div>
                     </div>
                 </div>
@@ -1650,7 +1650,7 @@ async function renderSkillsGapAnalysis() {
             <button onclick="launchDynamicEvaluationModal('${emp.id}')" 
                 class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
                 <i class="fas fa-clipboard-check text-[10px]"></i>
-                <span>${isUnassessed ? '+ Conduct Evaluation' : '✦ Target Training &amp; Re-Evaluate'}</span>
+                <span>${isUnassessed ? '+ Conduct Evaluation' : 'Target Training &amp; Re-Evaluate'}</span>
             </button>
         ` : `
             <span class="text-xs font-bold text-emerald-700 flex items-center space-x-1 py-1 px-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
@@ -1850,7 +1850,7 @@ function assignLmsAndScheduleTraining(compId, compName, lmsBookId, lmsBookTitle,
     if (typeof renderTrainingNeedsTable === 'function') renderTrainingNeedsTable();
     if (typeof renderTrainingCalendar === 'function') renderTrainingCalendar();
 
-    showToast(`✦ Gap Action Created: Enrolled ${emp.name} in LMS "${lmsBookTitle}" & Scheduled Training Session in Training Operations!`, 'success');
+    showToast(`Gap Action Created: Enrolled ${emp.name} in LMS "${lmsBookTitle}" & Scheduled Training Session in Training Operations!`, 'success');
 }
 
 // 3.18 Auto-Generate Complete IDP Plan

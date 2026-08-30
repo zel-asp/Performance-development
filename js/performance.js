@@ -360,17 +360,46 @@ window.showActionConfirmModal = function({
     const iconEl = document.getElementById('confirm-modal-icon');
     const iconContEl = document.getElementById('confirm-modal-icon-container');
     const proceedBtn = document.getElementById('btn-proceed-action-confirm');
+    const cancelBtn = document.getElementById('btn-cancel-action-confirm');
 
     if (titleEl) titleEl.textContent = title;
     if (msgEl) msgEl.textContent = message;
     if (iconEl) iconEl.className = iconClass;
     if (iconContEl) iconContEl.className = `w-12 h-12 rounded-2xl ${iconContainerClass} flex items-center justify-center text-xl font-bold mx-auto`;
+    if (cancelBtn) {
+        cancelBtn.disabled = false;
+        cancelBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
     if (proceedBtn) {
-        proceedBtn.textContent = confirmBtnText;
-        proceedBtn.className = `${confirmBtnClass} px-4 py-2 text-xs font-bold flex-1 shadow-xs`;
-        proceedBtn.onclick = function() {
-            closeModal('modal-action-confirmation');
-            if (typeof onConfirm === 'function') onConfirm();
+        proceedBtn.innerHTML = confirmBtnText;
+        proceedBtn.disabled = false;
+        proceedBtn.className = `${confirmBtnClass} px-4 py-2 text-xs font-bold flex-1 shadow-xs transition flex items-center justify-center space-x-1.5`;
+        proceedBtn.onclick = async function() {
+            if (typeof onConfirm === 'function') {
+                proceedBtn.disabled = true;
+                if (cancelBtn) {
+                    cancelBtn.disabled = true;
+                    cancelBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                const isDelete = (confirmBtnText || '').toLowerCase().includes('delete') || (iconClass || '').includes('trash');
+                const loadingText = isDelete ? 'Deleting...' : 'Processing...';
+                proceedBtn.innerHTML = `<i class="fas fa-spinner fa-spin text-xs"></i><span>${loadingText}</span>`;
+                try {
+                    await onConfirm();
+                    closeModal('modal-action-confirmation');
+                } catch (e) {
+                    console.error('Confirmation action error:', e);
+                } finally {
+                    proceedBtn.disabled = false;
+                    proceedBtn.innerHTML = confirmBtnText;
+                    if (cancelBtn) {
+                        cancelBtn.disabled = false;
+                        cancelBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                }
+            } else {
+                closeModal('modal-action-confirmation');
+            }
         };
     }
     openModal('modal-action-confirmation');
@@ -974,7 +1003,7 @@ function renderEmployeePulseGoals(goals) {
             const tierLabel = evalRec.tier_label || 'Appraised';
             const evalStatus = evalRec.status || 'Calibrated';
             const evalScore = parseFloat(evalRec.calibrated_score || evalRec.supervisor_rating || 0);
-            const evalScoreStr = evalScore > 0 ? `⭐ ${evalScore.toFixed(2)} / 5.0` : 'Pending Rating';
+            const evalScoreStr = evalScore > 0 ? `<i class="fas fa-star text-amber-500 mr-0.5 text-[9px]"></i>${evalScore.toFixed(2)} / 5.0` : 'Pending Rating';
             
             evalBannerHtml = `
                 <div class="p-2.5 bg-emerald-50/60 rounded-xl border border-emerald-200/80 flex items-center justify-between text-[11px] gap-2 shadow-2xs mt-1">
@@ -1218,7 +1247,7 @@ function openEmployeeSelfEvalModal(goalId, empId) {
             ? parseFloat(evalRec.self_rating)
             : 1.0);
     if (ratingInput) ratingInput.value = currentScore;
-    if (previewEl) previewEl.textContent = `⭐ ${currentScore.toFixed(2)} / 5.0`;
+    if (previewEl) previewEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1"></i>${currentScore.toFixed(2)} / 5.0`;
 
     if (typeof openModal === 'function') {
         openModal('modal-submit-self-evaluation');
@@ -1236,7 +1265,7 @@ async function handleEmployeeSelfEvalSubmit(event) {
 
     showActionConfirmModal({
         title: 'Submit Self Evaluation',
-        message: `Submit a self evaluation rating of ⭐ ${rating.toFixed(2)} / 5.0 for this performance objective? This will be recorded directly into your calibration record.`,
+        message: `Submit a self evaluation rating of ${rating.toFixed(2)} / 5.0 for this performance objective? This will be recorded directly into your calibration record.`,
         confirmBtnText: 'Submit Self Evaluation',
         confirmBtnClass: 'btn-primary bg-purple-600 hover:bg-purple-700 text-white',
         iconClass: 'fas fa-user-pen',
@@ -1258,7 +1287,7 @@ async function handleEmployeeSelfEvalSubmit(event) {
                 });
 
                 if (typeof showToast === 'function') {
-                    showToast(`⭐ Self evaluation of ${rating.toFixed(2)}/5.0 submitted successfully!`, 'success');
+                    showToast(`Self evaluation of ${rating.toFixed(2)}/5.0 submitted successfully!`, 'success');
                 }
 
                 if (typeof closeModal === 'function') {
@@ -1704,7 +1733,7 @@ function renderPlanningRosterTable() {
                         <i class="fas fa-pen-to-square text-xs"></i>
                     </button>
                 `}
-                <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}')" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 inline-flex items-center justify-center transition shadow-2xs" title="Delete Objective">
+                <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}', this)" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 inline-flex items-center justify-center transition shadow-2xs" title="Delete Objective">
                     <i class="fas fa-trash text-xs"></i>
                 </button>
                 ${isFailed ? `
@@ -1771,7 +1800,7 @@ window.updateStage1BulkDeleteState = function() {
     }
 };
 
-window.confirmDeleteGoal = function(goalId, goalTitle = 'Objective') {
+window.confirmDeleteGoal = function(goalId, goalTitle = 'Objective', btnEl = null) {
     showActionConfirmModal({
         title: 'Delete Performance Objective',
         message: `Are you sure you want to delete "${goalTitle}"? This will permanently remove this goal and its associated tasks.`,
@@ -1780,6 +1809,12 @@ window.confirmDeleteGoal = function(goalId, goalTitle = 'Objective') {
         iconClass: 'fas fa-trash-can',
         iconContainerClass: 'bg-rose-100 text-rose-700',
         onConfirm: async () => {
+            let origBtnHtml = '';
+            if (btnEl) {
+                origBtnHtml = btnEl.innerHTML;
+                btnEl.disabled = true;
+                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i>';
+            }
             try {
                 await PerformanceAPI.deleteGoal(goalId);
                 showToast('Performance objective deleted successfully.', 'success');
@@ -1787,6 +1822,11 @@ window.confirmDeleteGoal = function(goalId, goalTitle = 'Objective') {
             } catch (err) {
                 console.error('Delete goal error:', err);
                 showToast(err.message || 'Failed to delete goal', 'error');
+            } finally {
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = origBtnHtml;
+                }
             }
         }
     });
@@ -1795,6 +1835,7 @@ window.confirmDeleteGoal = function(goalId, goalTitle = 'Objective') {
 window.confirmBulkDeleteStage1 = function() {
     const selected = Array.from(document.querySelectorAll('.stage1-goal-checkbox:checked')).map(cb => cb.value);
     if (selected.length === 0) return;
+    const bulkBtn = document.getElementById('btn-stage1-bulk-delete');
 
     showActionConfirmModal({
         title: 'Bulk Delete Objectives',
@@ -1804,6 +1845,12 @@ window.confirmBulkDeleteStage1 = function() {
         iconClass: 'fas fa-trash-can',
         iconContainerClass: 'bg-rose-100 text-rose-700',
         onConfirm: async () => {
+            let origBulkHtml = '';
+            if (bulkBtn) {
+                origBulkHtml = bulkBtn.innerHTML;
+                bulkBtn.disabled = true;
+                bulkBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Deleting...</span>';
+            }
             try {
                 await PerformanceAPI.bulkDeleteGoals(selected);
                 showToast(`${selected.length} objectives deleted successfully.`, 'success');
@@ -1811,6 +1858,11 @@ window.confirmBulkDeleteStage1 = function() {
             } catch (err) {
                 console.error('Bulk delete error:', err);
                 showToast(err.message || 'Failed to delete goals', 'error');
+            } finally {
+                if (bulkBtn) {
+                    bulkBtn.disabled = false;
+                    bulkBtn.innerHTML = origBulkHtml;
+                }
             }
         }
     });
@@ -2784,8 +2836,8 @@ function openViewGoalModal(targetId) {
     if (empNameEl) empNameEl.innerText = emp.name;
     if (empPosEl) empPosEl.innerText = `${emp.position || 'Associate'} · ${emp.department || targetGoal?.department || 'Oxford Suites'}`;
     if (attEl) attEl.innerText = emp.attendance ? `${emp.attendance.percentage} Attendance` : '96.5% Attendance';
-    if (mgrRatEl) mgrRatEl.innerText = `⭐ ${(emp.managerRating || 4.6).toFixed(1)}`;
-    if (custRatEl) custRatEl.innerText = `⭐ ${(emp.customerRating || 4.8).toFixed(1)}`;
+    if (mgrRatEl) mgrRatEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1"></i>${(emp.managerRating || 4.6).toFixed(1)}`;
+    if (custRatEl) custRatEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1"></i>${(emp.customerRating || 4.8).toFixed(1)}`;
 
     const container = document.getElementById('view-modal-goals-list');
     if (container) {
@@ -3130,7 +3182,7 @@ function renderApprovalRosterTable() {
             </div>
 
             <div class="pt-2 flex items-center justify-end space-x-2 border-t border-slate-100">
-                <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition flex items-center space-x-1" title="Delete Objective">
+                <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}', this)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition flex items-center space-x-1" title="Delete Objective">
                     <i class="fas fa-trash text-xs"></i>
                     <span>Delete</span>
                 </button>
@@ -3175,6 +3227,7 @@ window.updateStage2BulkDeleteState = function() {
 window.confirmBulkDeleteStage2 = function() {
     const selected = Array.from(document.querySelectorAll('.stage2-goal-checkbox:checked')).map(cb => cb.value);
     if (selected.length === 0) return;
+    const bulkBtn = document.getElementById('btn-stage2-bulk-delete');
 
     showActionConfirmModal({
         title: 'Bulk Delete Approved Objectives',
@@ -3184,6 +3237,12 @@ window.confirmBulkDeleteStage2 = function() {
         iconClass: 'fas fa-trash-can',
         iconContainerClass: 'bg-rose-100 text-rose-700',
         onConfirm: async () => {
+            let origBulkHtml = '';
+            if (bulkBtn) {
+                origBulkHtml = bulkBtn.innerHTML;
+                bulkBtn.disabled = true;
+                bulkBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Deleting...</span>';
+            }
             try {
                 await PerformanceAPI.bulkDeleteGoals(selected);
                 showToast(`${selected.length} objectives deleted successfully.`, 'success');
@@ -3191,6 +3250,11 @@ window.confirmBulkDeleteStage2 = function() {
             } catch (err) {
                 console.error('Bulk delete error:', err);
                 showToast(err.message || 'Failed to delete goals', 'error');
+            } finally {
+                if (bulkBtn) {
+                    bulkBtn.disabled = false;
+                    bulkBtn.innerHTML = origBulkHtml;
+                }
             }
         }
     });
@@ -3430,7 +3494,7 @@ function renderMonitoringRosterTable() {
                 ${hasEval ? `
                     <div class="space-y-0.5">
                         <span class="font-bold text-slate-900 text-xs flex items-center space-x-1">
-                            <span class="text-amber-500">⭐</span>
+                            <i class="fas fa-star text-amber-500 text-xs"></i>
                             <span>${supScore.toFixed(2)} / 5.0</span>
                         </span>
                         <span class="text-[10px] text-emerald-700 font-semibold block">${evalRec.tier_label || 'Appraised'}</span>
@@ -4135,7 +4199,7 @@ function renderEvaluationRosterTable() {
                 ${selfEvaluation !== null ? `
                     <span class="font-bold text-purple-900 text-xs bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200 inline-flex items-center space-x-1 shadow-2xs">
                         <i class="fas fa-user-pen text-purple-600 text-[10px]"></i>
-                        <span>⭐ ${selfEvaluation.toFixed(2)} / 5.0</span>
+                        <span><i class="fas fa-star text-amber-500 text-[10px] mr-0.5"></i>${selfEvaluation.toFixed(2)} / 5.0</span>
                     </span>
                 ` : `
                     <span class="text-[10px] text-slate-400 italic bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
@@ -4149,16 +4213,16 @@ function renderEvaluationRosterTable() {
                     <div class="space-y-1">
                         <span class="font-bold text-rose-700 text-xs bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 inline-flex items-center space-x-1.5 shadow-2xs">
                             <i class="fas fa-triangle-exclamation text-rose-600"></i>
-                            <span>⭐ ${supervisorRating.toFixed(2)} / 5.0</span>
+                            <span><i class="fas fa-star text-amber-500 text-[10px] mr-0.5"></i>${supervisorRating.toFixed(2)} / 5.0</span>
                         </span>
                         <span class="text-[9px] text-rose-600 font-bold block flex items-center space-x-1">
-                            <span>⚠️ Below 3.0 (Needs PIP)</span>
+                            <span><i class="fas fa-triangle-exclamation mr-0.5 text-rose-600"></i>Below 3.0 (Needs PIP)</span>
                         </span>
                     </div>
                 ` : `
                     <div class="space-y-0.5">
                         <span class="font-bold text-emerald-800 text-xs bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center space-x-1 shadow-2xs">
-                            <span>⭐ ${supervisorRating.toFixed(2)} / 5.0</span>
+                            <span><i class="fas fa-star text-amber-500 text-[10px] mr-0.5"></i>${supervisorRating.toFixed(2)} / 5.0</span>
                         </span>
                         <span class="text-[9px] text-emerald-700 font-semibold block">${tierLabel}</span>
                     </div>
@@ -4171,11 +4235,11 @@ function renderEvaluationRosterTable() {
             <td class="px-5 py-4 text-center whitespace-nowrap">
                 ${isRated ? (isBelowBenchmark ? `
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                        ✓ Evaluated (Needs PIP)
+                        <i class="fas fa-triangle-exclamation mr-1 text-rose-700"></i>Evaluated (Needs PIP)
                     </span>
                 ` : `
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                        ✓ Evaluated (${tierLabel})
+                        <i class="fas fa-check mr-1 text-emerald-700"></i>Evaluated (${tierLabel})
                     </span>
                 `) : `
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
@@ -4374,7 +4438,7 @@ function showEmployeeEvalDetail(empId, openModalImmediately = false) {
                     <div class="flex justify-between items-center text-xs flex-wrap gap-1">
                         <span class="font-bold text-slate-900">${i + 1}. ${c.title} <span class="text-[10px] text-slate-400 font-normal">(${c.metric || 'Standard Benchmark'})</span></span>
                         <span class="font-bold font-mono px-2 py-0.5 rounded text-[11px] ${c.rating < 3.0 ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800'}">
-                            ${c.rating < 3.0 ? '⚠️ ' : ''}⭐ ${parseFloat(c.rating || 0).toFixed(1)} / 5.0 (${c.weight || '33'}% wt)
+                            ${c.rating < 3.0 ? '<i class="fas fa-triangle-exclamation mr-1 text-rose-600"></i>' : ''}<i class="fas fa-star text-amber-500 mr-0.5 text-[10px]"></i>${parseFloat(c.rating || 0).toFixed(1)} / 5.0 (${c.weight || '33'}% wt)
                         </span>
                     </div>
                     ${c.rationale ? `<p class="text-[11px] text-slate-600 italic pl-2 border-l-2 ${c.rating < 3.0 ? 'border-rose-300' : 'border-purple-300'}">"${c.rationale}"</p>` : ''}
@@ -4801,7 +4865,7 @@ function renderReviewRosterTable() {
             <td class="px-5 py-4">
                 ${rawSupScore > 0 ? `
                     <span class="font-mono font-bold text-xs ${rawSupScore < 3.0 ? 'text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200' : 'text-slate-800'}">
-                        ⭐ ${rawSupScore.toFixed(2)} / 5.0
+                        <i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${rawSupScore.toFixed(2)} / 5.0
                     </span>
                 ` : `<span class="text-slate-400 italic text-[11px]">Unrated</span>`}
             </td>
@@ -4809,7 +4873,7 @@ function renderReviewRosterTable() {
                 ${calibScore ? `
                     <div class="space-y-0.5">
                         <span class="font-bold font-mono text-xs ${calibScore < 3.0 ? 'text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200' : 'text-indigo-700'}">
-                            ⭐ ${calibScore.toFixed(2)} / 5.0
+                            <i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${calibScore.toFixed(2)} / 5.0
                         </span>
                         <span class="text-[10px] text-slate-500 block font-medium">(${tierLabel})</span>
                     </div>
@@ -4817,7 +4881,7 @@ function renderReviewRosterTable() {
             </td>
             <td class="px-5 py-4 text-center">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isCalibrated ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}">
-                    ${isCalibrated ? '✓ Calibrated' : 'Pending 1-on-1'}
+                    ${isCalibrated ? '<i class="fas fa-check mr-1 text-emerald-700"></i>Calibrated' : '<i class="fas fa-hourglass-half mr-1 text-amber-600"></i>Pending 1-on-1'}
                 </span>
             </td>
             <td class="px-5 py-4 text-right">
@@ -5033,7 +5097,7 @@ function showCalibrationDetail(empId, openModalImmediately = false) {
                 <div class="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-950">
                     <div class="flex items-center space-x-2.5">
                         <i class="fas fa-award text-emerald-600 text-base"></i>
-                        <span>Associate rating meets proficiency benchmark (⭐ <strong>${effectiveScore.toFixed(2)} / 5.0</strong>). Send recognition kudos to celebrate their achievement!</span>
+                        <span>Associate rating meets proficiency benchmark (<i class="fas fa-star text-amber-500 mr-0.5"></i><strong>${effectiveScore.toFixed(2)} / 5.0</strong>). Send recognition kudos to celebrate their achievement!</span>
                     </div>
                     <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold shadow-xs transition flex-shrink-0 flex items-center space-x-1.5">
                         <i class="fas fa-award"></i>
@@ -5046,7 +5110,7 @@ function showCalibrationDetail(empId, openModalImmediately = false) {
                 <div class="p-4 bg-rose-50 rounded-2xl border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-950">
                     <div class="flex items-center space-x-2.5">
                         <i class="fas fa-triangle-exclamation text-rose-600 text-base"></i>
-                        <span><strong>Performance Gap Detected:</strong> Score (⭐ <strong>${effectiveScore.toFixed(2)} / 5.0</strong>) is below 3.0 standard. Proceed to Stage 6 to create an Individual Development Plan.</span>
+                        <span><strong>Performance Gap Detected:</strong> Score (<i class="fas fa-star text-amber-500 mr-0.5"></i><strong>${effectiveScore.toFixed(2)} / 5.0</strong>) is below 3.0 standard. Proceed to Stage 6 to create an Individual Development Plan.</span>
                     </div>
                     <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}', true);" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex-shrink-0 flex items-center space-x-1.5">
                         <i class="fas fa-file-pen"></i>
@@ -5135,9 +5199,9 @@ function open1on1CalibrationModal(empId) {
     const selfScore = evalRec?.self_evaluation ? parseFloat(evalRec.self_evaluation) : 4.50;
     const computedAvg = (selfScore + supScore) / 2;
 
-    if (selfScoreEl) selfScoreEl.textContent = `⭐ ${selfScore.toFixed(2)} / 5.0`;
-    if (supScoreEl) supScoreEl.textContent = `⭐ ${supScore.toFixed(2)} / 5.0`;
-    if (avgScoreEl) avgScoreEl.textContent = `⭐ ${computedAvg.toFixed(2)} / 5.0`;
+    if (selfScoreEl) selfScoreEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1"></i>${selfScore.toFixed(2)} / 5.0`;
+    if (supScoreEl) supScoreEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1"></i>${supScore.toFixed(2)} / 5.0`;
+    if (avgScoreEl) avgScoreEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1"></i>${computedAvg.toFixed(2)} / 5.0`;
 
     // Initialize calibration value to average of self evaluation + supervisor rating
     const defaultCalibScore = evalRec && evalRec.status === 'Calibrated' && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : computedAvg;
@@ -5416,7 +5480,7 @@ function openViewIDPPlanModal(empId) {
 
     if (ratingEl) {
         if (rawScore > 0) {
-            ratingEl.innerHTML = `⭐ ${rawScore.toFixed(2)} / 5.0 <span class="text-xs font-semibold ${isExceededRetry ? 'text-rose-700' : (isPIP ? 'text-rose-600' : 'text-indigo-700')}">(${isExceededRetry ? 'Failed (3/3 Retries Exceeded)' : (evalRec?.tier_label || (isPIP ? 'Developing (Needs PIP)' : 'Proficient'))})</span>`;
+            ratingEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1"></i>${rawScore.toFixed(2)} / 5.0 <span class="text-xs font-semibold ${isExceededRetry ? 'text-rose-700' : (isPIP ? 'text-rose-600' : 'text-indigo-700')}">(${isExceededRetry ? 'Failed (3/3 Retries Exceeded)' : (evalRec?.tier_label || (isPIP ? 'Developing (Needs PIP)' : 'Proficient'))})</span>`;
             ratingEl.className = `text-sm font-bold font-mono ${isPIP ? 'text-rose-600' : 'text-indigo-700'}`;
         } else {
             ratingEl.innerHTML = `<span class="text-slate-400 italic text-xs">Pending Rating</span>`;
@@ -5431,7 +5495,7 @@ function openViewIDPPlanModal(empId) {
 
     if (statusPill) {
         if (isExceededRetry) {
-            statusPill.textContent = '🔴 FAILED (Requires 1-on-1 Training)';
+            statusPill.innerHTML = '<i class="fas fa-circle-xmark mr-1"></i> FAILED (Requires 1-on-1 Training)';
             statusPill.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs';
         } else if (isPIP) {
             statusPill.textContent = 'Mandatory PIP Active';
@@ -5454,7 +5518,7 @@ function openViewIDPPlanModal(empId) {
                         <i class="fas fa-check-circle text-emerald-600 text-[10px]"></i>
                         <span>${s.title}</span>
                     </span>
-                    <span class="font-bold text-emerald-700 font-mono text-[11px]">⭐ ${parseFloat(s.rating).toFixed(1)}</span>
+                    <span class="font-bold text-emerald-700 font-mono text-[11px]"><i class="fas fa-star text-amber-500 text-[10px] mr-1"></i>${parseFloat(s.rating).toFixed(1)}</span>
                 </li>
             `).join('');
         } else {
@@ -5470,7 +5534,7 @@ function openViewIDPPlanModal(empId) {
                         <i class="fas fa-exclamation-triangle ${g.rating < 3.0 ? 'text-rose-600' : 'text-amber-600'} text-[10px]"></i>
                         <span>${g.title}</span>
                     </span>
-                    <span class="font-bold ${g.rating < 3.0 ? 'text-rose-600' : 'text-amber-700'} font-mono text-[11px]">⭐ ${parseFloat(g.rating).toFixed(1)}</span>
+                    <span class="font-bold ${g.rating < 3.0 ? 'text-rose-600' : 'text-amber-700'} font-mono text-[11px]"><i class="fas fa-star text-amber-500 text-[10px] mr-1"></i>${parseFloat(g.rating).toFixed(1)}</span>
                 </li>
             `).join('');
         } else {
@@ -5720,18 +5784,18 @@ function renderIDPRosterTable() {
                     </span>
                 ` : `
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${!hasPassed && score > 0 ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
-                        ${!hasPassed && score > 0 ? `PIP Remediation (${score.toFixed(2)}/5.0)` : `⭐ Proficient (${score.toFixed(2)}/5.0)`}
+                        ${!hasPassed && score > 0 ? `PIP Remediation (${score.toFixed(2)}/5.0)` : `<i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>Proficient (${score.toFixed(2)}/5.0)`}
                     </span>
                 `}
             </td>
             <td class="px-5 py-4">
                 ${isExceededRetry ? `
                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
-                        🔴 FAILED (Requires 1-on-1 Training)
+                        <i class="fas fa-circle-xmark mr-1"></i> FAILED (Requires 1-on-1 Training)
                     </span>
                 ` : `
                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isGoalCompleted ? 'bg-indigo-100 text-indigo-800' : (hasPassed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}">
-                        ${isGoalCompleted ? 'Goal Completed ✓' : (hasPassed ? 'Clearance Active' : 'Action Plan Active')}
+                        ${isGoalCompleted ? 'Goal Completed <i class="fas fa-check text-indigo-700 ml-1"></i>' : (hasPassed ? 'Clearance Active' : 'Action Plan Active')}
                     </span>
                 `}
             </td>
@@ -5948,7 +6012,7 @@ function showIDPDetail(empId, openModalImmediately = false) {
                         <i class="fas fa-circle-check text-emerald-600 text-xs"></i>
                         <span class="font-medium text-slate-900">${s.title}</span>
                     </span>
-                    <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px] font-mono">⭐ ${parseFloat(s.rating).toFixed(1)} / 5.0</span>
+                    <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px] font-mono"><i class="fas fa-star text-amber-500 text-[10px] mr-1"></i>${parseFloat(s.rating).toFixed(1)} / 5.0</span>
                 </li>
             `).join('');
         } else {
@@ -5964,7 +6028,7 @@ function showIDPDetail(empId, openModalImmediately = false) {
                         <i class="fas fa-circle-exclamation ${g.rating < 3.0 ? 'text-rose-600' : 'text-amber-600'} text-xs flex-shrink-0"></i>
                         <div class="truncate">
                             <p class="font-semibold text-slate-900 text-xs truncate">${g.title}</p>
-                            <p class="text-[10px] ${g.rating < 3.0 ? 'text-rose-600 font-bold' : 'text-amber-700'}">Appraisal Rating: ⭐ ${parseFloat(g.rating).toFixed(1)} / 5.0</p>
+                            <p class="text-[10px] ${g.rating < 3.0 ? 'text-rose-600 font-bold' : 'text-amber-700'}">Appraisal Rating: <i class="fas fa-star text-amber-500 text-[10px] mr-0.5"></i>${parseFloat(g.rating).toFixed(1)} / 5.0</p>
                         </div>
                     </div>
                     ${!hasPassedBenchmark ? (isTrainingPrescribed ? `
@@ -6009,7 +6073,7 @@ function showIDPDetail(empId, openModalImmediately = false) {
                             </div>
                             <div>
                                 <h5 class="font-bold text-emerald-950 text-xs">Proficient Performance Clearance</h5>
-                                <p class="text-[11px] text-emerald-800">Evaluated score meets proficiency standards (⭐ <strong>${score.toFixed(2)} / 5.0</strong>). No remedial tasks required.</p>
+                                <p class="text-[11px] text-emerald-800">Evaluated score meets proficiency standards (<i class="fas fa-star text-amber-500 mr-0.5 text-xs"></i><strong>${score.toFixed(2)} / 5.0</strong>). No remedial tasks required.</p>
                             </div>
                         </div>
                         <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5 self-start sm:self-auto">
@@ -6029,11 +6093,11 @@ function showIDPDetail(empId, openModalImmediately = false) {
                             </div>
                             <div>
                                 <h5 class="font-bold text-rose-950 text-sm">Needs Mandatory 1-on-1 Training &amp; Direct Supervision</h5>
-                                <p class="text-xs text-rose-900">Current appraisal rating is ⭐ <strong>${score.toFixed(2)} / 5.0</strong>. ${isGoalFailed ? 'Performance Goal has Failed.' : 'Retries exhausted. All standard IDP actions are locked.'}</p>
+                                <p class="text-xs text-rose-900">Current appraisal rating is <i class="fas fa-star text-amber-500 mr-0.5 text-xs"></i><strong>${score.toFixed(2)} / 5.0</strong>. ${isGoalFailed ? 'Performance Goal has Failed.' : 'Retries exhausted. All standard IDP actions are locked.'}</p>
                             </div>
                         </div>
                         <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-rose-700 text-white shadow-xs">
-                            ${isGoalFailed ? '🔴 Goal: FAILED' : '🔴 Needs 1-on-1 Training'}
+                            ${isGoalFailed ? '<i class="fas fa-circle-xmark mr-1"></i> Goal: FAILED' : '<i class="fas fa-handshake-angle mr-1"></i> Needs 1-on-1 Training'}
                         </span>
                     </div>
 
@@ -6326,16 +6390,16 @@ function renderCycleRosterTable() {
             </td>
             <td class="px-5 py-4 text-slate-500 max-w-[130px] truncate" title="${emp.department}">${emp.department}</td>
             <td class="px-5 py-4 font-bold ${isCalibrated ? (isExceededRetry ? 'text-rose-700' : (hasPassed ? 'text-emerald-700' : 'text-rose-600')) : 'text-slate-400 font-normal italic'}">
-                ${isCalibrated ? (isExceededRetry ? `⭐ ${score.toFixed(2)} / 5.0 (Failed)` : `⭐ ${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || (hasPassed ? 'Calibrated' : 'Needs PIP')})`) : 'Pending Review'}
+                ${isCalibrated ? (isExceededRetry ? `<i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${score.toFixed(2)} / 5.0 (Failed)` : `<i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || (hasPassed ? 'Calibrated' : 'Needs PIP')})`) : 'Pending Review'}
             </td>
             <td class="px-5 py-4">
                 ${isExceededRetry ? `
                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
-                        🔴 FAILED — Transition Suspended
+                        <i class="fas fa-circle-xmark mr-1"></i> FAILED — Transition Suspended
                     </span>
                 ` : `
                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${hasPassed ? 'bg-teal-100 text-teal-800' : 'bg-rose-100 text-rose-800'}">
-                        ${hasPassed ? '✓ Qualified for Next Cycle' : 'Action Plan Incomplete'}
+                        ${hasPassed ? '<i class="fas fa-check mr-1 text-teal-700"></i>Qualified for Next Cycle' : 'Action Plan Incomplete'}
                     </span>
                 `}
             </td>
@@ -6466,12 +6530,12 @@ function showCycleDetail(empId, openModalImmediately = false) {
                             </div>
                             <div>
                                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
-                                    🔴 PERFORMANCE GOAL FAILED
+                                    <i class="fas fa-circle-xmark mr-1"></i> PERFORMANCE GOAL FAILED
                                 </span>
                                 <h4 class="font-heading font-bold text-base text-rose-950 mt-0.5">Objective Concluded as Failed: ${emp.name}</h4>
                             </div>
                         </div>
-                        <span class="text-xl font-bold text-rose-800 font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.00</span>
+                        <span class="text-xl font-bold text-rose-800 font-mono"><i class="fas fa-star text-amber-500 mr-1 text-base"></i>${effectiveScore.toFixed(2)} / 5.00</span>
                     </div>
                     <p class="text-slate-800 leading-relaxed text-xs">
                         This performance goal has been formally marked as <strong>Failed</strong> following 4 unsuccessful evaluation attempts, formal training, and mandatory 1-on-1 mentorship. Review cycle is permanently concluded.
@@ -6491,7 +6555,7 @@ function showCycleDetail(empId, openModalImmediately = false) {
                         <span class="badge-sage">Continuous Growth Metric</span>
                         <h4 class="font-heading font-bold text-lg text-slate-900 mt-1">Development to Performance Transfer: ${emp.name}</h4>
                     </div>
-                    <span class="text-2xl font-bold text-sage-dark font-heading font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.0</span>
+                    <span class="text-2xl font-bold text-sage-dark font-heading font-mono"><i class="fas fa-star text-amber-500 mr-1 text-lg"></i>${effectiveScore.toFixed(2)} / 5.0</span>
                 </div>
                 <p class="text-xs text-slate-600 leading-relaxed">
                     By completing the 2026 Q3 performance evaluation and IDP commitments, <strong>${emp.name}</strong> achieved a <strong>${evalRec?.tier_label || 'Calibrated'}</strong> rating. These validated competencies will form the elevated baseline for the upcoming <strong>2026 Q4 Cycle</strong>.
@@ -6514,12 +6578,12 @@ function showCycleDetail(empId, openModalImmediately = false) {
                             </div>
                             <div>
                                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
-                                    🔴 Final Attempt #4 Active
+                                    <i class="fas fa-gavel mr-1"></i> Final Attempt #4 Active
                                 </span>
                                 <h4 class="font-heading font-bold text-base text-rose-950 mt-0.5">Final 1-on-1 Evaluation (Last Attempt): ${emp.name}</h4>
                             </div>
                         </div>
-                        <span class="text-xl font-bold text-rose-800 font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.0</span>
+                        <span class="text-xl font-bold text-rose-800 font-mono"><i class="fas fa-star text-amber-500 mr-1 text-base"></i>${effectiveScore.toFixed(2)} / 5.0</span>
                     </div>
                     <p class="text-slate-800 leading-relaxed text-xs">
                         Associate is undergoing the final 1-on-1 performance review (Attempt #4). Phases 3 to 6 are locked. Conduct the final evaluation to determine if the associate achieves proficiency (&ge; 3.00) or if the goal transitions to Failed.
@@ -6543,12 +6607,12 @@ function showCycleDetail(empId, openModalImmediately = false) {
                             </div>
                             <div>
                                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
-                                    🔴 Needs 1-on-1 Training (Retry #3 Exhausted)
+                                    <i class="fas fa-handshake-angle mr-1"></i> Needs 1-on-1 Training (Retry #3 Exhausted)
                                 </span>
                                 <h4 class="font-heading font-bold text-base text-rose-950 mt-0.5">Mandatory 1-on-1 Mentorship Required: ${emp.name}</h4>
                             </div>
                         </div>
-                        <span class="text-xl font-bold text-rose-800 font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.0</span>
+                        <span class="text-xl font-bold text-rose-800 font-mono"><i class="fas fa-star text-amber-500 mr-1 text-base"></i>${effectiveScore.toFixed(2)} / 5.0</span>
                     </div>
                     <p class="text-slate-800 leading-relaxed text-xs">
                         Associate completed formal training but calibrated rating remains below 3.0 standard. <strong>Mandatory 1-on-1 mentorship</strong> is required. Click Continue to initiate the definitive Final 1-on-1 Evaluation lifecycle (Attempt #4).
@@ -6611,7 +6675,7 @@ function showCycleDetail(empId, openModalImmediately = false) {
                                     <h4 class="font-heading font-bold text-base text-slate-900 mt-0.5">Mandatory Formal Training Required: ${emp.name}</h4>
                                 </div>
                             </div>
-                            <span class="text-xl font-bold text-rose-700 font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.0</span>
+                            <span class="text-xl font-bold text-rose-700 font-mono"><i class="fas fa-star text-amber-500 mr-1 text-base"></i>${effectiveScore.toFixed(2)} / 5.0</span>
                         </div>
                         <p class="text-slate-700 leading-relaxed text-xs">
                             Associate is flagged for <strong>Needs Training</strong> (Retry limit exceeded or flagged). Formal training curriculum is required before monitoring rollover.
@@ -6645,7 +6709,7 @@ function showCycleDetail(empId, openModalImmediately = false) {
                                     <h4 class="font-heading font-bold text-base text-slate-900 mt-0.5">Corrective Action Plan Required: ${emp.name}</h4>
                                 </div>
                             </div>
-                            <span class="text-xl font-bold text-amber-800 font-mono">⭐ ${effectiveScore.toFixed(2)} / 5.0</span>
+                            <span class="text-xl font-bold text-amber-800 font-mono"><i class="fas fa-star text-amber-500 mr-1 text-base"></i>${effectiveScore.toFixed(2)} / 5.0</span>
                         </div>
                         <p class="text-slate-700 leading-relaxed text-xs">
                             Associate score is below the required 3.0 benchmark. To ensure standard compliance before rollover, review assigned action tasks, reset completed items for employee re-execution in Stage 3 Monitoring, or flag as Needs Training.
@@ -6750,7 +6814,7 @@ async function openFormalCurriculumModal(empId) {
                             <p class="text-slate-600 text-xs leading-relaxed">${p.description || 'Targeted training curriculum with practical modules and evaluation quiz.'}</p>
                         </div>
                         <div class="text-right flex-shrink-0 self-start sm:self-auto">
-                            <span class="font-bold text-slate-800 text-xs block">Benchmark: ⭐ ${targetBenchmark} / 5.0</span>
+                            <span class="font-bold text-slate-800 text-xs block">Benchmark: <i class="fas fa-star text-amber-500 mr-0.5 text-[10px]"></i>${targetBenchmark} / 5.0</span>
                             <span class="text-[10px] text-slate-400 font-mono">Passing: ${passingScore}%</span>
                         </div>
                     </div>
@@ -6888,12 +6952,12 @@ function openReviewTasksModal(empId) {
 
                         <div class="flex items-center space-x-2 flex-shrink-0 self-end sm:self-auto">
                             ${isDone ? `
-                                <button onclick="resetTaskForGoal('${t.id}', '${emp.id}')" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl text-xs border border-amber-200 transition flex items-center space-x-1" title="Reset to pending so employee can re-do task">
+                                <button onclick="resetTaskForGoal('${t.id}', '${emp.id}', this)" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl text-xs border border-amber-200 transition flex items-center space-x-1" title="Reset to pending so employee can re-do task">
                                     <i class="fas fa-rotate-left"></i>
                                     <span>Reset to Re-Do</span>
                                 </button>
                             ` : ''}
-                            <button onclick="deleteTaskFromGoal('${t.id}', '${emp.id}')" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs border border-rose-200 transition" title="Delete obsolete task">
+                            <button onclick="deleteTaskFromGoal('${t.id}', '${emp.id}', this)" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs border border-rose-200 transition" title="Delete obsolete task">
                                 <i class="fas fa-trash-can"></i>
                             </button>
                         </div>
@@ -6934,7 +6998,13 @@ window.openReviewTasksModal = openReviewTasksModal;
 /**
  * Reset a task back to pending for employee re-execution
  */
-async function resetTaskForGoal(taskId, empId) {
+async function resetTaskForGoal(taskId, empId, btnEl = null) {
+    let origHtml = '';
+    if (btnEl) {
+        origHtml = btnEl.innerHTML;
+        btnEl.disabled = true;
+        btnEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i><span>Resetting...</span>';
+    }
     try {
         await PerformanceAPI.resetTask(taskId);
         if (typeof showToast === 'function') {
@@ -6947,6 +7017,11 @@ async function resetTaskForGoal(taskId, empId) {
     } catch (err) {
         console.error('Error resetting task:', err);
         if (typeof showToast === 'function') showToast('Failed to reset task.', 'error');
+    } finally {
+        if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.innerHTML = origHtml;
+        }
     }
 }
 window.resetTaskForGoal = resetTaskForGoal;
@@ -6954,22 +7029,41 @@ window.resetTaskForGoal = resetTaskForGoal;
 /**
  * Delete an action task from a goal
  */
-async function deleteTaskFromGoal(taskId, empId) {
-    if (!confirm('Are you sure you want to delete this action task?')) return;
-
-    try {
-        await PerformanceAPI.deleteTask(taskId);
-        if (typeof showToast === 'function') {
-            showToast('Task successfully deleted from goal.', 'success');
+async function deleteTaskFromGoal(taskId, empId, btnEl = null) {
+    showActionConfirmModal({
+        title: 'Delete Action Task',
+        message: 'Are you sure you want to delete this action task from the objective?',
+        confirmBtnText: 'Delete Task',
+        confirmBtnClass: 'btn-danger bg-rose-600 hover:bg-rose-700 text-white',
+        iconClass: 'fas fa-trash-can',
+        iconContainerClass: 'bg-rose-100 text-rose-700',
+        onConfirm: async () => {
+            let origHtml = '';
+            if (btnEl) {
+                origHtml = btnEl.innerHTML;
+                btnEl.disabled = true;
+                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i>';
+            }
+            try {
+                await PerformanceAPI.deleteTask(taskId);
+                if (typeof showToast === 'function') {
+                    showToast('Task successfully deleted from goal.', 'success');
+                }
+                if (typeof loadAndRenderPlanningGoals === 'function') {
+                    await loadAndRenderPlanningGoals();
+                }
+                openReviewTasksModal(empId);
+            } catch (err) {
+                console.error('Error deleting task:', err);
+                if (typeof showToast === 'function') showToast('Failed to delete task.', 'error');
+            } finally {
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = origHtml;
+                }
+            }
         }
-        if (typeof loadAndRenderPlanningGoals === 'function') {
-            await loadAndRenderPlanningGoals();
-        }
-        openReviewTasksModal(empId);
-    } catch (err) {
-        console.error('Error deleting task:', err);
-        if (typeof showToast === 'function') showToast('Failed to delete task.', 'error');
-    }
+    });
 }
 window.deleteTaskFromGoal = deleteTaskFromGoal;
 
@@ -7374,7 +7468,7 @@ function updatePhase7FinalScoreCalc() {
     const bannerEl = document.getElementById('phase7-calc-banner');
 
     if (displayEl) {
-        displayEl.textContent = `⭐ ${avg.toFixed(2)} / 5.00`;
+        displayEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1 text-xl"></i>${avg.toFixed(2)} / 5.00`;
         displayEl.className = `text-2xl font-mono font-bold ${isPassed ? 'text-emerald-700' : 'text-rose-700'}`;
     }
 

@@ -361,7 +361,7 @@ const personaData = {
         roleLabel: 'Maria Santos (Associate)',
         badge: 'Emp',
         dept: 'Front Office',
-        greeting: 'Good morning, Maria Santos 👋',
+        greeting: 'Good morning, Maria Santos',
         title: 'Viewing as: Front Desk Host (Associate)',
         desc: 'You can draft performance objectives, log daily shift accomplishments & evidence, submit self-assessments, and take LMS quizzes.',
         tag: 'Associate',
@@ -377,7 +377,7 @@ const personaData = {
         roleLabel: 'Chef Marco Rossi (Supervisor)',
         badge: 'Mgr',
         dept: 'Culinary & F&B',
-        greeting: 'Good morning, Chef Marco 👨‍🍳',
+        greeting: 'Good morning, Chef Marco',
         title: 'Viewing as: F&B & Culinary Supervisor',
         desc: 'You can review and endorse subordinate goals, write coaching notes, evaluate team appraisals, and assign 70-20-10 IDPs.',
         tag: 'Supervisor',
@@ -393,7 +393,7 @@ const personaData = {
         roleLabel: 'Elena Vance (HRAdmin)',
         badge: 'HR',
         dept: 'Human Resources',
-        greeting: 'Welcome back, Elena Vance 📊',
+        greeting: 'Welcome back, Elena Vance',
         title: 'Viewing as: HRAdmin (Governance)',
         desc: 'You have full oversight over competency frameworks, bell-curve calibration normalization, LMS compliance, and 9-box succession.',
         tag: 'HRAdmin',
@@ -409,7 +409,7 @@ const personaData = {
         roleLabel: 'Robert Sterling (GeneralManager)',
         badge: 'Exec',
         dept: 'Executive Office',
-        greeting: 'Executive Briefing, General Manager Sterling 🏨',
+        greeting: 'Executive Briefing, General Manager Sterling',
         title: 'Viewing as: GeneralManager',
         desc: 'Strategic overview of property-wide Hospitality Index, guest NPS analytics, leadership bench depth, and training ROI.',
         tag: 'GeneralManager',
@@ -879,28 +879,28 @@ function fillGoalTemplate(type) {
         kpiInput.value = "Net Promoter Score (NPS) >= +92 Score";
         weightInput.value = "High Priority (35% Weight - Core Role Objective)";
         evidenceInput.value = "Monthly Medallia guest ratings and Opera PMS check-in speed logs.";
-        adviceEl.innerHTML = "✦ Excellent SMART alignment: Directly covers <strong>Guest Relations & Escalation</strong> competency for Senior Host promotion.";
+        adviceEl.innerHTML = '<i class="fas fa-circle-check text-emerald-600 mr-1.5"></i><strong>Excellent SMART alignment:</strong> Directly covers <strong>Guest Relations & Escalation</strong> competency for Senior Host promotion.';
     } else if (type === 'upsell_wine') {
         titleInput.value = "Fine Dining Upselling & Sommelier Wine Pairing Recommendations";
         catInput.value = "Food & Beverage Service";
         kpiInput.value = "+18% Beverage Revenue / Cover (Avg Check Lift)";
         weightInput.value = "Medium Priority (20% Weight - Standard Operational Goal)";
         evidenceInput.value = "Micros POS beverage report printouts.";
-        adviceEl.innerHTML = "✦ High Revenue Impact: Directly targets the <strong>Revenue Optimization</strong> competency standard.";
+        adviceEl.innerHTML = '<i class="fas fa-circle-check text-emerald-600 mr-1.5"></i><strong>High Revenue Impact:</strong> Directly targets the <strong>Revenue Optimization</strong> competency standard.';
     } else if (type === 'haccp_audit') {
         titleInput.value = "HACCP Food Safety, Cold-Chain Logging & Zero Non-Conformance";
         catInput.value = "Culinary & Kitchen Brigade";
         kpiInput.value = "100% Audit Pass Score (Zero Violations)";
         weightInput.value = "High Priority (35% Weight - Core Role Objective)";
         evidenceInput.value = "Daily digital temperature walk-in logs.";
-        adviceEl.innerHTML = "✦ Critical Compliance Goal: Essential for maintaining hotel 5-star hygiene license.";
+        adviceEl.innerHTML = '<i class="fas fa-circle-check text-emerald-600 mr-1.5"></i><strong>Critical Compliance Goal:</strong> Essential for maintaining hotel 5-star hygiene license.';
     } else if (type === 'room_turnaround') {
         titleInput.value = "Express Suite Turnover & 5-Star Deep Clean Sanitization";
         catInput.value = "Housekeeping & Facilities";
         kpiInput.value = "Turnaround < 22 mins / suite";
         weightInput.value = "Medium Priority (20% Weight - Standard Operational Goal)";
         evidenceInput.value = "Housekeeping PMS floor logs.";
-        adviceEl.innerHTML = "✦ Operational Efficiency: Directly prevents late check-in friction.";
+        adviceEl.innerHTML = '<i class="fas fa-circle-check text-emerald-600 mr-1.5"></i><strong>Operational Efficiency:</strong> Directly prevents late check-in friction.';
     }
 
     showToast('Loaded pre-filled goal template!', 'success');

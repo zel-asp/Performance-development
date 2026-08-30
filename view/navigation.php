@@ -342,7 +342,7 @@
         if (navRole) navRole.textContent = roleTitle + ' · ' + dept;
         
         var heroGreet = document.getElementById('hero-greeting-text');
-        if (heroGreet) heroGreet.textContent = 'Good morning, ' + name + ' 👋';
+        if (heroGreet) heroGreet.textContent = 'Good morning, ' + name;
     } catch(e) {}
 })();
 </script>

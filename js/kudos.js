@@ -368,19 +368,19 @@ function renderSocialFeed() {
                 <div class="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs text-slate-500">
                     <div class="flex items-center space-x-1.5">
                         <button onclick="reactToPost('${post.id}', 'clap')" class="px-2.5 py-1 rounded-xl bg-[#FAF8F7] hover:bg-amber-50 hover:border-amber-300 border border-[#E8DEDC] text-[11px] font-bold flex items-center space-x-1.5 transition">
-                            <span>👏</span>
+                            <i class="fas fa-hands-clapping text-amber-500"></i>
                             <span id="react-clap-${post.id}">${post.reactions.clap}</span>
                         </button>
                         <button onclick="reactToPost('${post.id}', 'heart')" class="px-2.5 py-1 rounded-xl bg-[#FAF8F7] hover:bg-red-50 hover:border-red-300 border border-[#E8DEDC] text-[11px] font-bold flex items-center space-x-1.5 transition">
-                            <span>❤️</span>
+                            <i class="fas fa-heart text-rose-500"></i>
                             <span id="react-heart-${post.id}">${post.reactions.heart}</span>
                         </button>
                         <button onclick="reactToPost('${post.id}', 'star')" class="px-2.5 py-1 rounded-xl bg-[#FAF8F7] hover:bg-yellow-50 hover:border-yellow-300 border border-[#E8DEDC] text-[11px] font-bold flex items-center space-x-1.5 transition">
-                            <span>⭐</span>
+                            <i class="fas fa-star text-amber-400"></i>
                             <span id="react-star-${post.id}">${post.reactions.star}</span>
                         </button>
                         <button onclick="reactToPost('${post.id}', 'fire')" class="px-2.5 py-1 rounded-xl bg-[#FAF8F7] hover:bg-orange-50 hover:border-orange-300 border border-[#E8DEDC] text-[11px] font-bold flex items-center space-x-1.5 transition">
-                            <span>🔥</span>
+                            <i class="fas fa-fire text-orange-500"></i>
                             <span id="react-fire-${post.id}">${post.reactions.fire}</span>
                         </button>
                         <button onclick="togglePostComments('${post.id}')" class="px-2.5 py-1 rounded-xl bg-[#FAF8F7] hover:bg-slate-100 border border-[#E8DEDC] text-[10px] font-semibold text-slate-600 flex items-center space-x-1 transition">
