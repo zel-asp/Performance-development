@@ -214,6 +214,17 @@ class EvaluationController
         $integrationResults = [];
         if ($isPassed) {
             $integrationResults = $this->integrationController->handleCertificationSuccess($evaluationRecord, $issuedCertificate ?? []);
+
+            require_once __DIR__ . '/../models/NotificationModel.php';
+            $notifModel = new NotificationModel();
+            $notifModel->createNotification([
+                'recipient_role' => 'Associate',
+                'user_id'        => $associateId,
+                'type'           => 'training_passed',
+                'title'          => "Training Passed & Certified! 🏆",
+                'message'        => "Congratulations! You passed \"{$evaluationRecord['programTitle']}\" with a score of {$calculatedScore}% and earned +{$evaluationRecord['xpAwarded']} XP. Certificate Ref: {$certReference}.",
+                'related_id'     => $certReference
+            ]);
         }
 
         return [

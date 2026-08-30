@@ -45,7 +45,7 @@
             </button>
             <button onclick="switchSubTab('succession', 'ninebox')" class="subnav-pill subnav-succession" data-sub="ninebox">
                 <i class="fas fa-cubes-stacked mr-1.5 text-gold-dark"></i>
-                <span>9-Box Calibration Grid</span>
+                <span>Talent Calibration Grid</span>
             </button>
         </div>
 

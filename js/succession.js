@@ -13,6 +13,7 @@ let successionRolesState = [];
 let successionCandidatesState = [];
 let nineBoxRosterState = [];
 let successionEmployeesState = [];
+let successionRecommendationsState = [];
 let successionActiveDeptFilter = 'all';
 
 // =========================================================================
@@ -21,6 +22,7 @@ let successionActiveDeptFilter = 'all';
 
 async function initSuccessionPlanning() {
     try {
+        showSuccessionLoadingState();
         const res = await fetch('api/succession.php?action=get_overview');
         const payload = await res.json();
         
@@ -29,8 +31,10 @@ async function initSuccessionPlanning() {
             successionCandidatesState = payload.data.candidates || [];
             nineBoxRosterState = payload.data.nineBoxRoster || [];
             successionEmployeesState = payload.data.employees || [];
+            successionRecommendationsState = payload.data.recommendations || [];
             
             populateSuccessionEmployeeDropdowns();
+            updateSuccessionModalRecommendations();
         }
     } catch (e) {
         console.warn('Network error fetching succession data, using cached state:', e);
@@ -40,24 +44,166 @@ async function initSuccessionPlanning() {
     renderSuccessionRecords();
     renderComputedReadinessMatrix();
     renderSuccession9BoxGrid();
+
+    // 2. Supabase Realtime Subscription for Succession Recalculations
+    if (window.supabase && !window.successionRealtimeInitialized) {
+        window.successionRealtimeInitialized = true; // prevent duplicate listeners if init is called again
+        
+        const channel = window.supabase.channel('public:succession_recalc');
+        
+        // Listen to changes in Performance Appraisals that might close a cycle
+        channel.on('postgres_changes', { event: '*', schema: 'public', table: 'performance_evaluations' }, (payload) => {
+            console.log('Realtime: Performance Evaluation change detected -> syncing succession bench');
+            syncSuccessionBackground();
+        });
+        
+        // Listen to changes in Competency/Training that alter readiness index
+        channel.on('postgres_changes', { event: '*', schema: 'public', table: 'competency_assessments' }, (payload) => {
+            console.log('Realtime: Competency score change detected -> syncing succession bench');
+            syncSuccessionBackground();
+        });
+
+        // Listen directly to succession records changes (HR flags updated)
+        channel.on('postgres_changes', { event: '*', schema: 'public', table: 'succession_candidates' }, (payload) => {
+            console.log('Realtime: Succession Candidate change detected -> syncing succession bench');
+            syncSuccessionBackground();
+        });
+
+        channel.subscribe();
+    }
+}
+
+async function syncSuccessionBackground() {
+    try {
+        showSuccessionLoadingState();
+        const res = await fetch('api/succession.php?action=get_overview');
+        const payload = await res.json();
+        if (payload.success && payload.data) {
+            successionRolesState = payload.data.positions || [];
+            successionCandidatesState = payload.data.candidates || [];
+            nineBoxRosterState = payload.data.nineBoxRoster || [];
+            successionEmployeesState = payload.data.employees || [];
+            
+            populateSuccessionEmployeeDropdowns();
+            renderSuccessionKPIs();
+            renderSuccessionRecords();
+            renderComputedReadinessMatrix();
+            renderSuccession9BoxGrid();
+            
+            if (typeof window.showToast === 'function') {
+                window.showToast('Succession metrics automatically updated based on new performance/training data.', 'info');
+            }
+        }
+    } catch (e) {
+        console.warn('Failed background sync for succession data:', e);
+    }
+}
+
+function showSuccessionLoadingState() {
+    const recordsGrid = document.getElementById('succession-records-grid');
+    const tableBody = document.getElementById('succession-readiness-tbody');
+
+    const loaderHTML = `
+        <div class="col-span-full py-12 flex flex-col items-center justify-center space-y-3 bg-white/50 rounded-2xl border border-[#E8DEDC] border-dashed">
+            <i class="fas fa-circle-notch fa-spin text-primary text-3xl"></i>
+            <div class="text-slate-500 font-medium text-xs">Recalculating pipeline bench readiness...</div>
+        </div>
+    `;
+
+    if (recordsGrid) recordsGrid.innerHTML = loaderHTML;
+    if (tableBody) tableBody.innerHTML = `<tr><td colspan="7" class="p-0">${loaderHTML}</td></tr>`;
 }
 
 function populateSuccessionEmployeeDropdowns() {
+    const incumbentSelect = document.getElementById('succ-role-incumbent');
     const primarySelect = document.getElementById('succ-role-primary-successor');
     const backupSelect = document.getElementById('succ-role-backup-successor');
 
+    const optionsHtml = successionEmployeesState.map(e => `
+        <option value="${e.id}" data-name="${e.full_name || e.name}">
+            ${e.full_name || e.name} (${e.title || e.role || 'Staff'} · ${e.department || 'Hotel'})
+        </option>
+    `).join('');
+
+    if (incumbentSelect) {
+        incumbentSelect.innerHTML = '<option value="">-- Select Current Incumbent --</option>' + optionsHtml;
+    }
+
     if (primarySelect) {
-        primarySelect.innerHTML = '<option value="">-- Select Primary Successor --</option>' +
-            successionEmployeesState.map(e => `
-                <option value="${e.id}">${e.full_name || e.name} (${e.title || e.role} · ${e.department || 'Hotel'})</option>
-            `).join('');
+        primarySelect.innerHTML = '<option value="">-- Select Primary Successor --</option>' + optionsHtml;
     }
 
     if (backupSelect) {
-        backupSelect.innerHTML = '<option value="">-- Optional Emergency Backup --</option>' +
-            successionEmployeesState.map(e => `
-                <option value="${e.id}">${e.full_name || e.name} (${e.title || e.role} · ${e.department || 'Hotel'})</option>
-            `).join('');
+        backupSelect.innerHTML = '<option value="">-- Optional Emergency Backup --</option>' + optionsHtml;
+    }
+
+    updateSuccessionModalRecommendations();
+}
+
+function updateSuccessionModalRecommendations() {
+    const listContainer = document.getElementById('succ-role-xp-recommendations-list');
+    if (!listContainer) return;
+
+    const deptSelect = document.getElementById('succ-role-dept');
+    const selectedDept = (deptSelect?.value || 'Front Office').toLowerCase().trim();
+
+    let recs = successionRecommendationsState.filter(r => {
+        const d = (r.department || '').toLowerCase();
+        return d.includes(selectedDept) || selectedDept.includes(d);
+    });
+
+    if (recs.length === 0) {
+        recs = successionRecommendationsState.slice(0, 3);
+    }
+
+    if (recs.length === 0) {
+        listContainer.innerHTML = `
+            <div class="text-slate-400 text-xs italic py-2 text-center bg-white/60 rounded-xl border border-dashed border-slate-200">
+                No active associates with XP ledger entries found in this department yet.
+            </div>
+        `;
+        return;
+    }
+
+    listContainer.innerHTML = recs.slice(0, 3).map((rec, idx) => `
+        <div class="p-2.5 rounded-xl bg-white border border-primary/20 flex items-center justify-between gap-2 shadow-2xs">
+            <div class="flex items-center space-x-2.5 min-w-0">
+                <div class="w-6 h-6 rounded-full ${idx === 0 ? 'bg-amber-400 text-slate-900' : 'bg-slate-200 text-slate-700'} font-black text-[10px] flex items-center justify-center flex-shrink-0">
+                    #${idx + 1}
+                </div>
+                <img src="${rec.avatar}" alt="" class="w-8 h-8 rounded-full object-cover border border-[#E8DEDC] flex-shrink-0">
+                <div class="min-w-0">
+                    <div class="flex items-center space-x-1.5">
+                        <span class="font-bold text-slate-900 text-xs truncate">${rec.name}</span>
+                        <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-100 text-amber-800 whitespace-nowrap">
+                            <i class="fas fa-bolt mr-0.5"></i> ${rec.totalXP} XP
+                        </span>
+                    </div>
+                    <span class="text-[10px] text-slate-500 block truncate">${rec.role} · <strong class="text-emerald-700">${rec.computedReadinessPercent}% Fit</strong></span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-1 flex-shrink-0">
+                <button type="button" onclick="selectRecommendedSuccessor('${rec.employeeId}', 'primary')" class="px-2 py-1 rounded-lg bg-primary/10 hover:bg-primary text-primary hover:text-white font-bold text-[10px] transition">
+                    + Primary
+                </button>
+                <button type="button" onclick="selectRecommendedSuccessor('${rec.employeeId}', 'backup')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] transition">
+                    + Backup
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function selectRecommendedSuccessor(empId, roleType) {
+    const selectId = roleType === 'primary' ? 'succ-role-primary-successor' : 'succ-role-backup-successor';
+    const selectEl = document.getElementById(selectId);
+    if (selectEl) {
+        selectEl.value = empId;
+        const opt = selectEl.options[selectEl.selectedIndex];
+        const name = opt?.getAttribute('data-name') || 'Candidate';
+        if (typeof showToast === 'function') {
+            showToast(`Selected ${name} as ${roleType === 'primary' ? 'Primary Successor' : 'Emergency Backup'}!`, 'info');
+        }
     }
 }
 
@@ -106,6 +252,7 @@ function setSuccessionDeptFilter(dept) {
 
     renderSuccessionRecords();
     renderComputedReadinessMatrix();
+    renderSuccession9BoxGrid();
 }
 
 // =========================================================================
@@ -137,37 +284,43 @@ function renderSuccessionRecords() {
     container.innerHTML = filteredRoles.map(role => {
         // Find assigned primary successor candidate
         const primaryCandidate = successionCandidatesState.find(c => 
-            c.id === role.primarySuccessorId || 
-            c.employeeId === role.primarySuccessorId || 
-            c.positionId === role.id
+            (role.primarySuccessorId && (c.id === role.primarySuccessorId || c.employeeId === role.primarySuccessorId)) || 
+            (c.positionId === role.id && (c.isPrimary || c.primary))
         ) || (role.primarySuccessor ? {
             id: 'cand-' + role.id,
             employeeId: role.primarySuccessor.id,
             name: role.primarySuccessor.full_name || role.primarySuccessor.name,
             role: role.primarySuccessor.title || role.primarySuccessor.role,
             avatar: role.primarySuccessor.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-            computedReadinessPercent: 95,
-            hrReadinessFlag: 'Ready Now'
+            computedReadinessPercent: role.primarySuccessor.computedReadinessPercent || 0,
+            hrReadinessFlag: role.primarySuccessor.hrReadinessFlag || 'Pending Calibration'
         } : null);
 
         const primaryAlloc = primaryCandidate?.targetRoleAllocations?.find(a => a.roleId === role.id) || primaryCandidate?.targetRoleAllocations?.[0];
-        const flag = primaryAlloc?.hrReadinessFlag || primaryCandidate?.hrReadinessFlag || 'Ready in 1–2 Years';
+        const flag = primaryAlloc?.hrReadinessFlag || primaryCandidate?.hrReadinessFlag || 'Pending Calibration';
         
         const flagBadge = flag === 'Ready Now'
             ? `<span class="badge-sage"><i class="fas fa-check-circle mr-1"></i> Ready Now</span>`
             : (flag === 'Ready in 1–2 years' || flag === 'Ready in 1-2 Years')
             ? `<span class="badge-gold"><i class="fas fa-hourglass-half mr-1"></i> Ready in 1–2 Years</span>`
-            : `<span class="badge-terracotta"><i class="fas fa-clock mr-1"></i> Not Ready</span>`;
+            : flag === 'Not Ready' 
+            ? `<span class="badge-terracotta"><i class="fas fa-clock mr-1"></i> Not Ready</span>`
+            : `<span class="badge-dusty"><i class="fas fa-hourglass-start mr-1"></i> Pending Calibration</span>`;
 
         const backupCandidate = successionCandidatesState.find(c => 
-            c.id === role.emergencyBackupId || 
-            c.employeeId === role.emergencyBackupId
+            (role.emergencyBackupId && (c.id === role.emergencyBackupId || c.employeeId === role.emergencyBackupId))
         ) || (role.emergencyBackup ? {
             name: role.emergencyBackup.full_name || role.emergencyBackup.name,
             role: role.emergencyBackup.title || role.emergencyBackup.role
         } : null);
 
-        const matchPct = primaryAlloc?.computedReadinessPercent || primaryCandidate?.computedReadinessPercent || 94;
+        const matchPct = primaryAlloc?.computedReadinessPercent ?? primaryCandidate?.computedReadinessPercent ?? 0;
+
+        const deptClean = (role.dept || '').toLowerCase().trim();
+        const deptRecs = successionRecommendationsState.filter(r => {
+            const d = (r.department || '').toLowerCase().trim();
+            return (d.includes(deptClean) || deptClean.includes(d)) && r.employeeId !== role.primarySuccessorId && r.employeeId !== role.emergencyBackupId;
+        });
 
         return `
             <div class="card-clean p-5 hover:shadow-lg transition flex flex-col justify-between space-y-4 border border-[#E8DEDC] bg-white">
@@ -222,6 +375,47 @@ function renderSuccessionRecords() {
                             <span class="badge-dusty text-[10px]">Pipeline Developing</span>
                         </div>
                     ` : ''}
+
+                    <!-- System Talent Recommendations Box (XP-Ledger Powered) -->
+                    ${(!primaryCandidate || !backupCandidate || deptRecs.length > 0) ? `
+                        <div class="p-3 bg-amber-50/70 rounded-xl border border-amber-200/80 space-y-2 text-xs">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-amber-900 text-[11px] flex items-center">
+                                    <i class="fas fa-sparkles text-gold mr-1.5"></i>
+                                    <span>XP-Ledger Top Talent Replacements</span>
+                                </span>
+                                <span class="text-[10px] text-amber-700 font-semibold">${role.dept}</span>
+                            </div>
+                            <div class="space-y-1.5">
+                                ${deptRecs.length > 0 ? deptRecs.slice(0, 2).map(r => `
+                                    <div class="p-2 rounded-lg bg-white border border-[#E8DEDC] flex items-center justify-between gap-2 shadow-2xs">
+                                        <div class="flex items-center space-x-2 min-w-0">
+                                            <img src="${r.avatar}" alt="" class="w-7 h-7 rounded-full object-cover border border-[#E8DEDC]">
+                                            <div class="min-w-0">
+                                                <div class="flex items-center space-x-1.5">
+                                                    <span class="font-bold text-slate-900 text-xs truncate">${r.name}</span>
+                                                    <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 whitespace-nowrap">
+                                                        <i class="fas fa-bolt mr-0.5"></i> ${r.totalXP} XP
+                                                    </span>
+                                                </div>
+                                                <span class="text-[10px] text-slate-500 block truncate">${r.role} · <strong class="text-emerald-700">${r.computedReadinessPercent}% Fit</strong></span>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-1 flex-shrink-0">
+                                            <button onclick="quickAssignSuccessor('${role.id}', '${r.employeeId}', 'primary')" class="px-2 py-1 rounded-lg bg-primary/10 hover:bg-primary text-primary hover:text-white font-bold text-[10px] transition">
+                                                + Primary
+                                            </button>
+                                            <button onclick="quickAssignSuccessor('${role.id}', '${r.employeeId}', 'backup')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] transition">
+                                                + Backup
+                                            </button>
+                                        </div>
+                                    </div>
+                                `).join('') : `
+                                    <div class="text-slate-400 text-[10px] italic py-1 text-center">No other eligible department associates found.</div>
+                                `}
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
 
                 <div class="pt-3 border-t border-[#E8DEDC] flex items-center justify-between text-xs">
@@ -269,10 +463,11 @@ function renderComputedReadinessMatrix() {
             incumbentName: 'Unassigned'
         };
 
-        const flag = candidate.hrReadinessFlag || 'Ready in 1-2 Years';
+        const flag = candidate.hrReadinessFlag || 'Pending Calibration';
         const isReadyNow = flag === 'Ready Now';
         const isReady1_2 = flag === 'Ready in 1–2 years' || flag === 'Ready in 1-2 Years';
         const isNotReady = flag === 'Not Ready';
+        const isPending = flag === 'Pending Calibration';
         const fitPct = candidate.computedReadinessPercent || 90;
 
         return `
@@ -331,9 +526,10 @@ function renderComputedReadinessMatrix() {
                             1–2 Yrs
                         </button>
                         <button onclick="setHRReadinessFlag('${candidate.id}', 'Not Ready')"
-                            class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${isNotReady ? 'bg-red-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'}">
+                            class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${isNotReady ? 'bg-rose-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'}">
                             Not Ready
                         </button>
+                        ${isPending ? `<span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-200 text-slate-500 ml-1 shadow-2xs">Pending</span>` : ''}
                     </div>
                 </td>
 
@@ -373,6 +569,8 @@ async function setHRReadinessFlag(candidateId, newFlag) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 candidateId: candidateId,
+                employeeId: candidate?.employeeId || candidateId,
+                positionId: candidate?.positionId || '',
                 hrReadinessFlag: newFlag,
                 notes: candidate?.notes || 'Calibrated via HR Bench Matrix'
             })
@@ -444,7 +642,13 @@ async function submitHRFlagCalibration(event) {
         const res = await fetch('api/succession.php?action=update_flag', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ candidateId, hrReadinessFlag: flag, notes })
+            body: JSON.stringify({
+                candidateId: candidateId,
+                employeeId: candidate?.employeeId || candidateId,
+                positionId: candidate?.positionId || '',
+                hrReadinessFlag: flag,
+                notes: notes
+            })
         });
         const result = await res.json();
         if (result.success) {
@@ -471,14 +675,19 @@ async function submitNewSuccessionPosition(event) {
 
     const title = document.getElementById('succ-role-title')?.value.trim();
     const dept = document.getElementById('succ-role-dept')?.value || 'Front Office';
-    const incumbentName = document.getElementById('succ-role-incumbent')?.value.trim() || 'Unassigned';
-    const plannedTransition = document.getElementById('succ-role-transition')?.value.trim() || '12 Months';
+    
+    const incumbentSelect = document.getElementById('succ-role-incumbent');
+    const selectedIncumbentOpt = incumbentSelect?.options[incumbentSelect.selectedIndex];
+    const incumbentName = selectedIncumbentOpt?.getAttribute('data-name') || incumbentSelect?.value || 'Unassigned';
+    const incumbentId = incumbentSelect?.value || null;
+
+    const plannedTransition = document.getElementById('succ-role-transition')?.value || '1–2 Years (Mid-term)';
     const riskOfLoss = document.getElementById('succ-role-risk')?.value || 'Low';
     const primarySuccessorId = document.getElementById('succ-role-primary-successor')?.value || null;
     const emergencyBackupId = document.getElementById('succ-role-backup-successor')?.value || null;
 
-    if (!title || !incumbentName) {
-        showToast('Please fill in required position fields', 'error');
+    if (!title || !incumbentId) {
+        showToast('Please specify the position title and select a current incumbent', 'error');
         return;
     }
 
@@ -523,154 +732,180 @@ async function submitNewSuccessionPosition(event) {
 }
 
 // =========================================================================
-// 9. SUB-PANEL 3: 9-BOX TALENT CALIBRATION GRID
-// =========================================================================
+let showAllCalibrationQuadrants = false;
+
+function toggleCalibrationGridMode() {
+    showAllCalibrationQuadrants = !showAllCalibrationQuadrants;
+    renderSuccession9BoxGrid();
+}
 
 function renderSuccession9BoxGrid() {
     const gridContainer = document.getElementById('nine-box-grid-container');
     if (!gridContainer) return;
 
-    // Use dynamic 9-box roster populated from Supabase candidates
-    let boxes = nineBoxRosterState;
-    if (!Array.isArray(boxes) || boxes.length === 0) {
-        boxes = [
-            { boxId: 7, boxName: 'Enigma / Rough Diamond', potential: 'High', perfTier: 'Developing (<4.3)', color: 'terracotta', items: [] },
-            { boxId: 8, boxName: 'Growth Leader', potential: 'High', perfTier: 'Core/Meets (4.3-4.6)', color: 'gold', items: [] },
-            { boxId: 9, boxName: '★ Star Talent (Ready Lead)', potential: 'High', perfTier: 'Exceeds (4.7-5.0)', color: 'primary', items: [] },
-            { boxId: 4, boxName: 'Dilemma / Inconsistent', potential: 'Medium', perfTier: 'Developing (<4.3)', color: 'amber', items: [] },
-            { boxId: 5, boxName: 'Core Operations Anchor', potential: 'Medium', perfTier: 'Core/Meets (4.3-4.6)', color: 'dusty', items: [] },
-            { boxId: 6, boxName: 'High Performer / Specialist', potential: 'Medium', perfTier: 'Exceeds (4.7-5.0)', color: 'emerald', items: [] },
-            { boxId: 1, boxName: 'Risk / Action Required', potential: 'Low', perfTier: 'Developing (<4.3)', color: 'rose', items: [] },
-            { boxId: 2, boxName: 'Solid Specialist / Pro', potential: 'Low', perfTier: 'Core/Meets (4.3-4.6)', color: 'slate', items: [] },
-            { boxId: 3, boxName: 'Trusted Craft Master', potential: 'Low', perfTier: 'Exceeds (4.7-5.0)', color: 'sage', items: [] }
-        ];
+    const boxes = [
+        { boxId: 7, boxName: 'Enigma / Rough Diamond', potential: 'High', perfTier: 'Developing (<4.3)', color: 'terracotta', items: [] },
+        { boxId: 8, boxName: 'Growth Leader', potential: 'High', perfTier: 'Core/Meets (4.3-4.6)', color: 'gold', items: [] },
+        { boxId: 9, boxName: '★ Star Talent (Ready Lead)', potential: 'High', perfTier: 'Exceeds (4.7-5.0)', color: 'primary', items: [] },
+        { boxId: 4, boxName: 'Dilemma / Inconsistent', potential: 'Medium', perfTier: 'Developing (<4.3)', color: 'amber', items: [] },
+        { boxId: 5, boxName: 'Core Operations Anchor', potential: 'Medium', perfTier: 'Core/Meets (4.3-4.6)', color: 'dusty', items: [] },
+        { boxId: 6, boxName: 'High Performer / Specialist', potential: 'Medium', perfTier: 'Exceeds (4.7-5.0)', color: 'emerald', items: [] },
+        { boxId: 1, boxName: 'Risk / Action Required', potential: 'Low', perfTier: 'Developing (<4.3)', color: 'rose', items: [] },
+        { boxId: 2, boxName: 'Solid Specialist / Pro', potential: 'Low', perfTier: 'Core/Meets (4.3-4.6)', color: 'slate', items: [] },
+        { boxId: 3, boxName: 'Trusted Craft Master', potential: 'Low', perfTier: 'Exceeds (4.7-5.0)', color: 'sage', items: [] }
+    ];
 
-        successionCandidatesState.forEach(cand => {
-            const perf = parseFloat(cand.closedPerformanceRating || 4.5);
-            let bIdx = 2; // Box 9
-            if (perf >= 4.70) bIdx = 2;
-            else if (perf >= 4.30) bIdx = 1;
-            else bIdx = 0;
-
-            boxes[bIdx].items.push({
-                name: cand.name,
-                role: cand.role,
-                dept: cand.dept,
-                avatar: cand.avatar,
-                score: perf.toFixed(2),
-                action: cand.hrReadinessFlag === 'Ready Now' ? 'Primary Leadership Successor' : '1-on-1 Mentorship & IDP',
-                readiness: cand.hrReadinessFlag || 'Ready in 1-2 Years'
-            });
+    let candidates = successionCandidatesState;
+    if (successionActiveDeptFilter !== 'all') {
+        candidates = candidates.filter(c => {
+            const d = (c.dept || '').toLowerCase();
+            return d.includes(successionActiveDeptFilter) || successionActiveDeptFilter.includes(d);
         });
     }
 
+    candidates.forEach(cand => {
+        const perf = parseFloat(cand.closedPerformanceRating || 0.0);
+        const compMatchPct = parseFloat(cand.competencyMatchPct || 0.0);
+        
+        let bIdx = 2; // Default Box 9
+        if (compMatchPct >= 90) {
+            if (perf >= 4.70) bIdx = 2; // Box 9
+            else if (perf >= 4.30) bIdx = 1; // Box 8
+            else bIdx = 0; // Box 7
+        } else if (compMatchPct >= 75) {
+            if (perf >= 4.70) bIdx = 5; // Box 6
+            else if (perf >= 4.30) bIdx = 4; // Box 5
+            else bIdx = 3; // Box 4
+        } else {
+            if (perf >= 4.70) bIdx = 8; // Box 3
+            else if (perf >= 4.30) bIdx = 7; // Box 2
+            else bIdx = 6; // Box 1
+        }
+
+        boxes[bIdx].items.push({
+            name: cand.name,
+            role: cand.role,
+            dept: cand.dept,
+            avatar: cand.avatar,
+            score: perf.toFixed(2),
+            action: cand.hrReadinessFlag === 'Ready Now' ? 'Primary Leadership Successor' : (cand.hrReadinessFlag === 'Not Ready' ? 'Performance Improvement Plan' : '1-on-1 Mentorship & IDP'),
+            readiness: cand.hrReadinessFlag || 'Pending Calibration'
+        });
+    });
+
+    const activeBoxes = boxes.filter(b => b.items && b.items.length > 0);
+    const displayBoxes = showAllCalibrationQuadrants ? boxes : activeBoxes;
+    const totalTalentCount = activeBoxes.reduce((acc, b) => acc + (b.items?.length || 0), 0);
+
     gridContainer.innerHTML = `
         <div class="space-y-4">
-            <!-- Unified 9-Box Header Calibration Legend & Export Button -->
+            <!-- Header Legend & Export Button -->
             <div class="card-clean p-4 bg-white rounded-2xl border border-[#E8DEDC] flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs shadow-2xs">
                 <div>
-                    <h4 class="font-heading font-bold text-slate-900 text-sm block">Hospitality 9-Box Talent Calibration Matrix</h4>
-                    <p class="text-slate-500 text-[11px] mt-0.5">Calibrating Closed Performance Ratings (X-Axis) vs. Leadership Potential (Y-Axis) for bench mobility</p>
+                    <h4 class="font-heading font-bold text-slate-900 text-sm block">Talent Calibration Grid</h4>
+                    <p class="text-slate-500 text-[11px] mt-0.5">Calibrating Performance Ratings (X-Axis) vs. Potential (Y-Axis) · <strong>${totalTalentCount} Active Candidates</strong></p>
                 </div>
                 
                 <div class="flex flex-wrap items-center gap-3">
-                    <div class="flex items-center space-x-3 text-[11px] font-semibold bg-[#FAF8F7] px-3 py-1.5 rounded-xl border border-[#E8DEDC]">
-                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-primary mr-1.5"></span> Star Track</span>
-                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600 mr-1.5"></span> High Performer</span>
-                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-600 mr-1.5"></span> Core Anchor</span>
-                        <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-rose-600 mr-1.5"></span> PIP / Risk</span>
-                    </div>
+                    <button onclick="toggleCalibrationGridMode()" class="px-3 py-1.5 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] hover:bg-slate-100 font-bold text-slate-700 text-xs transition flex items-center space-x-1.5">
+                        <i class="fas ${showAllCalibrationQuadrants ? 'fa-filter' : 'fa-grid-2'} text-primary"></i>
+                        <span>${showAllCalibrationQuadrants ? 'Show Active Talent Only' : 'Show All 9 Quadrants'}</span>
+                    </button>
 
                     <button onclick="exportNineBoxMatrix()" class="btn-secondary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1.5 shadow-2xs hover:border-primary/40 transition">
                         <i class="fas fa-file-arrow-down text-primary"></i>
-                        <span>Export 9-Box Matrix</span>
+                        <span>Export Calibration Grid</span>
                     </button>
                 </div>
             </div>
 
-            <!-- 3x3 Visual Matrix Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                ${boxes.map(item => {
-                    const isStar = item.boxId === 9;
-                    const cardBorder = isStar ? 'border-2 border-primary/40 bg-primary-50/20 shadow-md ring-1 ring-primary/20' : 'border border-[#E8DEDC] bg-white';
-                    const members = item.items || [];
+            <!-- Active Talent Grid -->
+            ${displayBoxes.length === 0 ? `
+                <div class="card-clean p-12 text-center bg-white rounded-2xl border border-dashed border-[#E8DEDC] space-y-3">
+                    <div class="w-12 h-12 rounded-full bg-[#FAF8F7] border border-[#E8DEDC] text-slate-400 flex items-center justify-center mx-auto">
+                        <i class="fas fa-cubes-stacked text-xl text-slate-400"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-sm">No Talent Currently in Calibration Grid</h4>
+                    <p class="text-slate-500 text-xs">Assign successors or evaluate candidates to populate the Calibration Grid quadrants.</p>
+                </div>
+            ` : `
+                <div class="grid grid-cols-1 ${displayBoxes.length > 2 ? 'md:grid-cols-3' : (displayBoxes.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-1')} gap-4 text-xs">
+                    ${displayBoxes.map(item => {
+                        const isStar = item.boxId === 9;
+                        const cardBorder = isStar ? 'border-2 border-primary/40 bg-primary-50/20 shadow-md ring-1 ring-primary/20' : 'border border-[#E8DEDC] bg-white';
+                        const members = item.items || [];
 
-                    return `
-                        <div class="card-clean p-4 transition hover:shadow-md ${cardBorder} flex flex-col justify-between space-y-3">
-                            <div class="space-y-2">
-                                <div class="flex items-start justify-between gap-2">
-                                    <span class="text-[10px] font-mono font-bold text-slate-400">BOX ${item.boxId}</span>
-                                    <span class="badge-${item.color} text-[10px] font-bold">${item.potential} Potential</span>
-                                </div>
-                                <div>
-                                    <h4 class="font-heading font-bold text-xs ${isStar ? 'text-primary font-extrabold' : 'text-slate-900'}">${item.boxName}</h4>
-                                    <span class="text-[10px] text-slate-400 font-medium">Perf: ${item.perfTier}</span>
-                                </div>
+                        return `
+                            <div class="card-clean p-4 transition hover:shadow-md ${cardBorder} flex flex-col justify-between space-y-3">
+                                <div class="space-y-2">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <span class="text-[10px] font-mono font-bold text-slate-400">BOX ${item.boxId}</span>
+                                        <span class="badge-${item.color} text-[10px] font-bold">${item.potential} Potential</span>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-heading font-bold text-xs ${isStar ? 'text-primary font-extrabold' : 'text-slate-900'}">${item.boxName}</h4>
+                                        <span class="text-[10px] text-slate-400 font-medium">Perf: ${item.perfTier}</span>
+                                    </div>
 
-                                <!-- Associate Cards inside this box -->
-                                <div class="space-y-1.5">
-                                    ${members.length > 0 ? members.map(m => `
-                                        <div class="p-2.5 rounded-xl bg-[#FAF8F7] border border-[#E8DEDC] flex items-center space-x-2.5">
-                                            <img src="${m.avatar}" alt="" class="w-8 h-8 rounded-full object-cover border border-[#E8DEDC] shadow-2xs">
-                                            <div class="min-w-0 flex-1">
-                                                <div class="flex justify-between items-baseline">
-                                                    <span class="font-bold text-slate-900 text-xs truncate">${m.name}</span>
-                                                    <span class="font-bold text-primary text-[11px]">⭐ ${m.score}</span>
+                                    <!-- Associate Cards inside this box -->
+                                    <div class="space-y-1.5">
+                                        ${members.length > 0 ? members.map(m => `
+                                            <div class="p-2.5 rounded-xl bg-[#FAF8F7] border border-[#E8DEDC] flex items-center space-x-2.5">
+                                                <img src="${m.avatar}" alt="" class="w-8 h-8 rounded-full object-cover border border-[#E8DEDC] shadow-2xs">
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="flex justify-between items-baseline">
+                                                        <span class="font-bold text-slate-900 text-xs truncate">${m.name}</span>
+                                                        <span class="font-bold text-primary text-[11px]">⭐ ${m.score}</span>
+                                                    </div>
+                                                    <span class="text-[10px] text-slate-500 block truncate">${m.role} · ${m.dept}</span>
                                                 </div>
-                                                <span class="text-[10px] text-slate-500 block truncate">${m.role} · ${m.dept}</span>
                                             </div>
-                                        </div>
-                                    `).join('') : `
-                                        <div class="p-4 text-center text-slate-400 text-[11px] italic bg-[#FAF8F7]/60 rounded-xl border border-dashed border-slate-200">
-                                            No candidates currently in this quadrant
-                                        </div>
-                                    `}
+                                        `).join('') : `
+                                            <div class="p-4 text-center text-slate-400 text-[11px] italic bg-[#FAF8F7]/60 rounded-xl border border-dashed border-slate-200">
+                                                No candidates currently in this quadrant
+                                            </div>
+                                        `}
+                                    </div>
+                                </div>
+
+                                <div class="pt-2 border-t border-[#E8DEDC] space-y-1">
+                                    <div class="flex justify-between items-center text-[10px]">
+                                        <span class="text-slate-400 font-semibold uppercase">Bench Mobility:</span>
+                                        <span class="font-bold ${isStar ? 'text-emerald-700' : 'text-slate-700'}">${members.length > 0 ? members[0].readiness : 'Pipeline'}</span>
+                                    </div>
                                 </div>
                             </div>
-
-                            <div class="pt-2 border-t border-[#E8DEDC] space-y-1">
-                                <div class="flex justify-between items-center text-[10px]">
-                                    <span class="text-slate-400 font-semibold uppercase">Bench Mobility:</span>
-                                    <span class="font-bold ${isStar ? 'text-emerald-700' : 'text-slate-700'}">${members.length > 0 ? members[0].readiness : 'Pipeline'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('')}
-            </div>
-
-            <!-- Matrix Axis Footnote -->
-            <div class="p-3 bg-white rounded-xl border border-[#E8DEDC] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-500">
-                <span><strong>X-Axis (Performance):</strong> Developing (&lt;4.3) &rarr; Core (4.3–4.6) &rarr; Exceeds (4.7–5.0)</span>
-                <span><strong>Y-Axis (Potential):</strong> Low (Current Role) &rarr; Medium (1 Level) &rarr; High (Multi-Level Lead)</span>
-            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `}
         </div>
     `;
 }
 
 // =========================================================================
-// 10. EXPORT 9-BOX MATRIX REPORT
+// 10. EXPORT CALIBRATION GRID REPORT
 // =========================================================================
 
 function exportNineBoxMatrix() {
     let rows = [
-        ['Candidate Name', 'Current Role', 'Department', '9-Box Quadrant', 'Potential Level', 'Closed Performance Score', 'Benchmark Competency Avg', 'Computed Fit %', 'HR Readiness Flag', 'Mobility Action Plan']
+        ['Candidate Name', 'Current Role', 'Department', 'Calibration Quadrant', 'Potential Level', 'Closed Performance Score', 'Benchmark Competency Avg', 'Computed Fit %', 'HR Readiness Flag', 'Mobility Action Plan']
     ];
 
     successionCandidatesState.forEach(cand => {
-        const perf = parseFloat(cand.closedPerformanceRating || 4.5).toFixed(2);
-        const comp = parseFloat(cand.competencyAverage || 4.8).toFixed(2);
-        const fit = (cand.computedReadinessPercent || 90) + '%';
-        const flag = cand.hrReadinessFlag || 'Ready in 1-2 Years';
-        const boxCat = cand.nineBoxGridCategory || 'Star Track (Next Lead)';
-        const action = flag === 'Ready Now' ? 'Primary Leadership Successor' : '1-on-1 Mentorship & IDP Development';
+        const perf = parseFloat(cand.closedPerformanceRating || 0.0).toFixed(2);
+        const comp = parseFloat(cand.competencyAverage || 0.0).toFixed(2);
+        const fit = (cand.computedReadinessPercent || 0) + '%';
+        const flag = cand.hrReadinessFlag || 'Pending Calibration';
+        const boxCat = cand.nineBoxGridCategory || 'Developing';
+        const action = flag === 'Ready Now' ? 'Primary Leadership Successor' : (flag === 'Not Ready' ? 'Performance Improvement Plan' : '1-on-1 Mentorship & IDP');
 
         rows.push([
             `"${cand.name}"`,
             `"${cand.role}"`,
             `"${cand.dept}"`,
             `"${boxCat}"`,
-            `"High"`,
+            `"Evaluated"`,
             `"${perf} / 5.0"`,
             `"${comp} / 5.0"`,
             `"${fit}"`,
@@ -684,16 +919,39 @@ function exportNineBoxMatrix() {
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
     const dateStr = new Date().toISOString().slice(0, 10);
-    link.setAttribute('download', `Oxford_Suites_9Box_Talent_Matrix_${dateStr}.csv`);
+    link.setAttribute('download', `Oxford_Suites_Talent_Calibration_Grid_${dateStr}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    showToast('9-Box Talent Calibration Matrix exported successfully (CSV)!', 'success');
+    showToast('Talent Calibration Grid exported successfully (CSV)!', 'success');
 }
 
 // =========================================================================
-// 11. GLOBAL EXPORTS & EVENT LISTENERS
+// 11. QUICK ASSIGN SUCCESSOR FROM RECOMMENDATION ENGINE
+// =========================================================================
+
+async function quickAssignSuccessor(positionId, employeeId, type = 'primary') {
+    try {
+        const res = await fetch('api/succession.php?action=assign_successor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ positionId, employeeId, type })
+        });
+        const result = await res.json();
+        if (result.success) {
+            showToast(`Assigned candidate as ${type === 'primary' ? 'Primary Successor' : 'Emergency Backup'} & synced to bench!`, 'success');
+            await initSuccessionPlanning();
+        } else {
+            showToast(result.message || 'Assignment failed', 'error');
+        }
+    } catch (e) {
+        showToast('Network error assigning successor', 'error');
+    }
+}
+
+// =========================================================================
+// 12. GLOBAL EXPORTS & EVENT LISTENERS
 // =========================================================================
 
 window.initSuccessionPlanning = initSuccessionPlanning;
@@ -708,6 +966,10 @@ window.submitHRFlagCalibration = submitHRFlagCalibration;
 window.openCreateSuccessionRoleModal = openCreateSuccessionRoleModal;
 window.submitNewSuccessionRole = submitNewSuccessionPosition;
 window.submitNewSuccessionPosition = submitNewSuccessionPosition;
+window.updateSuccessionModalRecommendations = updateSuccessionModalRecommendations;
+window.selectRecommendedSuccessor = selectRecommendedSuccessor;
+window.quickAssignSuccessor = quickAssignSuccessor;
+window.toggleCalibrationGridMode = toggleCalibrationGridMode;
 
 document.addEventListener('DOMContentLoaded', () => {
     initSuccessionPlanning();

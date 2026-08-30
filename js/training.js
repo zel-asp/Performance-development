@@ -78,6 +78,7 @@ let trainingNeedsState = [];
 let trainingProgramsState = [];
 let trainingSessionsState = [];
 let trainingResultsState = [];
+let trainingCertificatesState = [];
 
 let activeAttendanceSessionId = 'sess-101';
 let currentEvaluationContext = {
@@ -125,7 +126,13 @@ function normalizeTrainingNeed(need) {
         programDuration: need.programDuration || need.program_duration || null,
         programPassingScore: need.programPassingScore || need.program_passing_score || null,
         dateIdentified: need.dateIdentified || need.date_identified || 'Aug 18, 2026',
-        notes: need.notes || need.diagnosis_note || 'Identified during supervisor performance audit.'
+        notes: need.notes || need.diagnosis_note || 'Identified during supervisor performance audit.',
+        targetGoalId: need.targetGoalId || need.target_goal_id || null,
+        linkedGoalTitle: need.linkedGoalTitle || need.linked_goal_title || null,
+        linkedGoalMetric: need.linkedGoalMetric || need.linked_goal_metric || null,
+        linkedGoalWeight: need.linkedGoalWeight || need.linked_goal_weight || null,
+        linkedGoalStatus: need.linkedGoalStatus || need.linked_goal_status || null,
+        isPerformanceGoal: !!(need.targetGoalId || need.target_goal_id || (need.source_label && need.source_label.toLowerCase().includes('performance')) || (need.sourceLabel && need.sourceLabel.toLowerCase().includes('performance')) || (need.source_type === 'performance_goal') || (need.sourceType === 'performance_goal'))
     };
 }
 
@@ -258,7 +265,7 @@ function normalizeTrainingResult(res) {
         passingThreshold: res.passingThreshold ?? res.passing_threshold ?? 80,
         resultStatus: res.resultStatus || res.result_status || 'Passed & Certified',
         feedbackRating: res.feedbackRating ?? res.feedback_rating ?? 5.0,
-        certificateReference: res.certificateReference || res.certificate_reference || 'OXF-CERT-2026-0001',
+        certificateReference: res.certificateReference || res.certificate_reference || null,
         competencyTarget: res.competencyTarget || res.competency_target || 'Service',
         competencyKey: res.competencyKey || res.competency_key || 'service',
         competencyScoreBefore: res.competencyScoreBefore ?? res.competency_score_before ?? 3.5,
@@ -280,12 +287,14 @@ async function initTrainingManagement() {
 
     // 2. Asynchronous Fetch & Sync from MVC Backend
     try {
+        showNeedsLoadingState();
         const bootstrapData = await TrainingAPI.bootstrap();
         if (bootstrapData) {
             if (Array.isArray(bootstrapData.needs)) trainingNeedsState = bootstrapData.needs.map(normalizeTrainingNeed);
             if (Array.isArray(bootstrapData.programs)) trainingProgramsState = bootstrapData.programs.map(normalizeTrainingProgram);
             if (Array.isArray(bootstrapData.sessions)) trainingSessionsState = bootstrapData.sessions.map(normalizeTrainingSession);
             if (Array.isArray(bootstrapData.results)) trainingResultsState = bootstrapData.results.map(normalizeTrainingResult);
+            if (Array.isArray(bootstrapData.certificates)) trainingCertificatesState = bootstrapData.certificates;
 
             // Re-render UI with synchronized server state
             renderTrainingNeeds();
@@ -300,17 +309,133 @@ async function initTrainingManagement() {
     } catch (err) {
         console.warn('[Training] Running with cached offline state:', err.message);
     }
+
+    // 3. Supabase Realtime Subscription for Competency Gaps
+    if (window.supabase) {
+        window.supabase
+            .channel('public:competency_assessments')
+            .on('postgres_changes', { 
+                event: '*', 
+                schema: 'public', 
+                table: 'competency_assessments' 
+            }, async (payload) => {
+                console.log('Realtime Assessment Detected in Training Module:', payload);
+                try {
+                    showNeedsLoadingState();
+                    const bootstrapData = await TrainingAPI.bootstrap();
+                    if (bootstrapData && Array.isArray(bootstrapData.needs)) {
+                        trainingNeedsState = bootstrapData.needs.map(normalizeTrainingNeed);
+                        renderTrainingNeeds();
+                        updateTrainingStats();
+                        if (typeof window.showToast === 'function') {
+                            window.showToast('New Training Need automatically detected from latest competency appraisal.', 'info');
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to realtime sync training needs:", err);
+                }
+            })
+            .subscribe();
+    }
 }
 
 function switchTrainingStage(stageSubTab) {
     switchSubTab('training', stageSubTab);
 }
 
+function getAggregatedCertificates() {
+    const list = [];
+    const seenAssociates = new Set();
+    const seenRefs = new Set();
+
+    // 1. From trainingResultsState
+    trainingResultsState.forEach(r => {
+        const ref = r.certificateReference || r.certificate_reference;
+        const assocKey = String(r.associateId || r.associateName || '').toLowerCase().trim();
+        if (ref && assocKey && !seenAssociates.has(assocKey)) {
+            seenAssociates.add(assocKey);
+            if (ref) seenRefs.add(ref);
+            list.push({
+                id: r.id,
+                programTitle: r.programTitle || r.program_title || 'Hospitality Mastery Program',
+                associateName: r.associateName || r.associate_name || 'Associate',
+                associateRole: r.associateRole || r.associate_role || 'Hotel Staff',
+                certificateReference: ref,
+                completionDate: r.completionDate || r.completion_date || 'Aug 29, 2026',
+                trainerName: r.trainerName || r.trainer_name || 'Lead Master Trainer',
+                quizScore: r.quizScore || r.quiz_score || 96,
+                employeeId: r.associateId || r.associate_id
+            });
+        }
+    });
+
+    // 2. From trainingCertificatesState
+    trainingCertificatesState.forEach(c => {
+        const ref = c.certificateNumber || c.certificate_number;
+        const assocKey = String(c.employee_id || c.employeeId || c.associate_name || c.associateName || '').toLowerCase().trim();
+        if (ref && assocKey && !seenAssociates.has(assocKey)) {
+            seenAssociates.add(assocKey);
+            if (ref) seenRefs.add(ref);
+            list.push({
+                id: c.id || ('cert-' + ref),
+                programTitle: c.programTitle || c.program_title || 'Hospitality Mastery Program',
+                associateName: c.associateName || c.associate_name || 'Associate',
+                associateRole: c.associateRole || c.associate_role || 'Hotel Staff',
+                certificateReference: ref,
+                completionDate: c.issueDate || c.issue_date || 'Aug 29, 2026',
+                trainerName: 'Lead Master Trainer',
+                quizScore: c.score || 96,
+                employeeId: c.employee_id || c.employeeId
+            });
+        }
+    });
+
+    // 3. From resolved trainingNeedsState with certificate/license
+    trainingNeedsState.forEach(n => {
+        if (n.status === 'Resolved' || n.status === 'Completed') {
+            const rawId = String(n.id || '').replace(/\D/g, '') || '9412';
+            const ref = n.certificateReference || n.certificate_reference || `OXF-CERT-2026-${rawId.padStart(4, '0')}`;
+            const assocKey = String(n.employeeId || n.employee_id || n.associateName || '').toLowerCase().trim();
+            if (assocKey && !seenAssociates.has(assocKey)) {
+                seenAssociates.add(assocKey);
+                if (ref) seenRefs.add(ref);
+                list.push({
+                    id: 'need-cert-' + (n.id || ref),
+                    programTitle: n.linkedProgramTitle || n.targetCompetency || 'Hospitality Mastery Program',
+                    associateName: n.associateName || 'Associate',
+                    associateRole: n.associateRole || 'Staff',
+                    certificateReference: ref,
+                    completionDate: n.dateIdentified || 'Aug 29, 2026',
+                    trainerName: 'Lead Master Trainer',
+                    quizScore: 96,
+                    employeeId: n.employeeId || n.employee_id
+                });
+            }
+        }
+    });
+
+    return list;
+}
+window.getAggregatedCertificates = getAggregatedCertificates;
+
 function updateTrainingStats() {
-    const identifiedCount = trainingNeedsState.filter(n => n.status !== 'Resolved' && n.status !== 'Completed').length;
+    const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
+    const currentEmpId = window.currentUser?.id;
+
+    let needs = trainingNeedsState;
+    let results = trainingResultsState;
+    let certs = getAggregatedCertificates();
+
+    if (isAssociate && currentEmpId) {
+        needs = needs.filter(n => n.employeeId === currentEmpId);
+        results = results.filter(r => r.associateId === currentEmpId);
+        certs = certs.filter(c => c.employeeId === currentEmpId || (window.currentUser?.name && String(c.associateName).toLowerCase().includes(String(window.currentUser.name).toLowerCase())));
+    }
+
+    const identifiedCount = needs.filter(n => n.status !== 'Resolved' && n.status !== 'Completed').length;
     const programsCount = trainingProgramsState.length;
     const activeSessionsCount = trainingSessionsState.filter(s => s.status !== 'Completed').length;
-    const certifiedCount = trainingResultsState.filter(r => (r.resultStatus || '').includes('Passed')).length;
+    const certifiedCount = certs.length;
 
     const elNeeds = document.getElementById('stat-training-needs');
     const elPrograms = document.getElementById('stat-training-programs');
@@ -328,24 +453,42 @@ let needsActiveFilterTab = 'active';
 function setNeedsFilter(filter) {
     needsActiveFilterTab = filter;
 
-    const filterBtns = ['active', 'resolved', 'all'];
+    const filterBtns = ['active', 'performance', 'resolved', 'all'];
     filterBtns.forEach(f => {
         const btn = document.getElementById(`btn-needs-filter-${f}`);
         if (btn) {
             if (f === filter) {
-                btn.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-primary text-white transition shadow-sm';
+                btn.className = 'px-3 py-1 rounded-lg text-xs font-bold bg-primary text-white transition shadow-sm whitespace-nowrap';
             } else {
-                btn.className = 'px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition';
+                btn.className = 'px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition whitespace-nowrap';
             }
         }
     });
 
     const badge = document.getElementById('needs-filter-count-badge');
     if (badge) {
-        badge.textContent = filter === 'active' ? 'Showing Active Deficits' : filter === 'resolved' ? 'Showing Resolved History' : 'Showing All Audit Triggers';
+        badge.textContent = filter === 'active' 
+            ? 'Showing Active Deficits' 
+            : filter === 'performance' 
+                ? 'Showing Referrals' 
+                : filter === 'resolved' 
+                    ? 'Showing Resolved History' 
+                    : 'Showing All Audit Triggers';
     }
 
     renderTrainingNeeds();
+}
+
+function showNeedsLoadingState() {
+    const container = document.getElementById('training-needs-list');
+    if (container) {
+        container.innerHTML = `
+            <div class="col-span-full py-12 flex flex-col items-center justify-center space-y-3 bg-white/50 rounded-2xl border border-[#E8DEDC] border-dashed">
+                <i class="fas fa-circle-notch fa-spin text-primary text-3xl"></i>
+                <div class="text-slate-500 font-medium text-xs">Synchronizing live competency appraisals...</div>
+            </div>
+        `;
+    }
 }
 
 function renderTrainingNeeds() {
@@ -354,35 +497,75 @@ function renderTrainingNeeds() {
 
     let allNormalized = trainingNeedsState.map(normalizeTrainingNeed);
     
-    // Deduplicate by employeeId / associateName to ensure strictly 1 consolidated card per person
-    const seenAssociates = new Set();
-    let deduped = [];
-    allNormalized.forEach(n => {
-        const key = n.employeeId || n.associateName;
-        if (!seenAssociates.has(key)) {
-            seenAssociates.add(key);
-            deduped.push(n);
-        }
-    });
+    const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
+    const currentEmpId = window.currentUser?.id;
 
-    let filteredNeeds = deduped;
+    if (isAssociate && currentEmpId) {
+        allNormalized = allNormalized.filter(n => n.employeeId === currentEmpId);
+    }
+    
+    const perfItems = allNormalized.filter(n => n.isPerformanceGoal);
+
+    let filteredNeeds = allNormalized;
     if (needsActiveFilterTab === 'active') {
-        filteredNeeds = filteredNeeds.filter(n => n.status !== 'Resolved' && n.status !== 'Completed');
+        filteredNeeds = allNormalized.filter(n => n.status !== 'Resolved' && n.status !== 'Completed' && !n.isPerformanceGoal);
+    } else if (needsActiveFilterTab === 'performance') {
+        filteredNeeds = perfItems.filter(n => n.status !== 'Resolved' && n.status !== 'Completed');
     } else if (needsActiveFilterTab === 'resolved') {
-        filteredNeeds = filteredNeeds.filter(n => n.status === 'Resolved' || n.status === 'Completed');
+        filteredNeeds = allNormalized.filter(n => n.status === 'Resolved' || n.status === 'Completed');
+    }
+
+    const badge = document.getElementById('needs-filter-count-badge');
+    if (badge) {
+        badge.textContent = needsActiveFilterTab === 'active' 
+            ? `Showing Active Deficits (${filteredNeeds.length})` 
+            : needsActiveFilterTab === 'performance' 
+                ? `Showing Active Referrals (${filteredNeeds.length})` 
+                : needsActiveFilterTab === 'resolved' 
+                    ? `Showing Resolved History (${filteredNeeds.length})` 
+                    : `Showing All Audit Triggers (${filteredNeeds.length})`;
+    }
+
+    // Personalize Header and Filters for Associate vs Supervisor
+    const headTitle = document.getElementById('training-needs-header-title');
+    const headDesc = document.getElementById('training-needs-header-desc');
+    const headBadge = document.getElementById('training-needs-header-badge');
+    const btnActive = document.getElementById('btn-needs-filter-active');
+    const btnPerf = document.getElementById('btn-needs-filter-performance');
+    const btnResolved = document.getElementById('btn-needs-filter-resolved');
+    const btnAll = document.getElementById('btn-needs-filter-all');
+
+    if (isAssociate) {
+        if (headTitle) headTitle.textContent = 'My Training & Skill Development Plan';
+        if (headDesc) headDesc.textContent = 'Personalized learning assignments and mandatory compliance requirements to close skill gaps';
+        if (headBadge) headBadge.innerHTML = '<i class="fas fa-user-graduate mr-1"></i> My Learning Plan';
+        if (btnActive) btnActive.innerHTML = '<i class="fas fa-bolt mr-1 text-amber-300"></i> My Active Needs';
+        if (btnPerf) btnPerf.innerHTML = '<i class="fas fa-bullseye mr-1 text-indigo-600"></i> My Goal Referrals';
+        if (btnResolved) btnResolved.innerHTML = '<i class="fas fa-check-circle mr-1 text-emerald-600"></i> My Completed &amp; Certs';
+        if (btnAll) btnAll.textContent = 'All My Training';
+    } else {
+        if (headTitle) headTitle.textContent = 'Skill Gap Audits & Mandatory Compliance Requirements';
+        if (headDesc) headDesc.textContent = 'Direct triggers identifying which associate requires training and linking to syllabus';
+        if (headBadge) headBadge.innerHTML = '<i class="fas fa-bolt mr-1"></i> Live Needs Queue';
+        if (btnActive) btnActive.innerHTML = '<i class="fas fa-bolt mr-1 text-amber-300"></i> Active Deficits';
+        if (btnPerf) btnPerf.innerHTML = '<i class="fas fa-share-from-square mr-1 text-indigo-600"></i> Referrals';
+        if (btnResolved) btnResolved.innerHTML = '<i class="fas fa-check-circle mr-1 text-emerald-600"></i> Resolved History';
+        if (btnAll) btnAll.textContent = 'All Audit Triggers';
     }
 
     if (filteredNeeds.length === 0) {
-        const emptyMsg = needsActiveFilterTab === 'resolved'
-            ? 'No resolved training history recorded yet.'
-            : 'No active skill gap deficits or compliance requirements pending in the queue.';
+        const emptyMsg = needsActiveFilterTab === 'performance'
+            ? (isAssociate ? 'No formal training needs linked to your Performance Goals yet.' : 'No formal training needs linked to Performance Goal Evaluations / IDP yet.')
+            : needsActiveFilterTab === 'resolved'
+                ? (isAssociate ? 'No completed training certifications recorded on your profile yet.' : 'No resolved training history recorded yet.')
+                : (isAssociate ? 'Great job! You have no pending skill gaps or compliance deficits.' : 'No active skill gap deficits or compliance requirements pending in the queue.');
 
         container.innerHTML = `
             <div class="card-clean p-8 bg-white border border-[#E8DEDC] text-center space-y-3">
                 <div class="w-12 h-12 rounded-full bg-[#FAF8F7] border border-[#E8DEDC] text-slate-400 flex items-center justify-center mx-auto">
                     <i class="fas fa-check-double text-lg text-emerald-600"></i>
                 </div>
-                <h4 class="font-bold text-slate-800 text-sm">${needsActiveFilterTab === 'resolved' ? 'No Resolved Items' : 'All Associate Competencies at Benchmark'}</h4>
+                <h4 class="font-bold text-slate-800 text-sm">${needsActiveFilterTab === 'performance' ? (isAssociate ? 'No Goal Referrals' : 'No Performance Goal Needs') : (needsActiveFilterTab === 'resolved' ? (isAssociate ? 'No Certifications Yet' : 'No Resolved Items') : (isAssociate ? 'All Your Competencies on Target' : 'All Associate Competencies at Benchmark'))}</h4>
                 <p class="text-slate-500 text-xs">${emptyMsg}</p>
             </div>
         `;
@@ -393,6 +576,9 @@ function renderTrainingNeeds() {
         const isResolved = need.status === 'Resolved' || need.status === 'Completed';
         const isScheduled = need.status === 'Scheduled';
         const isSkillGap = need.sourceType === 'competency_gap';
+
+        const existingSession = trainingSessionsState.find(s => s.linkedNeedId === need.id && s.status !== 'Completed');
+        const isAlreadyScheduled = !!existingSession || isScheduled;
 
         // Find linked program metadata
         const prog = trainingProgramsState.find(p => p.id === need.linkedProgramId) || null;
@@ -411,15 +597,36 @@ function renderTrainingNeeds() {
                 ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200"><i class="fas fa-clock mr-1"></i> High Priority</span>`
                 : `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">Standard</span>`;
 
-        const typeBadge = isSkillGap
-            ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20"><i class="fas fa-chart-radar mr-1"></i> Skill Gap: ${need.targetCompetency}</span>`
-            : `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-800 border border-amber-500/20"><i class="fas fa-shield-halved mr-1"></i> Mandatory Compliance</span>`;
+        const typeBadge = need.isPerformanceGoal
+            ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200"><i class="fas fa-bullseye mr-1"></i> ${need.sourceLabel || 'Performance IDP Goal'}${need.targetGoalId ? ` (Goal #${need.targetGoalId})` : ''}</span>`
+            : isSkillGap
+                ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20"><i class="fas fa-chart-radar mr-1"></i> Skill Gap: ${need.targetCompetency}</span>`
+                : `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-800 border border-amber-500/20"><i class="fas fa-shield-halved mr-1"></i> Mandatory Compliance</span>`;
 
         const statusPill = isResolved
             ? `<span class="badge-sage font-bold"><i class="fas fa-check-circle mr-1"></i> Resolved &amp; Synced (4.8 Score)</span>`
             : isScheduled
                 ? `<span class="badge-dusty font-bold"><i class="fas fa-calendar-check mr-1"></i> Session Scheduled</span>`
                 : `<span class="badge-terracotta font-bold"><i class="fas fa-bolt mr-1"></i> Deficit Active (< 3.8 TNA)</span>`;
+
+        const performanceGoalSnippet = need.targetGoalId ? `
+            <div class="p-3 bg-indigo-50/70 rounded-xl border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                <div class="space-y-0.5">
+                    <div class="flex items-center space-x-2 text-indigo-950 font-bold text-[11px]">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-indigo-600 text-white">
+                            <i class="fas fa-bullseye mr-1"></i> Performance Goal #${need.targetGoalId}
+                        </span>
+                        <span class="text-slate-900">${need.linkedGoalTitle || 'Operational Performance Objective'}</span>
+                    </div>
+                    <p class="text-slate-600 text-[11px]">
+                        Target Metric: <strong class="text-indigo-900">${need.linkedGoalMetric || 'Benchmark Met'}</strong> · Weight: <strong class="text-slate-700">${need.linkedGoalWeight || 'Standard'}</strong>
+                    </p>
+                </div>
+                <div class="flex items-center space-x-2 flex-shrink-0">
+                    <span class="badge-sage text-[10px] font-bold"><i class="fas fa-link mr-1"></i> IDP Synced</span>
+                </div>
+            </div>
+        ` : '';
 
         return `
             <div class="card-clean p-5 hover:shadow-md transition space-y-4 border ${isResolved ? 'bg-emerald-50/20 border-emerald-200' : 'bg-white border-[#E8DEDC]'}">
@@ -442,6 +649,8 @@ function renderTrainingNeeds() {
                         ${statusPill}
                     </div>
                 </div>
+
+                ${performanceGoalSnippet}
 
                 <!-- Middle Row: Benchmark Comparison & Diagnosis -->
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 p-3.5 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] text-xs items-center">
@@ -491,7 +700,7 @@ function renderTrainingNeeds() {
                                     <i class="fas fa-graduation-cap mr-1"></i> Assigned Curriculum
                                 </span>
                                 <span class="font-bold text-slate-900">${prog.title}</span>
-                                ${!isResolved && !isAlreadyScheduled ? `
+                                ${!isResolved && !isAlreadyScheduled && !isAssociate ? `
                                     <button onclick="openAssignProgramModal('${need.id}')" class="text-[11px] text-primary hover:underline font-semibold ml-2">
                                         <i class="fas fa-pen-to-square mr-1"></i>Change
                                     </button>
@@ -520,11 +729,21 @@ function renderTrainingNeeds() {
                                     <span class="badge-sage text-xs font-bold py-1.5 px-3">
                                         <i class="fas fa-calendar-check mr-1.5"></i> Session Scheduled (${existingSession ? existingSession.date : 'Upcoming'})
                                     </span>
-                                    <button onclick="switchTrainingStage('schedules')" class="btn-secondary px-3 py-1.5 text-xs font-bold flex items-center space-x-1 shadow-2xs">
-                                        <i class="fas fa-calendar mr-1"></i>
-                                        <span>View Cohort Roster &rarr;</span>
-                                    </button>
+                                    ${isAssociate && existingSession ? `
+                                        <span class="text-xs text-slate-500 font-medium px-2 py-1.5 bg-white border border-[#E8DEDC] rounded-lg shadow-2xs">
+                                            <i class="fas fa-clock mr-1 text-slate-400"></i> ${existingSession.time} &middot; <i class="fas fa-location-dot ml-1 mr-1 text-slate-400"></i> ${existingSession.location}
+                                        </span>
+                                    ` : isAssociate ? `
+                                        <span class="text-xs text-slate-500 font-medium px-2 py-1.5 bg-white border border-[#E8DEDC] rounded-lg">Pending final time slot</span>
+                                    ` : `
+                                        <button onclick="switchTrainingStage('schedules')" class="btn-secondary px-3 py-1.5 text-xs font-bold flex items-center space-x-1 shadow-2xs">
+                                            <i class="fas fa-calendar mr-1"></i>
+                                            <span>View Cohort Roster &rarr;</span>
+                                        </button>
+                                    `}
                                 </div>
+                            ` : isAssociate ? `
+                                <span class="badge-dusty text-xs font-bold py-1.5 px-3">Pending Schedule</span>
                             ` : `
                                 <button onclick="scheduleFromNeed('${need.id}')" class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-2 shadow-sm whitespace-nowrap">
                                     <i class="fas fa-calendar-plus"></i>
@@ -534,16 +753,16 @@ function renderTrainingNeeds() {
                         </div>
                     </div>
                 ` : `
-                    <div class="p-3.5 bg-amber-50/90 rounded-xl border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div class="p-3.5 ${isAssociate ? 'bg-slate-50 border border-slate-200' : 'bg-amber-50/90 border border-amber-200'} rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                         <div class="space-y-1">
                             <div class="flex items-center space-x-2">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-600 text-white">
-                                    <i class="fas fa-user-gear mr-1"></i> Supervisor Action Required
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider ${isAssociate ? 'bg-slate-500' : 'bg-amber-600'} text-white">
+                                    ${isAssociate ? '<i class="fas fa-hourglass-half mr-1"></i> Pending Assignment' : '<i class="fas fa-user-gear mr-1"></i> Supervisor Action Required'}
                                 </span>
                                 <span class="font-bold text-slate-900">No Training Program Assigned Yet</span>
                             </div>
                             <p class="text-slate-600 text-[11px]">
-                                <i class="fas fa-circle-info mr-1 text-amber-600"></i> Review diagnosed deficit scores for <strong>${need.associateName}</strong> and manually select the appropriate training curriculum.
+                                <i class="fas fa-circle-info mr-1 ${isAssociate ? 'text-slate-400' : 'text-amber-600'}"></i> ${isAssociate ? 'Your supervisor will assign a curriculum to help you bridge this competency gap.' : `Review diagnosed deficit scores for <strong>${need.associateName}</strong> and manually select the appropriate training curriculum.`}
                             </p>
                         </div>
 
@@ -552,10 +771,14 @@ function renderTrainingNeeds() {
                                 <span class="badge-sage text-xs font-bold py-1.5 px-3">
                                     <i class="fas fa-calendar-check mr-1.5"></i> Training Scheduled
                                 </span>
-                                <button onclick="switchTrainingStage('schedules')" class="btn-secondary px-3 py-1.5 text-xs font-bold flex items-center space-x-1 shadow-2xs">
-                                    <i class="fas fa-calendar mr-1"></i>
-                                    <span>View Cohort &rarr;</span>
-                                </button>
+                                ${isAssociate ? '' : `
+                                    <button onclick="switchTrainingStage('schedules')" class="btn-secondary px-3 py-1.5 text-xs font-bold flex items-center space-x-1 shadow-2xs">
+                                        <i class="fas fa-calendar mr-1"></i>
+                                        <span>View Cohort &rarr;</span>
+                                    </button>
+                                `}
+                            ` : isAssociate ? `
+                                <span class="text-xs text-slate-400 font-bold px-2 py-1"><i class="fas fa-clock mr-1"></i> Awaiting Manager</span>
                             ` : `
                                 <button onclick="openAssignProgramModal('${need.id}')" class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-sm whitespace-nowrap">
                                     <i class="fas fa-plus-circle mr-1"></i>
@@ -577,6 +800,22 @@ function renderTrainingNeeds() {
 function renderTrainingPrograms() {
     const container = document.getElementById('training-programs-grid');
     if (!container) return;
+
+    const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
+
+    const progTitle = document.getElementById('training-programs-header-title');
+    const progDesc = document.getElementById('training-programs-header-desc');
+    const btnCreate = document.getElementById('btn-create-program');
+
+    if (isAssociate) {
+        if (progTitle) progTitle.textContent = 'Training Programs Catalog';
+        if (progDesc) progDesc.textContent = 'Browse official hotel training courses, curriculum syllabi, target competencies, and certification requirements';
+        if (btnCreate) btnCreate.classList.add('hidden');
+    } else {
+        if (progTitle) progTitle.textContent = 'Training Programs Catalog (Linked to Skill Gap or Mandatory Compliance)';
+        if (progDesc) progDesc.textContent = 'Structured syllabi, passing thresholds, target competencies, and certified trainer requirements';
+        if (btnCreate) btnCreate.classList.remove('hidden');
+    }
 
     container.innerHTML = trainingProgramsState.map(prog => {
         return `
@@ -617,10 +856,16 @@ function renderTrainingPrograms() {
 
                 <div class="pt-3 border-t border-[#E8DEDC] flex items-center justify-between">
                     <span class="text-[11px] font-semibold text-slate-500"><i class="fas fa-graduation-cap mr-1 text-primary"></i> ${prog.modules.length} Modules</span>
-                    <button onclick="openScheduleModal('${prog.id}')" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5">
-                        <i class="fas fa-calendar-days"></i>
-                        <span>Schedule Session &rarr;</span>
-                    </button>
+                    ${isAssociate ? `
+                        <span class="text-[11px] font-bold text-slate-600 bg-[#FAF8F7] border border-[#E8DEDC] px-2.5 py-1 rounded-lg">
+                            <i class="fas fa-book-open text-primary mr-1"></i> Standard Syllabus
+                        </span>
+                    ` : `
+                        <button onclick="openScheduleModal('${prog.id}')" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5">
+                            <i class="fas fa-calendar-days"></i>
+                            <span>Schedule Session &rarr;</span>
+                        </button>
+                    `}
                 </div>
             </div>
         `;
@@ -635,7 +880,28 @@ function renderTrainingSessions() {
     const container = document.getElementById('training-sessions-list');
     if (!container) return;
 
-    container.innerHTML = trainingSessionsState.map(sess => {
+    const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
+    const currentEmpId = window.currentUser?.id;
+
+    let sessionsToRender = trainingSessionsState;
+    if (isAssociate && currentEmpId) {
+        sessionsToRender = trainingSessionsState.filter(s => s.roster && s.roster.some(r => r.associateId === currentEmpId || (window.currentUser?.name && String(r.name).toLowerCase().includes(String(window.currentUser.name).toLowerCase()))));
+    }
+
+    if (sessionsToRender.length === 0) {
+        container.innerHTML = `
+            <div class="card-clean p-8 bg-white border border-[#E8DEDC] text-center space-y-3">
+                <div class="w-12 h-12 rounded-full bg-[#FAF8F7] border border-[#E8DEDC] text-slate-400 flex items-center justify-center mx-auto">
+                    <i class="fas fa-calendar-xmark text-lg text-slate-400"></i>
+                </div>
+                <h4 class="font-bold text-slate-800 text-sm">${isAssociate ? 'No Scheduled Sessions' : 'No Active Sessions'}</h4>
+                <p class="text-slate-500 text-xs">${isAssociate ? 'You do not have any upcoming training sessions scheduled at this time. Once assigned by your supervisor, details will appear here.' : 'No training sessions scheduled yet. Click "+ Schedule Session" above to create a new cohort.'}</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = sessionsToRender.map(sess => {
         const allCompleted = sess.roster && sess.roster.length > 0 && sess.roster.every(r => r.attendanceStatus === 'Completed' || r.evaluationStatus === 'Completed');
         const isCompleted = sess.status === 'Completed' || allCompleted;
         const isLive = !isCompleted && sess.status === 'In Progress';
@@ -705,17 +971,54 @@ function renderTrainingSessions() {
 // =========================================================================
 
 function renderAttendanceConsole() {
-    const session = trainingSessionsState.find(s => s.id === activeAttendanceSessionId) || trainingSessionsState[0];
-    if (!session) return;
-
-    activeAttendanceSessionId = session.id;
-
     const selector = document.getElementById('attendance-session-select');
-    if (selector) {
-        selector.innerHTML = trainingSessionsState.map(s => `
+    if (!selector) return;
+
+    const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
+    const currentEmpId = window.currentUser?.id;
+
+    let filteredSessions = trainingSessionsState;
+    if (isAssociate && currentEmpId) {
+        filteredSessions = trainingSessionsState.filter(s => s.roster && s.roster.some(r => r.associateId === currentEmpId));
+    }
+
+    if (filteredSessions.length === 0) {
+        selector.innerHTML = '<option value="">-- No active sessions found --</option>';
+        const tbody = document.getElementById('attendance-roster-tbody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="px-5 py-8 text-center text-slate-400 text-xs italic bg-white border border-[#E8DEDC]">
+                        ${isAssociate ? 'You are not currently scheduled for any training sessions.' : 'No active sessions to track.'}
+                    </td>
+                </tr>
+            `;
+        }
+        
+        const markAllBtn = document.getElementById('btn-mark-all-attended');
+        if (markAllBtn) markAllBtn.classList.add('hidden');
+        
+        return;
+    }
+
+    if (!activeAttendanceSessionId || !filteredSessions.find(s => s.id === activeAttendanceSessionId)) {
+        activeAttendanceSessionId = filteredSessions[0].id;
+    }
+
+    if (document.activeElement !== selector) {
+        selector.innerHTML = filteredSessions.map(s => `
             <option value="${s.id}" ${s.id === activeAttendanceSessionId ? 'selected' : ''}>${s.title} (${s.date})</option>
         `).join('');
     }
+
+    const markAllBtn = document.getElementById('btn-mark-all-attended');
+    if (markAllBtn) {
+        if (isAssociate) markAllBtn.classList.add('hidden');
+        else markAllBtn.classList.remove('hidden');
+    }
+
+    const session = filteredSessions.find(s => s.id === activeAttendanceSessionId);
+    if (!session) return;
 
     const titleEl = document.getElementById('attendance-session-header-title');
     const trainerEl = document.getElementById('attendance-session-header-trainer');
@@ -724,16 +1027,25 @@ function renderAttendanceConsole() {
 
     if (titleEl) titleEl.textContent = session.title;
     if (trainerEl) trainerEl.textContent = `Trainer: ${session.trainerName}`;
-    if (venueEl) venueEl.textContent = session.location;
-    if (dateEl) dateEl.textContent = `${session.date} · ${session.time}`;
+    if (venueEl) venueEl.innerHTML = `<i class="fas fa-location-dot mr-1 text-slate-400"></i> ${session.location}`;
+    if (dateEl) dateEl.innerHTML = `<i class="fas fa-clock mr-1 text-slate-400"></i> ${session.date} &middot; ${session.time}`;
 
     const tbody = document.getElementById('attendance-roster-tbody');
     if (!tbody) return;
 
-    tbody.innerHTML = session.roster.map(member => {
+    let sessionRoster = session.roster || [];
+    if (isAssociate && currentEmpId) {
+        sessionRoster = sessionRoster.filter(member => member.associateId === currentEmpId);
+    }
+
+    tbody.innerHTML = sessionRoster.map(member => {
+        const assocResult = trainingResultsState.find(r => r.associateId === member.associateId && r.sessionId === session.id);
+        const hasPassed = assocResult && (assocResult.resultStatus.includes('Passed') || assocResult.resultStatus === 'Completed');
+        const hasCert = assocResult && assocResult.certificateReference;
+
         const isAttended = member.attendanceStatus === 'Attended';
         const isAbsent = member.attendanceStatus === 'Absent';
-        const isCompleted = member.attendanceStatus === 'Completed' || member.evaluationStatus === 'Completed';
+        const isCompleted = member.attendanceStatus === 'Completed' || hasPassed;
 
         const statusBadge = isCompleted
             ? `<span class="badge-sage font-bold"><i class="fas fa-check-double mr-1"></i> Completed (100%)</span>`
@@ -743,6 +1055,12 @@ function renderAttendanceConsole() {
 
         const markAttendanceContent = isCompleted
             ? `<span class="badge-sage text-xs font-bold py-1 px-3 inline-flex items-center"><i class="fas fa-lock text-[10px] mr-1.5 opacity-70"></i> Attended (Completed)</span>`
+            : isAssociate
+            ? `
+                <span class="badge-dusty text-[11px] font-bold py-1 px-2.5 inline-flex items-center">
+                    <i class="fas fa-clock mr-1"></i> Pending Trainer Attendance
+                </span>
+            `
             : `
                 <div class="flex items-center space-x-1.5">
                     <button onclick="setAssociateAttendance('${session.id}', '${member.associateId}', 'Attended')" 
@@ -762,8 +1080,8 @@ function renderAttendanceConsole() {
                     <span class="text-[11px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 py-1 px-2.5 rounded-lg inline-flex items-center">
                         <i class="fas fa-certificate text-gold mr-1"></i> Completed · View Only
                     </span>
-                    ${member.resultId || trainingResultsState.some(r => r.associateId === member.associateId) ? `
-                        <button onclick="viewTrainingCertificate('${member.resultId || (trainingResultsState.find(r => r.associateId === member.associateId)?.id || '')}')" class="btn-secondary px-2.5 py-1 text-[11px] font-bold inline-flex items-center space-x-1">
+                    ${hasCert ? `
+                        <button onclick="viewTrainingCertificate('${assocResult.id}')" class="btn-secondary px-2.5 py-1 text-[11px] font-bold inline-flex items-center space-x-1">
                             <i class="fas fa-file-pdf text-primary"></i>
                             <span>View Cert</span>
                         </button>
@@ -775,7 +1093,7 @@ function renderAttendanceConsole() {
                     <button onclick="startSessionEvaluation('${session.id}', '${member.associateId}')" 
                         class="btn-primary px-3 py-1.5 text-[11px] font-bold inline-flex items-center space-x-1 shadow-xs">
                         <i class="fas fa-pen-to-square"></i>
-                        <span>Take Evaluation Quiz &rarr;</span>
+                        <span>${assocResult ? 'Retake Evaluation Quiz &rarr;' : 'Take Evaluation Quiz &rarr;'}</span>
                     </button>
                 `
                 : `
@@ -1090,7 +1408,29 @@ function renderTrainingResults() {
     const tbody = document.getElementById('training-results-tbody');
     if (!tbody) return;
 
-    tbody.innerHTML = trainingResultsState.map(res => {
+    const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
+    const currentEmpId = window.currentUser?.id;
+
+    let resultsToRender = trainingResultsState;
+    if (isAssociate && currentEmpId) {
+        resultsToRender = trainingResultsState.filter(r => r.associateId === currentEmpId || (window.currentUser?.name && String(r.associateName).toLowerCase().includes(String(window.currentUser.name).toLowerCase())));
+    }
+
+    if (resultsToRender.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="px-5 py-8 text-center text-slate-400 text-xs italic">
+                    <div class="flex flex-col items-center justify-center space-y-2">
+                        <i class="fas fa-clipboard-list text-2xl text-slate-300"></i>
+                        <span>${isAssociate ? 'No evaluation results or certifications recorded for your account yet.' : 'No recorded training evaluation results yet.'}</span>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = resultsToRender.map(res => {
         const isPassed = res.resultStatus.includes('Passed');
 
         return `
@@ -1132,7 +1472,7 @@ function renderCertsTable() {
     const tbody = document.getElementById('certs-table-body');
     if (!tbody) return;
 
-    const certifiedResults = trainingResultsState.filter(r => r.certificateReference);
+    const certifiedResults = getAggregatedCertificates();
 
     if (certifiedResults.length === 0) {
         tbody.innerHTML = `
@@ -1168,7 +1508,8 @@ function renderCertsTable() {
 }
 
 function viewTrainingCertificate(resultId) {
-    const result = trainingResultsState.find(r => r.id === resultId) || trainingResultsState[0];
+    const allCerts = getAggregatedCertificates();
+    const result = allCerts.find(r => r.id === resultId) || trainingResultsState.find(r => r.id === resultId) || allCerts[0];
     if (!result) return;
 
     const elCertName = document.getElementById('cert-modal-associate-name');
@@ -1181,9 +1522,9 @@ function viewTrainingCertificate(resultId) {
     if (elCertName) elCertName.textContent = result.associateName;
     if (elCertProgram) elCertProgram.textContent = result.programTitle;
     if (elCertId) elCertId.textContent = result.certificateReference || 'OXF-CERT-2026-0889';
-    if (elCertDate) elCertDate.textContent = result.completionDate;
-    if (elCertTrainer) elCertTrainer.textContent = result.trainerName;
-    if (elCertScore) elCertScore.textContent = `Score: ${result.quizScore}% (Mastery Level)`;
+    if (elCertDate) elCertDate.textContent = result.completionDate || 'Aug 29, 2026';
+    if (elCertTrainer) elCertTrainer.textContent = result.trainerName || 'Lead Master Trainer';
+    if (elCertScore) elCertScore.textContent = `Score: ${result.quizScore || 96}% (Mastery Level)`;
 
     openModal('modal-training-certificate');
 }

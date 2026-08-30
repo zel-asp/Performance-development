@@ -34,17 +34,33 @@ class SuccessionController
             }
         }
 
-        // Fetch employee list for modal dropdowns
+        // Fetch employee and department list for modal dropdowns
+        $deptRes = supabaseRequest('departments', 'GET', null, true);
+        $depts = is_array($deptRes['data'] ?? null) ? $deptRes['data'] : [];
+        $deptMap = [];
+        foreach ($depts as $d) {
+            $dId = $d['id'] ?? '';
+            if ($dId) $deptMap[$dId] = $d['name'] ?? 'Operations';
+        }
+
         $empRes = supabaseRequest('employees?order=full_name.asc', 'GET', null, true);
         $employees = is_array($empRes['data'] ?? null) ? $empRes['data'] : [];
+        foreach ($employees as &$e) {
+            $dId = $e['department_id'] ?? '';
+            $e['department'] = $deptMap[$dId] ?? ($e['department'] ?? 'Operations');
+        }
+
+        // Fetch XP-Ledger powered talent recommendations
+        $recommendations = $this->successionModel->getDepartmentXPRecommendations('all');
 
         return [
             'success' => true,
             'data' => [
-                'positions'     => $positions,
-                'candidates'    => $candidates,
-                'nineBoxRoster' => $nineBoxRoster,
-                'employees'     => $employees,
+                'positions'       => $positions,
+                'candidates'      => $candidates,
+                'nineBoxRoster'   => $nineBoxRoster,
+                'employees'       => $employees,
+                'recommendations' => $recommendations,
                 'stats' => [
                     'totalRoles'    => $rolesCount,
                     'readyNowCount' => $readyNowCount,
@@ -57,13 +73,16 @@ class SuccessionController
     /**
      * Calibrate HR Readiness Flag in Supabase
      */
-    public function updateHRFlag(string $candidateId, string $flag, string $notes): array
+    public function updateHRFlag(string $candidateId, string $flag, string $notes, string $employeeId = '', string $positionId = ''): array
     {
-        if (empty($candidateId) || empty($flag)) {
-            return ['success' => false, 'message' => 'Candidate ID and HR Flag are required'];
+        if (empty($candidateId) && empty($employeeId)) {
+            return ['success' => false, 'message' => 'Candidate ID is required'];
+        }
+        if (empty($flag)) {
+            return ['success' => false, 'message' => 'HR Flag is required'];
         }
 
-        $success = $this->successionModel->updateCandidateFlag($candidateId, $flag, $notes);
+        $success = $this->successionModel->updateCandidateFlag($candidateId, $flag, $notes, $employeeId, $positionId);
         return [
             'success' => $success,
             'message' => $success ? "HR Readiness Flag calibrated to '{$flag}' & synced to Supabase" : 'Failed to update HR Flag in Supabase'
@@ -100,6 +119,38 @@ class SuccessionController
         return [
             'success' => $success,
             'message' => $success ? 'Position deleted from succession database' : 'Failed to delete position'
+        ];
+    }
+
+    /**
+     * Get department talent recommendations based on XP ledger
+     */
+    public function getRecommendations(string $dept = 'all'): array
+    {
+        $recommendations = $this->successionModel->getDepartmentXPRecommendations($dept);
+        return [
+            'success' => true,
+            'data' => $recommendations
+        ];
+    }
+
+    /**
+     * Assign recommended candidate to a succession position
+     */
+    public function assignSuccessor(array $payload): array
+    {
+        $positionId = $payload['positionId'] ?? ($payload['position_id'] ?? '');
+        $employeeId = $payload['employeeId'] ?? ($payload['employee_id'] ?? '');
+        $type = $payload['type'] ?? 'primary';
+
+        if (empty($positionId) || empty($employeeId)) {
+            return ['success' => false, 'message' => 'Position ID and Employee ID are required'];
+        }
+
+        $success = $this->successionModel->assignSuccessorToPosition($positionId, $employeeId, $type);
+        return [
+            'success' => $success,
+            'message' => $success ? 'Candidate successfully designated on the succession bench' : 'Failed to designate candidate'
         ];
     }
 }

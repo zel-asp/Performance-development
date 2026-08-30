@@ -727,13 +727,11 @@
                 </div>
                 <div>
                     <div class="flex items-center space-x-2">
-                        <h3 class="font-heading font-bold text-base text-slate-900">Send Colleague Kudos</h3>
-                        <span
-                            class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">+50
-                            XP / Person</span>
+                        <h3 class="font-heading font-bold text-base text-slate-900">Send Colleague Recognition</h3>
+                        <span id="kudos-tier-badge"
+                            class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">+50 XP / Person</span>
                     </div>
-                    <p class="text-xs text-slate-500 mt-0.5">Select one or multiple colleagues to celebrate
-                        accomplishments</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Select colleagues and award deterministic recognition points</p>
                 </div>
             </div>
             <button onclick="closeModal('modal-recognition')"
@@ -744,6 +742,34 @@
 
         <!-- Modal Body -->
         <div class="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1 text-xs bg-white">
+
+            <!-- Sender Role Tier (Deterministic Point Engine) -->
+            <div>
+                <label class="block font-bold text-slate-800 text-[11px] mb-1.5">Recognition Tier &amp; Point Value</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-amber-400 bg-amber-50/60 cursor-pointer transition select-none">
+                        <input type="radio" name="kudos_sender_tier" value="Peer" checked onchange="updateKudosXPPreview()" class="accent-amber-600">
+                        <div>
+                            <span class="text-xs font-bold text-slate-900 block">Peer Kudos</span>
+                            <span class="text-[10px] text-amber-700 font-semibold">+50 XP</span>
+                        </div>
+                    </label>
+                    <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:border-amber-300 cursor-pointer transition select-none">
+                        <input type="radio" name="kudos_sender_tier" value="Supervisor" onchange="updateKudosXPPreview()" class="accent-amber-600">
+                        <div>
+                            <span class="text-xs font-bold text-slate-900 block">Supervisor</span>
+                            <span class="text-[10px] text-primary font-semibold">+100 XP</span>
+                        </div>
+                    </label>
+                    <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:border-amber-300 cursor-pointer transition select-none">
+                        <input type="radio" name="kudos_sender_tier" value="Executive" onchange="updateKudosXPPreview()" class="accent-amber-600">
+                        <div>
+                            <span class="text-xs font-bold text-slate-900 block">GM / Exec</span>
+                            <span class="text-[10px] text-emerald-700 font-semibold">+200 XP</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
 
             <!-- Search & Filter Controls -->
             <div class="space-y-2.5">
@@ -772,63 +798,63 @@
                 <!-- Department Filter Pills -->
                 <div class="flex items-center space-x-1.5 overflow-x-auto custom-scrollbar pb-1 text-[11px]">
                     <button type="button" onclick="setKudosDeptFilter('all')" data-dept="all"
-                        class="kudos-dept-pill active px-3 py-1 rounded-full font-bold bg-amber-500 text-white shadow-2xs transition">All
-                        Depts</button>
-                    <button type="button" onclick="setKudosDeptFilter('front_office')" data-dept="front_office"
-                        class="kudos-dept-pill px-3 py-1 rounded-full font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Front
-                        Office</button>
-                    <button type="button" onclick="setKudosDeptFilter('fb_service')" data-dept="fb_service"
-                        class="kudos-dept-pill px-3 py-1 rounded-full font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">F&B
-                        Service</button>
+                        class="kudos-dept-pill active px-3 py-1 rounded-full font-bold bg-amber-500 text-white shadow-2xs transition">All Depts</button>
+                    <button type="button" onclick="setKudosDeptFilter('front office')" data-dept="front office"
+                        class="kudos-dept-pill px-3 py-1 rounded-full font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Front Office</button>
                     <button type="button" onclick="setKudosDeptFilter('culinary')" data-dept="culinary"
                         class="kudos-dept-pill px-3 py-1 rounded-full font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Culinary</button>
+                    <button type="button" onclick="setKudosDeptFilter('f&b service')" data-dept="f&b service"
+                        class="kudos-dept-pill px-3 py-1 rounded-full font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">F&B Service</button>
                     <button type="button" onclick="setKudosDeptFilter('housekeeping')" data-dept="housekeeping"
                         class="kudos-dept-pill px-3 py-1 rounded-full font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Housekeeping</button>
-                    <button type="button" onclick="setKudosDeptFilter('banquet')" data-dept="banquet"
-                        class="kudos-dept-pill px-3 py-1 rounded-full font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Banquets</button>
                 </div>
             </div>
 
             <!-- Scrollable Employee Multi-Select Roster -->
             <div id="kudos-employee-roster"
-                class="max-h-52 overflow-y-auto custom-scrollbar space-y-1.5 pr-1 border border-slate-200/70 rounded-2xl p-2 bg-slate-50/50">
-                <!-- Dynamic rendered list -->
+                class="max-h-48 overflow-y-auto custom-scrollbar space-y-1.5 pr-1 border border-slate-200/70 rounded-2xl p-2 bg-slate-50/50">
+                <!-- Dynamically rendered list from Supabase -->
             </div>
 
             <!-- Kudos Core Values / Category -->
             <div>
                 <label class="block font-bold text-slate-800 text-[11px] mb-1.5">Recognition Category</label>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <label
                         class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-amber-400 cursor-pointer transition">
-                        <input type="radio" name="kudos_category" value="Guest Delight" checked
+                        <input type="radio" name="kudos_category" value="guest_service" checked
                             class="accent-amber-600">
-                        <span class="text-[11px] font-semibold text-slate-700">🌟 Guest Delight</span>
+                        <span class="text-[11px] font-semibold text-slate-700">🌟 Great Guest Service</span>
                     </label>
                     <label
                         class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-amber-400 cursor-pointer transition">
-                        <input type="radio" name="kudos_category" value="Team Player" class="accent-amber-600">
-                        <span class="text-[11px] font-semibold text-slate-700">🤝 Team Player</span>
+                        <input type="radio" name="kudos_category" value="collaboration" class="accent-amber-600">
+                        <span class="text-[11px] font-semibold text-slate-700">🤝 Team Collaboration</span>
                     </label>
                     <label
                         class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-amber-400 cursor-pointer transition">
-                        <input type="radio" name="kudos_category" value="Excellence" class="accent-amber-600">
-                        <span class="text-[11px] font-semibold text-slate-700">⚡ Excellence</span>
+                        <input type="radio" name="kudos_category" value="safety_haccp" class="accent-amber-600">
+                        <span class="text-[11px] font-semibold text-slate-700">🛡️ Safety &amp; HACCP</span>
                     </label>
                     <label
                         class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-amber-400 cursor-pointer transition">
-                        <input type="radio" name="kudos_category" value="Leadership" class="accent-amber-600">
-                        <span class="text-[11px] font-semibold text-slate-700">👑 Leadership</span>
+                        <input type="radio" name="kudos_category" value="crisis_recovery" class="accent-amber-600">
+                        <span class="text-[11px] font-semibold text-slate-700">⚡ Crisis Recovery</span>
+                    </label>
+                    <label
+                        class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-amber-400 cursor-pointer transition">
+                        <input type="radio" name="kudos_category" value="operational_excellence" class="accent-amber-600">
+                        <span class="text-[11px] font-semibold text-slate-700">🏆 Operational Excellence</span>
                     </label>
                 </div>
             </div>
 
             <!-- Kudos Message -->
             <div>
-                <label class="block font-bold text-slate-800 text-[11px] mb-1">Kudos Message / Reason</label>
+                <label class="block font-bold text-slate-800 text-[11px] mb-1">Recognition Message / Qualitative Evidence</label>
                 <textarea id="shoutout-message" rows="2"
                     class="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 focus:outline-none custom-scrollbar bg-slate-50/50 text-xs font-medium"
-                    placeholder="e.g., Outstanding teamwork and calm composure during the peak dinner rush!"></textarea>
+                    placeholder="e.g., Outstanding teamwork and calm composure during the peak banquet rush!"></textarea>
             </div>
         </div>
 
@@ -851,7 +877,7 @@
 
 <!-- 6. Modal: Shift Sentiment Pulse -->
 <div id="modal-sentiment-pulse" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-    <div class="modal-card max-w-md w-full overflow-hidden flex flex-col">
+    <div class="modal-card max-w-md w-full overflow-hidden flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-100">
 
         <div
             class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
@@ -861,7 +887,7 @@
                     <i class="fas fa-heart-pulse"></i>
                 </div>
                 <div>
-                    <span class="badge-sage">Anonymous Pulse</span>
+                    <span class="badge-sage">Live Pulse</span>
                     <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">Shift Climate Check</h3>
                 </div>
             </div>
@@ -871,27 +897,97 @@
             </button>
         </div>
 
-        <div class="p-6 space-y-4 bg-white">
-            <p class="text-xs text-slate-600">How did your shift go today at Front Office?</p>
+        <div class="p-6 space-y-4 bg-white text-xs">
+            <p class="text-xs text-slate-600">How is the operational climate and team energy during your shift right now?</p>
 
             <div class="grid grid-cols-3 gap-3 text-center">
                 <button onclick="submitSentimentRating('Positive')"
-                    class="p-4 rounded-2xl border border-[#E8DEDC] hover:border-sage-dark hover:bg-sage-50/50 transition flex flex-col items-center group shadow-2xs">
+                    class="p-4 rounded-2xl border border-[#E8DEDC] hover:border-emerald-500 hover:bg-emerald-50/50 transition flex flex-col items-center group shadow-2xs">
                     <span class="text-3xl mb-1.5 group-hover:scale-110 transition">😊</span>
-                    <span class="text-xs font-bold text-sage-dark">Smooth</span>
-                    <span class="text-[10px] text-slate-400">Great flow</span>
+                    <span class="text-xs font-bold text-emerald-700">Smooth</span>
+                    <span class="text-[10px] text-slate-400">Great flow (5★)</span>
                 </button>
                 <button onclick="submitSentimentRating('Neutral')"
-                    class="p-4 rounded-2xl border border-[#E8DEDC] hover:border-gold-dark hover:bg-gold-50/50 transition flex flex-col items-center group shadow-2xs">
+                    class="p-4 rounded-2xl border border-[#E8DEDC] hover:border-amber-500 hover:bg-amber-50/50 transition flex flex-col items-center group shadow-2xs">
                     <span class="text-3xl mb-1.5 group-hover:scale-110 transition">😐</span>
-                    <span class="text-xs font-bold text-gold-dark">Manageable</span>
-                    <span class="text-[10px] text-slate-400">Busy shift</span>
+                    <span class="text-xs font-bold text-amber-700">Manageable</span>
+                    <span class="text-[10px] text-slate-400">Busy shift (3★)</span>
                 </button>
                 <button onclick="submitSentimentRating('Stressful')"
-                    class="p-4 rounded-2xl border border-[#E8DEDC] hover:border-terracotta-dark hover:bg-terracotta-50/50 transition flex flex-col items-center group shadow-2xs">
+                    class="p-4 rounded-2xl border border-[#E8DEDC] hover:border-red-500 hover:bg-red-50/50 transition flex flex-col items-center group shadow-2xs">
                     <span class="text-3xl mb-1.5 group-hover:scale-110 transition">😓</span>
-                    <span class="text-xs font-bold text-terracotta-dark">Friction</span>
-                    <span class="text-[10px] text-slate-400">High stress</span>
+                    <span class="text-xs font-bold text-red-600">Friction</span>
+                    <span class="text-[10px] text-slate-400">High stress (1★)</span>
+                </button>
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-800 text-[11px] mb-1">Optional Shift Notes / Bottleneck Details</label>
+                <input type="text" id="sentiment-note-input" placeholder="e.g., Heavy luggage rush at front entrance, luggage tags running low" class="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Specific Date / Month Picker for Shift Sentiment -->
+<div id="modal-specific-date-filter" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+    <div class="card-clean max-w-md w-full p-6 space-y-5 bg-white border border-[#E8DEDC] rounded-3xl shadow-2xl relative">
+        <div class="flex items-center justify-between border-b border-[#E8DEDC] pb-3.5">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-2xl bg-amber-50 text-primary flex items-center justify-center text-lg font-bold border border-amber-100 shadow-2xs">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div>
+                    <h3 class="font-heading font-bold text-base text-slate-900">Select Specific Timeframe</h3>
+                    <p class="text-xs text-slate-500">Filter shift sentiment dynamics by exact date or month</p>
+                </div>
+            </div>
+            <button onclick="closeModal('modal-specific-date-filter')" class="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="space-y-4 text-xs">
+            <!-- Option 1: Specific Date -->
+            <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="font-bold text-slate-800 flex items-center space-x-1.5 text-xs">
+                        <i class="fas fa-calendar-day text-primary"></i>
+                        <span>Filter by Exact Date</span>
+                    </label>
+                    <span class="text-[10px] text-slate-400 font-semibold uppercase">Single Day Rush</span>
+                </div>
+                <input type="date" id="modal-climate-date-picker" onchange="const m = document.getElementById('modal-climate-month-picker'); if (m) m.value = '';" class="w-full text-xs px-3 py-2.5 bg-white border border-[#E8DEDC] rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none text-slate-800 font-medium cursor-pointer shadow-2xs">
+            </div>
+
+            <div class="relative flex items-center justify-center">
+                <div class="border-t border-[#E8DEDC] w-full"></div>
+                <span class="bg-white px-3 text-[10px] uppercase font-extrabold text-slate-400 absolute tracking-wider">OR</span>
+            </div>
+
+            <!-- Option 2: Specific Month -->
+            <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="font-bold text-slate-800 flex items-center space-x-1.5 text-xs">
+                        <i class="fas fa-calendar text-gold-dark"></i>
+                        <span>Filter by Entire Month</span>
+                    </label>
+                    <span class="text-[10px] text-slate-400 font-semibold uppercase">Monthly Climate</span>
+                </div>
+                <input type="month" id="modal-climate-month-picker" onchange="const d = document.getElementById('modal-climate-date-picker'); if (d) d.value = '';" class="w-full text-xs px-3 py-2.5 bg-white border border-[#E8DEDC] rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none text-slate-800 font-medium cursor-pointer shadow-2xs">
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-[#E8DEDC]">
+            <button onclick="clearModalSpecificDate()" type="button" class="btn-secondary px-3.5 py-2 text-xs font-bold text-slate-600">
+                <i class="fas fa-rotate-left mr-1"></i> Reset to Today
+            </button>
+            <div class="flex items-center space-x-2">
+                <button onclick="closeModal('modal-specific-date-filter')" type="button" class="px-3.5 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition">
+                    Cancel
+                </button>
+                <button onclick="applyModalSpecificDate()" type="button" class="btn-primary px-4 py-2 text-xs font-bold shadow-sm">
+                    <i class="fas fa-check mr-1"></i> Apply Filter
                 </button>
             </div>
         </div>
@@ -3786,7 +3882,7 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div class="space-y-1">
                             <label class="font-bold text-slate-800 text-[11px]">Department *</label>
-                            <select id="succ-role-dept" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            <select id="succ-role-dept" onchange="updateSuccessionModalRecommendations()" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                                 <option value="Front Office">Front Office</option>
                                 <option value="Culinary">Culinary</option>
                                 <option value="F&B Service">F&B Service</option>
@@ -3796,14 +3892,35 @@
                         </div>
                         <div class="space-y-1">
                             <label class="font-bold text-slate-800 text-[11px]">Current Incumbent *</label>
-                            <input id="succ-role-incumbent" type="text" required placeholder="e.g., John Marco" class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            <select id="succ-role-incumbent" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                <option value="">-- Select Current Incumbent --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic XP Recommendation Box -->
+                    <div id="succ-role-xp-recommendations-box" class="p-3 bg-primary/5 rounded-2xl border border-primary/20 space-y-2">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-bold text-primary flex items-center">
+                                <i class="fas fa-sparkles mr-1.5 text-gold"></i>
+                                <span>XP-Ledger Top Talent Recommendations</span>
+                            </span>
+                            <span class="text-[10px] text-slate-500 font-semibold">Department Leaderboard</span>
+                        </div>
+                        <div id="succ-role-xp-recommendations-list" class="space-y-1.5 max-h-36 overflow-y-auto custom-scrollbar">
+                            <div class="text-slate-400 text-xs italic py-2 text-center">Loading department talent leaderboard...</div>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
                         <div class="space-y-1">
                             <label class="font-bold text-slate-800 text-[11px]">Planned Transition *</label>
-                            <input id="succ-role-transition" type="text" required placeholder="e.g., Q2 2027 (12 Months)" class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            <select id="succ-role-transition" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                <option value="0–6 Months (Immediate)">0–6 Months (Immediate)</option>
+                                <option value="6–12 Months (Near-term)">6–12 Months (Near-term)</option>
+                                <option value="1–2 Years (Mid-term)" selected>1–2 Years (Mid-term)</option>
+                                <option value="2+ Years (Long-term)">2+ Years (Long-term)</option>
+                            </select>
                         </div>
                         <div class="space-y-1">
                             <label class="font-bold text-slate-800 text-[11px]">Risk of Loss *</label>

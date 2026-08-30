@@ -116,14 +116,14 @@
             <table class="w-full text-left text-xs">
                 <thead class="bg-[#FAF8F7] text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-[#E8DEDC]">
                     <tr>
-                        <th class="px-5 py-3">License ID</th>
-                        <th class="px-5 py-3">Associate Holder</th>
-                        <th class="px-5 py-3">License / Certification Type</th>
-                        <th class="px-5 py-3">Cert Reference</th>
+                        <th class="px-5 py-3">Certificate No.</th>
+                        <th class="px-5 py-3">Associate</th>
+                        <th class="px-5 py-3">Program / Certification</th>
+                        <th class="px-5 py-3">Verification Seal</th>
                         <th class="px-5 py-3">Issue Date</th>
-                        <th class="px-5 py-3">Expiry Date</th>
-                        <th class="px-5 py-3">Audit Status</th>
-                        <th class="px-5 py-3 text-right">Verification</th>
+                        <th class="px-5 py-3">Score</th>
+                        <th class="px-5 py-3">Status</th>
+                        <th class="px-5 py-3 text-right">Export</th>
                     </tr>
                 </thead>
                 <tbody id="statutory-register-tbody" class="divide-y divide-[#E8DEDC]">
@@ -150,11 +150,11 @@
                 <thead class="bg-[#FAF8F7] text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-[#E8DEDC]">
                     <tr>
                         <th class="px-5 py-3.5">Department</th>
-                        <th class="px-5 py-3.5">Staff Headcount</th>
-                        <th class="px-5 py-3.5">Appraisal Completion</th>
-                        <th class="px-5 py-3.5">Average Score</th>
-                        <th class="px-5 py-3.5">Tier 1 / 2 / 3 Breakdown</th>
-                        <th class="px-5 py-3.5">Compliance Rate</th>
+                        <th class="px-5 py-3.5">Enrolled</th>
+                        <th class="px-5 py-3.5">Attendance %</th>
+                        <th class="px-5 py-3.5">Completion %</th>
+                        <th class="px-5 py-3.5">Avg Score</th>
+                        <th class="px-5 py-3.5">Compliance</th>
                         <th class="px-5 py-3.5 text-right">Export</th>
                     </tr>
                 </thead>
@@ -201,8 +201,10 @@
                 <div>
                     <label class="block font-bold text-slate-800 text-[11px] mb-1">Export File Format</label>
                     <select id="custom-report-format" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
-                        <option value="csv">Downloadable CSV Spreadsheet (.csv)</option>
-                        <option value="pdf">Official Printable Executive PDF</option>
+                        <option value="csv">📄 CSV Spreadsheet (.csv)</option>
+                        <option value="excel">📊 Excel Workbook (.xlsx)</option>
+                        <option value="docx">📝 Word Document (.doc)</option>
+                        <option value="pdf">🖨️ Executive PDF (Print Preview)</option>
                     </select>
                 </div>
             </div>

@@ -71,22 +71,26 @@
     <div id="sub-training-needs" class="sub-panel sub-panel-training active space-y-4 text-xs">
         <div class="card-clean p-4 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-[#E8DEDC]">
             <div>
-                <h4 class="font-heading font-bold text-sm text-slate-900">Skill Gap Audits &amp; Mandatory Compliance Requirements</h4>
-                <p class="text-slate-500 text-xs">Direct triggers identifying which associate requires training and linking to syllabus</p>
+                <h4 id="training-needs-header-title" class="font-heading font-bold text-sm text-slate-900">Skill Gap Audits &amp; Mandatory Compliance Requirements</h4>
+                <p id="training-needs-header-desc" class="text-slate-500 text-xs">Direct triggers identifying which associate requires training and linking to syllabus</p>
             </div>
-            <span class="badge-terracotta"><i class="fas fa-bolt mr-1"></i> Live Needs Queue</span>
+            <span id="training-needs-header-badge" class="badge-terracotta"><i class="fas fa-bolt mr-1"></i> Live Needs Queue</span>
         </div>
 
         <!-- Needs Filter Pill Bar -->
         <div class="flex items-center justify-between gap-3 bg-white p-2 rounded-xl border border-[#E8DEDC]">
             <div class="flex items-center space-x-1.5 overflow-x-auto">
-                <button onclick="setNeedsFilter('active')" id="btn-needs-filter-active" class="px-3 py-1 rounded-lg text-xs font-bold bg-primary text-white transition shadow-sm">
+                <button onclick="setNeedsFilter('active')" id="btn-needs-filter-active" class="px-3 py-1 rounded-lg text-xs font-bold bg-primary text-white transition shadow-sm whitespace-nowrap">
                     <i class="fas fa-bolt mr-1 text-amber-300"></i> Active Deficits
                 </button>
-                <button onclick="setNeedsFilter('resolved')" id="btn-needs-filter-resolved" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition">
+                <button onclick="setNeedsFilter('performance')" id="btn-needs-filter-performance" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition whitespace-nowrap flex items-center space-x-1.5">
+                    <i class="fas fa-share-from-square mr-1 text-indigo-600"></i>
+                    <span>Referrals</span>
+                </button>
+                <button onclick="setNeedsFilter('resolved')" id="btn-needs-filter-resolved" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition whitespace-nowrap">
                     <i class="fas fa-check-circle mr-1 text-emerald-600"></i> Resolved History
                 </button>
-                <button onclick="setNeedsFilter('all')" id="btn-needs-filter-all" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition">
+                <button onclick="setNeedsFilter('all')" id="btn-needs-filter-all" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition whitespace-nowrap">
                     All Audit Triggers
                 </button>
             </div>
@@ -105,10 +109,10 @@
     <div id="sub-training-programs" class="sub-panel sub-panel-training space-y-4 text-xs">
         <div class="card-clean p-4 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-[#E8DEDC]">
             <div>
-                <h4 class="font-heading font-bold text-sm text-slate-900">Training Programs Catalog (Linked to Skill Gap or Mandatory Compliance)</h4>
-                <p class="text-slate-500 text-xs">Structured syllabi, passing thresholds, target competencies, and certified trainer requirements</p>
+                <h4 id="training-programs-header-title" class="font-heading font-bold text-sm text-slate-900">Training Programs Catalog (Linked to Skill Gap or Mandatory Compliance)</h4>
+                <p id="training-programs-header-desc" class="text-slate-500 text-xs">Structured syllabi, passing thresholds, target competencies, and certified trainer requirements</p>
             </div>
-            <button onclick="openCreateProgramModal()" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1">
+            <button id="btn-create-program" onclick="openCreateProgramModal()" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1">
                 <i class="fas fa-plus"></i>
                 <span>+ Create Program</span>
             </button>
@@ -125,10 +129,10 @@
     <div id="sub-training-schedules" class="sub-panel sub-panel-training space-y-4 text-xs">
         <div class="card-clean p-4 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-[#E8DEDC]">
             <div>
-                <h4 class="font-heading font-bold text-sm text-slate-900">Session Scheduling (Date, Time, Location, Trainer, Participant List)</h4>
-                <p class="text-slate-500 text-xs">Roster registrations, venue assignments, dates, and session status tracking</p>
+                <h4 id="training-schedules-header-title" class="font-heading font-bold text-sm text-slate-900">Session Scheduling (Date, Time, Location, Trainer, Participant List)</h4>
+                <p id="training-schedules-header-desc" class="text-slate-500 text-xs">Roster registrations, venue assignments, dates, and session status tracking</p>
             </div>
-            <button onclick="openScheduleModal()" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1">
+            <button id="btn-schedule-session" onclick="openScheduleModal()" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1">
                 <i class="fas fa-calendar-plus"></i>
                 <span>+ Schedule Session</span>
             </button>
@@ -147,11 +151,11 @@
         <div class="card-clean p-5 bg-white border border-[#E8DEDC] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div class="space-y-1">
                 <span class="badge-sage"><i class="fas fa-user-check mr-1"></i> Attendance Tracking (Attended / Absent / Completed)</span>
-                <h3 id="attendance-session-header-title" class="font-heading font-bold text-base text-slate-900 mt-1">Hospitality Crisis Diplomacy - Cohort A</h3>
+                <h3 id="attendance-session-header-title" class="font-heading font-bold text-base text-slate-900 mt-1"></h3>
                 <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-500 text-xs pt-0.5">
-                    <span id="attendance-session-header-trainer" class="font-semibold text-slate-800">Trainer: Elena Vance &amp; FOM John Marco</span>
-                    <span id="attendance-session-header-venue"><i class="fas fa-location-dot mr-1 text-slate-400"></i> Executive Boardroom</span>
-                    <span id="attendance-session-header-date"><i class="fas fa-clock mr-1 text-slate-400"></i> Aug 26, 2026 · 14:00 - 17:30</span>
+                    <span id="attendance-session-header-trainer" class="font-semibold text-slate-800"></span>
+                    <span id="attendance-session-header-venue"></span>
+                    <span id="attendance-session-header-date"></span>
                 </div>
             </div>
 
@@ -160,7 +164,7 @@
                     class="bg-[#FAF8F7] border border-[#E8DEDC] text-slate-800 text-xs font-semibold rounded-xl px-3 py-2 focus:ring-2 focus:ring-primary focus:outline-none">
                 </select>
 
-                <button onclick="markAllSessionPresent()" class="btn-secondary px-3 py-2 text-xs font-bold flex items-center space-x-1.5">
+                <button id="btn-mark-all-attended" onclick="markAllSessionPresent()" class="btn-secondary px-3 py-2 text-xs font-bold flex items-center space-x-1.5">
                     <i class="fas fa-check-double text-sage-dark"></i>
                     <span>Mark All Attended</span>
                 </button>

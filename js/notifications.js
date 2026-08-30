@@ -121,6 +121,27 @@ async function loadLiveNotifications(role = 'all') {
             actionLabel = 'View Approved Plan →';
             actionTarget = 'pillar-overview';
             actionSubTab = 'pulse';
+        } else if (item.type === 'training_session' || item.type === 'training_scheduled') {
+            icon = 'fa-graduation-cap';
+            color = 'gold';
+            priority = 'action';
+            actionLabel = 'View Training Session →';
+            actionTarget = 'pillar-training';
+            actionSubTab = 'sessions';
+        } else if (item.type === 'training_assigned') {
+            icon = 'fa-book-open-reader';
+            color = 'primary';
+            priority = 'action';
+            actionLabel = 'View Assigned Program →';
+            actionTarget = 'pillar-training';
+            actionSubTab = 'programs';
+        } else if (item.type === 'training_passed') {
+            icon = 'fa-award';
+            color = 'emerald';
+            priority = 'info';
+            actionLabel = 'View Certificate →';
+            actionTarget = 'pillar-training';
+            actionSubTab = 'eval';
         }
 
         const dateStr = item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently';
@@ -143,6 +164,32 @@ async function loadLiveNotifications(role = 'all') {
             isRead: !!item.is_read
         };
     });
+
+    const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
+    
+    if (isAssociate && typeof window.trainingSessionsState !== 'undefined') {
+        const currentEmpId = window.currentUser?.id;
+        const mySessions = window.trainingSessionsState.filter(s => s.roster && s.roster.some(r => r.associateId === currentEmpId));
+        
+        mySessions.forEach((session) => {
+            alertsState.push({
+                id: 'TRAIN-ALERT-' + session.id,
+                title: 'Training Scheduled: ' + session.title,
+                category: 'training_scheduled',
+                priority: 'action',
+                dept: 'Human Resources',
+                icon: 'fa-graduation-cap',
+                color: 'primary',
+                timestamp: 'Just now',
+                date: session.date,
+                message: `You have been scheduled for "${session.title}" with trainer ${session.trainer} at ${session.venue}. Please ensure attendance.`,
+                actionLabel: 'View Schedule →',
+                actionTarget: 'pillar-training',
+                actionSubTab: 'attendance',
+                isRead: false
+            });
+        });
+    }
 
     renderAlertsInbox();
     renderAlertsKPIs();

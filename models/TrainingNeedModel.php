@@ -34,12 +34,23 @@ class TrainingNeedModel extends BaseModel
 
         // 4. Fetch passed evaluations to ensure certified associates are always in Resolved status
         $evalRes = supabaseRequest('training_evaluations?result_status=ilike.*passed*&order=created_at.desc', 'GET', null, true);
-        $evals = is_array($evalRes['data']) ? $evalRes['data'] : [];
+        $evals = is_array($evalRes['data'] ?? null) ? $evalRes['data'] : [];
         $evalMap = [];
         foreach ($evals as $ev) {
             $eId = strtolower(trim($ev['associate_id'] ?? ($ev['employee_id'] ?? '')));
             if ($eId && !isset($evalMap[$eId])) {
                 $evalMap[$eId] = $ev;
+            }
+        }
+
+        // 5. Fetch performance_goals to resolve foreign key details for target_goal_id
+        $goalsRes = supabaseRequest('performance_goals', 'GET', null, true);
+        $goals = (is_array($goalsRes['data'] ?? null) && !isset($goalsRes['data']['code'])) ? $goalsRes['data'] : [];
+        $goalsMap = [];
+        foreach ($goals as $g) {
+            $gId = (string)($g['id'] ?? '');
+            if ($gId !== '') {
+                $goalsMap[$gId] = $g;
             }
         }
 
@@ -80,28 +91,41 @@ class TrainingNeedModel extends BaseModel
                     $need['status'] = 'Identified';
                 }
             }
+
+            // Resolve Performance Goal Foreign Key Details
+            $tGoalId = (string)($need['target_goal_id'] ?? ($need['targetGoalId'] ?? ''));
+            if ($tGoalId !== '' && isset($goalsMap[$tGoalId])) {
+                $linkedGoal = $goalsMap[$tGoalId];
+                $need['linkedGoalTitle'] = $linkedGoal['title'] ?? null;
+                $need['linked_goal_title'] = $linkedGoal['title'] ?? null;
+                $need['linkedGoalMetric'] = $linkedGoal['target_metric'] ?? null;
+                $need['linked_goal_metric'] = $linkedGoal['target_metric'] ?? null;
+                $need['linkedGoalWeight'] = $linkedGoal['weight'] ?? null;
+                $need['linked_goal_weight'] = $linkedGoal['weight'] ?? null;
+                $need['linkedGoalStatus'] = $linkedGoal['status'] ?? null;
+                $need['linked_goal_status'] = $linkedGoal['status'] ?? null;
+                $need['linkedGoalTargetDate'] = $linkedGoal['target_date'] ?? null;
+                $need['linked_goal_target_date'] = $linkedGoal['target_date'] ?? null;
+                $need['source_label'] = 'Stage 7 Performance IDP Remediation';
+                $need['sourceLabel'] = 'Stage 7 Performance IDP Remediation';
+            }
         }
 
-        // Deduplicate needs by employee_id so each associate has strictly ONE unified skill gap card
+        // Group/Deduplicate strictly by unique trigger (employee_id + competency_key + target_goal_id)
         $dedupedNeeds = [];
-        $seenEmployees = [];
+        $seenKeys = [];
         foreach ($allNeeds as $n) {
             $eId = strtolower(trim($n['employee_id'] ?? ($n['employeeId'] ?? '')));
-            if ($eId) {
-                if (!isset($seenEmployees[$eId])) {
-                    $seenEmployees[$eId] = true;
-                    $dedupedNeeds[] = $n;
-                } else {
-                    // Async purge legacy duplicate from Supabase
-                    $dupId = $n['id'] ?? null;
-                    if ($dupId) {
-                        supabaseRequest('training_needs?id=eq.' . urlencode($dupId), 'DELETE');
-                    }
-                }
-            } else {
+            $goalId = $n['target_goal_id'] ?? ($n['targetGoalId'] ?? '');
+            $compKey = $n['competency_key'] ?? ($n['competencyKey'] ?? ($n['target_competency'] ?? ''));
+            $uniqueKey = $eId ? "{$eId}_{$compKey}_{$goalId}" : ($n['id'] ?? uniqid());
+
+            if (!isset($seenKeys[$uniqueKey])) {
+                $seenKeys[$uniqueKey] = true;
                 $dedupedNeeds[] = $n;
             }
         }
+        
         $allNeeds = $dedupedNeeds;
 
         return $allNeeds;
@@ -214,26 +238,24 @@ class TrainingNeedModel extends BaseModel
             $compMap[$c['id']] = $c;
         }
 
-        // 3. Fetch existing training_needs from Supabase & purge duplicate rows
+        // 3. Fetch existing training_needs from Supabase
         $existingNeedsRes = supabaseRequest('training_needs', 'GET', null, true);
         $existingNeeds = is_array($existingNeedsRes['data']) ? $existingNeedsRes['data'] : [];
+        $needsByKey = [];
         $needsByEmp = [];
-        $duplicatesToPurge = [];
 
         foreach ($existingNeeds as $n) {
             $eId = strtolower(trim($n['employee_id'] ?? ($n['employeeId'] ?? '')));
+            $cKey = $n['competency_key'] ?? ($n['competencyKey'] ?? '');
+            $gId = $n['target_goal_id'] ?? ($n['targetGoalId'] ?? '');
             if ($eId) {
                 if (!isset($needsByEmp[$eId])) {
                     $needsByEmp[$eId] = $n;
-                } else {
-                    $duplicatesToPurge[] = $n['id'];
                 }
-            }
-        }
-
-        foreach ($duplicatesToPurge as $dupId) {
-            if ($dupId) {
-                supabaseRequest('training_needs?id=eq.' . urlencode($dupId), 'DELETE');
+                $k = "{$eId}_{$cKey}_{$gId}";
+                if (!isset($needsByKey[$k])) {
+                    $needsByKey[$k] = $n;
+                }
             }
         }
 
