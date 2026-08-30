@@ -878,28 +878,28 @@ function fillGoalTemplate(type) {
         kpiInput.value = "Net Promoter Score (NPS) >= +92 Score";
         weightInput.value = "High Priority (35% Weight - Core Role Objective)";
         evidenceInput.value = "Monthly Medallia guest ratings and Opera PMS check-in speed logs.";
-        adviceEl.innerHTML = "✦ Excellent SMART alignment: Directly covers <strong>Guest Relations & Escalation</strong> competency for Senior Host promotion.";
+        adviceEl.innerHTML = '<i class="fas fa-circle-check text-emerald-600 mr-1.5"></i><strong>Excellent SMART alignment:</strong> Directly covers <strong>Guest Relations & Escalation</strong> competency for Senior Host promotion.';
     } else if (type === 'upsell_wine') {
         titleInput.value = "Fine Dining Upselling & Sommelier Wine Pairing Recommendations";
         catInput.value = "Food & Beverage Service";
         kpiInput.value = "+18% Beverage Revenue / Cover (Avg Check Lift)";
         weightInput.value = "Medium Priority (20% Weight - Standard Operational Goal)";
         evidenceInput.value = "Micros POS beverage report printouts.";
-        adviceEl.innerHTML = "✦ High Revenue Impact: Directly targets the <strong>Revenue Optimization</strong> competency standard.";
+        adviceEl.innerHTML = '<i class="fas fa-circle-check text-emerald-600 mr-1.5"></i><strong>High Revenue Impact:</strong> Directly targets the <strong>Revenue Optimization</strong> competency standard.';
     } else if (type === 'haccp_audit') {
         titleInput.value = "HACCP Food Safety, Cold-Chain Logging & Zero Non-Conformance";
         catInput.value = "Culinary & Kitchen Brigade";
         kpiInput.value = "100% Audit Pass Score (Zero Violations)";
         weightInput.value = "High Priority (35% Weight - Core Role Objective)";
         evidenceInput.value = "Daily digital temperature walk-in logs.";
-        adviceEl.innerHTML = "✦ Critical Compliance Goal: Essential for maintaining hotel 5-star hygiene license.";
+        adviceEl.innerHTML = '<i class="fas fa-circle-check text-emerald-600 mr-1.5"></i><strong>Critical Compliance Goal:</strong> Essential for maintaining hotel 5-star hygiene license.';
     } else if (type === 'room_turnaround') {
         titleInput.value = "Express Suite Turnover & 5-Star Deep Clean Sanitization";
         catInput.value = "Housekeeping & Facilities";
         kpiInput.value = "Turnaround < 22 mins / suite";
         weightInput.value = "Medium Priority (20% Weight - Standard Operational Goal)";
         evidenceInput.value = "Housekeeping PMS floor logs.";
-        adviceEl.innerHTML = "✦ Operational Efficiency: Directly prevents late check-in friction.";
+        adviceEl.innerHTML = '<i class="fas fa-circle-check text-emerald-600 mr-1.5"></i><strong>Operational Efficiency:</strong> Directly prevents late check-in friction.';
     }
 
     showToast('Loaded pre-filled goal template!', 'success');

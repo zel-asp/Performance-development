@@ -491,7 +491,7 @@ function renderComputedReadinessMatrix() {
 
                 <!-- Pulled Closed Performance Rating -->
                 <td class="px-5 py-3.5">
-                    <span class="font-bold text-primary text-xs">⭐ ${parseFloat(candidate.closedPerformanceRating).toFixed(2)} / 5.0</span>
+                    <span class="font-bold text-primary text-xs"><i class="fas fa-star text-amber-500 mr-0.5 text-[10px]"></i>${parseFloat(candidate.closedPerformanceRating).toFixed(2)} / 5.0</span>
                     <span class="block text-[10px] text-slate-400 font-medium">Calibrated Appraisal</span>
                 </td>
 
@@ -855,7 +855,7 @@ function renderSuccession9BoxGrid() {
                                                 <div class="min-w-0 flex-1">
                                                     <div class="flex justify-between items-baseline">
                                                         <span class="font-bold text-slate-900 text-xs truncate">${m.name}</span>
-                                                        <span class="font-bold text-primary text-[11px]">⭐ ${m.score}</span>
+                                                        <span class="font-bold text-primary text-[11px]"><i class="fas fa-star text-amber-500 mr-0.5 text-[9px]"></i>${m.score}</span>
                                                     </div>
                                                     <span class="text-[10px] text-slate-500 block truncate">${m.role} · ${m.dept}</span>
                                                 </div>

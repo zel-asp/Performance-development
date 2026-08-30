@@ -215,7 +215,7 @@
                         <i class="fas fa-sparkles text-[10px]"></i>
                     </div>
                     <div class="text-[11px] text-slate-700 leading-relaxed">
-                        <span class="font-bold text-slate-900">✦ Gemini Goal Copilot:</span>
+                        <span class="font-bold text-slate-900"><i class="fas fa-wand-magic-sparkles text-primary mr-1"></i>Gemini Goal Copilot:</span>
                         <span id="gemini-goal-advice">This objective directly targets the <strong>Guest
                                 Relations & VIP Protocol</strong> competency standard for the Senior Host
                             promotion track.</span>
@@ -516,7 +516,7 @@
             <div id="ai-output-box"
                 class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] text-slate-700 space-y-2 hidden">
                 <div class="font-semibold text-primary flex items-center justify-between text-xs">
-                    <span>✦ Refined Coaching Feedback</span>
+                    <span><i class="fas fa-wand-magic-sparkles text-primary mr-1"></i>Refined Coaching Feedback</span>
                     <span class="badge-sage">SBI Model</span>
                 </div>
                 <p class="leading-relaxed text-slate-800 text-xs" id="ai-generated-text">"Maria, during the evening rush (Situation), your calm de-escalation with the VIP guest protected satisfaction (Behavior). Moving forward, delegating table resets to junior attendants will enable faster seating turns (Impact)."</p>
