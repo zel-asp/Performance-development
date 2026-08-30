@@ -87,22 +87,19 @@ require_once 'config/config.php';
         </script>
 
         <!-- Tailwind Theme Configuration -->
+        <!-- Tailwind Theme Configuration -->
         <script>
             tailwind.config = {
                 theme: {
                     extend: {
                         colors: {
-                            brandPink: {
-                                DEFAULT: '#E11D48',
-                                light: '#F43F5E',
-                                dark: '#BE123C'
-                            },
                             primary: {
                                 DEFAULT: '#9E1B20',
                                 dark: '#7A1519',
                                 light: '#B9363B',
                                 50: '#FFF5F5',
-                                100: '#FDE8E8'
+                                100: '#FDE8E8',
+                                200: '#F9CACA'
                             }
                         },
                         fontFamily: {
@@ -126,12 +123,13 @@ require_once 'config/config.php';
             .emp-card.selected {
                 border-color: #9E1B20 !important;
                 background-color: #FFF5F5 !important;
-                box-shadow: 0 0 0 2px #9E1B20, 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+                box-shadow: 0 0 0 2px #9E1B20, 0 4px 6px -1px rgba(158, 27, 32, 0.1) !important;
                 transform: translateY(-1px);
             }
             .modal-backdrop {
-                background-color: rgba(15, 23, 42, 0.65);
-                backdrop-filter: blur(4px);
+                background-color: rgba(15, 23, 42, 0.55);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
             }
             input:focus {
                 outline: none;
@@ -139,7 +137,7 @@ require_once 'config/config.php';
         </style>
     </head>
 
-    <body class="bg-[#F8FAFC] text-slate-900 antialiased min-h-screen selection:bg-rose-500 selection:text-white">
+    <body class="bg-[#F8FAFC] text-slate-900 antialiased min-h-screen selection:bg-primary selection:text-white">
         <!-- Sonner Toaster Container -->
         <ol id="sonner-toast-container" position="top-right" max-toasts="3" duration="3000" rich-colors="true" close-button="true" theme="light"></ol>
 
@@ -155,15 +153,15 @@ require_once 'config/config.php';
                     <img src="public/images/removed-bg-logo.png" alt="Oxford Suites Makati Logo" class="h-11 w-auto object-contain">
                     <div>
                         <span class="font-heading font-extrabold text-lg sm:text-xl tracking-tight text-slate-900 block leading-tight">OXFORD SUITES</span>
-                        <span class="text-[10px] font-bold text-rose-600 tracking-widest block uppercase">Makati &middot; Performance Hub</span>
+                        <span class="text-[10px] font-bold text-primary tracking-widest block uppercase">Makati &middot; Performance Hub</span>
                     </div>
                 </div>
 
                 <!-- Main Display Headline -->
                 <div class="my-auto py-8 lg:py-0 max-w-2xl">
-                    <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-100 mb-6">
-                        <span class="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
-                        <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-rose-700">
+                    <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-primary-50 border border-primary-100 mb-6">
+                        <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                        <span class="text-[11px] font-bold uppercase tracking-[0.15em] text-primary">
                             ROLE-BASED PORTAL ACCESS
                         </span>
                     </div>
@@ -179,7 +177,7 @@ require_once 'config/config.php';
                     <!-- Features -->
                     <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
                         <div class="flex items-start space-x-3 p-3 rounded-lg bg-slate-50 border border-slate-100">
-                            <div class="w-8 h-8 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5 text-xs">
+                            <div class="w-8 h-8 rounded-md bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 mt-0.5 text-xs">
                                 <i class="fas fa-users-gear"></i>
                             </div>
                             <div>
@@ -203,7 +201,7 @@ require_once 'config/config.php';
                 <!-- Footer Notice -->
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 text-xs text-slate-400">
                     <div class="flex items-center space-x-2">
-                        <span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>
+                        <span class="w-2 h-2 rounded-full bg-primary inline-block"></span>
                         <span>Internal use only &middot; Oxford Suites Makati Hub</span>
                     </div>
 
@@ -221,7 +219,7 @@ require_once 'config/config.php';
 
                 <div class="my-auto w-full max-w-md mx-auto space-y-6">
                     <div>
-                        <span class="text-[11px] font-bold uppercase tracking-[0.2em] text-rose-600 block mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-[0.2em] text-primary block mb-2">
                             AUTHENTICATION GATEWAY
                         </span>
                         <h2 class="font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight mb-2">
@@ -247,7 +245,7 @@ require_once 'config/config.php';
                                     id="gateway-email"
                                     required
                                     placeholder="Enter role account email"
-                                    class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-sm font-medium focus:border-rose-600 focus:ring-2 focus:ring-rose-100 transition shadow-sm placeholder:text-slate-400">
+                                    class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/10 transition shadow-sm placeholder:text-slate-400">
                             </div>
                         </div>
 
@@ -267,7 +265,7 @@ require_once 'config/config.php';
                                     id="gateway-password"
                                     required
                                     placeholder="Enter your account password"
-                                    class="w-full pl-10 pr-11 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-sm font-medium focus:border-rose-600 focus:ring-2 focus:ring-rose-100 transition shadow-sm placeholder:text-slate-400">
+                                    class="w-full pl-10 pr-11 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/10 transition shadow-sm placeholder:text-slate-400">
                                 <button
                                     type="button"
                                     onclick="togglePasswordVisibility('gateway-password', 'gateway-pass-icon')"
@@ -292,7 +290,7 @@ require_once 'config/config.php';
                 <!-- Footer HR contact -->
                 <div class="pt-6 text-center text-xs text-slate-500">
                     <p class="mb-1">Trouble signing in? Contact People &amp; Culture at</p>
-                    <a href="mailto:hr@oxfordsuitesmakati.com" class="font-semibold text-rose-600 hover:text-rose-700 transition">
+                    <a href="mailto:hr@oxfordsuitesmakati.com" class="font-semibold text-primary hover:text-primary-dark transition">
                         hr@oxfordsuitesmakati.com
                     </a>
                 </div>
@@ -310,7 +308,7 @@ require_once 'config/config.php';
                 <!-- Modal Header -->
                 <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
                     <div class="flex items-center space-x-3">
-                        <div id="modal-role-icon" class="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-base font-bold">
+                        <div id="modal-role-icon" class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold">
                             <i class="fas fa-users"></i>
                         </div>
                         <div>
@@ -318,7 +316,7 @@ require_once 'config/config.php';
                                 <h3 id="modal-role-title" class="font-heading font-bold text-lg text-slate-900">
                                     Select Employee Profile
                                 </h3>
-                                <span id="modal-role-badge" class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-rose-100 text-rose-700 border border-rose-200">
+                                <span id="modal-role-badge" class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-slate-100 text-slate-700 border border-slate-200">
                                     Employee
                                 </span>
                             </div>
@@ -341,14 +339,14 @@ require_once 'config/config.php';
                             id="employee-search-input"
                             oninput="filterEmployeeList(this.value)"
                             placeholder="Search by name, title, or email..."
-                            class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-xs font-medium focus:border-rose-600 focus:bg-white focus:ring-2 focus:ring-rose-100 transition placeholder:text-slate-400">
+                            class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-xs font-medium focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/10 transition placeholder:text-slate-400">
                     </div>
                 </div>
 
                 <!-- Employee Cards List -->
                 <div class="p-6 overflow-y-auto flex-grow space-y-3" id="employee-cards-container">
                     <div class="text-center py-8 text-slate-400 text-xs">
-                        <i class="fas fa-spinner fa-spin text-lg mb-2 text-rose-600"></i>
+                        <i class="fas fa-spinner fa-spin text-lg mb-2 text-primary"></i>
                         <p>Loading directory profiles...</p>
                     </div>
                 </div>
@@ -385,7 +383,7 @@ require_once 'config/config.php';
                 <!-- Modal Header -->
                 <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-base font-bold">
+                        <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold">
                             <i class="fas fa-key"></i>
                         </div>
                         <div>
@@ -403,7 +401,7 @@ require_once 'config/config.php';
                 <div class="p-6 space-y-5">
                     <!-- Selected Profile Info Banner -->
                     <div class="flex items-center space-x-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-                        <div class="w-10 h-10 rounded-full bg-rose-600 text-white font-bold flex items-center justify-center text-sm shrink-0" id="otp-avatar-container">
+                        <div class="w-10 h-10 rounded-full bg-primary text-white font-bold flex items-center justify-center text-sm shrink-0" id="otp-avatar-container">
                             <span id="otp-avatar-initial">M</span>
                         </div>
                         <div class="truncate">
@@ -424,7 +422,7 @@ require_once 'config/config.php';
                                 maxlength="6"
                                 required
                                 placeholder="123456"
-                                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-2xl font-bold tracking-[0.35em] text-center focus:border-rose-600 focus:ring-2 focus:ring-rose-100 transition shadow-sm placeholder:text-slate-300">
+                                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-2xl font-bold tracking-[0.35em] text-center focus:border-primary focus:ring-2 focus:ring-primary/10 transition shadow-sm placeholder:text-slate-300">
                         </div>
 
                         <!-- Remember Me Checkbox -->
@@ -434,7 +432,7 @@ require_once 'config/config.php';
                                     type="checkbox"
                                     id="modal-remember-me-checkbox"
                                     checked
-                                    class="w-4 h-4 mt-0.5 rounded text-rose-600 focus:ring-rose-500 border-slate-300 cursor-pointer">
+                                    class="w-4 h-4 mt-0.5 rounded text-primary focus:ring-primary border-slate-300 cursor-pointer">
                                 <div class="text-xs">
                                     <span class="font-bold text-slate-800 block">Remember me on this device</span>
                                     <span class="text-[11px] text-slate-500 block">Skip OTP verification on your next sign-in.</span>
@@ -455,13 +453,13 @@ require_once 'config/config.php';
                                     type="button"
                                     id="btn-modal-resend-otp"
                                     onclick="handleModalResendOtp()"
-                                    class="text-rose-600 hover:text-rose-700 font-bold transition disabled:opacity-40 disabled:cursor-not-allowed">
+                                    class="text-primary hover:text-primary-dark font-bold transition disabled:opacity-40 disabled:cursor-not-allowed">
                                     Resend Code
                                 </button>
                             </div>
                             <div class="flex items-center justify-between text-[11px] text-slate-500 px-0.5">
                                 <span id="modal-otp-rate-info">Limit: 3 sends / 15 mins</span>
-                                <span id="modal-otp-remaining-badge" class="font-semibold text-rose-700"></span>
+                                <span id="modal-otp-remaining-badge" class="font-semibold text-primary"></span>
                             </div>
                         </div>
 
@@ -469,7 +467,7 @@ require_once 'config/config.php';
                         <button
                             type="submit"
                             id="btn-modal-verify-otp"
-                            class="w-full py-3.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-bold tracking-wide transition shadow-sm hover:shadow active:scale-[0.99] flex items-center justify-center space-x-2 cursor-pointer">
+                            class="w-full py-3.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-bold tracking-wide transition shadow-sm hover:shadow active:scale-[0.99] flex items-center justify-center space-x-2 cursor-pointer">
                             <span id="btn-modal-verify-text">Verify &amp; Enter Portal</span>
                             <i id="btn-modal-verify-icon" class="fas fa-check text-xs ml-1"></i>
                         </button>
@@ -525,7 +523,7 @@ require_once 'config/config.php';
                                     required
                                     oninput="checkModalPasswordStrength(this.value)"
                                     placeholder="Enter your personal password"
-                                    class="w-full pl-10 pr-11 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-sm font-medium focus:border-rose-600 focus:ring-2 focus:ring-rose-100 transition shadow-sm placeholder:text-slate-400">
+                                    class="w-full pl-10 pr-11 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/10 transition shadow-sm placeholder:text-slate-400">
                                 <button
                                     type="button"
                                     onclick="togglePasswordVisibility('modal-new-password', 'modal-new-pass-icon')"
@@ -537,7 +535,7 @@ require_once 'config/config.php';
                             <!-- Strength Meter -->
                             <div class="mt-2">
                                 <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden flex">
-                                    <div id="modal-pass-strength-bar" class="h-full w-0 transition-all duration-300 bg-rose-500"></div>
+                                    <div id="modal-pass-strength-bar" class="h-full w-0 transition-all duration-300 bg-primary"></div>
                                 </div>
                                 <span id="modal-pass-strength-text" class="text-[10px] text-slate-400 mt-1 block">At least 6 characters required</span>
                             </div>
@@ -557,7 +555,7 @@ require_once 'config/config.php';
                                     id="modal-confirm-password"
                                     required
                                     placeholder="Re-enter your password"
-                                    class="w-full pl-10 pr-11 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-sm font-medium focus:border-rose-600 focus:ring-2 focus:ring-rose-100 transition shadow-sm placeholder:text-slate-400">
+                                    class="w-full pl-10 pr-11 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/10 transition shadow-sm placeholder:text-slate-400">
                                 <button
                                     type="button"
                                     onclick="togglePasswordVisibility('modal-confirm-password', 'modal-conf-pass-icon')"
@@ -635,7 +633,7 @@ require_once 'config/config.php';
                                     id="modal-rem-password"
                                     required
                                     placeholder="Enter your personal password"
-                                    class="w-full pl-10 pr-11 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-sm font-medium focus:border-rose-600 focus:ring-2 focus:ring-rose-100 transition shadow-sm placeholder:text-slate-400">
+                                    class="w-full pl-10 pr-11 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/10 transition shadow-sm placeholder:text-slate-400">
                                 <button
                                     type="button"
                                     onclick="togglePasswordVisibility('modal-rem-password', 'modal-rem-pass-icon')"
@@ -656,7 +654,7 @@ require_once 'config/config.php';
                             <button
                                 type="button"
                                 onclick="fallbackToOtpFromRemembered()"
-                                class="text-rose-600 hover:text-rose-700 font-bold transition">
+                                class="text-primary hover:text-primary-dark font-bold transition">
                                 Sign in with OTP instead
                             </button>
                         </div>
@@ -869,15 +867,15 @@ require_once 'config/config.php';
 
                 if (currentVerifiedRole === 'Supervisor') {
                     roleBadge.textContent = 'Supervisor Role';
-                    roleBadge.className = 'px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200';
+                    roleBadge.className = 'px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-slate-100 text-slate-700 border border-slate-200';
                     roleTitle.textContent = 'Select Supervisor Profile';
-                    roleIcon.className = 'w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-base font-bold';
+                    roleIcon.className = 'w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold';
                     roleIcon.innerHTML = '<i class="fas fa-user-tie"></i>';
                 } else {
                     roleBadge.textContent = 'Employee Role';
-                    roleBadge.className = 'px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-rose-100 text-rose-700 border border-rose-200';
+                    roleBadge.className = 'px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-slate-100 text-slate-700 border border-slate-200';
                     roleTitle.textContent = 'Select Employee Profile';
-                    roleIcon.className = 'w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-base font-bold';
+                    roleIcon.className = 'w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold';
                     roleIcon.innerHTML = '<i class="fas fa-users"></i>';
                 }
 
@@ -914,7 +912,7 @@ require_once 'config/config.php';
                         ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                              <i class="fas fa-shield-check mr-1 text-[9px]"></i> Remembered
                            </span>`
-                        : `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                        : `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
                              <i class="fas fa-key mr-1 text-[9px]"></i> OTP Required
                            </span>`;
 
@@ -929,7 +927,7 @@ require_once 'config/config.php';
                         <div class="flex items-center space-x-3 shrink-0 ml-3">
                             ${rememberedBadge}
                             <div class="select-radio w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center">
-                                <div class="radio-inner w-2.5 h-2.5 rounded-full bg-rose-600 hidden"></div>
+                                <div class="radio-inner w-2.5 h-2.5 rounded-full bg-primary hidden"></div>
                             </div>
                         </div>
                     `;
@@ -965,13 +963,13 @@ require_once 'config/config.php';
                         const radioInner = c.querySelector('.radio-inner');
                         if (radioInner) radioInner.classList.remove('hidden');
                         const radioBorder = c.querySelector('.select-radio');
-                        if (radioBorder) radioBorder.classList.replace('border-slate-300', 'border-rose-600');
+                        if (radioBorder) radioBorder.classList.replace('border-slate-300', 'border-primary');
                     } else {
                         c.classList.remove('selected');
                         const radioInner = c.querySelector('.radio-inner');
                         if (radioInner) radioInner.classList.add('hidden');
                         const radioBorder = c.querySelector('.select-radio');
-                        if (radioBorder) radioBorder.classList.replace('border-rose-600', 'border-slate-300');
+                        if (radioBorder) radioBorder.classList.replace('border-primary', 'border-slate-300');
                     }
                 });
 
@@ -982,7 +980,7 @@ require_once 'config/config.php';
                 const btnIcon = document.getElementById('btn-confirm-icon');
 
                 if (preview) {
-                    preview.innerHTML = `<span class="text-slate-700">Selected:</span> <strong class="text-slate-900">${emp.full_name}</strong> <span class="text-slate-400">(${emp.email})</span> <button type="button" onclick="resetEmployeeSelection()" class="ml-2 text-[11px] text-rose-600 hover:text-rose-700 underline font-semibold cursor-pointer">Deselect</button>`;
+                    preview.innerHTML = `<span class="text-slate-700">Selected:</span> <strong class="text-slate-900">${emp.full_name}</strong> <span class="text-slate-400">(${emp.email})</span> <button type="button" onclick="resetEmployeeSelection()" class="ml-2 text-[11px] text-primary hover:text-primary-dark underline font-semibold cursor-pointer">Deselect</button>`;
                 }
 
                 if (btnConfirm) {
@@ -996,7 +994,7 @@ require_once 'config/config.php';
                         btnIcon.className = 'fas fa-arrow-right text-[10px] ml-1';
                     } else {
                         // If not remembered -> Action is "Send OTP"
-                        btnConfirm.className = 'px-5 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition flex items-center space-x-2 cursor-pointer shadow-sm';
+                        btnConfirm.className = 'px-5 py-2.5 rounded-lg bg-primary hover:bg-primary-dark text-white text-xs font-bold transition flex items-center space-x-2 cursor-pointer shadow-sm';
                         btnText.textContent = 'Send OTP Code';
                         btnIcon.className = 'fas fa-paper-plane text-[10px] ml-1';
                     }
@@ -1012,7 +1010,7 @@ require_once 'config/config.php';
                     const radioInner = c.querySelector('.radio-inner');
                     if (radioInner) radioInner.classList.add('hidden');
                     const radioBorder = c.querySelector('.select-radio');
-                    if (radioBorder) radioBorder.classList.replace('border-rose-600', 'border-slate-300');
+                    if (radioBorder) radioBorder.classList.replace('border-primary', 'border-slate-300');
                 });
 
                 const preview = document.getElementById('selected-employee-preview');
@@ -1103,7 +1101,7 @@ require_once 'config/config.php';
                     }
                     if (searchInput) searchInput.disabled = false;
                     if (preview && selectedEmployee) {
-                        preview.innerHTML = `<span class="text-slate-700">Selected:</span> <strong class="text-slate-900">${selectedEmployee.full_name}</strong> <span class="text-slate-400">(${selectedEmployee.email})</span> <button type="button" onclick="resetEmployeeSelection()" class="ml-2 text-[11px] text-rose-600 hover:text-rose-700 underline font-semibold cursor-pointer">Deselect</button>`;
+                        preview.innerHTML = `<span class="text-slate-700">Selected:</span> <strong class="text-slate-900">${selectedEmployee.full_name}</strong> <span class="text-slate-400">(${selectedEmployee.email})</span> <button type="button" onclick="resetEmployeeSelection()" class="ml-2 text-[11px] text-primary hover:text-primary-dark underline font-semibold cursor-pointer">Deselect</button>`;
                     }
                 }
             }
@@ -1139,7 +1137,7 @@ require_once 'config/config.php';
                 if (badge) {
                     if (remainingSends > 0) {
                         badge.textContent = `${remainingSends} resend${remainingSends > 1 ? 's' : ''} left`;
-                        badge.className = 'font-semibold text-rose-700';
+                        badge.className = 'font-semibold text-primary';
                     } else {
                         badge.textContent = 'Limit reached (0 left)';
                         badge.className = 'font-semibold text-amber-600';

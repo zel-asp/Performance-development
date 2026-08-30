@@ -99,12 +99,12 @@
             <form id="form-create-goal" onsubmit="handleGoalSubmit(event)" class="space-y-4 text-xs">
 
                 <!-- HR Target Assignment Scope / Supervisor from DB -->
-                <div class="p-3 bg-purple-50/60 rounded-xl border border-purple-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <label class="font-bold text-purple-950 text-[11px] flex items-center shrink-0">
-                        <i class="fas fa-user-tie text-purple-600 mr-1.5"></i> Assign Goal To (Supervisor / Leader):
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <label class="font-bold text-slate-800 text-[11px] flex items-center shrink-0">
+                        <i class="fas fa-user-tie text-slate-500 mr-1.5"></i> Assign Goal To (Supervisor / Leader):
                     </label>
                     <select id="goal-target-scope" onchange="if(typeof handleGoalScopeChange === 'function') handleGoalScopeChange(this)"
-                        class="w-full sm:w-auto flex-1 px-3 py-1.5 rounded-lg border border-purple-200 text-xs font-semibold text-purple-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary">
+                        class="w-full sm:w-auto flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20">
                         <option value="emp-102" data-scope="single" data-name="Chef Marco Rossi" data-dept="Culinary & Kitchen Brigade" data-role="Supervisor">Chef Marco Rossi (Supervisor · Executive Sous Chef)</option>
                         <option value="emp-103" data-scope="single" data-name="Elena Vance" data-dept="Human Resources" data-role="HRAdmin">Elena Vance (HRAdmin · Director of People)</option>
                         <option value="emp-104" data-scope="single" data-name="Robert Sterling" data-dept="Executive Office" data-role="GeneralManager">Robert Sterling (GeneralManager · Managing Director)</option>
@@ -147,7 +147,7 @@
                 <div class="space-y-1.5 p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80">
                     <div class="flex justify-between items-center">
                         <label class="font-bold text-slate-800 text-[11px] flex items-center space-x-1.5">
-                            <i class="fas fa-chart-line text-primary"></i>
+                            <i class="fas fa-chart-line text-slate-600"></i>
                             <span>4. Target / Success Metric *</span>
                         </label>
                         <span class="text-[10px] text-slate-400">Select standard metric</span>
@@ -167,19 +167,19 @@
                     <div class="flex items-center space-x-1.5 pt-1 flex-wrap gap-y-1">
                         <span class="text-[10px] text-slate-400 font-medium">Quick Presets:</span>
                         <button type="button" onclick="setKPIValue('NPS >= +92 Score')"
-                            class="text-[10px] bg-white border border-slate-200 hover:border-primary hover:text-primary text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
+                            class="text-[10px] bg-white border border-slate-200 hover:border-slate-400 text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
                             ⭐ NPS &ge; +92
                         </button>
                         <button type="button" onclick="setKPIValue('+18% Beverage Rev/Cover')"
-                            class="text-[10px] bg-white border border-slate-200 hover:border-primary hover:text-primary text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
+                            class="text-[10px] bg-white border border-slate-200 hover:border-slate-400 text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
                             📈 +18% Avg Check
                         </button>
                         <button type="button" onclick="setKPIValue('100% Audit Score (Zero Violations)')"
-                            class="text-[10px] bg-white border border-slate-200 hover:border-primary hover:text-primary text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
+                            class="text-[10px] bg-white border border-slate-200 hover:border-slate-400 text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
                             ✅ 100% Audit Pass
                         </button>
                         <button type="button" onclick="setKPIValue('< 22 mins / suite turnover')"
-                            class="text-[10px] bg-white border border-slate-200 hover:border-primary hover:text-primary text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
+                            class="text-[10px] bg-white border border-slate-200 hover:border-slate-400 text-slate-700 px-2.5 py-1 rounded-lg font-medium transition shadow-2xs">
                             ⏱️ &lt; 22m Turnover
                         </button>
                     </div>
@@ -205,13 +205,13 @@
                 </div>
 
                 <!-- Gemini AI Alignment Box -->
-                <div class="p-3 bg-blue-50/60 rounded-2xl border border-blue-100 flex items-start space-x-3">
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-start space-x-3">
                     <div
-                        class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs flex-shrink-0 shadow-2xs">
+                        class="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center text-xs flex-shrink-0 shadow-2xs">
                         <i class="fas fa-sparkles text-[10px]"></i>
                     </div>
-                    <div class="text-[11px] text-slate-800 leading-relaxed">
-                        <span class="font-bold text-indigo-950">✦ Gemini Goal Copilot:</span>
+                    <div class="text-[11px] text-slate-700 leading-relaxed">
+                        <span class="font-bold text-slate-900">✦ Gemini Goal Copilot:</span>
                         <span id="gemini-goal-advice">This objective directly targets the <strong>Guest
                                 Relations & VIP Protocol</strong> competency standard for the Senior Host
                             promotion track.</span>
@@ -529,11 +529,11 @@
         <!-- Header -->
         <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
             <div class="flex items-center space-x-3.5">
-                <div class="w-11 h-11 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-lg font-bold border border-purple-200 shadow-2xs">
+                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold border border-slate-200/60 shadow-2xs">
                     <i class="fas fa-user-pen"></i>
                 </div>
                 <div>
-                    <span class="text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">Employee Self Assessment</span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200/60 px-2 py-0.5 rounded-full">Employee Self Assessment</span>
                     <h3 id="self-eval-modal-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Self Evaluation: Performance Objective</h3>
                 </div>
             </div>
@@ -549,7 +549,7 @@
 
             <div class="p-6 space-y-4 text-xs bg-white">
                 <!-- Goal Reference Card -->
-                <div class="p-3 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-1">
+                <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
                     <div class="flex items-center justify-between text-[10px] text-slate-500 font-bold">
                         <span>ACTIVE PERFORMANCE OBJECTIVE</span>
                         <span id="self-eval-target-metric" class="font-mono text-primary font-bold">CSAT > 90%</span>
@@ -558,37 +558,37 @@
                 </div>
 
                 <!-- 1-5 Rating Slider -->
-                <div class="p-4 bg-purple-50/60 rounded-2xl border border-purple-100 space-y-3">
+                <div class="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
                     <div class="flex items-center justify-between">
-                        <label class="font-bold text-purple-950 text-xs flex items-center space-x-1.5">
-                            <i class="fas fa-star text-amber-500"></i>
+                        <label class="font-bold text-slate-800 text-xs flex items-center space-x-1.5">
+                            <i class="fas fa-star text-slate-500"></i>
                             <span>Your Self Evaluation Rating (1.0 – 5.0) *</span>
                         </label>
-                        <span id="self-eval-score-preview" class="text-sm font-bold font-mono text-purple-900 bg-white px-2.5 py-0.5 rounded-lg border border-purple-200 shadow-2xs">
+                        <span id="self-eval-score-preview" class="text-sm font-bold font-mono text-slate-900 bg-white px-2.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
                             ⭐ 1.00 / 5.0
                         </span>
                     </div>
                     <input type="range" id="self-eval-rating-input" min="1.0" max="5.0" step="0.1" value="1.0"
                         oninput="document.getElementById('self-eval-score-preview').textContent = `⭐ ${parseFloat(this.value).toFixed(2)} / 5.0`"
-                        class="w-full h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer accent-purple-600">
+                        class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary">
                     <div class="grid grid-cols-5 gap-1 text-center font-medium text-[9px] text-slate-600">
-                        <span class="p-0.5 rounded bg-rose-50 text-rose-800">1: Below</span>
-                        <span class="p-0.5 rounded bg-amber-50 text-amber-800">2: Dev</span>
-                        <span class="p-0.5 rounded bg-blue-50 text-blue-800">3: Prof</span>
-                        <span class="p-0.5 rounded bg-emerald-50 text-emerald-800 font-bold">4: Adv</span>
-                        <span class="p-0.5 rounded bg-purple-100 text-purple-900 font-bold">5: Mast</span>
+                        <span class="p-1 rounded bg-white border border-slate-200">1: Below</span>
+                        <span class="p-1 rounded bg-white border border-slate-200">2: Dev</span>
+                        <span class="p-1 rounded bg-white border border-slate-200">3: Prof</span>
+                        <span class="p-1 rounded bg-white border border-slate-200 font-bold text-slate-800">4: Adv</span>
+                        <span class="p-1 rounded bg-white border border-slate-200 font-bold text-slate-900">5: Mast</span>
                     </div>
                 </div>
 
                 <!-- Self Reflection / Key Achievements Textarea -->
                 <div class="space-y-1.5">
                     <label class="font-bold text-slate-700 text-xs flex items-center space-x-1.5">
-                        <i class="fas fa-feather-pointed text-primary"></i>
+                        <i class="fas fa-feather-pointed text-slate-500"></i>
                         <span>Self Reflections &amp; Key Achievements *</span>
                     </label>
                     <textarea id="self-eval-notes-input" required rows="3"
                         placeholder="Highlight your key shift deliverables, improvements made, SOP compliance, or areas where you excelled..."
-                        class="w-full p-3 bg-white rounded-xl border border-slate-200 text-xs text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar">Consistently achieved 95%+ shift guest satisfaction, completed all assigned SOP matrices, and supported onboarding team members.</textarea>
+                        class="w-full p-3 bg-slate-50/50 rounded-xl border border-slate-200 text-xs text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar">Consistently achieved 95%+ shift guest satisfaction, completed all assigned SOP matrices, and supported onboarding team members.</textarea>
                 </div>
             </div>
 
@@ -598,7 +598,7 @@
                     <button type="button" onclick="closeModal('modal-submit-self-evaluation')"
                         class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
                     <button type="submit" id="btn-submit-self-eval"
-                        class="btn-primary px-5 py-2 text-xs font-bold shadow-xs bg-purple-600 hover:bg-purple-700 text-white">
+                        class="btn-primary px-5 py-2 text-xs font-bold shadow-xs">
                         <i class="fas fa-check mr-1.5"></i>
                         <span>Submit Self Evaluation</span>
                     </button>
@@ -616,11 +616,11 @@
         <!-- Header -->
         <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
             <div class="flex items-center space-x-3.5">
-                <div class="w-11 h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-lg font-bold border border-primary/20 shadow-2xs">
+                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold border border-slate-200/60 shadow-2xs">
                     <i class="fas fa-star-half-stroke"></i>
                 </div>
                 <div>
-                    <span class="text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">Phase 4 · Formal Appraisal Evaluation</span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200/60 px-2 py-0.5 rounded-full">Phase 4 · Formal Appraisal Evaluation</span>
                     <h3 id="modal-eval-emp-title" class="font-heading font-bold text-lg text-slate-900 mt-0.5">Appraisal Review: Maria Santos</h3>
                 </div>
             </div>
@@ -635,8 +635,8 @@
 
             <div class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs bg-white flex-1">
                 <!-- 1-5 Scale Guide -->
-                <div class="p-3 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] text-[10px] text-slate-600">
-                    <div class="flex items-center justify-between mb-1">
+                <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 text-[10px] text-slate-600">
+                    <div class="flex items-center justify-between mb-1.5">
                         <p class="font-bold text-slate-800 text-[11px]">1-5 Rating Scale Guide:</p>
                         <div class="flex items-center space-x-1 font-mono">
                             <span class="text-slate-400">Current Computed:</span>
@@ -644,11 +644,11 @@
                         </div>
                     </div>
                     <div class="grid grid-cols-5 gap-1 text-center font-medium">
-                        <span class="p-1 rounded bg-rose-50 text-rose-800">1: Below</span>
-                        <span class="p-1 rounded bg-amber-50 text-amber-800">2: Developing</span>
-                        <span class="p-1 rounded bg-blue-50 text-blue-800">3: Proficient</span>
-                        <span class="p-1 rounded bg-emerald-50 text-emerald-800 font-bold">4: Advanced</span>
-                        <span class="p-1 rounded bg-primary-50 text-primary font-bold">5: Master</span>
+                        <span class="p-1 rounded bg-white border border-slate-200 text-slate-700">1: Below</span>
+                        <span class="p-1 rounded bg-white border border-slate-200 text-slate-700">2: Developing</span>
+                        <span class="p-1 rounded bg-white border border-slate-200 text-slate-700">3: Proficient</span>
+                        <span class="p-1 rounded bg-white border border-slate-200 font-bold text-slate-800">4: Advanced</span>
+                        <span class="p-1 rounded bg-white border border-slate-200 font-bold text-slate-900">5: Master</span>
                     </div>
                 </div>
 
@@ -658,14 +658,14 @@
                 </div>
 
                 <!-- Evaluator / Supervisor Recommendation & Development Notes -->
-                <div class="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 space-y-2">
-                    <label class="font-bold text-purple-950 text-xs flex items-center space-x-1.5">
-                        <i class="fas fa-comment-dots text-purple-600"></i>
+                <div class="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-2">
+                    <label class="font-bold text-slate-800 text-xs flex items-center space-x-1.5">
+                        <i class="fas fa-comment-dots text-slate-500"></i>
                         <span>Supervisor Appraisal Coaching &amp; Recommendation *</span>
                     </label>
                     <textarea id="eval-supervisor-notes" required rows="2"
                         placeholder="Detail key performance highlights, leadership strengths, promotion aptitude, or specific IDP areas for Q4..."
-                        class="w-full p-2.5 bg-white rounded-xl border border-purple-200 text-xs text-slate-800 focus:ring-2 focus:ring-purple-500 focus:outline-none custom-scrollbar">Maria continues to demonstrate exceptional hospitality leadership and poise. Highly recommended for Senior Lead track.</textarea>
+                        class="w-full p-2.5 bg-white rounded-xl border border-slate-200 text-xs text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar">Maria continues to demonstrate exceptional hospitality leadership and poise. Highly recommended for Senior Lead track.</textarea>
                 </div>
             </div>
 
@@ -719,17 +719,17 @@
         class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
 
         <!-- Header -->
-        <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
-            <div class="flex items-center space-x-3">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            <div class="flex items-center space-x-3.5">
                 <div
-                    class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg font-bold border border-amber-200/80 shadow-2xs">
-                    <i class="fas fa-trophy text-amber-600"></i>
+                    class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold border border-slate-200/60 shadow-2xs">
+                    <i class="fas fa-trophy text-slate-600"></i>
                 </div>
                 <div>
                     <div class="flex items-center space-x-2">
                         <h3 class="font-heading font-bold text-base text-slate-900">Send Colleague Recognition</h3>
                         <span id="kudos-tier-badge"
-                            class="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">+50 XP / Person</span>
+                            class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200/60 px-2 py-0.5 rounded-full">+50 XP / Person</span>
                     </div>
                     <p class="text-xs text-slate-500 mt-0.5">Select colleagues and award deterministic recognition points</p>
                 </div>
@@ -747,25 +747,25 @@
             <div>
                 <label class="block font-bold text-slate-800 text-[11px] mb-1.5">Recognition Tier &amp; Point Value</label>
                 <div class="grid grid-cols-3 gap-2">
-                    <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-amber-400 bg-amber-50/60 cursor-pointer transition select-none">
-                        <input type="radio" name="kudos_sender_tier" value="Peer" checked onchange="updateKudosXPPreview()" class="accent-amber-600">
+                    <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-slate-300 bg-slate-50 cursor-pointer transition select-none">
+                        <input type="radio" name="kudos_sender_tier" value="Peer" checked onchange="updateKudosXPPreview()" class="accent-primary">
                         <div>
                             <span class="text-xs font-bold text-slate-900 block">Peer Kudos</span>
-                            <span class="text-[10px] text-amber-700 font-semibold">+50 XP</span>
+                            <span class="text-[10px] text-slate-600 font-semibold">+50 XP</span>
                         </div>
                     </label>
-                    <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:border-amber-300 cursor-pointer transition select-none">
-                        <input type="radio" name="kudos_sender_tier" value="Supervisor" onchange="updateKudosXPPreview()" class="accent-amber-600">
+                    <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 cursor-pointer transition select-none">
+                        <input type="radio" name="kudos_sender_tier" value="Supervisor" onchange="updateKudosXPPreview()" class="accent-primary">
                         <div>
                             <span class="text-xs font-bold text-slate-900 block">Supervisor</span>
-                            <span class="text-[10px] text-primary font-semibold">+100 XP</span>
+                            <span class="text-[10px] text-slate-600 font-semibold">+100 XP</span>
                         </div>
                     </label>
-                    <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:border-amber-300 cursor-pointer transition select-none">
-                        <input type="radio" name="kudos_sender_tier" value="Executive" onchange="updateKudosXPPreview()" class="accent-amber-600">
+                    <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 cursor-pointer transition select-none">
+                        <input type="radio" name="kudos_sender_tier" value="Executive" onchange="updateKudosXPPreview()" class="accent-primary">
                         <div>
                             <span class="text-xs font-bold text-slate-900 block">GM / Exec</span>
-                            <span class="text-[10px] text-emerald-700 font-semibold">+200 XP</span>
+                            <span class="text-[10px] text-slate-600 font-semibold">+200 XP</span>
                         </div>
                     </label>
                 </div>
@@ -775,7 +775,7 @@
             <div class="space-y-2.5">
                 <div class="flex items-center justify-between">
                     <label class="block font-bold text-slate-800 text-[11px]">Select Recipients (<span
-                            id="kudos-selected-count" class="text-amber-600 font-extrabold">0</span>
+                            id="kudos-selected-count" class="text-primary font-extrabold">0</span>
                         selected)</label>
                     <div class="flex items-center space-x-2">
                         <button type="button" onclick="toggleSelectAllKudos(true)"
@@ -792,13 +792,13 @@
                         class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
                     <input id="kudos-search-input" oninput="filterKudosList()" type="text"
                         placeholder="Search employee name, title, or department..."
-                        class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 focus:outline-none transition">
+                        class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition">
                 </div>
 
                 <!-- Department Filter Pills -->
                 <div class="flex items-center space-x-1.5 overflow-x-auto custom-scrollbar pb-1 text-[11px]">
                     <button type="button" onclick="setKudosDeptFilter('all')" data-dept="all"
-                        class="kudos-dept-pill active px-3 py-1 rounded-full font-bold bg-amber-500 text-white shadow-2xs transition">All Depts</button>
+                        class="kudos-dept-pill active px-3 py-1 rounded-full font-bold bg-slate-900 text-white shadow-2xs transition">All Depts</button>
                     <button type="button" onclick="setKudosDeptFilter('front office')" data-dept="front office"
                         class="kudos-dept-pill px-3 py-1 rounded-full font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Front Office</button>
                     <button type="button" onclick="setKudosDeptFilter('culinary')" data-dept="culinary"
@@ -821,29 +821,29 @@
                 <label class="block font-bold text-slate-800 text-[11px] mb-1.5">Recognition Category</label>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <label
-                        class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-amber-400 cursor-pointer transition">
+                        class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-slate-300 cursor-pointer transition">
                         <input type="radio" name="kudos_category" value="guest_service" checked
-                            class="accent-amber-600">
+                            class="accent-primary">
                         <span class="text-[11px] font-semibold text-slate-700">🌟 Great Guest Service</span>
                     </label>
                     <label
-                        class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-amber-400 cursor-pointer transition">
-                        <input type="radio" name="kudos_category" value="collaboration" class="accent-amber-600">
+                        class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-slate-300 cursor-pointer transition">
+                        <input type="radio" name="kudos_category" value="collaboration" class="accent-primary">
                         <span class="text-[11px] font-semibold text-slate-700">🤝 Team Collaboration</span>
                     </label>
                     <label
-                        class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-amber-400 cursor-pointer transition">
-                        <input type="radio" name="kudos_category" value="safety_haccp" class="accent-amber-600">
+                        class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-slate-300 cursor-pointer transition">
+                        <input type="radio" name="kudos_category" value="safety_haccp" class="accent-primary">
                         <span class="text-[11px] font-semibold text-slate-700">🛡️ Safety &amp; HACCP</span>
                     </label>
                     <label
-                        class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-amber-400 cursor-pointer transition">
-                        <input type="radio" name="kudos_category" value="crisis_recovery" class="accent-amber-600">
+                        class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-slate-300 cursor-pointer transition">
+                        <input type="radio" name="kudos_category" value="crisis_recovery" class="accent-primary">
                         <span class="text-[11px] font-semibold text-slate-700">⚡ Crisis Recovery</span>
                     </label>
                     <label
-                        class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-amber-400 cursor-pointer transition">
-                        <input type="radio" name="kudos_category" value="operational_excellence" class="accent-amber-600">
+                        class="flex items-center space-x-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-slate-300 cursor-pointer transition">
+                        <input type="radio" name="kudos_category" value="operational_excellence" class="accent-primary">
                         <span class="text-[11px] font-semibold text-slate-700">🏆 Operational Excellence</span>
                     </label>
                 </div>
@@ -853,7 +853,7 @@
             <div>
                 <label class="block font-bold text-slate-800 text-[11px] mb-1">Recognition Message / Qualitative Evidence</label>
                 <textarea id="shoutout-message" rows="2"
-                    class="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500 focus:outline-none custom-scrollbar bg-slate-50/50 text-xs font-medium"
+                    class="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none custom-scrollbar bg-slate-50/50 text-xs font-medium"
                     placeholder="e.g., Outstanding teamwork and calm composure during the peak banquet rush!"></textarea>
             </div>
         </div>
@@ -862,7 +862,7 @@
         <div
             class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
             <span id="kudos-awarded-preview"
-                class="badge-gold">+0 XP Total</span>
+                class="text-xs font-bold text-slate-700 bg-slate-100 border border-slate-200/80 px-2.5 py-1 rounded-lg">+0 XP Total</span>
             <div class="flex items-center space-x-2.5">
                 <button onclick="closeModal('modal-recognition')"
                     class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>

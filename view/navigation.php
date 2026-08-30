@@ -2,15 +2,15 @@
             class="fixed inset-0 z-50 lg:hidden pointer-events-none transition-all duration-300">
             <!-- Backdrop Overlay -->
             <div id="mobile-drawer-backdrop" onclick="toggleMobileSidebar(false)"
-                class="fixed inset-0 bg-[#211A1A]/40 backdrop-blur-xs opacity-0 transition-opacity duration-300 pointer-events-none">
+                class="fixed inset-0 bg-slate-950/40 backdrop-blur-xs opacity-0 transition-opacity duration-300 pointer-events-none">
             </div>
 
             <!-- Slide-Over Drawer Content -->
             <div id="mobile-drawer-panel"
-                class="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-white shadow-xl flex flex-col h-full overflow-y-auto custom-scrollbar transition-transform duration-300 ease-in-out -translate-x-full pointer-events-auto border-r border-[#E8DEDC]">
+                class="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col h-full overflow-y-auto custom-scrollbar transition-transform duration-300 ease-in-out -translate-x-full pointer-events-auto border-r border-slate-200/80">
                 <!-- Header with Close button -->
                 <div
-                    class="flex items-center justify-between px-5 h-16 border-b border-[#E8DEDC] bg-white sticky top-0 z-10">
+                    class="flex items-center justify-between px-5 h-16 border-b border-slate-200/80 bg-white sticky top-0 z-10">
                     <div class="flex items-center space-x-2.5">
                         <img src="public/images/removed-bg-logo.png" alt="Oxford Suites Logo" class="h-9 w-auto object-contain">
                         <div>
@@ -26,9 +26,9 @@
                 </div>
 
                 <!-- Mobile User Profile -->
-                <div class="px-4 py-3 border-b border-[#E8DEDC]">
+                <div class="px-4 py-3 border-b border-slate-200/80">
                     <div
-                        class="bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl p-2.5 flex items-center justify-between">
+                        class="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 flex items-center justify-between">
                         <div class="flex items-center space-x-2.5 overflow-hidden">
                             <div
                                 class="user-avatar-circle w-8 h-8 rounded-full bg-primary text-white font-bold text-xs flex items-center justify-center shadow-xs flex-shrink-0">
@@ -40,7 +40,7 @@
                             </div>
                         </div>
                         <span
-                            class="role-badge-tag text-[9px] bg-primary-50 text-primary border border-primary-100 font-bold px-1.5 py-0.5 rounded uppercase">Emp</span>
+                            class="role-badge-tag text-[9px] bg-slate-100 text-slate-700 border border-slate-200 font-bold px-1.5 py-0.5 rounded uppercase">Emp</span>
                     </div>
                 </div>
 
@@ -83,7 +83,7 @@
                         <i class="fas fa-trophy w-5 text-center text-sm"></i>
                         <span class="ml-3 font-semibold">Social Recognition</span>
                     </a>
-                    <div class="pt-4 border-t border-[#E8DEDC] my-2">
+                    <div class="pt-4 border-t border-slate-200/80 my-2">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Workspace</p>
                         <a href="#"
                             onclick="switchPillar('pillar-notifications'); toggleMobileSidebar(false); return false;"
@@ -102,9 +102,9 @@
                 </nav>
 
                 <!-- Bottom Sign Out -->
-                <div class="border-t border-[#E8DEDC] p-3 bg-white sticky bottom-0">
+                <div class="border-t border-slate-200/80 p-3 bg-white sticky bottom-0">
                     <button onclick="logOutToAuth(); toggleMobileSidebar(false);"
-                        class="w-full py-2 px-3 rounded-xl border border-[#E8DEDC] hover:border-red-200 hover:bg-red-50 text-slate-600 hover:text-red-700 text-xs font-semibold flex items-center justify-center space-x-2 transition">
+                        class="w-full py-2 px-3 rounded-xl border border-slate-200/80 hover:border-rose-200 hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-xs font-semibold flex items-center justify-center space-x-2 transition">
                         <i class="fas fa-right-from-bracket text-xs"></i>
                         <span>Switch Role / Log Out</span>
                     </button>
@@ -116,11 +116,11 @@
 
             <!-- ===== STATIC DESKTOP SIDEBAR (Visible Only on lg and above, 100% Static) ===== -->
             <aside id="desktop-sidebar"
-                class="hidden lg:flex lg:flex-col w-64 bg-white border-r border-[#E8DEDC] flex-shrink-0 h-full overflow-y-auto custom-scrollbar select-none">
+                class="hidden lg:flex lg:flex-col w-64 bg-white border-r border-slate-200/80 flex-shrink-0 h-full overflow-y-auto custom-scrollbar select-none">
 
                 <!-- Brand Logo Header -->
                 <div
-                    class="flex items-center justify-between px-6 h-16 border-b border-[#E8DEDC] bg-white sticky top-0 z-10">
+                    class="flex items-center justify-between px-6 h-16 border-b border-slate-200/80 bg-white sticky top-0 z-10">
                     <div class="flex items-center space-x-2.5">
                         <img src="public/images/removed-bg-logo.png" alt="Oxford Suites Logo" class="h-9 w-auto object-contain">
                         <div>
@@ -131,9 +131,9 @@
                 </div>
 
                 <!-- Active User Card -->
-                <div class="px-4 py-3 border-b border-[#E8DEDC]">
+                <div class="px-4 py-3 border-b border-slate-200/80">
                     <div
-                        class="bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl p-2.5 flex items-center justify-between">
+                        class="bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 flex items-center justify-between">
                         <div class="flex items-center space-x-2.5 overflow-hidden">
                             <div
                                 class="user-avatar-circle w-8 h-8 rounded-full bg-primary text-white font-bold text-xs flex items-center justify-center shadow-xs flex-shrink-0">
@@ -147,7 +147,7 @@
                             </div>
                         </div>
                         <span
-                            class="role-badge-tag text-[9px] bg-primary-50 text-primary border border-primary-100 font-bold px-1.5 py-0.5 rounded uppercase">Emp</span>
+                            class="role-badge-tag text-[9px] bg-slate-100 text-slate-700 border border-slate-200 font-bold px-1.5 py-0.5 rounded uppercase">Emp</span>
                     </div>
                 </div>
 
@@ -206,7 +206,7 @@
                         <span class="ml-3 font-semibold">Social Recognition</span>
                     </a>
 
-                    <div class="pt-4 border-t border-[#E8DEDC] my-2">
+                    <div class="pt-4 border-t border-slate-200/80 my-2">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Workspace</p>
 
                         <a href="#" onclick="switchPillar('pillar-notifications'); return false;"
@@ -226,9 +226,9 @@
                 </nav>
 
                 <!-- Bottom Sign Out Card -->
-                <div class="border-t border-[#E8DEDC] p-3 bg-white sticky bottom-0">
+                <div class="border-t border-slate-200/80 p-3 bg-white sticky bottom-0">
                     <button onclick="logOutToAuth()"
-                        class="w-full py-2 px-3 rounded-xl border border-[#E8DEDC] hover:border-red-200 hover:bg-red-50 text-slate-600 hover:text-red-700 text-xs font-semibold flex items-center justify-center space-x-2 transition">
+                        class="w-full py-2 px-3 rounded-xl border border-slate-200/80 hover:border-rose-200 hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-xs font-semibold flex items-center justify-center space-x-2 transition">
                         <i class="fas fa-right-from-bracket text-xs"></i>
                         <span>Switch Role / Log Out</span>
                     </button>
@@ -240,13 +240,13 @@
 
                 <!-- Clean Top Header Bar -->
                 <header
-                    class="h-16 bg-white border-b border-[#E8DEDC] px-3 sm:px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-20">
+                    class="h-16 bg-white border-b border-slate-200/80 px-3 sm:px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-20">
 
                     <!-- Left: Hamburger Button, Title & Active Cycle Pill -->
                     <div class="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
                         <button id="mobile-hamburger-btn" onclick="toggleMobileSidebar()"
                             aria-label="Toggle navigation menu"
-                            class="lg:hidden flex items-center justify-center w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 transition shadow-2xs border border-[#E8DEDC] flex-shrink-0">
+                            class="lg:hidden flex items-center justify-center w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 transition shadow-2xs border border-slate-200/80 flex-shrink-0">
                             <i class="fas fa-bars-staggered text-sm transition-transform duration-200"
                                 id="hamburger-icon"></i>
                         </button>
@@ -256,8 +256,8 @@
                                     class="font-heading font-bold text-sm sm:text-base md:text-lg text-slate-900 truncate">
                                     Performance &amp; Development Hub</h1>
                                 <span
-                                    class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sage-50 text-sage-dark border border-sage-100 flex-shrink-0">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-sage mr-1.5"></span> Oxford Suites, Makati · 2026 Q3
+                                    class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200/80 flex-shrink-0">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span> Oxford Suites, Makati · 2026 Q3
                                 </span>
                             </div>
                         </div>
@@ -268,26 +268,19 @@
 
                         <!-- Authenticated User Profile Badge -->
                         <div id="header-user-profile"
-                            class="flex items-center space-x-2.5 bg-[#FAF8F7] border border-[#E8DEDC] px-3 py-1.5 rounded-2xl shadow-2xs">
+                            class="flex items-center space-x-2.5 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-2xl shadow-2xs">
                             <img id="nav-user-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" 
-                                alt="User Avatar" class="w-7 h-7 rounded-full object-cover border border-[#E8DEDC]">
+                                alt="User Avatar" class="w-7 h-7 rounded-full object-cover border border-slate-200">
                             <div class="text-left hidden sm:block">
                                 <p id="nav-user-name" class="font-bold text-slate-800 text-[11px] leading-tight">Maria Santos</p>
                                 <p id="nav-user-role" class="text-[10px] text-slate-500 leading-tight">Front Desk Host · Front Office</p>
                             </div>
                         </div>
 
-                        <!-- Sign Out Button -->
-                        <button onclick="logOutToAuth()" title="Sign Out of Session"
-                            class="flex items-center space-x-1.5 px-2.5 py-1.5 bg-[#FAF8F7] hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 text-slate-600 rounded-xl border border-[#E8DEDC] font-semibold transition text-xs shadow-2xs">
-                            <i class="fas fa-arrow-right-from-bracket text-xs"></i>
-                            <span class="hidden md:inline">Sign Out</span>
-                        </button>
-
                         <!-- AI Copilot Trigger -->
                         <button onclick="openModal('modal-ai-feedback')" title="Open AI Feedback Copilot"
-                            class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-dusty-50 border border-dusty-100 text-dusty-dark rounded-xl font-semibold hover:bg-dusty-100 transition text-xs shadow-2xs">
-                            <i class="fas fa-robot text-dusty"></i>
+                            class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 border border-slate-200/80 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition text-xs shadow-2xs">
+                            <i class="fas fa-robot text-primary"></i>
                             <span>AI Copilot</span>
                         </button>
 

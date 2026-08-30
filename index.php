@@ -237,6 +237,118 @@
             html.role-management #subtab-btn-comp-development {
                 display: inline-flex !important;
             }
+
+            /* ======================================================== */
+            /* LUXURY MINIMALIST MODAL SYSTEM (Less Colors, Clean Layout) */
+            /* ======================================================== */
+            .modal-overlay {
+                background-color: rgba(15, 23, 42, 0.45) !important;
+                backdrop-filter: blur(8px) !important;
+                -webkit-backdrop-filter: blur(8px) !important;
+            }
+
+            .modal-card {
+                background: #FFFFFF !important;
+                border-radius: 1.5rem !important;
+                border: 1px solid #E2E8F0 !important;
+                box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(15, 23, 42, 0.04) !important;
+            }
+
+            /* Clean Modal Headers */
+            .modal-card > div:first-child:not(.p-6),
+            .modal-card > header {
+                background: #FFFFFF !important;
+                border-bottom: 1px solid #F1F5F9 !important;
+            }
+
+            /* Clean Modal Footers */
+            .modal-card > div:last-child:not(.p-6):not(.space-y-4),
+            .modal-card > footer {
+                background: #F8FAFC !important;
+                border-top: 1px solid #F1F5F9 !important;
+            }
+
+            /* Universal Clean Modal Inputs & Dropdowns */
+            .modal-card input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]),
+            .modal-card select,
+            .modal-card textarea {
+                background-color: #F8FAFC !important;
+                border: 1px solid #E2E8F0 !important;
+                color: #1E293B !important;
+                border-radius: 0.75rem !important;
+                font-size: 0.75rem !important;
+                transition: all 0.15s ease !important;
+            }
+
+            .modal-card input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):focus,
+            .modal-card select:focus,
+            .modal-card textarea:focus {
+                background-color: #FFFFFF !important;
+                border-color: #9E1B20 !important;
+                box-shadow: 0 0 0 3px rgba(158, 27, 32, 0.1) !important;
+                outline: none !important;
+            }
+
+            /* Subdue excessive colorful info boxes inside modals */
+            .modal-card .bg-purple-50,
+            .modal-card [class*="bg-purple-50/"],
+            .modal-card .bg-blue-50,
+            .modal-card [class*="bg-blue-50/"],
+            .modal-card .bg-indigo-50,
+            .modal-card [class*="bg-indigo-50/"],
+            .modal-card .bg-dusty-50,
+            .modal-card [class*="bg-dusty-50/"],
+            .modal-card .bg-gold-50,
+            .modal-card [class*="bg-gold-50/"],
+            .modal-card .bg-sage-50,
+            .modal-card [class*="bg-sage-50/"] {
+                background-color: #F8FAFC !important;
+                border-color: #E2E8F0 !important;
+                color: #334155 !important;
+            }
+
+            /* Subdue colored text in modal labels */
+            .modal-card [class*="text-purple-"],
+            .modal-card [class*="text-indigo-"],
+            .modal-card [class*="text-blue-"],
+            .modal-card [class*="text-dusty-"],
+            .modal-card [class*="text-sage-"] {
+                color: #334155 !important;
+            }
+
+            /* Neutral subtle badges in modals */
+            .modal-card .bg-purple-100,
+            .modal-card .bg-blue-100,
+            .modal-card .bg-indigo-100,
+            .modal-card .badge-dusty,
+            .modal-card .badge-sage,
+            .modal-card .badge-gold {
+                background-color: #F1F5F9 !important;
+                color: #475569 !important;
+                border: 1px solid #E2E8F0 !important;
+            }
+
+            /* Clean Semantic Badges */
+            .modal-card .bg-emerald-50,
+            .modal-card .bg-emerald-100 {
+                background-color: #F0FDF4 !important;
+                color: #166534 !important;
+                border-color: #BBF7D0 !important;
+            }
+
+            .modal-card .bg-rose-50,
+            .modal-card .bg-rose-100 {
+                background-color: #FFF1F2 !important;
+                color: #9F1239 !important;
+                border-color: #FECDD3 !important;
+            }
+
+            .modal-card .bg-amber-50,
+            .modal-card .bg-amber-100 {
+                background-color: #FFFBEB !important;
+                color: #92400E !important;
+                border-color: #FDE68A !important;
+            }
         </style>
     </head>
 

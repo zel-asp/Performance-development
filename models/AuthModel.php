@@ -685,4 +685,80 @@ class AuthModel extends BaseModel
             }
         }
     }
+
+    /**
+     * 10. Find user or employee by Employee Code or ID
+     */
+    public function findByEmployeeCode(string $code): ?array
+    {
+        $code = trim($code);
+        if (empty($code)) {
+            return null;
+        }
+
+        // 1. Try finding in employees table by employee_code
+        $empRes = supabaseRequest('employees?employee_code=eq.' . urlencode($code), 'GET', null, true);
+        if ($empRes['status'] === 200 && !empty($empRes['data'][0])) {
+            return $this->normalizeRecord($empRes['data'][0]);
+        }
+
+        // 2. Try finding in employees table by id
+        $empRes = supabaseRequest('employees?id=eq.' . urlencode($code), 'GET', null, true);
+        if ($empRes['status'] === 200 && !empty($empRes['data'][0])) {
+            return $this->normalizeRecord($empRes['data'][0]);
+        }
+
+        // 3. Try finding in users table by employee_code or id
+        $usrRes = supabaseRequest('users?employee_code=eq.' . urlencode($code), 'GET', null, true);
+        if ($usrRes['status'] === 200 && !empty($usrRes['data'][0])) {
+            return $this->normalizeRecord($usrRes['data'][0]);
+        }
+
+        $usrRes = supabaseRequest('users?id=eq.' . urlencode($code), 'GET', null, true);
+        if ($usrRes['status'] === 200 && !empty($usrRes['data'][0])) {
+            return $this->normalizeRecord($usrRes['data'][0]);
+        }
+
+        return null;
+    }
+
+    /**
+     * 11. Override find to check both users and employees table
+     */
+    public function find(string $id): ?array
+    {
+        $user = parent::find($id);
+        if ($user) {
+            return $user;
+        }
+
+        // Fallback to employees table
+        $empRes = supabaseRequest('employees?id=eq.' . urlencode($id), 'GET', null, true);
+        if ($empRes['status'] === 200 && !empty($empRes['data'][0])) {
+            return $this->normalizeRecord($empRes['data'][0]);
+        }
+
+        return null;
+    }
+
+    /**
+     * 12. Find user or employee by email address
+     */
+    public function findByEmail(string $email): ?array
+    {
+        $email = trim($email);
+        if (empty($email)) {
+            return null;
+        }
+        $usrRes = supabaseRequest('users?email=eq.' . urlencode($email), 'GET', null, true);
+        if ($usrRes['status'] === 200 && !empty($usrRes['data'][0])) {
+            return $this->normalizeRecord($usrRes['data'][0]);
+        }
+        $empRes = supabaseRequest('employees?email=eq.' . urlencode($email), 'GET', null, true);
+        if ($empRes['status'] === 200 && !empty($empRes['data'][0])) {
+            return $this->normalizeRecord($empRes['data'][0]);
+        }
+        return null;
+    }
 }
+
