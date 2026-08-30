@@ -8,11 +8,27 @@
         <title>Oxford Suites, Makati · Performance and Development Hub</title>
         <link rel="icon" type="image/png" href="public/images/removed-bg-logo.png">
 
-        <!-- Session Authentication Guard: Redirect to standalone login.php if not signed in -->
+        <!-- Session Authentication Guard & Zero-Flash Pre-hydration -->
         <script>
-            if (localStorage.getItem('oxford_session_auth') !== 'true') {
-                window.location.replace('login.php');
-            }
+            (function() {
+                try {
+                    if (localStorage.getItem('oxford_session_auth') !== 'true') {
+                        window.location.replace('login.php');
+                        return;
+                    }
+                    var role = (localStorage.getItem('oxford_session_role') || 'associate').toLowerCase().trim();
+                    var isAssociate = (role === 'associate' || role === 'employee' || role === 'staff');
+                    
+                    document.documentElement.setAttribute('data-user-role', role);
+                    if (isAssociate) {
+                        document.documentElement.classList.add('role-associate');
+                        document.documentElement.classList.remove('role-management');
+                    } else {
+                        document.documentElement.classList.add('role-management');
+                        document.documentElement.classList.remove('role-associate');
+                    }
+                } catch (e) {}
+            })();
         </script>
 
         <!-- Google Fonts: Inter & Outfit -->
@@ -159,7 +175,7 @@
         <!-- Compiled Tailwind CSS -->
         <link rel="stylesheet" href="dist/output.css">
 
-        <!-- Pillar & Sub-Panel Display System -->
+        <!-- Pillar & Sub-Panel Display System + Instant Zero-Flash Role Privacy Rules -->
         <style>
             .pillar-panel {
                 display: none !important;
@@ -195,10 +211,50 @@
                 from { opacity: 0; transform: translateY(2px); }
                 to { opacity: 1; transform: translateY(0); }
             }
+
+            /* Zero-Flash RBAC Guard Styles - Instantly hide privileged navigation & management tools for Associate */
+            html.role-associate [data-pillar="pillar-perf"],
+            html.role-associate [data-pillar="pillar-succession"],
+            html.role-associate [data-pillar="pillar-reports"],
+            html.role-associate [data-sub="system"],
+            html.role-associate #btn-create-program,
+            html.role-associate #btn-schedule-session,
+            html.role-associate #btn-mark-all-attended,
+            html.role-associate #comp-conduct-eval-box,
+            html.role-associate #comp-tna-skills-gap-card,
+            html.role-associate #subtab-btn-comp-profiles,
+            html.role-associate [data-sub="schedules"].subnav-training {
+                display: none !important;
+            }
+
+            html.role-associate #subtab-btn-comp-assessment,
+            html.role-associate #subtab-btn-comp-development {
+                display: inline-flex !important;
+            }
+
+            html.role-management #subtab-btn-comp-profiles,
+            html.role-management #subtab-btn-comp-assessment,
+            html.role-management #subtab-btn-comp-development {
+                display: inline-flex !important;
+            }
         </style>
     </head>
 
     <body class="bg-[#FAF8F7] text-[#211A1A] antialiased h-screen flex flex-col overflow-hidden">
+        <!-- Early Pre-hydration of User Context -->
+        <script>
+            (function() {
+                try {
+                    var role = (localStorage.getItem('oxford_session_role') || 'associate').toLowerCase().trim();
+                    var rawUser = localStorage.getItem('oxford_session_user');
+                    var user = rawUser ? JSON.parse(rawUser) : null;
+                    window.activePersonaRole = role === 'supervisor' ? 'Supervisor' : (role === 'hradmin' ? 'HRAdmin' : (role === 'generalmanager' ? 'GeneralManager' : 'Associate'));
+                    window.activePersonaKey = role;
+                    if (user) window.currentUser = user;
+                } catch(e) {}
+            })();
+        </script>
+
         <!-- Sonner Toaster Container with Dismiss/Close (X) Button (Max 3, 3s Duration) -->
         <ol id="sonner-toast-container" position="top-right" max-toasts="3" duration="2000" rich-colors="true" close-button="true" theme="light"></ol>
 
