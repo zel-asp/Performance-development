@@ -509,10 +509,10 @@
                                                     Phase 5 Stepper
                                                 </span>
                                                 <span class="text-xs text-slate-400 font-medium">•</span>
-                                                <span class="text-xs text-slate-500 font-medium">1-on-1 Calibration</span>
+                                                <span class="text-xs text-slate-500 font-medium">1-on-1 Review &amp; Final Rating</span>
                                             </div>
-                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 5: Calibration &amp; 1-on-1 Review Roster</h3>
-                                            <p class="text-slate-500 text-xs">HR bell-curve normalization and formal 1-on-1 rating calibration from database.</p>
+                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 5: 1-on-1 Review &amp; Final Rating Roster</h3>
+                                            <p class="text-slate-500 text-xs">Formal 1-on-1 review discussion, feedback sign-off, and final calibrated rating.</p>
                                         </div>
 
                                         <!-- Header Action Controls -->
@@ -534,7 +534,7 @@
                                                     <th class="px-5 py-3">Employee &amp; Position</th>
                                                     <th class="px-5 py-3">Department</th>
                                                     <th class="px-5 py-3">Appraisal Rating</th>
-                                                    <th class="px-5 py-3">Calibrated Score</th>
+                                                    <th class="px-5 py-3">Final Rating</th>
                                                     <th class="px-5 py-3 text-center">Review Status</th>
                                                     <th class="px-5 py-3 text-right">Actions</th>
                                                 </tr>
