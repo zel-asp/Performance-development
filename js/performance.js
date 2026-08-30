@@ -1294,53 +1294,191 @@ window.handleEmployeeSelfEvalSubmit = handleEmployeeSelfEvalSubmit;
 window.loadAndRenderPlanningGoals = loadAndRenderPlanningGoals;
 
 // ============================================================================
-// Pagination State & Controllers
+// Enhanced Pagination State & Controllers (Stages 1 through 7)
 // ============================================================================
 let planningCurrentPage = 1;
-const planningPageSize = 5;
+let planningPageSize = 5;
 let generalTasksCurrentPage = 1;
-const generalTasksPageSize = 5;
+let generalTasksPageSize = 5;
+let approvalCurrentPage = 1;
+let approvalPageSize = 4;
 let monitoringCurrentPage = 1;
-const monitoringPageSize = 5;
+let monitoringPageSize = 5;
+let evalCurrentPage = 1;
+let evalPageSize = 5;
+let reviewCurrentPage = 1;
+let reviewPageSize = 5;
+let idpCurrentPage = 1;
+let idpPageSize = 5;
+let cycleCurrentPage = 1;
+let cyclePageSize = 5;
 
+// Stage 1 Setters
 function setPlanningPage(page) {
-    planningCurrentPage = page;
+    planningCurrentPage = Math.max(1, parseInt(page));
     renderPlanningRosterTable();
 }
 window.setPlanningPage = setPlanningPage;
 
+function setPlanningPageSize(size) {
+    planningPageSize = size === 'all' ? 'all' : parseInt(size);
+    planningCurrentPage = 1;
+    renderPlanningRosterTable();
+}
+window.setPlanningPageSize = setPlanningPageSize;
+
 function setGeneralTasksPage(page) {
-    generalTasksCurrentPage = page;
+    generalTasksCurrentPage = Math.max(1, parseInt(page));
     renderGeneralTasksTable();
 }
 window.setGeneralTasksPage = setGeneralTasksPage;
 
+function setGeneralTasksPageSize(size) {
+    generalTasksPageSize = size === 'all' ? 'all' : parseInt(size);
+    generalTasksCurrentPage = 1;
+    renderGeneralTasksTable();
+}
+window.setGeneralTasksPageSize = setGeneralTasksPageSize;
+
+// Stage 2 Setters
+function setApprovalPage(page) {
+    approvalCurrentPage = Math.max(1, parseInt(page));
+    renderApprovalRosterTable();
+}
+window.setApprovalPage = setApprovalPage;
+
+function setApprovalPageSize(size) {
+    approvalPageSize = size === 'all' ? 'all' : parseInt(size);
+    approvalCurrentPage = 1;
+    renderApprovalRosterTable();
+}
+window.setApprovalPageSize = setApprovalPageSize;
+
+// Stage 3 Setters
 function setMonitoringPage(page) {
-    monitoringCurrentPage = page;
+    monitoringCurrentPage = Math.max(1, parseInt(page));
     renderMonitoringRosterTable();
 }
 window.setMonitoringPage = setMonitoringPage;
 
-function renderPaginationControls(containerId, currentPage, totalItems, pageSize, onPageFnName) {
+function setMonitoringPageSize(size) {
+    monitoringPageSize = size === 'all' ? 'all' : parseInt(size);
+    monitoringCurrentPage = 1;
+    renderMonitoringRosterTable();
+}
+window.setMonitoringPageSize = setMonitoringPageSize;
+
+// Stage 4 Setters
+function setEvalPage(page) {
+    evalCurrentPage = Math.max(1, parseInt(page));
+    renderEvaluationRosterTable();
+}
+window.setEvalPage = setEvalPage;
+
+function setEvalPageSize(size) {
+    evalPageSize = size === 'all' ? 'all' : parseInt(size);
+    evalCurrentPage = 1;
+    renderEvaluationRosterTable();
+}
+window.setEvalPageSize = setEvalPageSize;
+
+// Stage 5 Setters
+function setReviewPage(page) {
+    reviewCurrentPage = Math.max(1, parseInt(page));
+    renderReviewRosterTable();
+}
+window.setReviewPage = setReviewPage;
+
+function setReviewPageSize(size) {
+    reviewPageSize = size === 'all' ? 'all' : parseInt(size);
+    reviewCurrentPage = 1;
+    renderReviewRosterTable();
+}
+window.setReviewPageSize = setReviewPageSize;
+
+// Stage 6 Setters
+function setIDPPage(page) {
+    idpCurrentPage = Math.max(1, parseInt(page));
+    renderIDPRosterTable();
+}
+window.setIDPPage = setIDPPage;
+
+function setIDPPageSize(size) {
+    idpPageSize = size === 'all' ? 'all' : parseInt(size);
+    idpCurrentPage = 1;
+    renderIDPRosterTable();
+}
+window.setIDPPageSize = setIDPPageSize;
+
+// Stage 7 Setters
+function setCyclePage(page) {
+    cycleCurrentPage = Math.max(1, parseInt(page));
+    renderCycleRosterTable();
+}
+window.setCyclePage = setCyclePage;
+
+function setCyclePageSize(size) {
+    cyclePageSize = size === 'all' ? 'all' : parseInt(size);
+    cycleCurrentPage = 1;
+    renderCycleRosterTable();
+}
+window.setCyclePageSize = setCyclePageSize;
+
+// Universal High-Performance Pagination Renderer with Per-Page Selector
+function renderPaginationControls(containerId, currentPage, totalItems, pageSize, onPageFnName, onSizeFnName) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    const totalPages = Math.ceil(totalItems / pageSize) || 1;
-    if (totalItems <= pageSize) {
+    const isAll = pageSize === 'all' || pageSize >= 99999;
+    const effectivePageSize = isAll ? (totalItems || 1) : parseInt(pageSize);
+    const totalPages = isAll ? 1 : (Math.ceil(totalItems / effectivePageSize) || 1);
+    const startItem = totalItems === 0 ? 0 : (isAll ? 1 : ((currentPage - 1) * effectivePageSize + 1));
+    const endItem = isAll ? totalItems : Math.min(currentPage * effectivePageSize, totalItems);
+
+    let perPageHtml = '';
+    if (onSizeFnName) {
+        perPageHtml = `
+            <div class="flex items-center space-x-1.5 border-l border-slate-200 pl-3">
+                <span class="text-[10px] text-slate-400 font-semibold">Per page:</span>
+                <select onchange="${onSizeFnName}(this.value)" class="bg-white border border-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-md text-[11px] focus:outline-none focus:ring-1 focus:ring-primary shadow-2xs cursor-pointer">
+                    <option value="4" ${pageSize == 4 ? 'selected' : ''}>4</option>
+                    <option value="5" ${pageSize == 5 ? 'selected' : ''}>5</option>
+                    <option value="10" ${pageSize == 10 ? 'selected' : ''}>10</option>
+                    <option value="20" ${pageSize == 20 ? 'selected' : ''}>20</option>
+                    <option value="all" ${pageSize === 'all' ? 'selected' : ''}>All</option>
+                </select>
+            </div>
+        `;
+    }
+
+    if (totalItems === 0) {
         container.innerHTML = `
-            <span class="text-slate-400 text-[11px]">Showing all ${totalItems} items</span>
-            <div class="flex items-center space-x-1 text-[11px] text-slate-400 font-medium">Page 1 of 1</div>
+            <div class="flex items-center space-x-3">
+                <span class="text-slate-400 text-[11px]">Showing 0 entries</span>
+                ${perPageHtml}
+            </div>
         `;
         return;
     }
 
-    const startItem = (currentPage - 1) * pageSize + 1;
-    const endItem = Math.min(currentPage * pageSize, totalItems);
+    if (totalPages <= 1) {
+        container.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <span class="text-slate-500 text-[11px]">Showing <strong>${startItem}-${endItem}</strong> of <strong>${totalItems}</strong> entries</span>
+                ${perPageHtml}
+            </div>
+            <div class="text-[11px] text-slate-400 font-medium">Page 1 of 1</div>
+        `;
+        return;
+    }
 
     let html = `
-        <span class="text-slate-500 text-[11px]">Showing <strong>${startItem}-${endItem}</strong> of <strong>${totalItems}</strong> entries</span>
-        <div class="flex items-center space-x-1.5">
-            <button onclick="${onPageFnName}(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent text-xs font-bold transition flex items-center space-x-1 shadow-2xs">
+        <div class="flex items-center space-x-3">
+            <span class="text-slate-500 text-[11px]">Showing <strong>${startItem}-${endItem}</strong> of <strong>${totalItems}</strong> entries</span>
+            ${perPageHtml}
+        </div>
+        <div class="flex items-center space-x-1">
+            <button type="button" onclick="${onPageFnName}(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent text-xs font-bold transition flex items-center space-x-1 shadow-2xs">
                 <i class="fas fa-chevron-left text-[9px]"></i><span>Prev</span>
             </button>
     `;
@@ -1348,7 +1486,7 @@ function renderPaginationControls(containerId, currentPage, totalItems, pageSize
     for (let i = 1; i <= totalPages; i++) {
         if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
             html += `
-                <button onclick="${onPageFnName}(${i})" class="w-7 h-7 rounded-lg text-xs font-bold transition flex items-center justify-center ${i === currentPage ? 'bg-primary text-white shadow-xs' : 'border border-slate-200 text-slate-700 hover:bg-slate-100'}">
+                <button type="button" onclick="${onPageFnName}(${i})" class="w-7 h-7 rounded-lg text-xs font-bold transition flex items-center justify-center ${i === currentPage ? 'bg-primary text-white shadow-xs' : 'border border-slate-200 text-slate-700 hover:bg-slate-100'}">
                     ${i}
                 </button>
             `;
@@ -1358,7 +1496,7 @@ function renderPaginationControls(containerId, currentPage, totalItems, pageSize
     }
 
     html += `
-            <button onclick="${onPageFnName}(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent text-xs font-bold transition flex items-center space-x-1 shadow-2xs">
+            <button type="button" onclick="${onPageFnName}(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent text-xs font-bold transition flex items-center space-x-1 shadow-2xs">
                 <span>Next</span><i class="fas fa-chevron-right text-[9px]"></i>
             </button>
         </div>
@@ -1421,12 +1559,14 @@ function renderPlanningRosterTable() {
                 </td>
             </tr>
         `;
-        renderPaginationControls('planning-pagination-container', 1, 0, planningPageSize, 'setPlanningPage');
+        renderPaginationControls('planning-pagination-container', 1, 0, planningPageSize, 'setPlanningPage', 'setPlanningPageSize');
         updateStage1BulkDeleteState();
         return;
     }
 
-    const totalPages = Math.ceil(allGoals.length / planningPageSize);
+    const isAll = planningPageSize === 'all';
+    const effectivePageSize = isAll ? allGoals.length : planningPageSize;
+    const totalPages = isAll ? 1 : (Math.ceil(allGoals.length / effectivePageSize) || 1);
     if (planningCurrentPage > totalPages) {
         planningCurrentPage = totalPages;
     }
@@ -1434,8 +1574,8 @@ function renderPlanningRosterTable() {
         planningCurrentPage = 1;
     }
 
-    const startIdx = (planningCurrentPage - 1) * planningPageSize;
-    const pageGoals = allGoals.slice(startIdx, startIdx + planningPageSize);
+    const startIdx = isAll ? 0 : (planningCurrentPage - 1) * effectivePageSize;
+    const pageGoals = isAll ? allGoals : allGoals.slice(startIdx, startIdx + effectivePageSize);
 
     // List paginated live objectives from Supabase
     pageGoals.forEach((goal, index) => {
@@ -1586,7 +1726,7 @@ function renderPlanningRosterTable() {
         tbody.appendChild(tr);
     });
 
-    renderPaginationControls('planning-pagination-container', planningCurrentPage, allGoals.length, planningPageSize, 'setPlanningPage');
+    renderPaginationControls('planning-pagination-container', planningCurrentPage, allGoals.length, planningPageSize, 'setPlanningPage', 'setPlanningPageSize');
     updateStage1BulkDeleteState();
 }
 window.renderPlanningRosterTable = renderPlanningRosterTable;
@@ -1748,11 +1888,13 @@ function renderGeneralTasksTable() {
                 </td>
             </tr>
         `;
-        renderPaginationControls('general-tasks-pagination-container', 1, 0, generalTasksPageSize, 'setGeneralTasksPage');
+        renderPaginationControls('general-tasks-pagination-container', 1, 0, generalTasksPageSize, 'setGeneralTasksPage', 'setGeneralTasksPageSize');
         return;
     }
 
-    const totalPages = Math.ceil(tasks.length / generalTasksPageSize);
+    const isAll = generalTasksPageSize === 'all';
+    const effectivePageSize = isAll ? tasks.length : generalTasksPageSize;
+    const totalPages = isAll ? 1 : (Math.ceil(tasks.length / effectivePageSize) || 1);
     if (generalTasksCurrentPage > totalPages) {
         generalTasksCurrentPage = totalPages;
     }
@@ -1760,8 +1902,8 @@ function renderGeneralTasksTable() {
         generalTasksCurrentPage = 1;
     }
 
-    const startIdx = (generalTasksCurrentPage - 1) * generalTasksPageSize;
-    const pageTasks = tasks.slice(startIdx, startIdx + generalTasksPageSize);
+    const startIdx = isAll ? 0 : (generalTasksCurrentPage - 1) * effectivePageSize;
+    const pageTasks = isAll ? tasks : tasks.slice(startIdx, startIdx + effectivePageSize);
 
     pageTasks.forEach(t => {
         const tr = document.createElement('tr');
@@ -1796,7 +1938,7 @@ function renderGeneralTasksTable() {
         tbody.appendChild(tr);
     });
 
-    renderPaginationControls('general-tasks-pagination-container', generalTasksCurrentPage, tasks.length, generalTasksPageSize, 'setGeneralTasksPage');
+    renderPaginationControls('general-tasks-pagination-container', generalTasksCurrentPage, tasks.length, generalTasksPageSize, 'setGeneralTasksPage', 'setGeneralTasksPageSize');
 }
 window.renderGeneralTasksTable = renderGeneralTasksTable;
 
@@ -2912,11 +3054,25 @@ function renderApprovalRosterTable() {
                 <p class="text-xs text-slate-500">Goals approved in Stage 1 will appear here as the active baseline for monitoring.</p>
             </div>
         `;
+        renderPaginationControls('approval-pagination-container', 1, 0, approvalPageSize, 'setApprovalPage', 'setApprovalPageSize');
         updateStage2BulkDeleteState();
         return;
     }
 
-    approvedGoals.forEach(goal => {
+    const isAll = approvalPageSize === 'all';
+    const effectivePageSize = isAll ? approvedGoals.length : approvalPageSize;
+    const totalPages = isAll ? 1 : (Math.ceil(approvedGoals.length / effectivePageSize) || 1);
+    if (approvalCurrentPage > totalPages) {
+        approvalCurrentPage = totalPages;
+    }
+    if (approvalCurrentPage < 1) {
+        approvalCurrentPage = 1;
+    }
+
+    const startIdx = isAll ? 0 : (approvalCurrentPage - 1) * effectivePageSize;
+    const pageGoals = isAll ? approvedGoals : approvedGoals.slice(startIdx, startIdx + effectivePageSize);
+
+    pageGoals.forEach(goal => {
         let emp = window.perfRoster.find(e => isSameEmployee(e.id, goal.employee_id));
         if (!emp) {
             emp = {
@@ -2990,12 +3146,14 @@ function renderApprovalRosterTable() {
         container.appendChild(div);
     });
 
+    renderPaginationControls('approval-pagination-container', approvalCurrentPage, approvedGoals.length, approvalPageSize, 'setApprovalPage', 'setApprovalPageSize');
     updateStage2BulkDeleteState();
 }
 window.renderApprovalRosterTable = renderApprovalRosterTable;
 
 window.onApprovedGoalsSearch = function(query) {
     window.approvedSearchQuery = query;
+    approvalCurrentPage = 1;
     renderApprovalRosterTable();
 };
 
@@ -3204,11 +3362,13 @@ function renderMonitoringRosterTable() {
                 </td>
             </tr>
         `;
-        renderPaginationControls('monitoring-pagination-container', 1, 0, monitoringPageSize, 'setMonitoringPage');
+        renderPaginationControls('monitoring-pagination-container', 1, 0, monitoringPageSize, 'setMonitoringPage', 'setMonitoringPageSize');
         return;
     }
 
-    const totalPages = Math.ceil(list.length / monitoringPageSize);
+    const isAll = monitoringPageSize === 'all';
+    const effectivePageSize = isAll ? list.length : monitoringPageSize;
+    const totalPages = isAll ? 1 : (Math.ceil(list.length / effectivePageSize) || 1);
     if (monitoringCurrentPage > totalPages) {
         monitoringCurrentPage = totalPages;
     }
@@ -3216,8 +3376,8 @@ function renderMonitoringRosterTable() {
         monitoringCurrentPage = 1;
     }
 
-    const startIdx = (monitoringCurrentPage - 1) * monitoringPageSize;
-    const pageList = list.slice(startIdx, startIdx + monitoringPageSize);
+    const startIdx = isAll ? 0 : (monitoringCurrentPage - 1) * effectivePageSize;
+    const pageList = isAll ? list : list.slice(startIdx, startIdx + effectivePageSize);
 
     pageList.forEach(emp => {
         const tr = document.createElement('tr');
@@ -3290,23 +3450,21 @@ function renderMonitoringRosterTable() {
                     </div>
                 </div>
             </td>
-            <td class="px-5 py-4 text-right space-x-1.5 whitespace-nowrap">
-                <button onclick="toggleEmployeeMonitoringDetail('${emp.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
-                    View Stream &amp; Tasks
+            <td class="px-5 py-4 text-right space-x-2 whitespace-nowrap">
+                <button onclick="toggleEmployeeMonitoringDetail('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition" title="View Full Employee Logs">
+                    <i class="fas fa-eye text-primary"></i>
+                    <span>Logs</span>
                 </button>
-                ${(isEmployeeGoalFailed(emp.id) || retryCount >= 4) ? `
-                    <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed inline-flex items-center space-x-1" title="${isEmployeeGoalFailed(emp.id) ? 'Goal has failed' : 'Locked: Final 1-on-1 Evaluation is active in Phase 7'}">
-                        <i class="fas fa-lock text-[10px]"></i>
-                        <span>${isEmployeeGoalFailed(emp.id) ? 'Goal Failed' : 'Final Eval in Phase 7'}</span>
+                ${retryCount >= 3 ? `
+                    <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}', true);" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1 inline-flex" title="Exceeded Retries! Open Stage 6 IDP for Mandatory 1-on-1 Training">
+                        <i class="fas fa-triangle-exclamation"></i>
+                        <span>Mandatory Training</span>
                     </button>
                 ` : `
-                    <button onclick="openLogMilestoneModal('${emp.id}')" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-xl transition inline-flex items-center space-x-1">
-                        <i class="fas fa-plus text-[10px]"></i><span>Log KPI</span>
-                    </button>
                     ${(inTraining && !isScored) ? `
-                        <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed inline-flex items-center space-x-1" title="Associate is currently undergoing Mandatory Formal Training. Re-evaluation locked until training is completed.">
+                        <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed flex items-center space-x-1 inline-flex" title="In Training: Post-training evaluation locked until training score is recorded.">
                             <i class="fas fa-lock text-[10px]"></i>
-                            <span>In Training (Locked)</span>
+                            <span>In Training</span>
                         </button>
                     ` : ((inTraining && isScored) ? `
                         <button onclick="triggerEvaluationForEmployee('${emp.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1 inline-flex" title="Training Completed! Open Post-Training Re-Evaluation">
@@ -3326,7 +3484,7 @@ function renderMonitoringRosterTable() {
         container.appendChild(tr);
     });
 
-    renderPaginationControls('monitoring-pagination-container', monitoringCurrentPage, list.length, monitoringPageSize, 'setMonitoringPage');
+    renderPaginationControls('monitoring-pagination-container', monitoringCurrentPage, list.length, monitoringPageSize, 'setMonitoringPage', 'setMonitoringPageSize');
 }
 window.renderMonitoringRosterTable = renderMonitoringRosterTable;
 
@@ -3891,17 +4049,31 @@ function renderEvaluationRosterTable() {
     if (rosterWithGoals.length === 0) {
         container.innerHTML = `
             <tr>
-                <td colspan="6" class="px-5 py-8 text-center text-slate-400 italic bg-slate-50">
+                <td colspan="7" class="px-5 py-8 text-center text-slate-400 italic bg-slate-50">
                     <i class="fas fa-bullseye text-2xl mb-2 block text-slate-300"></i>
                     No active employees with approved performance goals found. Add and approve goals in Stages 1 &amp; 2 before appraisal evaluation.
                 </td>
             </tr>
         `;
         document.getElementById('eval-detail-view-card')?.classList.add('hidden');
+        renderPaginationControls('eval-pagination-container', 1, 0, evalPageSize, 'setEvalPage', 'setEvalPageSize');
         return;
     }
 
-    rosterWithGoals.forEach(emp => {
+    const isAll = evalPageSize === 'all';
+    const effectivePageSize = isAll ? rosterWithGoals.length : evalPageSize;
+    const totalPages = isAll ? 1 : (Math.ceil(rosterWithGoals.length / effectivePageSize) || 1);
+    if (evalCurrentPage > totalPages) {
+        evalCurrentPage = totalPages;
+    }
+    if (evalCurrentPage < 1) {
+        evalCurrentPage = 1;
+    }
+
+    const startIdx = isAll ? 0 : (evalCurrentPage - 1) * effectivePageSize;
+    const pageList = isAll ? rosterWithGoals : rosterWithGoals.slice(startIdx, startIdx + effectivePageSize);
+
+    pageList.forEach(emp => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
 
@@ -4039,8 +4211,16 @@ function renderEvaluationRosterTable() {
         `;
         container.appendChild(tr);
     });
+
+    renderPaginationControls('eval-pagination-container', evalCurrentPage, rosterWithGoals.length, evalPageSize, 'setEvalPage', 'setEvalPageSize');
 }
 window.renderEvaluationRosterTable = renderEvaluationRosterTable;
+
+window.onEvalEmployeeSearch = function(query) {
+    window.evalSearchQuery = query;
+    evalCurrentPage = 1;
+    renderEvaluationRosterTable();
+};
 
 function showEmployeeEvalDetail(empId, openModalImmediately = false) {
     if (!empId) return;
@@ -4571,8 +4751,22 @@ function renderReviewRosterTable() {
             </tr>
         `;
         showEmptyCalibrationDetail();
+        renderPaginationControls('review-pagination-container', 1, 0, reviewPageSize, 'setReviewPage', 'setReviewPageSize');
         return;
     }
+
+    const isAll = reviewPageSize === 'all';
+    const effectivePageSize = isAll ? evaluatedEmployees.length : reviewPageSize;
+    const totalPages = isAll ? 1 : (Math.ceil(evaluatedEmployees.length / effectivePageSize) || 1);
+    if (reviewCurrentPage > totalPages) {
+        reviewCurrentPage = totalPages;
+    }
+    if (reviewCurrentPage < 1) {
+        reviewCurrentPage = 1;
+    }
+
+    const startIdx = isAll ? 0 : (reviewCurrentPage - 1) * effectivePageSize;
+    const pageList = isAll ? evaluatedEmployees : evaluatedEmployees.slice(startIdx, startIdx + effectivePageSize);
 
     // Auto-select first evaluated employee if none selected
     if (!window.selectedCalibEmpId || !evaluatedEmployees.some(e => isSameEmployee(e.id, window.selectedCalibEmpId))) {
@@ -4580,7 +4774,7 @@ function renderReviewRosterTable() {
     }
     showCalibrationDetail(window.selectedCalibEmpId, false);
 
-    evaluatedEmployees.forEach(emp => {
+    pageList.forEach(emp => {
         const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
 
         const rawSupScore = evalRec ? parseFloat(evalRec.supervisor_rating || 0) : (parseFloat(emp.supervisorRating || emp.managerRating || 0));
@@ -4669,11 +4863,14 @@ function renderReviewRosterTable() {
         `;
         container.appendChild(tr);
     });
+
+    renderPaginationControls('review-pagination-container', reviewCurrentPage, evaluatedEmployees.length, reviewPageSize, 'setReviewPage', 'setReviewPageSize');
 }
 window.renderReviewRosterTable = renderReviewRosterTable;
 
 window.onReviewEmployeeSearch = function(query) {
     window.reviewSearchQuery = query;
+    reviewCurrentPage = 1;
     renderReviewRosterTable();
 };
 
@@ -5473,10 +5670,24 @@ function renderIDPRosterTable() {
     if (roster.length === 0) {
         container.innerHTML = `<tr><td colspan="5" class="px-5 py-6 text-center text-slate-400 italic">No employees with evaluated ratings found in IDP roster. Complete Stage 4 appraisals and Stage 5 calibration first.</td></tr>`;
         showEmptyIDPDetail();
+        renderPaginationControls('idp-pagination-container', 1, 0, idpPageSize, 'setIDPPage', 'setIDPPageSize');
         return;
     }
 
-    roster.forEach(emp => {
+    const isAll = idpPageSize === 'all';
+    const effectivePageSize = isAll ? roster.length : idpPageSize;
+    const totalPages = isAll ? 1 : (Math.ceil(roster.length / effectivePageSize) || 1);
+    if (idpCurrentPage > totalPages) {
+        idpCurrentPage = totalPages;
+    }
+    if (idpCurrentPage < 1) {
+        idpCurrentPage = 1;
+    }
+
+    const startIdx = isAll ? 0 : (idpCurrentPage - 1) * effectivePageSize;
+    const pageList = isAll ? roster : roster.slice(startIdx, startIdx + effectivePageSize);
+
+    pageList.forEach(emp => {
         const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const score = (evalRec && evalRec.calibrated_score !== undefined && evalRec.calibrated_score !== null && parseFloat(evalRec.calibrated_score) > 0)
             ? parseFloat(evalRec.calibrated_score)
@@ -5552,6 +5763,8 @@ function renderIDPRosterTable() {
         container.appendChild(tr);
     });
 
+    renderPaginationControls('idp-pagination-container', idpCurrentPage, roster.length, idpPageSize, 'setIDPPage', 'setIDPPageSize');
+
     if (roster.length > 0) {
         if (!window.selectedEvalEmpId || !roster.some(e => isSameEmployee(e.id, window.selectedEvalEmpId))) {
             window.selectedEvalEmpId = roster[0].id;
@@ -5563,6 +5776,7 @@ window.renderIDPRosterTable = renderIDPRosterTable;
 
 window.onIDPEmployeeSearch = function(query) {
     window.idpSearchQuery = query;
+    idpCurrentPage = 1;
     renderIDPRosterTable();
 };
 
@@ -6074,10 +6288,24 @@ function renderCycleRosterTable() {
     if (roster.length === 0) {
         container.innerHTML = `<tr><td colspan="5" class="px-5 py-6 text-center text-slate-400 italic">No evaluated employees found in next cycle transition roster. Complete Stage 4-6 evaluations and IDP first.</td></tr>`;
         showEmptyCycleDetail();
+        renderPaginationControls('cycle-pagination-container', 1, 0, cyclePageSize, 'setCyclePage', 'setCyclePageSize');
         return;
     }
 
-    roster.forEach(emp => {
+    const isAll = cyclePageSize === 'all';
+    const effectivePageSize = isAll ? roster.length : cyclePageSize;
+    const totalPages = isAll ? 1 : (Math.ceil(roster.length / effectivePageSize) || 1);
+    if (cycleCurrentPage > totalPages) {
+        cycleCurrentPage = totalPages;
+    }
+    if (cycleCurrentPage < 1) {
+        cycleCurrentPage = 1;
+    }
+
+    const startIdx = isAll ? 0 : (cycleCurrentPage - 1) * effectivePageSize;
+    const pageList = isAll ? roster : roster.slice(startIdx, startIdx + effectivePageSize);
+
+    pageList.forEach(emp => {
         const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
         const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
@@ -6120,6 +6348,8 @@ function renderCycleRosterTable() {
         container.appendChild(tr);
     });
 
+    renderPaginationControls('cycle-pagination-container', cycleCurrentPage, roster.length, cyclePageSize, 'setCyclePage', 'setCyclePageSize');
+
     if (roster.length > 0) {
         if (!window.selectedEvalEmpId || !roster.some(e => isSameEmployee(e.id, window.selectedEvalEmpId))) {
             window.selectedEvalEmpId = roster[0].id;
@@ -6131,6 +6361,7 @@ window.renderCycleRosterTable = renderCycleRosterTable;
 
 window.onCycleEmployeeSearch = function(query) {
     window.cycleSearchQuery = query;
+    cycleCurrentPage = 1;
     renderCycleRosterTable();
 };
 

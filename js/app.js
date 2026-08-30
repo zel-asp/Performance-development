@@ -139,6 +139,11 @@ function switchPillar(pillarKey) {
         toggleMobileSidebar(false);
     }
 
+    // Persist active pillar to localStorage
+    try {
+        localStorage.setItem('oxford_active_pillar', pillarKey);
+    } catch (e) {}
+
     // Panels
     document.querySelectorAll('.pillar-panel').forEach(panel => {
         panel.classList.remove('active');
@@ -206,6 +211,11 @@ function switchPillar(pillarKey) {
 
 // Sub-Tab Switcher inside Pillar
 function switchSubTab(pillarPrefix, subKey) {
+    // Persist active subtab for this pillar to localStorage
+    try {
+        localStorage.setItem(`oxford_active_subtab_${pillarPrefix}`, subKey);
+    } catch (e) {}
+
     document.querySelectorAll(`.sub-panel-${pillarPrefix}`).forEach(p => {
         p.classList.remove('active');
         p.classList.add('hidden');
@@ -228,12 +238,29 @@ function switchSubTab(pillarPrefix, subKey) {
     } else if (pillarPrefix === 'perf') {
         updatePerfStepper(subKey);
         if (typeof updateAllPerfStepperBadges === 'function') updateAllPerfStepperBadges();
-        if (typeof loadAndRenderPlanningGoals === 'function') loadAndRenderPlanningGoals();
-        if (subKey === 'monitor' && typeof loadAndRenderMonitoringData === 'function') loadAndRenderMonitoringData();
-        if (subKey === 'eval' && typeof renderEvaluationRosterTable === 'function') renderEvaluationRosterTable();
-        if (subKey === 'review' && typeof renderReviewRosterTable === 'function') renderReviewRosterTable();
-        if (subKey === 'idp' && typeof renderIDPRosterTable === 'function') renderIDPRosterTable();
-        if (subKey === 'cycle' && typeof renderCycleRosterTable === 'function') renderCycleRosterTable();
+        
+        // Fast Instant Render from In-Memory Cache (0ms latency)
+        if (subKey === 'plan') {
+            if (typeof renderPlanningRosterTable === 'function') renderPlanningRosterTable();
+            if (typeof renderGeneralTasksTable === 'function') renderGeneralTasksTable();
+        } else if (subKey === 'approve') {
+            if (typeof renderApprovalRosterTable === 'function') renderApprovalRosterTable();
+        } else if (subKey === 'monitor') {
+            if (typeof renderMonitoringRosterTable === 'function') renderMonitoringRosterTable();
+        } else if (subKey === 'eval') {
+            if (typeof renderEvaluationRosterTable === 'function') renderEvaluationRosterTable();
+        } else if (subKey === 'review') {
+            if (typeof renderReviewRosterTable === 'function') renderReviewRosterTable();
+        } else if (subKey === 'idp') {
+            if (typeof renderIDPRosterTable === 'function') renderIDPRosterTable();
+        } else if (subKey === 'cycle') {
+            if (typeof renderCycleRosterTable === 'function') renderCycleRosterTable();
+        }
+
+        // Fetch in background if cache is completely empty
+        if (!window.dbGoals || window.dbGoals.length === 0) {
+            if (typeof loadAndRenderPlanningGoals === 'function') loadAndRenderPlanningGoals();
+        }
     } else if (pillarPrefix === 'comp') {
         if (subKey === 'profiles') {
             if (typeof renderRoleCompetencyFramework === 'function') renderRoleCompetencyFramework();
@@ -665,6 +692,42 @@ document.addEventListener('DOMContentLoaded', () => {
         switchRole(savedRole);
     } else if (typeof applyRoleVisibility === 'function') {
         applyRoleVisibility(savedRole);
+    }
+
+    // Restore last visited Pillar & Subtab across page refresh
+    try {
+        const savedPillar = localStorage.getItem('oxford_active_pillar');
+        const role = savedRole.toLowerCase().trim();
+        const isAssociate = (role === 'associate' || role === 'employee' || role === 'staff');
+        const supervisorOnlyPillars = ['pillar-perf', 'pillar-succession', 'pillar-reports'];
+
+        const targetPillar = (savedPillar && (!isAssociate || !supervisorOnlyPillars.includes(savedPillar)))
+            ? savedPillar
+            : 'dashboard';
+
+        if (typeof switchPillar === 'function') {
+            switchPillar(targetPillar);
+        }
+
+        // Restore active subtabs for pillars
+        const pillarPrefixMap = {
+            'dashboard': 'dashboard',
+            'pillar-perf': 'perf',
+            'pillar-comp': 'comp',
+            'pillar-lms': 'lms',
+            'pillar-training': 'training',
+            'pillar-succession': 'succession',
+            'pillar-social': 'social'
+        };
+        const prefix = pillarPrefixMap[targetPillar];
+        if (prefix) {
+            const savedSub = localStorage.getItem(`oxford_active_subtab_${prefix}`);
+            if (savedSub && typeof switchSubTab === 'function') {
+                switchSubTab(prefix, savedSub);
+            }
+        }
+    } catch (e) {
+        console.warn('Navigation state restore error:', e);
     }
 });
 

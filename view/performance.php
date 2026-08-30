@@ -41,11 +41,6 @@
                                         <span>7. Next Cycle</span>
                                     </button>
                                 </div>
-                                <button onclick="openModal('modal-create-goal')"
-                                    class="btn-primary px-3.5 py-1.5 text-xs font-bold whitespace-nowrap ml-2 flex-shrink-0">
-                                    <i class="fas fa-plus mr-1"></i>
-                                    <span>Set Objective</span>
-                                </button>
                             </div>
 
                             <!-- 7-Stage Continuous Cycle Interactive Stepper -->
@@ -368,6 +363,7 @@
                                             <!-- Rendered dynamically by js/performance.js -->
                                         </div>
                                     </div>
+                                    <div id="approval-pagination-container" class="p-3 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500"></div>
 
                                     <!-- Locked Status Card -->
                                     <div class="p-4 bg-emerald-50/70 border-t border-emerald-200/80 flex items-center justify-between text-xs text-emerald-900">
