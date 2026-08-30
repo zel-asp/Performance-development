@@ -27,17 +27,45 @@ class PerformanceController
     }
 
     /**
-     * Helper to attach dynamic task stats & progress to goals
+     * Helper to attach dynamic task stats & progress to goals (Optimized 1-query batch)
      */
     private function enrichGoalsWithTasks(array $goals): array
     {
+        if (empty($goals)) {
+            return [];
+        }
+
+        // 1. Fetch all tasks in a single query instead of N queries
+        $allTasks = $this->taskModel->all();
+
+        // 2. Index tasks by goal_id
+        $tasksByGoal = [];
+        foreach ($allTasks as $t) {
+            $gid = (string)($t['goal_id'] ?? '');
+            if ($gid !== '') {
+                $tasksByGoal[$gid][] = $t;
+            }
+        }
+
+        // 3. Map aggregated stats in-memory
         foreach ($goals as &$g) {
-            $goalId = $g['id'] ?? null;
-            $tasks = $goalId ? $this->taskModel->getTasksForGoal($goalId) : [];
+            $goalId = (string)($g['id'] ?? '');
+            $tasks = $tasksByGoal[$goalId] ?? [];
             $totalTasks = count($tasks);
-            $completedTasks = count(array_filter($tasks, fn($t) => ($t['status'] ?? '') === 'completed'));
-            $generalTasks = array_values(array_filter($tasks, fn($t) => ($t['task_type'] ?? '') === 'general'));
-            $specificTasks = array_values(array_filter($tasks, fn($t) => ($t['task_type'] ?? '') === 'specific'));
+            $completedTasks = 0;
+            $generalTasks = [];
+            $specificTasks = [];
+
+            foreach ($tasks as $t) {
+                if (($t['status'] ?? '') === 'completed') {
+                    $completedTasks++;
+                }
+                if (($t['task_type'] ?? '') === 'general') {
+                    $generalTasks[] = $t;
+                } else {
+                    $specificTasks[] = $t;
+                }
+            }
 
             $taskProgress = $totalTasks > 0 ? (int)round(($completedTasks / $totalTasks) * 100) : 0;
 

@@ -117,6 +117,28 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Pagination Controls Bar -->
+            <div id="matrix-pagination-bar" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-slate-600">
+                <div class="flex items-center space-x-3">
+                    <span id="matrix-pagination-info" class="font-medium text-slate-500">
+                        Showing <strong>1-5</strong> of <strong>10</strong> associates
+                    </span>
+                    <div class="flex items-center space-x-1.5 border-l border-[#E8DEDC] pl-3">
+                        <span class="text-[11px] text-slate-400 font-semibold">Per page:</span>
+                        <select id="matrix-page-size-select" onchange="changeMatrixPageSize(this.value)" class="bg-white border border-[#E8DEDC] text-slate-800 font-bold px-2 py-1 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary shadow-2xs">
+                            <option value="5" selected>5</option>
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="all">All</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="matrix-pagination-nav" class="flex items-center space-x-1">
+                    <!-- Dynamic page numbers and prev/next generated in JS -->
+                </div>
+            </div>
         </div>
 
     </div>

@@ -2260,7 +2260,23 @@ async function fetchDynamicCompetencyMatrix(deptFilter, minScore) {
     }
 }
 
-// 4.3 Render Dynamic Competency Table (Dynamic <th> and <td> from Database)
+// 4.3 Render Dynamic Competency Table (Dynamic <th> and <td> from Database with Optimized Pagination)
+window.dynamicCompetencyState.currentPage = window.dynamicCompetencyState.currentPage || 1;
+window.dynamicCompetencyState.pageSize = window.dynamicCompetencyState.pageSize || 5;
+
+function changeMatrixPage(newPage) {
+    window.dynamicCompetencyState.currentPage = Math.max(1, parseInt(newPage));
+    renderCompetencyMatrixTable();
+}
+window.changeMatrixPage = changeMatrixPage;
+
+function changeMatrixPageSize(newSize) {
+    window.dynamicCompetencyState.pageSize = (newSize === 'all') ? 'all' : parseInt(newSize);
+    window.dynamicCompetencyState.currentPage = 1;
+    renderCompetencyMatrixTable();
+}
+window.changeMatrixPageSize = changeMatrixPageSize;
+
 function renderCompetencyMatrixTable() {
     const theadTr = document.getElementById('comp-matrix-thead-tr');
     const tbody = document.getElementById('comp-matrix-tbody');
@@ -2271,8 +2287,8 @@ function renderCompetencyMatrixTable() {
     const minScore = window.dynamicCompetencyState.minScore || 0;
     const searchFilter = (document.getElementById('matrix-search-input')?.value || '').toLowerCase().trim();
 
-    // Filter employees by minimum overall rating and search query
-    const employees = allEmployees.filter(emp => {
+    // 1. Filter employees by minimum overall rating and search query
+    const filteredEmployees = allEmployees.filter(emp => {
         if (minScore > 0 && (emp.overall_score === null || emp.overall_score < minScore)) {
             return false;
         }
@@ -2285,12 +2301,76 @@ function renderCompetencyMatrixTable() {
         return true;
     });
 
+    const totalCount = filteredEmployees.length;
     const matchCountBadge = document.getElementById('matrix-match-count');
     if (matchCountBadge) {
-        matchCountBadge.innerText = `${employees.length} Associates In Registry`;
+        matchCountBadge.innerText = `${totalCount} Associates In Registry`;
     }
 
-    // 1. DYNAMIC THEAD GENERATION
+    // 2. Pagination Calculations
+    const pageSize = window.dynamicCompetencyState.pageSize || 5;
+    const totalPages = (pageSize === 'all') ? 1 : (Math.ceil(totalCount / pageSize) || 1);
+    if (window.dynamicCompetencyState.currentPage > totalPages) {
+        window.dynamicCompetencyState.currentPage = totalPages;
+    }
+    const currentPage = window.dynamicCompetencyState.currentPage || 1;
+
+    const startIndex = (pageSize === 'all') ? 0 : (currentPage - 1) * pageSize;
+    const endIndex = (pageSize === 'all') ? totalCount : Math.min(startIndex + pageSize, totalCount);
+    const pagedEmployees = (pageSize === 'all') ? filteredEmployees : filteredEmployees.slice(startIndex, endIndex);
+
+    // 3. Render Pagination Footer
+    const paginationInfo = document.getElementById('matrix-pagination-info');
+    const paginationNav = document.getElementById('matrix-pagination-nav');
+    if (paginationInfo) {
+        if (totalCount === 0) {
+            paginationInfo.innerHTML = 'Showing <strong>0</strong> associates';
+        } else {
+            paginationInfo.innerHTML = `Showing <strong>${startIndex + 1} - ${endIndex}</strong> of <strong>${totalCount}</strong> associates`;
+        }
+    }
+
+    if (paginationNav) {
+        if (totalPages <= 1) {
+            paginationNav.innerHTML = '';
+        } else {
+            let navHtml = `
+                <button type="button" 
+                    ${currentPage === 1 ? 'disabled' : ''} 
+                    onclick="changeMatrixPage(${currentPage - 1})"
+                    class="px-2.5 py-1 rounded-lg border border-[#E8DEDC] bg-white text-slate-700 font-bold text-xs hover:bg-[#FAF8F7] transition disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs">
+                    <i class="fas fa-chevron-left text-[9px] mr-1"></i> Prev
+                </button>
+            `;
+
+            for (let p = 1; p <= totalPages; p++) {
+                if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
+                    const isActive = p === currentPage;
+                    navHtml += `
+                        <button type="button" 
+                            onclick="changeMatrixPage(${p})"
+                            class="px-2.5 py-1 rounded-lg border font-bold text-xs transition shadow-2xs ${isActive ? 'bg-primary text-white border-primary' : 'bg-white text-slate-700 border-[#E8DEDC] hover:bg-[#FAF8F7]'}">
+                            ${p}
+                        </button>
+                    `;
+                } else if (p === currentPage - 2 || p === currentPage + 2) {
+                    navHtml += `<span class="px-1 text-slate-400 text-xs">...</span>`;
+                }
+            }
+
+            navHtml += `
+                <button type="button" 
+                    ${currentPage === totalPages ? 'disabled' : ''} 
+                    onclick="changeMatrixPage(${currentPage + 1})"
+                    class="px-2.5 py-1 rounded-lg border border-[#E8DEDC] bg-white text-slate-700 font-bold text-xs hover:bg-[#FAF8F7] transition disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs">
+                    Next <i class="fas fa-chevron-right text-[9px] ml-1"></i>
+                </button>
+            `;
+            paginationNav.innerHTML = navHtml;
+        }
+    }
+
+    // 4. DYNAMIC THEAD GENERATION
     const fixedLeftTh = `
         <th class="px-4 py-3.5 sticky left-0 bg-[#FAF8F7] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] border-r border-[#E8DEDC] min-w-[260px] text-slate-800 font-bold">
             Associate &amp; Role
@@ -2332,8 +2412,8 @@ function renderCompetencyMatrixTable() {
 
     theadTr.innerHTML = fixedLeftTh + dynamicThs + fixedRightThs;
 
-    // 2. DYNAMIC TBODY GENERATION
-    if (employees.length === 0) {
+    // 5. DYNAMIC TBODY GENERATION
+    if (pagedEmployees.length === 0) {
         const totalCols = competencies.length + 3;
         tbody.innerHTML = `
             <tr>
@@ -2349,7 +2429,7 @@ function renderCompetencyMatrixTable() {
         return;
     }
 
-    tbody.innerHTML = employees.map(emp => {
+    tbody.innerHTML = pagedEmployees.map(emp => {
         const dynamicCells = competencies.map(comp => {
             const scoreData = emp.scores[comp.id];
             if (!scoreData || scoreData.score === null) {
@@ -2457,6 +2537,7 @@ function renderCompetencyMatrixTable() {
 
 // 4.4 Department Filter, Min Rating & Search Dispatcher
 function filterMatrixCandidates() {
+    window.dynamicCompetencyState.currentPage = 1;
     const deptVal = document.getElementById('matrix-filter-dept')?.value || 'all';
     const minVal = document.getElementById('matrix-filter-min')?.value || 0;
     
@@ -3076,67 +3157,20 @@ window.employeeCompetencyProfiles = {
     ]
 };
 
-async function fetchEmployeeSpecificCompetencies(empId = 'emp-101') {
-    const cleanId = (empId || 'emp-101').toString().toLowerCase();
-    
-    try {
-        const res = await fetch(`api/competencies.php?action=get_assessments&employee_id=${encodeURIComponent(cleanId)}`);
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-            return json.data.map(item => ({
-                id: item.competency_id,
-                name: item.competency_name || 'Assigned Competency',
-                score: item.rating ? parseFloat(item.rating) : (item.score ? parseFloat(item.score) : 4.0),
-                target: item.benchmark_score ? parseFloat(item.benchmark_score) : 4.0,
-                status: (parseFloat(item.rating || item.score || 4.0) >= 4.0) ? 'Proficient' : ((parseFloat(item.rating || item.score || 4.0) >= 3.0) ? 'On Track' : 'Needs Improvement'),
-                dept: item.category || item.department_name || 'Competency'
-            }));
-        }
+window._cachedEmpCompetencies = window._cachedEmpCompetencies || {};
 
-    } catch (e) {
-        console.error('Error fetching employee specific competencies:', e);
-    }
-
-    if (cleanId.includes('102') || cleanId.includes('antonio')) return window.employeeCompetencyProfiles['emp-102'];
-    if (cleanId.includes('103') || cleanId.includes('john')) return window.employeeCompetencyProfiles['emp-103'];
-    return window.employeeCompetencyProfiles['emp-101'];
+function getFallbackCompetencyProfile(cleanId) {
+    if (cleanId.includes('102') || cleanId.includes('antonio')) return window.employeeCompetencyProfiles['emp-102'] || [];
+    if (cleanId.includes('103') || cleanId.includes('john')) return window.employeeCompetencyProfiles['emp-103'] || [];
+    return window.employeeCompetencyProfiles['emp-101'] || [];
 }
-window.fetchEmployeeSpecificCompetencies = fetchEmployeeSpecificCompetencies;
 
-async function renderEmployeeOverviewCompetencies(empId = 'emp-101') {
-    const container = document.getElementById('emp-overview-competencies-container');
-    if (!container) return;
-
-    // Animated Skeleton Loading State
-    container.innerHTML = `
-        <div class="col-span-1 md:col-span-2 lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
-            ${[1, 2, 3, 4].map(() => `
-                <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-3">
-                    <div class="flex justify-between items-center">
-                        <div class="h-3.5 w-28 bg-slate-200 rounded"></div>
-                        <div class="h-4 w-12 bg-slate-200 rounded-full"></div>
-                    </div>
-                    <div class="h-2 w-full bg-slate-200 rounded-full"></div>
-                    <div class="flex justify-between items-center text-[10px]">
-                        <div class="h-3 w-16 bg-slate-100 rounded"></div>
-                        <div class="h-3 w-12 bg-slate-100 rounded"></div>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `;
-
-    const list = await fetchEmployeeSpecificCompetencies(empId);
-    const countEl = document.getElementById('emp-overview-comp-count');
-    if (countEl) countEl.textContent = `${list.length} Assigned Competencies`;
-
+function renderCompetencyCardsHTML(list) {
     if (!list || list.length === 0) {
-        container.innerHTML = '<div class="col-span-4 p-4 text-center text-xs text-slate-400">No specific competencies evaluated yet for this employee.</div>';
-        return;
+        return '<div class="col-span-4 p-4 text-center text-xs text-slate-400">No specific competencies evaluated yet for this employee.</div>';
     }
 
-
-    container.innerHTML = list.map(comp => {
+    return list.map(comp => {
         const pct = Math.min(100, Math.round((comp.score / 5.0) * 100));
         const isBelow = comp.score < comp.target;
         let badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
@@ -3164,6 +3198,83 @@ async function renderEmployeeOverviewCompetencies(empId = 'emp-101') {
             </div>
         `;
     }).join('');
+}
+
+async function fetchEmployeeSpecificCompetencies(empId = 'emp-101') {
+    const cleanId = (empId || 'emp-101').toString().toLowerCase();
+
+    // Check memory cache
+    if (window._cachedEmpCompetencies[cleanId]) {
+        return window._cachedEmpCompetencies[cleanId];
+    }
+    
+    try {
+        const res = await fetch(`api/competencies.php?action=get_assessments&employee_id=${encodeURIComponent(cleanId)}`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            const mapped = json.data.map(item => ({
+                id: item.competency_id,
+                name: item.competency_name || 'Assigned Competency',
+                score: item.rating ? parseFloat(item.rating) : (item.score ? parseFloat(item.score) : 4.0),
+                target: item.benchmark_score ? parseFloat(item.benchmark_score) : 4.0,
+                status: (parseFloat(item.rating || item.score || 4.0) >= 4.0) ? 'Proficient' : ((parseFloat(item.rating || item.score || 4.0) >= 3.0) ? 'On Track' : 'Needs Improvement'),
+                dept: item.category || item.department_name || 'Competency'
+            }));
+            window._cachedEmpCompetencies[cleanId] = mapped;
+            return mapped;
+        }
+
+    } catch (e) {
+        console.error('Error fetching employee specific competencies:', e);
+    }
+
+    return getFallbackCompetencyProfile(cleanId);
+}
+window.fetchEmployeeSpecificCompetencies = fetchEmployeeSpecificCompetencies;
+
+async function renderEmployeeOverviewCompetencies(empId = 'emp-101') {
+    const container = document.getElementById('emp-overview-competencies-container');
+    if (!container) return;
+
+    const cleanId = (empId || 'emp-101').toString().toLowerCase();
+    const countEl = document.getElementById('emp-overview-comp-count');
+
+    // 1. Instant Render: Use cached or fallback data immediately with ZERO delay
+    const initialList = window._cachedEmpCompetencies[cleanId] || getFallbackCompetencyProfile(cleanId);
+    if (initialList && initialList.length > 0) {
+        container.innerHTML = renderCompetencyCardsHTML(initialList);
+        if (countEl) countEl.textContent = `${initialList.length} Assigned Competencies`;
+    } else {
+        // Skeleton only if no data exists at all
+        container.innerHTML = `
+            <div class="col-span-1 md:col-span-2 lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
+                ${[1, 2, 3, 4].map(() => `
+                    <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-3">
+                        <div class="flex justify-between items-center">
+                            <div class="h-3.5 w-28 bg-slate-200 rounded"></div>
+                            <div class="h-4 w-12 bg-slate-200 rounded-full"></div>
+                        </div>
+                        <div class="h-2 w-full bg-slate-200 rounded-full"></div>
+                        <div class="flex justify-between items-center text-[10px]">
+                            <div class="h-3 w-16 bg-slate-100 rounded"></div>
+                            <div class="h-3 w-12 bg-slate-100 rounded"></div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    // 2. Fetch fresh database competencies asynchronously and update seamlessly
+    try {
+        const freshList = await fetchEmployeeSpecificCompetencies(empId);
+        if (freshList && freshList.length > 0) {
+            container.innerHTML = renderCompetencyCardsHTML(freshList);
+            if (countEl) countEl.textContent = `${freshList.length} Assigned Competencies`;
+        }
+    } catch (e) {
+        console.warn('Competency background refresh note:', e);
+    }
 }
 window.renderEmployeeOverviewCompetencies = renderEmployeeOverviewCompetencies;
 

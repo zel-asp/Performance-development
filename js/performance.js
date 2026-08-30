@@ -493,10 +493,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initPerformanceViews() {
-    if (typeof loadSupervisorsForModal === 'function') {
-        loadSupervisorsForModal().catch(() => {});
+    // 1. Instant local render so user sees objectives immediately without waiting for network
+    if (window.dbGoals && window.dbGoals.length > 0) {
+        renderEmployeePulseGoals(window.dbGoals);
     }
-    await loadAndRenderPlanningGoals();
+    renderPlanningRosterTable();
     renderApprovalRosterTable();
     renderMonitoringRosterTable();
     renderEvaluationRosterTable();
@@ -504,6 +505,13 @@ async function initPerformanceViews() {
     renderIDPRosterTable();
     renderCycleRosterTable();
     updateAllPerfStepperBadges();
+
+    if (typeof loadSupervisorsForModal === 'function') {
+        loadSupervisorsForModal().catch(() => {});
+    }
+
+    // 2. Fetch all dynamic data in parallel for maximum speed
+    await loadAndRenderPlanningGoals();
 }
 
 function renderPerformanceSkeletons() {
@@ -602,34 +610,37 @@ window.renderPerformanceSkeletons = renderPerformanceSkeletons;
 
 /**
  * -------------------------------------------------------------
- * 1. ASYNC AJAX DATA LOADER & PLANNING STAGE RENDERER
+ * 1. ASYNC AJAX DATA LOADER & PLANNING STAGE RENDERER (PARALLEL FETCH)
  * -------------------------------------------------------------
  */
 async function loadAndRenderPlanningGoals() {
     renderPerformanceSkeletons();
     try {
-        // Fetch dynamic monitoring and planning data from backend
-        try {
-            const monRes = await PerformanceAPI.getMonitoringData();
-            if (monRes && monRes.roster && Array.isArray(monRes.roster) && monRes.roster.length > 0) {
-                monRes.roster.forEach(dynEmp => {
-                    const existing = (window.perfRoster || []).find(e => isSameEmployee(e.id, dynEmp.id));
-                    if (existing) {
-                        Object.assign(existing, dynEmp);
-                    } else {
-                        window.perfRoster.push(dynEmp);
-                    }
-                });
-            }
-        } catch (e) {
-            console.warn('Fallback to standard planning goals:', e);
-        }
+        // High-speed parallel fetch of all performance data
+        const [planResult, monResult, evalResult, needsResult] = await Promise.allSettled([
+            PerformanceAPI.getPlanningData(),
+            PerformanceAPI.getMonitoringData(),
+            PerformanceAPI.getEvaluations(),
+            PerformanceAPI.getTrainingNeeds()
+        ]);
 
-        const data = await PerformanceAPI.getPlanningData();
+        const data = planResult.status === 'fulfilled' && planResult.value ? planResult.value : {};
         const goals = data.goals || [];
         const generalTasks = data.general_tasks || [];
         window.dbGoals = goals;
         window.dbGeneralTasks = generalTasks;
+
+        // Apply monitoring roster if available
+        if (monResult.status === 'fulfilled' && monResult.value?.roster && Array.isArray(monResult.value.roster)) {
+            monResult.value.roster.forEach(dynEmp => {
+                const existing = (window.perfRoster || []).find(e => isSameEmployee(e.id, dynEmp.id));
+                if (existing) {
+                    Object.assign(existing, dynEmp);
+                } else {
+                    window.perfRoster.push(dynEmp);
+                }
+            });
+        }
 
         // Reset goals on local employees
         window.perfRoster.forEach(emp => {
@@ -690,9 +701,9 @@ async function loadAndRenderPlanningGoals() {
             emp.approvalStatus = emp.planningStatus;
         });
 
-        // Fetch dynamic evaluations directly from database
-        try {
-            const evalData = await PerformanceAPI.getEvaluations();
+        // Parse evaluations data
+        if (evalResult.status === 'fulfilled' && evalResult.value) {
+            const evalData = evalResult.value;
             const evList = Array.isArray(evalData) ? evalData : (Array.isArray(evalData?.evaluations) ? evalData.evaluations : (Array.isArray(evalData?.data) ? evalData.data : []));
             window.dbEvaluations = evList;
 
@@ -715,19 +726,13 @@ async function loadAndRenderPlanningGoals() {
                     if (ev.tier_label) emp.tierLabel = ev.tier_label;
                 }
             });
-        } catch (e) {
-            console.warn('Database evaluations load note:', e);
-            if (!Array.isArray(window.dbEvaluations)) window.dbEvaluations = [];
         }
 
-        // Fetch dynamic training needs directly from database
-        try {
-            const needsData = await PerformanceAPI.getTrainingNeeds();
+        // Parse training needs data
+        if (needsResult.status === 'fulfilled' && needsResult.value) {
+            const needsData = needsResult.value;
             const needsList = Array.isArray(needsData) ? needsData : (Array.isArray(needsData?.data) ? needsData.data : []);
             window.dbTrainingNeeds = needsList;
-        } catch (e) {
-            console.warn('Database training needs load note:', e);
-            if (!Array.isArray(window.dbTrainingNeeds)) window.dbTrainingNeeds = [];
         }
 
         // Update Planning Hero KPI Cards
@@ -740,12 +745,12 @@ async function loadAndRenderPlanningGoals() {
             weightAllocEl.textContent = `${data.calibration || '100%'} Calibrated`;
         }
 
-        // Render tables & employee dashboard views
+        // Fast render of active objectives and tables
+        renderEmployeePulseGoals(goals);
         renderPlanningRosterTable();
         renderApprovalRosterTable();
         renderMonitoringRosterTable();
         renderGeneralTasksTable();
-        renderEmployeePulseGoals(goals);
         renderEvaluationRosterTable();
         renderReviewRosterTable();
         renderIDPRosterTable();
@@ -754,9 +759,9 @@ async function loadAndRenderPlanningGoals() {
 
     } catch (err) {
         console.warn('Fallback to local state rendering:', err);
+        renderEmployeePulseGoals(window.dbGoals || []);
         renderPlanningRosterTable();
         renderGeneralTasksTable();
-        renderEmployeePulseGoals(window.dbGoals || []);
         renderEvaluationRosterTable();
         renderReviewRosterTable();
         renderIDPRosterTable();

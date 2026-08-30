@@ -161,6 +161,44 @@ class CompetencyController
             }
         }
 
+        // 1. High-Speed Direct Database Query
+        try {
+            $pdo = getSupabaseDb();
+            if ($pdo) {
+                $sql = "
+                    SELECT 
+                        ca.id, ca.employee_id, ca.competency_id, ca.score, ca.assessed_by, ca.assessment_date, ca.comments,
+                        c.name as competency_name, c.category, c.benchmark_score, c.max_score
+                    FROM competency_assessments ca
+                    LEFT JOIN competencies c ON ca.competency_id = c.id
+                ";
+                $bindings = [];
+                if (!empty($empId)) {
+                    $sql .= " WHERE ca.employee_id = :emp_id";
+                    $bindings[':emp_id'] = $empId;
+                }
+                $sql .= " ORDER BY ca.assessment_date DESC";
+
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($bindings);
+                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($rows as &$a) {
+                    $a['benchmark_score'] = (float)($a['benchmark_score'] ?? 4.0);
+                    $a['max_score'] = (float)($a['max_score'] ?? 5.0);
+                    $a['rating'] = (float)($a['score'] ?? 0);
+                }
+
+                return [
+                    'success' => true,
+                    'data' => $rows
+                ];
+            }
+        } catch (\Throwable $e) {
+            error_log("PDO getAssessments fallback note: " . $e->getMessage());
+        }
+
+        // 2. REST API Fallback
         $query = 'competency_assessments?order=assessment_date.desc';
         if (!empty($empId)) {
             $query .= '&employee_id=eq.' . urlencode($empId);
@@ -183,8 +221,8 @@ class CompetencyController
                 $c = $compMap[$compId];
                 $a['competency_name'] = $c['name'] ?? null;
                 $a['category'] = $c['category'] ?? null;
-                $a['benchmark_score'] = $c['benchmark_score'] ?? 4.0;
-                $a['max_score'] = $c['max_score'] ?? 5.0;
+                $a['benchmark_score'] = (float)($c['benchmark_score'] ?? 4.0);
+                $a['max_score'] = (float)($c['max_score'] ?? 5.0);
                 $a['rating'] = (float)($a['score'] ?? 0);
             }
         }
