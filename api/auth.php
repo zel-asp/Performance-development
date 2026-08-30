@@ -25,23 +25,50 @@ $authController = new AuthController();
 
 try {
     switch ($action) {
+        // 1. Initial Role-Based Account Login (checks role_based_accounts)
+        case 'role_login':
         case 'login':
-            $response = $authController->login($payload);
+            $response = $authController->roleLogin($payload);
             break;
 
-        case 'fast_login':
-            $response = $authController->fastLogin($payload);
+        // 2. Fetch Employees for a Role (for the directory selection modal)
+        case 'get_role_employees':
+        case 'get_employees':
+        case 'employees':
+            $response = $authController->getRoleEmployees($payload);
             break;
 
+        // 3. Request OTP for clicked employee
+        case 'request_otp':
+        case 'send_otp':
+            $response = $authController->requestOtp($payload);
+            break;
+
+        // 4. Verify OTP (and auto-login if account exists + remember me)
+        case 'verify_otp':
+        case 'confirm_otp':
+            $response = $authController->verifyOtp($payload);
+            break;
+
+        // 5. Create Password for First-Time User (inserts to users & sessions)
+        case 'create_password':
+        case 'set_password':
+            $response = $authController->createPassword($payload);
+            break;
+
+        // 6. Direct Password Login for Remembered Staff
+        case 'login_employee_password':
+        case 'employee_login':
+            $response = $authController->loginEmployeePassword($payload);
+            break;
+
+        // 7. Current Authenticated User Profile
         case 'current_user':
+        case 'me':
             $response = $authController->getCurrentUser();
             break;
 
-        case 'list_users':
-        case 'users':
-            $response = $authController->listUsers();
-            break;
-
+        // 8. Logout (sets is_active = false in sessions table)
         case 'logout':
             $response = $authController->logout();
             break;

@@ -28,33 +28,48 @@ function getSupabaseDb() {
     global $env;
     $dbUrl = $env['DATABASE_URL'] ?? '';
 
-    if (!empty($dbUrl)) {
-        // Parse postgresql://user:pass@host:port/dbname URL
-        $dbParts = parse_url($dbUrl);
-        $host = $dbParts['host'] ?? 'db.jvxnrgcxegzhyaekxdok.supabase.co';
-        $port = $dbParts['port'] ?? '5432';
-        $user = $dbParts['user'] ?? 'postgres';
-        $pass = $dbParts['pass'] ?? '';
-        $dbname = ltrim($dbParts['path'] ?? '/postgres', '/');
-    } else {
-        $host = 'db.jvxnrgcxegzhyaekxdok.supabase.co';
-        $port = '5432';
-        $user = 'postgres';
-        $pass = '';
-        $dbname = 'postgres';
+    $user = 'postgres.jvxnrgcxegzhyaekxdok';
+    $pass = 'YD$%-3@x9$wi_hj';
+    $host = 'aws-0-ap-southeast-1.pooler.supabase.com';
+    $port = '6543';
+    $dbname = 'postgres';
+
+    if (!empty($dbUrl) && preg_match('/^postgresql:\/\/([^:]+):(.*)@([^@:]+):?(\d+)?\/(.+)$/', $dbUrl, $m)) {
+        $user = $m[1];
+        $pass = $m[2];
+        $host = $m[3];
+        $port = !empty($m[4]) ? $m[4] : '5432';
+        $dbname = $m[5];
     }
 
+    // Try primary connection
     try {
         $dsn = "pgsql:host={$host};port={$port};dbname={$dbname};sslmode=require";
         $pdo = new PDO($dsn, $user, $pass, [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES   => false,
+            PDO::ATTR_TIMEOUT            => 4
         ]);
         return $pdo;
     } catch (PDOException $e) {
-        error_log("Supabase PDO Connection Error: " . $e->getMessage());
-        return null;
+        // Fallback to pooler host
+        try {
+            $poolHost = "aws-0-ap-southeast-1.pooler.supabase.com";
+            $poolUser = "postgres.jvxnrgcxegzhyaekxdok";
+            $poolPort = "6543";
+            $dsn = "pgsql:host={$poolHost};port={$poolPort};dbname=postgres;sslmode=require";
+            $pdo = new PDO($dsn, $poolUser, $pass, [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+                PDO::ATTR_TIMEOUT            => 4
+            ]);
+            return $pdo;
+        } catch (PDOException $e2) {
+            error_log("Supabase PDO Connection Error: " . $e2->getMessage());
+            return null;
+        }
     }
 }
 
@@ -106,7 +121,49 @@ function supabaseRequest($endpoint, $method = 'GET', $data = null, $useServiceRo
 }
 
 /**
- * 3. Supabase Storage Upload Helper
+ * 3. Supabase Auth API Helper (GoTrue Authentication)
+ * Communicates with Supabase Auth endpoints (/auth/v1/...)
+ */
+function supabaseAuthRequest($endpoint, $method = 'GET', $data = null, $useServiceRole = true) {
+    $url = rtrim(SUPABASE_URL, '/') . '/auth/v1/' . ltrim($endpoint, '/');
+    $apiKey = $useServiceRole ? SUPABASE_SERVICE_ROLE_KEY : SUPABASE_ANON_KEY;
+
+    $ch = curl_init($url);
+    $headers = [
+        "apikey: {$apiKey}",
+        "Authorization: Bearer {$apiKey}",
+        "Content-Type: application/json"
+    ];
+
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+    if ($data !== null && in_array(strtoupper($method), ['POST', 'PUT', 'PATCH'])) {
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    }
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($curlError) {
+        return ['status' => 500, 'data' => null, 'error' => $curlError];
+    }
+
+    $decodedData = json_decode($response, true);
+    return [
+        'status' => $httpCode,
+        'data'   => $decodedData,
+        'error'  => ($httpCode >= 400) ? ($decodedData['msg'] ?? $decodedData['message'] ?? $decodedData['error_description'] ?? 'Auth request failed') : null
+    ];
+}
+
+/**
+ * 4. Supabase Storage Upload Helper
  * Uploads binary file content to a specific Supabase storage bucket
  */
 function uploadToSupabaseStorage($bucket, $destinationPath, $fileContent, $mimeType = 'application/octet-stream') {
