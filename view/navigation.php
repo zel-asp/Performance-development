@@ -87,10 +87,13 @@
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Workspace</p>
                         <a href="#"
                             onclick="switchPillar('pillar-notifications'); toggleMobileSidebar(false); return false;"
-                            class="nav-item"
+                            class="nav-item flex items-center justify-between"
                             data-pillar="pillar-notifications">
-                            <i class="fas fa-bell w-5 text-center text-sm"></i>
-                            <span class="ml-3">Alerts &amp; Logs</span>
+                            <div class="flex items-center">
+                                <i class="fas fa-bell w-5 text-center text-sm"></i>
+                                <span class="ml-3">Alerts &amp; Logs</span>
+                            </div>
+                            <span class="nav-alert-badge hidden bg-primary text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-xs min-w-[18px] text-center">0</span>
                         </a>
                         <a href="#" onclick="switchPillar('pillar-reports'); toggleMobileSidebar(false); return false;"
                             class="nav-item"
@@ -210,10 +213,13 @@
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Workspace</p>
 
                         <a href="#" onclick="switchPillar('pillar-notifications'); return false;"
-                            class="nav-item"
+                            class="nav-item flex items-center justify-between"
                             data-pillar="pillar-notifications">
-                            <i class="fas fa-bell w-5 text-center text-sm"></i>
-                            <span class="ml-3">Alerts &amp; Logs</span>
+                            <div class="flex items-center">
+                                <i class="fas fa-bell w-5 text-center text-sm"></i>
+                                <span class="ml-3 font-semibold">Alerts &amp; Logs</span>
+                            </div>
+                            <span class="nav-alert-badge hidden bg-primary text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-xs min-w-[18px] text-center">0</span>
                         </a>
 
                         <a href="#" onclick="switchPillar('pillar-reports'); return false;"
@@ -285,11 +291,11 @@
                         </button>
 
                         <!-- Notifications Bell -->
-                        <button onclick="switchPillar('pillar-notifications')"
+                        <button onclick="switchPillar('pillar-notifications')" title="Notifications & System Alerts"
                             class="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition">
                             <i class="fas fa-bell text-base"></i>
                             <span id="notif-badge"
-                                class="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full ring-2 ring-white"></span>
+                                class="hidden absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-primary text-white text-[10px] font-extrabold rounded-full items-center justify-center px-1 shadow-xs ring-2 ring-white">0</span>
                         </button>
                     </div>
                 </header>

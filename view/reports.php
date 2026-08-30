@@ -9,32 +9,32 @@
         <div class="card-clean p-4 border-l-4 border-l-primary space-y-1">
             <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Audited Associates</span>
             <div class="flex items-baseline space-x-2">
-                <span class="text-xl font-heading font-extrabold text-slate-900">100</span>
-                <span class="text-[10px] font-bold text-primary">100% Q3 Complete</span>
+                <span id="rep-kpi-audited-val" class="text-xl font-heading font-extrabold text-slate-900">4</span>
+                <span id="rep-kpi-audited-sub" class="text-[10px] font-bold text-primary">100% Q3 Complete</span>
             </div>
         </div>
 
         <div class="card-clean p-4 border-l-4 border-l-sage space-y-1">
             <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Statutory Compliance</span>
             <div class="flex items-baseline space-x-2">
-                <span class="text-xl font-heading font-extrabold text-emerald-700">100%</span>
-                <span class="text-[10px] font-bold text-emerald-600">HACCP &amp; Hygiene</span>
+                <span id="rep-kpi-compliance-val" class="text-xl font-heading font-extrabold text-emerald-700">100%</span>
+                <span id="rep-kpi-compliance-sub" class="text-[10px] font-bold text-emerald-600">HACCP &amp; Hygiene</span>
             </div>
         </div>
 
         <div class="card-clean p-4 border-l-4 border-l-gold space-y-1">
             <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Active Certifications</span>
             <div class="flex items-baseline space-x-2">
-                <span class="text-xl font-heading font-extrabold text-slate-900">42</span>
-                <span class="text-[10px] font-bold text-gold-dark">Verified Licenses</span>
+                <span id="rep-kpi-certs-val" class="text-xl font-heading font-extrabold text-slate-900">2</span>
+                <span id="rep-kpi-certs-sub" class="text-[10px] font-bold text-gold-dark">Verified Licenses</span>
             </div>
         </div>
 
         <div class="card-clean p-4 border-l-4 border-l-dusty space-y-1">
             <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Bench Coverage</span>
             <div class="flex items-baseline space-x-2">
-                <span class="text-xl font-heading font-extrabold text-slate-900">94%</span>
-                <span class="text-[10px] font-bold text-dusty-dark">Succession Depth</span>
+                <span id="rep-kpi-bench-val" class="text-xl font-heading font-extrabold text-slate-900">100%</span>
+                <span id="rep-kpi-bench-sub" class="text-[10px] font-bold text-dusty-dark">Succession Depth</span>
             </div>
         </div>
     </div>

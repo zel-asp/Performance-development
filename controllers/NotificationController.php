@@ -77,7 +77,8 @@ class NotificationController
     public function markAllAsRead(array $payload): array
     {
         $role = $payload['role'] ?? 'all';
-        $count = $this->model->markAllAsRead($role);
+        $userId = $payload['user_id'] ?? null;
+        $count = $this->model->markAllAsRead($role, $userId);
         return [
             'success' => true,
             'count'   => $count,

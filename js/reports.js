@@ -106,21 +106,39 @@ async function initReportsHub() {
 
 function updateKPICards(kpi) {
     if (!kpi) return;
-    // Audited Associates → totalCertificates
-    const auditedEl = document.querySelector('#panel-pillar-reports .grid .card-clean:nth-child(1) .text-xl');
-    if (auditedEl) auditedEl.textContent = kpi.totalCertificates ?? '—';
 
-    // Active Certifications → activeCertificates
-    const certEl = document.querySelector('#panel-pillar-reports .grid .card-clean:nth-child(3) .text-xl');
-    if (certEl) certEl.textContent = kpi.activeCertificates ?? '—';
+    // 1. Audited Associates
+    const auditedValEl = document.getElementById('rep-kpi-audited-val');
+    const auditedSubEl = document.getElementById('rep-kpi-audited-sub');
+    const auditedCount = kpi.auditedAssociates ?? (kpi.totalHeadcount ?? 4);
+    const auditedPct = kpi.auditedRatePct ?? 100;
+    if (auditedValEl) auditedValEl.textContent = auditedCount;
+    if (auditedSubEl) auditedSubEl.textContent = `${auditedPct}% Q3 Complete`;
 
-    // Bench Coverage → resolvedNeeds as proxy
-    const benchEl = document.querySelector('#panel-pillar-reports .grid .card-clean:nth-child(4) .text-xl');
-    if (benchEl) {
-        const total = (kpi.activeNeeds ?? 0) + (kpi.resolvedNeeds ?? 0);
-        const pct = total > 0 ? Math.round((kpi.resolvedNeeds / total) * 100) : 94;
-        benchEl.textContent = pct + '%';
+    // 2. Statutory Compliance
+    const compValEl = document.getElementById('rep-kpi-compliance-val');
+    const compSubEl = document.getElementById('rep-kpi-compliance-sub');
+    if (compValEl) compValEl.textContent = `${kpi.statutoryCompliancePct ?? 100}%`;
+    if (compSubEl) compSubEl.textContent = 'HACCP & Hygiene';
+
+    // 3. Active Certifications
+    let certCount = kpi.activeCertificates ?? 0;
+    if (typeof getAggregatedCertificates === 'function') {
+        const liveCerts = getAggregatedCertificates();
+        if (liveCerts && liveCerts.length > certCount) {
+            certCount = liveCerts.length;
+        }
     }
+    const certValEl = document.getElementById('rep-kpi-certs-val');
+    const certSubEl = document.getElementById('rep-kpi-certs-sub');
+    if (certValEl) certValEl.textContent = certCount;
+    if (certSubEl) certSubEl.textContent = 'Verified Licenses';
+
+    // 4. Bench Coverage (Succession Depth)
+    const benchValEl = document.getElementById('rep-kpi-bench-val');
+    const benchSubEl = document.getElementById('rep-kpi-bench-sub');
+    if (benchValEl) benchValEl.textContent = `${kpi.benchCoveragePct ?? 100}%`;
+    if (benchSubEl) benchSubEl.textContent = 'Succession Depth';
 }
 
 // =========================================================================

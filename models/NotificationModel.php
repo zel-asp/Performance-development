@@ -28,9 +28,18 @@ class NotificationModel extends BaseModel
             $itemRole = strtolower(trim($item['recipient_role'] ?? ''));
             $itemUser = strtolower(trim($item['user_id'] ?? ''));
 
-            // Check role match with alias support (Associate/Employee, Supervisor/Manager)
+            // 1. If notification is specifically targeted to a specific user_id
+            if (!empty($itemUser)) {
+                if ($userId && $itemUser === $userId) {
+                    $filtered[] = $item;
+                }
+                // Strictly exclude from any other user
+                continue;
+            }
+
+            // 2. If notification is broad / role-broadcast (no specific user_id)
             if ($targetRole && $targetRole !== 'all') {
-                $isMatch = ($itemRole === $targetRole || $itemRole === 'all');
+                $isMatch = ($itemRole === $targetRole || $itemRole === 'all' || $itemRole === 'broadcast');
                 if (!$isMatch) {
                     if (($targetRole === 'associate' || $targetRole === 'employee') && ($itemRole === 'associate' || $itemRole === 'employee')) {
                         $isMatch = true;
@@ -38,16 +47,12 @@ class NotificationModel extends BaseModel
                         $isMatch = true;
                     }
                 }
-                if (!$isMatch) {
-                    continue;
+                if ($isMatch) {
+                    $filtered[] = $item;
                 }
+            } else {
+                $filtered[] = $item;
             }
-
-            if ($userId && $itemUser && $itemUser !== $userId) {
-                continue;
-            }
-
-            $filtered[] = $item;
         }
 
         // Sort by created_at DESC
@@ -106,21 +111,38 @@ class NotificationModel extends BaseModel
     }
 
     /**
-     * Mark all notifications as read strictly for a given role
+     * Mark all notifications as read strictly for a given role and optional user_id
      */
-    public function markAllAsRead(string $role): int
+    public function markAllAsRead(string $role, ?string $userId = null): int
     {
         $all = $this->all();
         $targetRole = strtolower(trim($role));
+        $targetUser = $userId ? strtolower(trim($userId)) : null;
         $count = 0;
 
         foreach ($all as $item) {
             $itemRole = strtolower(trim($item['recipient_role'] ?? ''));
-            if ($targetRole === 'all' || $itemRole === $targetRole) {
-                if (empty($item['is_read']) && !empty($item['id'])) {
-                    $this->update($item['id'], ['is_read' => true, 'updated_at' => date('c')]);
-                    $count++;
+            $itemUser = strtolower(trim($item['user_id'] ?? ''));
+
+            if (!empty($itemUser)) {
+                if (!$targetUser || $itemUser !== $targetUser) {
+                    continue;
                 }
+            } elseif ($targetRole !== 'all') {
+                $isMatch = ($itemRole === $targetRole || $itemRole === 'all');
+                if (!$isMatch) {
+                    if (($targetRole === 'associate' || $targetRole === 'employee') && ($itemRole === 'associate' || $itemRole === 'employee')) {
+                        $isMatch = true;
+                    } elseif (($targetRole === 'supervisor' || $targetRole === 'manager') && ($itemRole === 'supervisor' || $itemRole === 'manager')) {
+                        $isMatch = true;
+                    }
+                }
+                if (!$isMatch) continue;
+            }
+
+            if (empty($item['is_read']) && !empty($item['id'])) {
+                $this->update($item['id'], ['is_read' => true, 'updated_at' => date('c')]);
+                $count++;
             }
         }
 

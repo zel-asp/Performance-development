@@ -202,9 +202,10 @@ function switchPillar(pillarKey) {
             if (typeof initSocialRecognition === 'function') initSocialRecognition();
             else if (typeof renderSocialFeed === 'function') renderSocialFeed();
         } else if (pillarKey === 'pillar-notifications') {
-            if (typeof loadLiveNotifications === 'function') loadLiveNotifications(window.activePersonaRole || 'Associate');
+            if (typeof loadLiveNotifications === 'function') loadLiveNotifications(window.activePersonaRole || 'Associate', window.currentUser?.id);
         } else if (pillarKey === 'pillar-reports') {
             if (typeof renderAuditLogExports === 'function') renderAuditLogExports();
+            if (typeof initReportsHub === 'function') initReportsHub();
         }
     }, 80);
 }
@@ -487,7 +488,7 @@ function switchRole(userRole) {
     window.activePersonaRole = persona.role;
     applyRoleVisibility(persona.role);
     if (typeof loadLiveNotifications === 'function') {
-        loadLiveNotifications(persona.role);
+        loadLiveNotifications(persona.role, persona.id);
     }
     if (typeof loadAndRenderPlanningGoals === 'function') {
         loadAndRenderPlanningGoals();
