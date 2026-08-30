@@ -598,7 +598,10 @@ function applyRoleVisibility(userRole) {
     
     if (isAssociate) {
         if (trainingNeedsBtn) trainingNeedsBtn.innerHTML = '<i class="fas fa-bullseye mr-1.5 text-terracotta-dark"></i><span>My Training Needs</span>';
-        if (trainingProgramsBtn) trainingProgramsBtn.classList.add('hidden');
+        if (trainingProgramsBtn) {
+            trainingProgramsBtn.classList.remove('hidden');
+            trainingProgramsBtn.innerHTML = '<i class="fas fa-book-bookmark mr-1.5 text-gold-dark"></i><span>Programs Catalog</span>';
+        }
         if (trainingSchedulesBtn) trainingSchedulesBtn.classList.add('hidden');
         if (trainingAttendanceBtn) trainingAttendanceBtn.innerHTML = '<i class="fas fa-user-check mr-1.5 text-sage-dark"></i><span>My Attendance</span>';
         if (trainingResultsBtn) trainingResultsBtn.innerHTML = '<i class="fas fa-square-poll-vertical mr-1.5 text-primary"></i><span>My Results &amp; Certs</span>';
@@ -609,14 +612,17 @@ function applyRoleVisibility(userRole) {
         
         // If associate is on a hidden tab, redirect to needs
         const activeTrainingSub = document.querySelector('.subnav-training.active')?.getAttribute('data-sub');
-        if (activeTrainingSub === 'programs' || activeTrainingSub === 'schedules') {
+        if (activeTrainingSub === 'schedules') {
             if (typeof switchSubTab === 'function') {
                 switchSubTab('training', 'needs');
             }
         }
     } else {
         if (trainingNeedsBtn) trainingNeedsBtn.innerHTML = '<i class="fas fa-bullseye mr-1.5 text-terracotta-dark"></i><span>Needs &amp; Gaps</span>';
-        if (trainingProgramsBtn) trainingProgramsBtn.classList.remove('hidden');
+        if (trainingProgramsBtn) {
+            trainingProgramsBtn.classList.remove('hidden');
+            trainingProgramsBtn.innerHTML = '<i class="fas fa-book-bookmark mr-1.5 text-gold-dark"></i><span>Programs Catalog</span>';
+        }
         if (trainingSchedulesBtn) trainingSchedulesBtn.classList.remove('hidden');
         if (trainingAttendanceBtn) trainingAttendanceBtn.innerHTML = '<i class="fas fa-user-check mr-1.5 text-sage-dark"></i><span>Attendance</span>';
         if (trainingResultsBtn) trainingResultsBtn.innerHTML = '<i class="fas fa-square-poll-vertical mr-1.5 text-primary"></i><span>Evaluation &amp; Results</span>';

@@ -801,6 +801,22 @@ function renderTrainingPrograms() {
     const container = document.getElementById('training-programs-grid');
     if (!container) return;
 
+    const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
+
+    const progTitle = document.getElementById('training-programs-header-title');
+    const progDesc = document.getElementById('training-programs-header-desc');
+    const btnCreate = document.getElementById('btn-create-program');
+
+    if (isAssociate) {
+        if (progTitle) progTitle.textContent = 'Training Programs Catalog';
+        if (progDesc) progDesc.textContent = 'Browse official hotel training courses, curriculum syllabi, target competencies, and certification requirements';
+        if (btnCreate) btnCreate.classList.add('hidden');
+    } else {
+        if (progTitle) progTitle.textContent = 'Training Programs Catalog (Linked to Skill Gap or Mandatory Compliance)';
+        if (progDesc) progDesc.textContent = 'Structured syllabi, passing thresholds, target competencies, and certified trainer requirements';
+        if (btnCreate) btnCreate.classList.remove('hidden');
+    }
+
     container.innerHTML = trainingProgramsState.map(prog => {
         return `
             <div class="card-clean p-5 hover:shadow-lg transition flex flex-col justify-between space-y-4 border border-[#E8DEDC] bg-white">
@@ -840,10 +856,16 @@ function renderTrainingPrograms() {
 
                 <div class="pt-3 border-t border-[#E8DEDC] flex items-center justify-between">
                     <span class="text-[11px] font-semibold text-slate-500"><i class="fas fa-graduation-cap mr-1 text-primary"></i> ${prog.modules.length} Modules</span>
-                    <button onclick="openScheduleModal('${prog.id}')" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5">
-                        <i class="fas fa-calendar-days"></i>
-                        <span>Schedule Session &rarr;</span>
-                    </button>
+                    ${isAssociate ? `
+                        <span class="text-[11px] font-bold text-slate-600 bg-[#FAF8F7] border border-[#E8DEDC] px-2.5 py-1 rounded-lg">
+                            <i class="fas fa-book-open text-primary mr-1"></i> Standard Syllabus
+                        </span>
+                    ` : `
+                        <button onclick="openScheduleModal('${prog.id}')" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5">
+                            <i class="fas fa-calendar-days"></i>
+                            <span>Schedule Session &rarr;</span>
+                        </button>
+                    `}
                 </div>
             </div>
         `;
