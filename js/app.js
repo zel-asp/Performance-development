@@ -694,8 +694,6 @@
                         localStorage.setItem('oxford_session_role', userRole);
 
                         switchRole(userRole);
-                        const authScreen = document.getElementById('auth-screen');
-                        if (authScreen) authScreen.classList.add('hidden');
                         showToast(`Welcome ${user.full_name} (${user.title})!`, 'success');
                         initAllCharts();
                     } else {
@@ -704,9 +702,7 @@
                 } catch (err) {
                     // Fallback to demo entry
                     localStorage.setItem('oxford_session_auth', 'true');
-                    localStorage.setItem('oxford_session_role', 'employee');
-                    const authScreen = document.getElementById('auth-screen');
-                    if (authScreen) authScreen.classList.add('hidden');
+                    localStorage.setItem('oxford_session_role', 'associate');
                     showToast('Welcome to Oxford Suites, Makati!', 'success');
                     initAllCharts();
                 }
@@ -717,37 +713,29 @@
                 localStorage.removeItem('oxford_session_user');
                 localStorage.removeItem('oxford_session_role');
 
-                // Remove any injected hide-style element
-                const hideStyle = document.getElementById('auth-hide-style');
-                if (hideStyle) {
-                    hideStyle.remove();
-                }
-
-                const authScreen = document.getElementById('auth-screen');
-                if (authScreen) {
-                    authScreen.style.removeProperty('display');
-                    authScreen.classList.remove('hidden');
-                    authScreen.classList.add('flex');
-                }
-
-                showToast('Signed out of session', 'info');
+                showToast('Signed out. Redirecting to login...', 'info');
 
                 try {
                     await AuthAPI.logout();
                 } catch (err) {
                     console.warn('Backend logout sync:', err);
                 }
+
+                // Redirect to standalone login page
+                setTimeout(() => {
+                    window.location.replace('login.php?logout=1');
+                }, 300);
             }
             window.logOutToAuth = logOutToAuth;
 
             // Restore user session on refresh
             document.addEventListener('DOMContentLoaded', () => {
                 const isAuth = localStorage.getItem('oxford_session_auth');
-                const savedRole = localStorage.getItem('oxford_session_role') || 'associate';
-                const authScreen = document.getElementById('auth-screen');
-                if (isAuth === 'true' && authScreen) {
-                    authScreen.classList.add('hidden');
+                if (isAuth !== 'true') {
+                    window.location.replace('login.php');
+                    return;
                 }
+                const savedRole = localStorage.getItem('oxford_session_role') || 'associate';
                 if (typeof switchRole === 'function') {
                     switchRole(savedRole);
                 } else if (typeof applyRoleVisibility === 'function') {

@@ -7,6 +7,14 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Oxford Suites, Makati · Performance and Development Hub</title>
         <link rel="icon" type="image/png" href="public/images/removed-bg-logo.png">
+
+        <!-- Session Authentication Guard: Redirect to standalone login.php if not signed in -->
+        <script>
+            if (localStorage.getItem('oxford_session_auth') !== 'true') {
+                window.location.replace('login.php');
+            }
+        </script>
+
         <!-- Google Fonts: Inter & Outfit -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -194,10 +202,7 @@
         <!-- Sonner Toaster Container with Dismiss/Close (X) Button (Max 3, 3s Duration) -->
         <ol id="sonner-toast-container" position="top-right" max-toasts="3" duration="2000" rich-colors="true" close-button="true" theme="light"></ol>
 
-        <!-- 1. Authentication & Role Demo Screen -->
-        <?php include_once 'view/auth.php'; ?>
-
-        <!-- 2. Interactive Dialogs & Modals -->
+        <!-- 1. Interactive Dialogs & Modals -->
         <?php include_once 'view/modals.php'; ?>
 
         <!-- 3. Navigation & Header Layout -->
