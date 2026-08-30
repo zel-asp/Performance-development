@@ -120,20 +120,20 @@
                                         <div
                                             class="flex justify-between items-center text-xs text-slate-500 font-medium">
                                             <span>Gamified XP</span>
-                                            <span class="badge-gold">Level 8</span>
+                                            <span id="kpi-xp-level-badge" class="badge-gold">Level 2</span>
                                         </div>
                                         <div class="flex items-baseline space-x-2">
                                             <span id="kpi-xp-val"
-                                                class="text-3xl font-heading font-bold text-gold-dark">1,480
+                                                class="text-3xl font-heading font-bold text-gold-dark">300
                                                 <span class="text-xs font-normal text-slate-400">XP</span></span>
-                                            <span class="text-xs text-slate-500 font-semibold">Ambassador</span>
+                                            <span id="kpi-xp-title" class="text-xs text-slate-500 font-semibold">Bronze Host</span>
                                         </div>
                                         <div class="w-full bg-[#FAF8F7] h-1.5 rounded-full overflow-hidden border border-[#E8DEDC]/50">
                                             <div id="kpi-xp-bar" class="bg-gold h-1.5 rounded-full"
-                                                style="width: 84%">
+                                                style="width: 20%">
                                             </div>
                                         </div>
-                                        <p class="text-[11px] text-slate-400">120 XP to Gold tier</p>
+                                        <p id="kpi-xp-subtitle" class="text-[11px] text-slate-400">200 XP to Silver Tier</p>
                                     </div>
 
                                 </div>
@@ -601,10 +601,11 @@
                                                             </div>
                                                             <div class="space-y-0.5 text-center">
                                                                 <p
+                                                                    id="leaderboard-rank4-xp"
                                                                     class="text-[9px] sm:text-[10px] font-bold text-white leading-tight">
-                                                                    1,480</p>
+                                                                    300</p>
                                                                 <span
-                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1 py-0.2 rounded-full inline-block">9
+                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1 py-0.2 rounded-full inline-block">1
                                                                     🏆</span>
                                                             </div>
                                                         </div>

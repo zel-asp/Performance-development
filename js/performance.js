@@ -714,7 +714,8 @@ function renderEmployeePulseGoals(goals) {
         return;
     }
 
-    const evalRec = (window.dbEvaluations || []).find(ev => {
+    const evalList = Array.isArray(window.dbEvaluations) ? window.dbEvaluations : Object.values(window.dbEvaluations || {});
+    const evalRec = evalList.find(ev => {
         const evEmpId = (ev.employee_id || '').toLowerCase().trim();
         return evEmpId === currentUserId ||
             (currentUserId === 'emp-101' && (evEmpId === 'emp-1' || evEmpId.includes('101') || evEmpId.includes('maria'))) ||

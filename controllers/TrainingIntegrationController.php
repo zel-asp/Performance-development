@@ -68,7 +68,15 @@ class TrainingIntegrationController
             $results['competency_elevated'] = true;
         }
 
-        // 3. Email dispatch omitted as per requirement
+        // 3. Record verified Training Certification XP into unified xp_ledger
+        if ($xpAwarded > 0 && !empty($associateId)) {
+            require_once __DIR__ . '/../models/SocialModel.php';
+            $socialModel = new SocialModel();
+            $socialModel->createTrainingCertGrant($associateId, $xpAwarded, $programTitle, $certNumber);
+            $results['xp_synced_to_ledger'] = true;
+        }
+
+        // 4. Email dispatch omitted as per requirement
         $results['email_dispatched'] = false;
 
         return $results;

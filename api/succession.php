@@ -34,9 +34,11 @@ try {
         case 'update_flag':
         case 'calibrate_flag':
             $candidateId = $payload['candidateId'] ?? ($payload['candidate_id'] ?? '');
+            $employeeId = $payload['employeeId'] ?? ($payload['employee_id'] ?? '');
+            $positionId = $payload['positionId'] ?? ($payload['position_id'] ?? '');
             $flag = $payload['hrReadinessFlag'] ?? ($payload['hr_readiness_flag'] ?? ($payload['flag'] ?? ''));
             $notes = $payload['notes'] ?? '';
-            $res = $controller->updateHRFlag($candidateId, $flag, $notes);
+            $res = $controller->updateHRFlag($candidateId, $flag, $notes, $employeeId, $positionId);
             echo json_encode($res);
             break;
 
@@ -48,6 +50,17 @@ try {
         case 'delete_position':
             $positionId = $payload['positionId'] ?? ($payload['id'] ?? '');
             $res = $controller->deletePosition($positionId);
+            echo json_encode($res);
+            break;
+
+        case 'get_recommendations':
+            $dept = $payload['dept'] ?? ($payload['department'] ?? 'all');
+            $res = $controller->getRecommendations($dept);
+            echo json_encode($res);
+            break;
+
+        case 'assign_successor':
+            $res = $controller->assignSuccessor($payload);
             echo json_encode($res);
             break;
 

@@ -93,25 +93,8 @@ class NotificationModel extends BaseModel
             'updated_at'     => date('c')
         ];
 
-        // 1. Attempt Supabase REST insert
-        $res = supabaseRequest($this->table, 'POST', $record, true);
-        if ($res['status'] >= 200 && $res['status'] < 300 && !empty($res['data'])) {
-            $inserted = is_array($res['data']) && isset($res['data'][0]) ? $res['data'][0] : $res['data'];
-            $local = $this->getLocalData();
-            $local[] = $inserted;
-            $this->saveLocalData($local);
-            return $inserted;
-        }
-
-        if (!empty($res['error'])) {
-            error_log("Supabase insert error in notifications: " . print_r($res, true));
-        }
-
-        // 2. Fallback to Local Store
-        $local = $this->getLocalData();
-        $local[] = $record;
-        $this->saveLocalData($local);
-        return $record;
+        // 1. Attempt Supabase REST insert via BaseModel create()
+        return $this->create($record);
     }
 
     /**
@@ -131,18 +114,16 @@ class NotificationModel extends BaseModel
         $targetRole = strtolower(trim($role));
         $count = 0;
 
-        foreach ($all as &$item) {
+        foreach ($all as $item) {
             $itemRole = strtolower(trim($item['recipient_role'] ?? ''));
             if ($targetRole === 'all' || $itemRole === $targetRole) {
-                if (empty($item['is_read'])) {
-                    $item['is_read'] = true;
-                    $item['updated_at'] = date('c');
+                if (empty($item['is_read']) && !empty($item['id'])) {
+                    $this->update($item['id'], ['is_read' => true, 'updated_at' => date('c')]);
                     $count++;
                 }
             }
         }
 
-        $this->saveLocalData($all);
         return $count;
     }
 }

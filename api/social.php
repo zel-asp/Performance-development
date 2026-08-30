@@ -8,7 +8,24 @@ $action = $_GET['action'] ?? $_POST['action'] ?? 'get_overview';
 try {
     switch ($action) {
         case 'get_overview':
-            echo json_encode($controller->getSocialOverview());
+            $empId = $_GET['employeeId'] ?? ($_GET['employee_id'] ?? null);
+            $filterType = $_GET['filterType'] ?? ($_GET['filter_type'] ?? null);
+            $filterVal = $_GET['filterValue'] ?? ($_GET['filter_value'] ?? null);
+            echo json_encode($controller->getSocialOverview($empId, $filterType, $filterVal));
+            break;
+
+        case 'get_roster':
+            echo json_encode($controller->getRoster());
+            break;
+
+        case 'get_ledger':
+            $empId = $_GET['employeeId'] ?? ($_GET['employee_id'] ?? null);
+            echo json_encode($controller->getLedger($empId));
+            break;
+
+        case 'get_badges':
+            $empId = $_GET['employeeId'] ?? ($_GET['employee_id'] ?? null);
+            echo json_encode($controller->getBadges($empId));
             break;
 
         case 'give_recognition':
@@ -17,12 +34,25 @@ try {
             echo json_encode($controller->giveRecognition($payload));
             break;
 
+        case 'trigger_lms_grant':
+            $raw = file_get_contents('php://input');
+            $payload = json_decode($raw, true) ?? $_POST;
+            echo json_encode($controller->triggerLmsQuizPass($payload));
+            break;
+
         case 'react':
             $raw = file_get_contents('php://input');
             $payload = json_decode($raw, true) ?? $_POST;
-            $postId = $payload['postId'] ?? '';
-            $reactionType = $payload['reactionType'] ?? 'clap';
+            $postId = $payload['postId'] ?? ($payload['post_id'] ?? '');
+            $reactionType = $payload['reactionType'] ?? ($payload['reaction_type'] ?? 'clap');
             echo json_encode($controller->addReaction($postId, $reactionType));
+            break;
+
+        case 'add_comment':
+            $raw = file_get_contents('php://input');
+            $payload = json_decode($raw, true) ?? $_POST;
+            $postId = $payload['postId'] ?? ($payload['post_id'] ?? '');
+            echo json_encode($controller->addComment($postId, $payload));
             break;
 
         case 'log_sentiment':
