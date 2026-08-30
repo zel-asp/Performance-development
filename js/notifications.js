@@ -16,9 +16,10 @@
 const NotificationAPI = {
     baseUrl: 'api/notifications.php',
 
-    async getNotifications(role = 'all') {
+    async getNotifications(role = 'all', userId = null) {
         try {
-            const res = await fetch(`${this.baseUrl}?action=get_notifications&role=${encodeURIComponent(role)}`);
+            const uId = userId || window.currentUser?.id || '';
+            const res = await fetch(`${this.baseUrl}?action=get_notifications&role=${encodeURIComponent(role)}&user_id=${encodeURIComponent(uId)}`);
             const json = await res.json();
             return json.data || [];
         } catch (err) {
@@ -41,12 +42,13 @@ const NotificationAPI = {
         }
     },
 
-    async markAllAsRead(role = 'all') {
+    async markAllAsRead(role = 'all', userId = null) {
         try {
+            const uId = userId || window.currentUser?.id || '';
             const res = await fetch(`${this.baseUrl}?action=mark_all_read`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ role })
+                body: JSON.stringify({ role, user_id: uId })
             });
             return await res.json();
         } catch (err) {
@@ -83,13 +85,26 @@ let auditLogsState = [
 // =========================================================================
 
 async function initNotificationsHub() {
-    const currentRole = window.activePersonaRole || (window.activePersonaKey === 'employee' ? 'Associate' : 'Supervisor');
-    await loadLiveNotifications(currentRole);
+    let currentRole = window.activePersonaRole || (window.activePersonaKey === 'employee' ? 'Associate' : 'Supervisor');
+    let currentUserId = window.currentUser?.id || '';
+    if (!currentUserId) {
+        try {
+            const rawUser = localStorage.getItem('oxford_session_user');
+            if (rawUser) {
+                const u = JSON.parse(rawUser);
+                currentUserId = u.id || '';
+                if (u.role) currentRole = (u.role === 'employee' ? 'Associate' : (u.role === 'manager' ? 'Supervisor' : u.role));
+            }
+        } catch (e) {}
+    }
+    await loadLiveNotifications(currentRole, currentUserId);
     renderAuditLogs();
 }
 
-async function loadLiveNotifications(role = 'all') {
-    const data = await NotificationAPI.getNotifications(role);
+async function loadLiveNotifications(role = 'all', userId = null) {
+    const currentRole = role !== 'all' ? role : (window.activePersonaRole || (window.activePersonaKey === 'employee' ? 'Associate' : 'Supervisor'));
+    const currentUserId = userId || window.currentUser?.id || '';
+    const data = await NotificationAPI.getNotifications(currentRole, currentUserId);
     
     // Format database notifications into alert card objects
     alertsState = data.map(item => {
@@ -218,20 +233,25 @@ function renderAlertsKPIs() {
 function updateUnreadBadges() {
     const unreadCount = alertsState.filter(a => !a.isRead).length;
 
-    // Update sidebar & header notification badges
-    const topBellDot = document.getElementById('notif-badge');
-    if (topBellDot) {
+    // Update top header notification bell badge (red dot with number)
+    const topBellBadge = document.getElementById('notif-badge');
+    if (topBellBadge) {
         if (unreadCount > 0) {
-            topBellDot.classList.remove('hidden');
+            topBellBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+            topBellBadge.classList.remove('hidden');
+            topBellBadge.classList.add('flex');
         } else {
-            topBellDot.classList.add('hidden');
+            topBellBadge.textContent = '0';
+            topBellBadge.classList.add('hidden');
+            topBellBadge.classList.remove('flex');
         }
     }
 
+    // Update sidebar & mobile nav notification badges
     const badgeElements = document.querySelectorAll('.nav-alert-badge');
     badgeElements.forEach(badge => {
         if (unreadCount > 0) {
-            badge.textContent = unreadCount;
+            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
             badge.classList.remove('hidden');
         } else {
             badge.classList.add('hidden');
@@ -350,7 +370,8 @@ async function markAllAlertsRead() {
     updateUnreadBadges();
 
     const currentRole = window.activePersonaRole || (window.activePersonaKey === 'employee' ? 'Associate' : 'Supervisor');
-    await NotificationAPI.markAllAsRead(currentRole);
+    const currentUserId = window.currentUser?.id || '';
+    await NotificationAPI.markAllAsRead(currentRole, currentUserId);
     if (typeof showToast === 'function') {
         showToast('All notifications marked as acknowledged.', 'success');
     }
