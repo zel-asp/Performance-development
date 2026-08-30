@@ -420,9 +420,20 @@ function renderTrainingNeeds() {
     if (needsActiveFilterTab === 'active') {
         filteredNeeds = allNormalized.filter(n => n.status !== 'Resolved' && n.status !== 'Completed' && !n.isPerformanceGoal);
     } else if (needsActiveFilterTab === 'performance') {
-        filteredNeeds = perfItems;
+        filteredNeeds = perfItems.filter(n => n.status !== 'Resolved' && n.status !== 'Completed');
     } else if (needsActiveFilterTab === 'resolved') {
         filteredNeeds = allNormalized.filter(n => n.status === 'Resolved' || n.status === 'Completed');
+    }
+
+    const badge = document.getElementById('needs-filter-count-badge');
+    if (badge) {
+        badge.textContent = needsActiveFilterTab === 'active' 
+            ? `Showing Active Deficits (${filteredNeeds.length})` 
+            : needsActiveFilterTab === 'performance' 
+                ? `Showing Active Referrals (${filteredNeeds.length})` 
+                : needsActiveFilterTab === 'resolved' 
+                    ? `Showing Resolved History (${filteredNeeds.length})` 
+                    : `Showing All Audit Triggers (${filteredNeeds.length})`;
     }
 
     if (filteredNeeds.length === 0) {
