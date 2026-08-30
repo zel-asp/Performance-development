@@ -78,6 +78,7 @@ let trainingNeedsState = [];
 let trainingProgramsState = [];
 let trainingSessionsState = [];
 let trainingResultsState = [];
+let trainingCertificatesState = [];
 
 let activeAttendanceSessionId = 'sess-101';
 let currentEvaluationContext = {
@@ -293,6 +294,7 @@ async function initTrainingManagement() {
             if (Array.isArray(bootstrapData.programs)) trainingProgramsState = bootstrapData.programs.map(normalizeTrainingProgram);
             if (Array.isArray(bootstrapData.sessions)) trainingSessionsState = bootstrapData.sessions.map(normalizeTrainingSession);
             if (Array.isArray(bootstrapData.results)) trainingResultsState = bootstrapData.results.map(normalizeTrainingResult);
+            if (Array.isArray(bootstrapData.certificates)) trainingCertificatesState = bootstrapData.certificates;
 
             // Re-render UI with synchronized server state
             renderTrainingNeeds();
@@ -341,11 +343,92 @@ function switchTrainingStage(stageSubTab) {
     switchSubTab('training', stageSubTab);
 }
 
+function getAggregatedCertificates() {
+    const list = [];
+    const seenRefs = new Set();
+
+    // 1. From trainingResultsState
+    trainingResultsState.forEach(r => {
+        const ref = r.certificateReference || r.certificate_reference;
+        if (ref && !seenRefs.has(ref)) {
+            seenRefs.add(ref);
+            list.push({
+                id: r.id,
+                programTitle: r.programTitle || r.program_title || 'Hospitality Mastery Program',
+                associateName: r.associateName || r.associate_name || 'Associate',
+                associateRole: r.associateRole || r.associate_role || 'Hotel Staff',
+                certificateReference: ref,
+                completionDate: r.completionDate || r.completion_date || 'Aug 29, 2026',
+                trainerName: r.trainerName || r.trainer_name || 'Lead Master Trainer',
+                quizScore: r.quizScore || r.quiz_score || 96,
+                employeeId: r.associateId || r.associate_id
+            });
+        }
+    });
+
+    // 2. From trainingCertificatesState
+    trainingCertificatesState.forEach(c => {
+        const ref = c.certificateNumber || c.certificate_number;
+        if (ref && !seenRefs.has(ref)) {
+            seenRefs.add(ref);
+            list.push({
+                id: c.id || ('cert-' + ref),
+                programTitle: c.programTitle || c.program_title || 'Hospitality Mastery Program',
+                associateName: c.associateName || c.associate_name || 'Associate',
+                associateRole: c.associateRole || c.associate_role || 'Hotel Staff',
+                certificateReference: ref,
+                completionDate: c.issueDate || c.issue_date || 'Aug 29, 2026',
+                trainerName: 'Lead Master Trainer',
+                quizScore: c.score || 96,
+                employeeId: c.employee_id || c.employeeId
+            });
+        }
+    });
+
+    // 3. From resolved trainingNeedsState with certificate/license
+    trainingNeedsState.forEach(n => {
+        if (n.status === 'Resolved' || n.status === 'Completed') {
+            const rawId = String(n.id || '').replace(/\D/g, '') || '9412';
+            const ref = n.certificateReference || n.certificate_reference || `OXF-CERT-2026-${rawId.padStart(4, '0')}`;
+            if (!seenRefs.has(ref)) {
+                seenRefs.add(ref);
+                list.push({
+                    id: 'need-cert-' + (n.id || ref),
+                    programTitle: n.linkedProgramTitle || n.targetCompetency || 'Hospitality Mastery Program',
+                    associateName: n.associateName || 'Associate',
+                    associateRole: n.associateRole || 'Staff',
+                    certificateReference: ref,
+                    completionDate: n.dateIdentified || 'Aug 29, 2026',
+                    trainerName: 'Lead Master Trainer',
+                    quizScore: 96,
+                    employeeId: n.employeeId || n.employee_id
+                });
+            }
+        }
+    });
+
+    return list;
+}
+window.getAggregatedCertificates = getAggregatedCertificates;
+
 function updateTrainingStats() {
-    const identifiedCount = trainingNeedsState.filter(n => n.status !== 'Resolved' && n.status !== 'Completed').length;
+    const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
+    const currentEmpId = window.currentUser?.id;
+
+    let needs = trainingNeedsState;
+    let results = trainingResultsState;
+    let certs = getAggregatedCertificates();
+
+    if (isAssociate && currentEmpId) {
+        needs = needs.filter(n => n.employeeId === currentEmpId);
+        results = results.filter(r => r.associateId === currentEmpId);
+        certs = certs.filter(c => c.employeeId === currentEmpId || (window.currentUser?.name && String(c.associateName).toLowerCase().includes(String(window.currentUser.name).toLowerCase())));
+    }
+
+    const identifiedCount = needs.filter(n => n.status !== 'Resolved' && n.status !== 'Completed').length;
     const programsCount = trainingProgramsState.length;
     const activeSessionsCount = trainingSessionsState.filter(s => s.status !== 'Completed').length;
-    const certifiedCount = trainingResultsState.filter(r => (r.resultStatus || '').includes('Passed')).length;
+    const certifiedCount = certs.length;
 
     const elNeeds = document.getElementById('stat-training-needs');
     const elPrograms = document.getElementById('stat-training-programs');
@@ -1290,7 +1373,7 @@ function renderCertsTable() {
     const tbody = document.getElementById('certs-table-body');
     if (!tbody) return;
 
-    const certifiedResults = trainingResultsState.filter(r => r.certificateReference);
+    const certifiedResults = getAggregatedCertificates();
 
     if (certifiedResults.length === 0) {
         tbody.innerHTML = `
@@ -1326,7 +1409,8 @@ function renderCertsTable() {
 }
 
 function viewTrainingCertificate(resultId) {
-    const result = trainingResultsState.find(r => r.id === resultId) || trainingResultsState[0];
+    const allCerts = getAggregatedCertificates();
+    const result = allCerts.find(r => r.id === resultId) || trainingResultsState.find(r => r.id === resultId) || allCerts[0];
     if (!result) return;
 
     const elCertName = document.getElementById('cert-modal-associate-name');
@@ -1339,9 +1423,9 @@ function viewTrainingCertificate(resultId) {
     if (elCertName) elCertName.textContent = result.associateName;
     if (elCertProgram) elCertProgram.textContent = result.programTitle;
     if (elCertId) elCertId.textContent = result.certificateReference || 'OXF-CERT-2026-0889';
-    if (elCertDate) elCertDate.textContent = result.completionDate;
-    if (elCertTrainer) elCertTrainer.textContent = result.trainerName;
-    if (elCertScore) elCertScore.textContent = `Score: ${result.quizScore}% (Mastery Level)`;
+    if (elCertDate) elCertDate.textContent = result.completionDate || 'Aug 29, 2026';
+    if (elCertTrainer) elCertTrainer.textContent = result.trainerName || 'Lead Master Trainer';
+    if (elCertScore) elCertScore.textContent = `Score: ${result.quizScore || 96}% (Mastery Level)`;
 
     openModal('modal-training-certificate');
 }
