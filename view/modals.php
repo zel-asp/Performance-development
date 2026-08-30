@@ -565,10 +565,10 @@
                             <span>Your Self Evaluation Rating (1.0 – 5.0) *</span>
                         </label>
                         <span id="self-eval-score-preview" class="text-sm font-bold font-mono text-purple-900 bg-white px-2.5 py-0.5 rounded-lg border border-purple-200 shadow-2xs">
-                            ⭐ 4.50 / 5.0
+                            ⭐ 1.00 / 5.0
                         </span>
                     </div>
-                    <input type="range" id="self-eval-rating-input" min="1.0" max="5.0" step="0.1" value="4.5"
+                    <input type="range" id="self-eval-rating-input" min="1.0" max="5.0" step="0.1" value="1.0"
                         oninput="document.getElementById('self-eval-score-preview').textContent = `⭐ ${parseFloat(this.value).toFixed(2)} / 5.0`"
                         class="w-full h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer accent-purple-600">
                     <div class="grid grid-cols-5 gap-1 text-center font-medium text-[9px] text-slate-600">
@@ -1381,6 +1381,80 @@
     </div>
 </div>
 
+<!-- 7d-2. Modal: Need Training → Assign Formal Curriculum (Stage 7 IDP Remediation) -->
+<div id="modal-formal-curriculum" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+    <div class="modal-card max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
+
+        <!-- Header -->
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-rose-50/70 via-white to-amber-50/40 flex-shrink-0">
+            <div class="flex items-center space-x-3">
+                <div class="w-11 h-11 rounded-2xl bg-rose-100 text-rose-800 flex items-center justify-center text-lg font-bold border border-rose-200 shadow-2xs">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h3 class="font-heading font-bold text-base text-slate-900">Mandatory Formal Training Curriculum</h3>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">Stage 7 IDP Remediation</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5">Assign comprehensive Training Programs from database to close critical performance deficits</p>
+                </div>
+            </div>
+            <button onclick="closeModal('modal-formal-curriculum')"
+                class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1 text-xs bg-white">
+            <!-- Target Associate Banner -->
+            <div class="p-4 bg-rose-50/70 rounded-2xl border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="space-y-1">
+                    <span class="text-[10px] font-bold text-rose-800 uppercase tracking-wide flex items-center">
+                        <i class="fas fa-user-graduate text-rose-600 mr-1.5"></i> Associate Requiring Formal Training
+                    </span>
+                    <p id="formal-curriculum-emp-name" class="font-bold text-slate-900 text-sm">Lucas Vargas · Junior Host (Front Office)</p>
+                    <p id="formal-curriculum-goal-title" class="text-slate-600 text-xs">Active Goal: Elevate Front Desk Check-in Efficiency</p>
+                </div>
+                <div class="text-right sm:self-center">
+                    <span class="px-3 py-1 bg-rose-100 text-rose-800 font-bold rounded-xl text-xs border border-rose-300">
+                        Needs Training: True
+                    </span>
+                </div>
+            </div>
+
+            <!-- List of Programs from training_programs Table -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="font-heading font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center space-x-1.5">
+                        <i class="fas fa-chalkboard-user text-rose-600"></i>
+                        <span>Available Formal Training Programs (Supabase Database)</span>
+                    </h4>
+                    <span class="text-[11px] text-slate-400">Click to enroll into training_needs</span>
+                </div>
+
+                <div id="formal-programs-list" class="space-y-3">
+                    <div class="p-8 text-center text-slate-400 italic bg-slate-50 rounded-2xl border border-slate-200">
+                        <i class="fas fa-spinner fa-spin text-lg mb-2 block text-rose-500"></i>
+                        Loading training programs from database...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
+            <span class="text-[11px] text-slate-500 font-semibold">
+                <i class="fas fa-database text-rose-600 mr-1"></i> Auto-enrolled in <code>training_needs</code> with <code>target_goal_id</code>
+            </span>
+            <button onclick="closeModal('modal-formal-curriculum')"
+                class="btn-primary px-5 py-2 text-xs font-bold">
+                Done
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- 7e. Modal: Associate Knowledge & Quiz Re-evaluation -->
 <div id="modal-re-evaluate" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
@@ -1462,6 +1536,142 @@
                 <button onclick="submitAssociateReevaluation()"
                     class="btn-primary px-5 py-2 text-xs font-bold">
                     <i class="fas fa-check-circle mr-1.5"></i> Save Re-evaluation
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 7f. Modal: Phase 7 Final 1-on-1 Evaluation (Last Attempt / Retry #4) -->
+<div id="modal-phase7-final-eval" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+    <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
+
+        <!-- Header -->
+        <div class="px-6 py-5 border-b border-rose-100 bg-gradient-to-r from-rose-50/70 via-white to-amber-50/40 flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center space-x-3">
+                <div class="w-11 h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center text-lg font-bold shadow-2xs">
+                    <i class="fas fa-gavel"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h3 class="font-heading font-bold text-base text-rose-950">Phase 7 · Final 1-on-1 Evaluation</h3>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-200 text-rose-900 border border-rose-300">
+                            Final Attempt #4
+                        </span>
+                    </div>
+                    <p class="text-xs text-rose-800/80 mt-0.5">Definitive supervisor assessment following mandatory 1-on-1 mentorship &amp; formal curriculum</p>
+                </div>
+            </div>
+            <button onclick="closeModal('modal-phase7-final-eval')"
+                class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+
+        <!-- Form Body -->
+        <form id="form-phase7-final-eval" onsubmit="handlePhase7FinalEvalSubmit(event)" class="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1 text-xs bg-white">
+            <input type="hidden" id="phase7-eval-emp-id" value="">
+            <input type="hidden" id="phase7-eval-goal-id" value="">
+
+            <!-- Employee Info Banner -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between flex-wrap gap-3">
+                <div class="flex items-center space-x-3">
+                    <div id="phase7-eval-avatar" class="w-10 h-10 rounded-full bg-rose-100 text-rose-800 font-bold flex items-center justify-center text-xs">
+                        MS
+                    </div>
+                    <div>
+                        <h4 id="phase7-eval-name" class="font-bold text-slate-900 text-sm">Maria Santos</h4>
+                        <p id="phase7-eval-role-dept" class="text-[11px] text-slate-500">Front Desk Host · Front Office</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] text-slate-400 uppercase font-bold block">Passing Standard</span>
+                    <span class="text-xs font-bold text-emerald-700 font-mono">⭐ 3.00 / 5.00</span>
+                </div>
+            </div>
+
+            <!-- Notice Callout -->
+            <div class="p-3.5 bg-amber-50 rounded-xl border border-amber-200 flex items-start space-x-2.5 text-amber-900 text-xs">
+                <i class="fas fa-triangle-exclamation text-amber-600 mt-0.5 text-sm flex-shrink-0"></i>
+                <div>
+                    <p class="font-bold">Final Evaluation Threshold Notice</p>
+                    <p class="text-[11px] text-amber-800 leading-relaxed mt-0.5">
+                        This is the associate's 4th and final evaluation attempt. If the final score remains below <strong>3.00</strong>, the performance goal status will permanently transition to <strong>Failed</strong> upon your confirmation.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Scorecard Inputs -->
+            <div class="space-y-3.5">
+                <h5 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center space-x-1.5">
+                    <i class="fas fa-list-check text-rose-600"></i>
+                    <span>Evaluation Scorecard (1.0 - 5.0 Scale)</span>
+                </h5>
+
+                <div id="phase7-criteria-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <!-- Dynamically populated from employee's goals + 1-on-1 Mentorship Integration -->
+                </div>
+            </div>
+
+            <!-- Calculated Score Banner -->
+            <div class="p-4 rounded-2xl border flex items-center justify-between flex-wrap gap-2 transition-all" id="phase7-calc-banner">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-500 block">Overall Computed Final Score</span>
+                    <span id="phase7-calc-verdict" class="text-xs font-bold text-rose-800">Below Standard (&lt; 3.00) &bull; Subject to Goal Failure</span>
+                </div>
+                <div class="text-2xl font-mono font-bold text-rose-700" id="phase7-calc-score-display">
+                    ⭐ 2.50 / 5.00
+                </div>
+            </div>
+
+            <!-- Notes & Remarks -->
+            <div class="space-y-1.5">
+                <label class="font-bold text-slate-900 block text-xs">Supervisor Final Review Notes &amp; Recommendation *</label>
+                <textarea id="phase7-eval-notes" rows="3" required placeholder="Detail the outcome of the 1-on-1 coaching, practical shifts observed, and justification for this final score..." class="w-full p-3 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 transition"></textarea>
+            </div>
+
+            <!-- Footer Action Buttons -->
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                <button type="button" onclick="closeModal('modal-phase7-final-eval')" class="btn-secondary px-4 py-2 text-xs font-semibold">
+                    Cancel
+                </button>
+                <button type="submit" id="btn-submit-phase7-final-eval" class="btn-primary px-6 py-2.5 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white flex items-center space-x-1.5 shadow-xs">
+                    <i class="fas fa-check-double text-xs"></i>
+                    <span>Submit Final Evaluation</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 7g. Modal: Confirm Goal Failure Double-Check -->
+<div id="modal-confirm-goal-failure" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+    <div class="modal-card max-w-md w-full overflow-hidden flex flex-col bg-white rounded-3xl shadow-2xl border-2 border-rose-300">
+        <div class="p-6 text-center space-y-4">
+            <div class="w-14 h-14 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center text-2xl font-bold mx-auto border border-rose-200">
+                <i class="fas fa-ban"></i>
+            </div>
+            <div>
+                <h3 class="font-heading font-bold text-lg text-rose-950">Confirm Performance Goal Failure</h3>
+                <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                    The associate has completed all 4 remediation attempts and formal 1-on-1 mentorship. The final score is <strong id="confirm-fail-score" class="text-rose-700 font-mono">2.50 / 5.00</strong> (below 3.00 standard).
+                </p>
+            </div>
+
+            <div class="p-3.5 bg-rose-50 rounded-xl border border-rose-200 text-left text-xs text-rose-900 space-y-1">
+                <p class="font-bold flex items-center"><i class="fas fa-circle-exclamation mr-1.5 text-rose-600"></i> Permanent Status Update:</p>
+                <p class="text-[11px] text-rose-800">
+                    Marking this goal as <strong>Failed</strong> permanently concludes this review cycle. All phases will be finalized with a Failed record.
+                </p>
+            </div>
+
+            <div class="pt-2 flex items-center justify-center space-x-3">
+                <button type="button" onclick="closeModal('modal-confirm-goal-failure')" class="btn-secondary px-5 py-2.5 text-xs font-semibold">
+                    Cancel Review
+                </button>
+                <button type="button" id="btn-confirm-mark-failed" onclick="executeConfirmGoalFailure()" class="btn-primary px-6 py-2.5 text-xs font-bold bg-rose-700 hover:bg-rose-800 text-white shadow-xs flex items-center space-x-1.5">
+                    <i class="fas fa-circle-xmark text-xs"></i>
+                    <span>Confirm & Mark as Failed</span>
                 </button>
             </div>
         </div>

@@ -12,11 +12,10 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
-    CREATE TYPE goal_status_type AS ENUM ('Pending Approval', 'Approved', 'Needs Revision', 'Completed');
+    CREATE TYPE goal_status_type AS ENUM ('Pending Approval', 'Approved', 'Needs Revision', 'Completed', 'Failed');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
-
 create table public.performance_goals (
   id serial not null,
   employee_id character varying(50) not null,
@@ -34,6 +33,8 @@ create table public.performance_goals (
   created_at timestamp without time zone null default CURRENT_TIMESTAMP,
   updated_at timestamp without time zone null default CURRENT_TIMESTAMP,
   retry_count integer null default 0,
+  needs_training boolean null default false,
+  in_training boolean null default false,
   constraint performance_goals_pkey primary key (id),
   constraint performance_goals_employee_id_fkey foreign KEY (employee_id) references users (id) on update CASCADE on delete CASCADE
 ) TABLESPACE pg_default;
