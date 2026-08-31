@@ -1330,18 +1330,18 @@
 
 <!-- 7d. Modal: Prescribe Remedial LMS Books (< 3.0 Performance Rating) -->
 <div id="modal-remedial-books" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-    <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
+    <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
 
         <!-- Header -->
-        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 flex-shrink-0">
             <div class="flex items-center space-x-3">
-                <div class="w-11 h-11 rounded-2xl bg-terracotta-50 text-terracotta-dark flex items-center justify-center text-lg font-bold border border-terracotta-100 shadow-2xs">
+                <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold border border-slate-200 shadow-2xs">
                     <i class="fas fa-book-medical"></i>
                 </div>
                 <div>
                     <div class="flex items-center space-x-2">
                         <h3 class="font-heading font-bold text-base text-slate-900">Targeted LMS Handbooks (&lt; 3.0 Remedial)</h3>
-                        <span class="badge-terracotta">Gap Resolution</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wider">Gap Resolution</span>
                     </div>
                     <p class="text-xs text-slate-500 mt-0.5">Assign specialized LMS books to close competency gaps rated below the 3.0 benchmark</p>
                 </div>
@@ -1355,14 +1355,14 @@
         <!-- Body -->
         <div class="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1 text-xs bg-white">
             <!-- Associate Target Selector & Gap Alert -->
-            <div class="p-4 bg-terracotta-50/60 rounded-2xl border border-terracotta-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                 <div class="space-y-1">
-                    <span class="text-[10px] font-bold text-terracotta-dark uppercase tracking-wide flex items-center"><i class="fas fa-triangle-exclamation text-terracotta mr-1.5"></i> Associate with &lt; 3.0 Gaps</span>
+                    <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider flex items-center"><i class="fas fa-triangle-exclamation text-amber-500 mr-1.5"></i> Associate with &lt; 3.0 Gaps</span>
                     <p id="remedial-associate-name" class="font-bold text-slate-900 text-xs">Lucas Vargas · Junior Host (Front Office)</p>
-                    <p id="remedial-associate-detail" class="text-slate-600 text-[11px]">Evaluated Rating: <strong class="text-terracotta-dark font-bold">2.80 / 5.0</strong> · Sommelier Wine (<strong class="text-terracotta-dark font-bold">2.40</strong>) &amp; Conflict De-escalation (<strong class="text-terracotta-dark font-bold">2.60</strong>)</p>
+                    <p id="remedial-associate-detail" class="text-slate-600 text-[11px]">Evaluated Rating: <strong class="text-slate-900 font-bold">2.80 / 5.0</strong> · Sommelier Wine (<strong class="text-slate-900 font-bold">2.40</strong>) &amp; Conflict De-escalation (<strong class="text-slate-900 font-bold">2.60</strong>)</p>
                 </div>
                 <select id="remedial-associate-select" onchange="updateRemedialAssociate(this.value)"
-                    class="p-2 bg-white border border-[#E8DEDC] rounded-xl text-xs font-bold text-slate-800 focus:outline-none shadow-2xs">
+                    class="p-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:outline-none shadow-2xs">
                     <option value="lucas">Lucas Vargas (Rating: 2.80)</option>
                     <option value="antonio">Antonio Silva (Rating: 2.90)</option>
                     <option value="maria">Maria Santos (Gap: Wine 2.40)</option>
@@ -1384,8 +1384,8 @@
         </div>
 
         <!-- Footer -->
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
-            <span class="text-[11px] text-slate-500 font-semibold"><i class="fas fa-circle-info text-primary mr-1"></i> Prescriptions auto-sync with employee TNA &amp; IDP</span>
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between flex-shrink-0">
+            <span class="text-[11px] text-slate-500 font-semibold"><i class="fas fa-circle-info text-slate-400 mr-1"></i> Prescriptions auto-sync with employee TNA &amp; IDP</span>
             <button onclick="closeModal('modal-remedial-books')"
                 class="btn-primary px-5 py-2 text-xs font-bold">
                 Done
@@ -1396,18 +1396,18 @@
 
 <!-- 7d-2. Modal: Need Training → Assign Formal Curriculum (Stage 7 IDP Remediation) -->
 <div id="modal-formal-curriculum" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-    <div class="modal-card max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
+    <div class="modal-card max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
 
         <!-- Header -->
-        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-rose-50/70 via-white to-amber-50/40 flex-shrink-0">
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 flex-shrink-0">
             <div class="flex items-center space-x-3">
-                <div class="w-11 h-11 rounded-2xl bg-rose-100 text-rose-800 flex items-center justify-center text-lg font-bold border border-rose-200 shadow-2xs">
+                <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold border border-slate-200 shadow-2xs">
                     <i class="fas fa-graduation-cap"></i>
                 </div>
                 <div>
                     <div class="flex items-center space-x-2">
                         <h3 class="font-heading font-bold text-base text-slate-900">Mandatory Formal Training Curriculum</h3>
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">Stage 7 IDP Remediation</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wider">Stage 7 Remediation</span>
                     </div>
                     <p class="text-xs text-slate-500 mt-0.5">Assign comprehensive Training Programs from database to close critical performance deficits</p>
                 </div>
@@ -3014,106 +3014,143 @@
             <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-[#E8DEDC] overflow-hidden transform transition-all animate-scaleUp">
                 
                 <!-- Modal Header -->
-                <div class="p-6 border-b border-[#E8DEDC] flex items-center justify-between bg-gradient-to-r from-indigo-50/50 via-white to-purple-50/40">
+                <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center justify-center font-bold text-base shadow-2xs">
+                        <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center font-bold text-base shadow-2xs">
                             <i class="fas fa-sliders"></i>
                         </div>
                         <div>
                             <div class="flex items-center space-x-2">
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">Phase 5: Final Rating</span>
-                                <span class="text-xs text-slate-400 font-medium">1-on-1 Review &amp; Sign-off</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wider">Phase 5 · Final Rating</span>
+                                <span class="text-xs text-slate-400 font-medium">• 1-on-1 Calibration</span>
                             </div>
-                            <h3 id="modal-calib-emp-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">1-on-1 Review &amp; Final Rating</h3>
+                            <h3 id="modal-calib-emp-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">1-on-1 Review &amp; Calibration</h3>
                         </div>
                     </div>
-                    <button onclick="closeModal('modal-1on1-calibration')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                    <button onclick="closeModal('modal-1on1-calibration')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
                         <i class="fas fa-times text-xs"></i>
                     </button>
                 </div>
 
                 <!-- Calibration Form -->
-                <form id="form-1on1-calibration" onsubmit="handleCalibrationSubmit(event)" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
+                <form id="form-1on1-calibration" onsubmit="handleCalibrationSubmit(event)" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs bg-slate-100/40">
                     <input type="hidden" id="calib-target-emp-id" value="emp-101">
 
-                    <!-- Employee Summary Card -->
-                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-3">
-                        <div class="flex items-center space-x-3">
-                            <div id="calib-emp-avatar" class="w-10 h-10 rounded-full bg-primary text-white font-bold text-xs flex items-center justify-center shadow-2xs flex-shrink-0">
-                                MS
+                    <!-- Container 1: Employee Diagnostic & Benchmark Comparison Well -->
+                    <div class="p-4.5 bg-white rounded-2xl border border-slate-200/80 space-y-3.5 shadow-2xs">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                            <span class="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-1.5">
+                                <i class="fas fa-user-check text-slate-400"></i>
+                                <span>Associate &amp; Appraisal Benchmark</span>
+                            </span>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                                1-on-1 Sign-off
+                            </span>
+                        </div>
+
+                        <!-- Employee Info Row -->
+                        <div class="flex items-center justify-between gap-3 p-3 bg-slate-50/80 rounded-xl border border-slate-200/60">
+                            <div class="flex items-center space-x-3">
+                                <div id="calib-emp-avatar" class="w-10 h-10 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-2xs flex-shrink-0">
+                                    MS
+                                </div>
+                                <div>
+                                    <p id="calib-emp-name" class="font-bold text-slate-900 text-sm leading-tight">Maria Santos</p>
+                                    <p id="calib-emp-role" class="text-[11px] text-slate-500">Front Desk Host · Front Office</p>
+                                </div>
                             </div>
-                            <div>
-                                <p id="calib-emp-name" class="font-bold text-slate-900 text-sm leading-tight">Maria Santos</p>
-                                <p id="calib-emp-role" class="text-[11px] text-slate-500">Front Desk Host · Front Office</p>
+                            <span class="text-[10px] text-slate-400 font-mono">Formal Session</span>
+                        </div>
+
+                        <!-- Comparison of Self-Review, Supervisor Appraisal & Recommended Calculation -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <div class="p-3 bg-slate-50/90 rounded-xl border border-slate-200/70 space-y-1">
+                                <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block flex items-center space-x-1">
+                                    <i class="fas fa-user-pen text-slate-400 mr-1"></i>
+                                    <span>Self-Review</span>
+                                </span>
+                                <div id="calib-self-score-display" class="text-sm font-bold text-slate-900 font-mono">
+                                    <i class="fas fa-star text-amber-400 mr-1 text-xs"></i>4.50 / 5.0
+                                </div>
+                            </div>
+                            <div class="p-3 bg-slate-50/90 rounded-xl border border-slate-200/70 space-y-1">
+                                <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block flex items-center space-x-1">
+                                    <i class="fas fa-clipboard-check text-slate-400 mr-1"></i>
+                                    <span>Appraisal Rating</span>
+                                </span>
+                                <div id="calib-supervisor-score-display" class="text-sm font-bold text-slate-900 font-mono">
+                                    <i class="fas fa-star text-amber-400 mr-1 text-xs"></i>4.60 / 5.0
+                                </div>
+                            </div>
+                            <div class="p-3 bg-slate-50/90 rounded-xl border border-slate-200/70 space-y-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block flex items-center space-x-1">
+                                        <i class="fas fa-wand-magic-sparkles text-slate-400 mr-1"></i>
+                                        <span>Recommended</span>
+                                    </span>
+                                    <button type="button" onclick="applyRecommendedRating()" class="text-[10px] font-bold text-slate-700 hover:text-slate-900 underline cursor-pointer bg-white px-1.5 py-0.5 rounded border border-slate-200 shadow-2xs" title="Apply recommended rating to slider">
+                                        Apply
+                                    </button>
+                                </div>
+                                <div id="calib-recommended-score-display" class="text-sm font-bold text-slate-900 font-mono">
+                                    <i class="fas fa-star text-amber-400 mr-1 text-xs"></i>4.55 / 5.0
+                                </div>
                             </div>
                         </div>
-                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
-                            Formal 1-on-1
-                        </span>
                     </div>
 
-                    <!-- Comparison of Self-Review & Supervisor Appraisal Scores -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div class="p-3 bg-purple-50/50 rounded-2xl border border-purple-200 space-y-1">
-                            <span class="text-[10px] text-purple-700 font-bold uppercase tracking-wider block flex items-center space-x-1">
-                                <i class="fas fa-user-pen text-purple-600 mr-1"></i>
-                                <span>Self-Review Rating</span>
+                    <!-- Container 2: Calibration Rating & Performance Tier Well -->
+                    <div class="p-4.5 bg-white rounded-2xl border border-slate-200/80 space-y-3.5 shadow-2xs">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                            <span class="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-1.5">
+                                <i class="fas fa-sliders text-slate-400"></i>
+                                <span>Rating Calibration &amp; Tier Assignment</span>
                             </span>
-                            <div id="calib-self-score-display" class="text-sm font-bold text-purple-900 font-mono">
-                                <i class="fas fa-star text-amber-500 mr-1"></i>4.50 / 5.0
-                            </div>
-                        </div>
-                        <div class="p-3 bg-indigo-50/50 rounded-2xl border border-indigo-200 space-y-1">
-                            <span class="text-[10px] text-indigo-700 font-bold uppercase tracking-wider block flex items-center space-x-1">
-                                <i class="fas fa-clipboard-check text-indigo-600 mr-1"></i>
-                                <span>Supervisor Appraisal Rating</span>
-                            </span>
-                            <div id="calib-supervisor-score-display" class="text-sm font-bold text-indigo-900 font-mono">
-                                <i class="fas fa-star text-amber-500 mr-1"></i>4.60 / 5.0
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Final Calibrated Score Slider & Number Input -->
-                    <div class="p-4 bg-purple-50/30 rounded-2xl border border-purple-200 space-y-3">
-                        <div class="flex justify-between items-center">
-                            <label class="font-bold text-slate-900 text-xs">1. Final Rating (1.00 – 5.00) *</label>
-                            <span id="calib-computed-score-display" class="font-mono font-bold text-sm text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
+                            <span id="calib-computed-score-display" class="font-mono font-bold text-xs text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200">
                                 1.00 / 5.0 (Developing (Needs PIP))
                             </span>
                         </div>
-                        <input id="calib-score-slider" type="range" min="1.0" max="5.0" step="0.05" value="1.00" oninput="onCalibrationScoreInput(this.value)" class="w-full accent-indigo-600 cursor-pointer">
-                        <div class="flex justify-between text-[10px] text-slate-400 font-mono">
-                            <span>1.0 (Critical Support)</span>
-                            <span>3.0 (Proficient Benchmark)</span>
-                            <span>5.0 (Exceptional / Master)</span>
+
+                        <!-- Score Slider -->
+                        <div class="p-3 bg-slate-50/80 rounded-xl border border-slate-200/60 space-y-2">
+                            <div class="flex justify-between items-center text-xs">
+                                <label class="font-semibold text-slate-700">1. Calibrated Rating (1.00 – 5.00) *</label>
+                            </div>
+                            <input id="calib-score-slider" type="range" min="1.0" max="5.0" step="0.05" value="1.00" oninput="onCalibrationScoreInput(this.value)" class="w-full accent-slate-800 cursor-pointer">
+                            <div class="flex justify-between text-[10px] text-slate-400 font-mono pt-0.5">
+                                <span>1.0 (Critical Support)</span>
+                                <span>3.0 (Proficient Benchmark)</span>
+                                <span>5.0 (Exceptional / Master)</span>
+                            </div>
+                        </div>
+
+                        <!-- Tier Classification -->
+                        <div class="space-y-1">
+                            <label class="font-semibold text-slate-700 text-[11px]">2. Final Performance Tier</label>
+                            <select id="calib-tier-select" onchange="onCalibrationTierSelect(this.value)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:outline-none bg-white shadow-2xs">
+                                <option value="Master Tier">Master Tier (4.50 – 5.00 Exceeds All Expectations)</option>
+                                <option value="Advanced Tier">Advanced Tier (3.50 – 4.49 Highly Proficient)</option>
+                                <option value="Proficient">Proficient Tier (3.00 – 3.49 Meets All Standards)</option>
+                                <option value="Developing (Needs PIP)" selected>Developing (Below 3.00 Benchmark · Action Plan Required)</option>
+                            </select>
                         </div>
                     </div>
 
-                    <!-- Tier Classification & Department Normalization -->
-                    <div class="space-y-1">
-                        <label class="font-bold text-slate-800 text-[11px]">2. Final Performance Tier</label>
-                        <select id="calib-tier-select" onchange="onCalibrationTierSelect(this.value)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
-                            <option value="Master Tier">Master Tier (4.50 – 5.00 Exceeds All Expectations)</option>
-                            <option value="Advanced Tier">Advanced Tier (3.50 – 4.49 Highly Proficient)</option>
-                            <option value="Proficient">Proficient Tier (3.00 – 3.49 Meets All Standards)</option>
-                            <option value="Developing (Needs PIP)" selected>Developing (Below 3.00 Benchmark · Action Plan Required)</option>
-                        </select>
+                    <!-- Container 3: 1-on-1 Dialogue & Agreed Minutes Well -->
+                    <div class="p-4.5 bg-white rounded-2xl border border-slate-200/80 space-y-2.5 shadow-2xs">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <label class="font-bold text-slate-900 text-[11px] uppercase tracking-wider flex items-center space-x-1.5">
+                                <i class="fas fa-comments text-slate-400"></i>
+                                <span>3. 1-on-1 Discussion Minutes &amp; Agreed Commitments *</span>
+                            </label>
+                        </div>
+                        <textarea id="calib-discussion-minutes" required rows="3" placeholder="Summarize key dialogue during the 1-on-1 review session, agreed key strengths, and specific areas for capability growth in the upcoming cycle..." class="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:outline-none custom-scrollbar bg-slate-50/50 shadow-2xs"></textarea>
                     </div>
 
-                    <!-- 1-on-1 Discussion Minutes & Agreed Growth Actions -->
-                    <div class="space-y-1">
-                        <label class="font-bold text-slate-800 text-[11px] flex items-center space-x-1.5">
-                            <i class="fas fa-comments text-indigo-600"></i>
-                            <span>3. 1-on-1 Discussion Minutes &amp; Agreed Commitments *</span>
-                        </label>
-                        <textarea id="calib-discussion-minutes" required rows="3" placeholder="Summarize key dialogue during the 1-on-1 review session, agreed key strengths, and specific areas for capability growth in the upcoming cycle..." class="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none custom-scrollbar bg-white"></textarea>
-                    </div>
-
-                    <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2">
+                    <div class="pt-2 flex items-center justify-end space-x-2">
                         <button type="button" onclick="closeModal('modal-1on1-calibration')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
-                        <button type="submit" id="btn-submit-calibration" class="btn-primary px-5 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-xs">
-                            <i class="fas fa-lock mr-1.5"></i> Lock &amp; Save Final Rating to Database
+                        <button type="submit" id="btn-submit-calibration" class="btn-primary px-5 py-2 text-xs font-bold shadow-xs">
+                            <i class="fas fa-lock mr-1.5"></i> Lock &amp; Save Final Rating
                         </button>
                     </div>
                 </form>
@@ -3124,31 +3161,31 @@
         <!-- MODAL: 1-ON-1 DISCUSSION MINUTES VIEWER MODAL            -->
         <!-- ======================================================== -->
         <div id="modal-1on1-minutes-viewer" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-            <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-[#E8DEDC] overflow-hidden transform transition-all animate-scaleUp">
+            <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden transform transition-all animate-scaleUp">
                 
-                <div class="p-6 border-b border-[#E8DEDC] flex items-center justify-between bg-gradient-to-r from-indigo-50/60 via-white to-purple-50/40">
+                <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-base shadow-2xs">
+                        <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center font-bold text-base shadow-2xs">
                             <i class="fas fa-file-lines"></i>
                         </div>
                         <div>
                             <div class="flex items-center space-x-2">
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">Stage 5 Record</span>
-                                <span id="minutes-modal-cycle" class="text-xs text-slate-400 font-medium">Review Cycle 2026-Q3</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wider">Phase 5 Record</span>
+                                <span id="minutes-modal-cycle" class="text-xs text-slate-400 font-medium">• Review Cycle 2026-Q3</span>
                             </div>
                             <h3 id="minutes-modal-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">1-on-1 Discussion Minutes</h3>
                         </div>
                     </div>
-                    <button onclick="closeModal('modal-1on1-minutes-viewer')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                    <button onclick="closeModal('modal-1on1-minutes-viewer')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
                         <i class="fas fa-times text-xs"></i>
                     </button>
                 </div>
 
-                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
-                    <!-- Associate & Score Summary Card -->
-                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs bg-slate-100/40">
+                    <!-- Associate & Score Summary Container -->
+                    <div class="p-4.5 bg-white rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                         <div class="flex items-center space-x-3">
-                            <div id="minutes-modal-avatar" class="w-10 h-10 rounded-full bg-indigo-700 text-white font-bold text-xs flex items-center justify-center shadow-2xs flex-shrink-0">
+                            <div id="minutes-modal-avatar" class="w-10 h-10 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-2xs flex-shrink-0">
                                 MS
                             </div>
                             <div>
@@ -3157,26 +3194,29 @@
                             </div>
                         </div>
                         <div class="text-left sm:text-right">
-                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Calibrated Score</span>
-                            <span id="minutes-modal-score" class="text-sm font-bold text-indigo-700 font-mono">⭐ 4.55 / 5.0 (Master Tier)</span>
+                            <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">Calibrated Score</span>
+                            <span id="minutes-modal-score" class="text-sm font-bold text-slate-900 font-mono">⭐ 4.55 / 5.0 (Master Tier)</span>
                         </div>
                     </div>
 
-                    <!-- Minutes Content -->
-                    <div class="space-y-1.5">
-                        <label class="font-bold text-slate-800 text-xs flex items-center space-x-1.5">
-                            <i class="fas fa-comments text-indigo-600"></i>
-                            <span>Recorded 1-on-1 Discussion Minutes &amp; Action Items</span>
-                        </label>
-                        <div id="minutes-modal-body" class="p-4 bg-white rounded-2xl border border-slate-200 text-slate-700 leading-relaxed text-xs max-h-56 overflow-y-auto custom-scrollbar shadow-2xs">
+                    <!-- Minutes Content Container -->
+                    <div class="p-4.5 bg-white rounded-2xl border border-slate-200/80 space-y-2.5 shadow-2xs">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <label class="font-bold text-slate-900 text-[11px] uppercase tracking-wider flex items-center space-x-1.5">
+                                <i class="fas fa-comments text-slate-400"></i>
+                                <span>Recorded 1-on-1 Discussion Minutes &amp; Action Items</span>
+                            </label>
+                            <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">Formal Log</span>
+                        </div>
+                        <div id="minutes-modal-body" class="p-3.5 bg-slate-50/70 rounded-xl border border-slate-200 text-slate-700 leading-relaxed text-xs max-h-56 overflow-y-auto custom-scrollbar">
                             <!-- Populated dynamically -->
                         </div>
                     </div>
                 </div>
 
-                <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                <div class="p-4 bg-white border-t border-slate-100 flex items-center justify-between">
                     <button type="button" onclick="closeModal('modal-1on1-minutes-viewer')" class="btn-secondary px-4 py-2 text-xs font-bold">Close</button>
-                    <button id="minutes-modal-btn-calibrate" onclick="closeModal('modal-1on1-minutes-viewer'); open1on1CalibrationModal(window.selectedEvalEmpId || 'emp-101');" class="btn-primary px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-xs flex items-center space-x-1.5">
+                    <button id="minutes-modal-btn-calibrate" onclick="closeModal('modal-1on1-minutes-viewer'); open1on1CalibrationModal(window.selectedEvalEmpId || 'emp-101');" class="btn-primary px-4 py-2 text-xs font-bold shadow-xs flex items-center space-x-1.5">
                         <i class="fas fa-sliders"></i>
                         <span>Edit / Calibrate 1-on-1</span>
                     </button>
@@ -3188,16 +3228,16 @@
         <!-- MODAL: PERFORMANCE IMPROVEMENT PLAN (PIP) (< 3.0)        -->
         <!-- ======================================================== -->
         <div id="modal-pip-action" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-            <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-rose-200 overflow-hidden transform transition-all animate-scaleUp">
+            <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden transform transition-all animate-scaleUp">
                 
-                <div class="p-6 border-b border-rose-100 flex items-center justify-between bg-gradient-to-r from-rose-50 via-white to-amber-50">
+                <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-base shadow-2xs">
-                            <i class="fas fa-triangle-exclamation"></i>
+                        <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-base shadow-2xs border border-slate-200">
+                            <i class="fas fa-triangle-exclamation text-amber-600"></i>
                         </div>
                         <div>
                             <div class="flex items-center space-x-2">
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">Mandatory Action Plan</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">Action Plan Protocol</span>
                                 <span class="text-xs text-slate-400 font-medium">Rating Below 3.0</span>
                             </div>
                             <h3 id="pip-modal-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Performance Improvement Plan (PIP)</h3>
@@ -3208,28 +3248,28 @@
                     </button>
                 </div>
 
-                <form id="form-pip-action" onsubmit="handlePIPSubmit(event)" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
+                <form id="form-pip-action" onsubmit="handlePIPSubmit(event)" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs bg-slate-50/30">
                     <input type="hidden" id="pip-target-emp-id" value="">
 
-                    <div class="p-4 bg-rose-50/60 rounded-2xl border border-rose-200 space-y-1.5">
-                        <p class="font-bold text-rose-950 text-xs">Structured 30-60-90 Day Corrective Protocol</p>
-                        <p class="text-[11px] text-rose-800 leading-relaxed">The associate's appraisal score is below the required 3.0 benchmark. Define measurable remediation goals, coaching milestones, and evaluation check-in cadences.</p>
+                    <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-1.5">
+                        <p class="font-bold text-slate-900 text-xs">Structured 30-60-90 Day Corrective Protocol</p>
+                        <p class="text-[11px] text-slate-500 leading-relaxed">The associate's appraisal score is below the required 3.0 benchmark. Define measurable remediation goals, coaching milestones, and evaluation check-in cadences.</p>
                     </div>
 
                     <div class="space-y-1">
                         <label class="font-bold text-slate-800 text-[11px]">1. Specific Deficiencies &amp; Gaps Identified *</label>
-                        <textarea id="pip-deficiencies" required rows="2" placeholder="Detail specific performance standards or task metrics not met during the evaluation cycle..." class="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none custom-scrollbar bg-white"></textarea>
+                        <textarea id="pip-deficiencies" required rows="2" placeholder="Detail specific performance standards or task metrics not met during the evaluation cycle..." class="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-white"></textarea>
                     </div>
 
                     <div class="space-y-1">
                         <label class="font-bold text-slate-800 text-[11px]">2. Required Actionable Deliverables &amp; Milestones *</label>
-                        <textarea id="pip-milestones" required rows="2" placeholder="List mandatory coaching sessions, daily check-ins, or LMS remedial certifications required to reach >= 3.0 standard..." class="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none custom-scrollbar bg-white"></textarea>
+                        <textarea id="pip-milestones" required rows="2" placeholder="List mandatory coaching sessions, daily check-ins, or LMS remedial certifications required to reach >= 3.0 standard..." class="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-white"></textarea>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div class="space-y-1">
                             <label class="font-bold text-slate-800 text-[11px]">3. PIP Review Duration</label>
-                            <select id="pip-duration" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none bg-white">
+                            <select id="pip-duration" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none bg-white">
                                 <option value="30 Days">30-Day Intensive Review</option>
                                 <option value="60 Days" selected>60-Day Standard PIP</option>
                                 <option value="90 Days">90-Day Extended Remediation</option>
@@ -3237,13 +3277,13 @@
                         </div>
                         <div class="space-y-1">
                             <label class="font-bold text-slate-800 text-[11px]">4. Assigned Mentor / Supervisor</label>
-                            <input type="text" id="pip-mentor" value="Marco Rossi (Supervisor)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-rose-500 focus:outline-none bg-white">
+                            <input type="text" id="pip-mentor" value="Marco Rossi (Supervisor)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none bg-white">
                         </div>
                     </div>
 
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2">
                         <button type="button" onclick="closeModal('modal-pip-action')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
-                        <button type="submit" id="btn-submit-pip" class="btn-primary px-5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 border-rose-600 shadow-xs flex items-center space-x-1.5">
+                        <button type="submit" id="btn-submit-pip" class="btn-primary px-5 py-2 text-xs font-bold shadow-xs flex items-center space-x-1.5">
                             <i class="fas fa-file-signature"></i>
                             <span>Lock &amp; Issue PIP Notice &rarr;</span>
                         </button>
@@ -3258,15 +3298,15 @@
         <div id="modal-view-idp-plan" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden transform transition-all animate-scaleUp">
                 
-                <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-emerald-50/60 via-white to-indigo-50/40">
+                <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-base shadow-2xs">
+                        <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-base shadow-2xs border border-slate-200">
                             <i class="fas fa-file-invoice"></i>
                         </div>
                         <div>
                             <div class="flex items-center space-x-2">
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Stage 6 Document</span>
-                                <span id="modal-idp-plan-status-pill" class="text-xs text-slate-400 font-medium">Active Development Plan</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">Stage 6 Document</span>
+                                <span id="modal-idp-plan-status-pill" class="text-xs text-slate-500 font-medium">Development Plan</span>
                             </div>
                             <h3 id="modal-idp-plan-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Individual Development Plan (IDP)</h3>
                         </div>
@@ -3276,53 +3316,65 @@
                     </button>
                 </div>
 
-                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-5 text-xs">
-                    <!-- Associate & Score Summary Header -->
-                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div class="flex items-center space-x-3">
-                            <div id="modal-idp-emp-avatar" class="w-10 h-10 rounded-full bg-indigo-700 text-white font-bold text-xs flex items-center justify-center shadow-2xs flex-shrink-0">
-                                EM
-                            </div>
-                            <div>
-                                <p id="modal-idp-emp-name" class="font-bold text-slate-900 text-sm leading-tight">Employee Name</p>
-                                <p id="modal-idp-emp-role" class="text-[11px] text-slate-500">Position · Department</p>
-                            </div>
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs bg-slate-100/50">
+                    <!-- Container 1: Associate & Diagnostic Assessment Section -->
+                    <div class="p-4.5 bg-white rounded-2xl border border-slate-200/80 space-y-3.5 shadow-2xs">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                            <span class="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-1.5">
+                                <i class="fas fa-user-gear text-slate-400"></i>
+                                <span>Associate &amp; Performance Baseline</span>
+                            </span>
+                            <span id="modal-idp-emp-rating" class="text-xs font-bold text-slate-800 font-mono bg-slate-100 px-2.5 py-0.5 rounded border border-slate-200">
+                                ⭐ 4.50 / 5.0
+                            </span>
                         </div>
-                        <div class="text-left sm:text-right">
-                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Performance Rating</span>
-                            <span id="modal-idp-emp-rating" class="text-sm font-bold text-indigo-700 font-mono">⭐ 4.50 / 5.0</span>
+
+                        <!-- Associate Card -->
+                        <div class="p-3 bg-slate-50/80 rounded-xl border border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex items-center space-x-3">
+                                <div id="modal-idp-emp-avatar" class="w-10 h-10 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-2xs flex-shrink-0">
+                                    EM
+                                </div>
+                                <div>
+                                    <p id="modal-idp-emp-name" class="font-bold text-slate-900 text-sm leading-tight">Employee Name</p>
+                                    <p id="modal-idp-emp-role" class="text-[11px] text-slate-500">Position · Department</p>
+                                </div>
+                            </div>
+                            <span id="modal-idp-plan-status-pill" class="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white text-slate-700 border border-slate-200 shadow-2xs">
+                                Development Plan
+                            </span>
+                        </div>
+
+                        <!-- Strengths & Gaps Columns -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div class="p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/70 space-y-2">
+                                <span class="font-bold text-slate-900 text-xs flex items-center">
+                                    <i class="fas fa-circle-check mr-1.5 text-emerald-600"></i> Identified Strengths
+                                </span>
+                                <ul id="modal-idp-strengths-list" class="space-y-1.5 text-slate-700">
+                                    <!-- Populated dynamically -->
+                                </ul>
+                            </div>
+                            <div class="p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/70 space-y-2">
+                                <span class="font-bold text-slate-900 text-xs flex items-center">
+                                    <i class="fas fa-circle-exclamation mr-1.5 text-amber-500"></i> Development Gaps (&lt; 3.0)
+                                </span>
+                                <ul id="modal-idp-gaps-list" class="space-y-1.5 text-slate-700">
+                                    <!-- Populated dynamically -->
+                                </ul>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Strengths & Gaps Columns -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 space-y-2">
-                            <span class="font-bold text-emerald-950 text-xs flex items-center">
-                                <i class="fas fa-award mr-1.5 text-emerald-600"></i> Identified Strengths
-                            </span>
-                            <ul id="modal-idp-strengths-list" class="space-y-1.5 text-slate-700">
-                                <!-- Populated dynamically -->
-                            </ul>
-                        </div>
-                        <div class="p-4 bg-amber-50/50 rounded-2xl border border-amber-200 space-y-2">
-                            <span class="font-bold text-amber-950 text-xs flex items-center">
-                                <i class="fas fa-triangle-exclamation mr-1.5 text-amber-600"></i> Development Gaps (&lt; 3.0)
-                            </span>
-                            <ul id="modal-idp-gaps-list" class="space-y-1.5 text-slate-700">
-                                <!-- Populated dynamically -->
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- 70-20-10 Learning Commitments & Tasks -->
-                    <div class="space-y-2.5">
-                        <div class="flex items-center justify-between">
+                    <!-- Container 2: 70-20-10 Learning Commitments & Tasks Section -->
+                    <div class="p-4.5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
                             <h4 class="font-heading font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center space-x-1.5">
-                                <i class="fas fa-list-check text-indigo-600"></i>
+                                <i class="fas fa-list-check text-slate-400"></i>
                                 <span>70-20-10 Learning Commitments &amp; Concrete Tasks</span>
                             </h4>
-                            <button onclick="closeModal('modal-view-idp-plan'); openAddSpecificTaskModal(window.selectedEvalEmpId || 'emp-101')" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center space-x-1">
-                                <i class="fas fa-plus"></i>
+                            <button onclick="closeModal('modal-view-idp-plan'); openAddSpecificTaskModal(window.selectedEvalEmpId || 'emp-101')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold border border-slate-200 transition flex items-center space-x-1">
+                                <i class="fas fa-plus text-slate-500"></i>
                                 <span>Add Specific Task</span>
                             </button>
                         </div>
@@ -3332,14 +3384,14 @@
                     </div>
                 </div>
 
-                <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                <div class="p-4 bg-white border-t border-slate-100 flex items-center justify-between">
                     <button type="button" onclick="closeModal('modal-view-idp-plan')" class="btn-secondary px-4 py-2 text-xs font-bold">Close</button>
-                    <div class="flex items-center space-x-2">
-                        <button onclick="closeModal('modal-view-idp-plan'); openRemedialBooksModal(window.selectedEvalEmpId || 'emp-101')" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1.5">
-                            <i class="fas fa-book-medical"></i>
+                    <div id="modal-idp-plan-footer-actions" class="flex items-center space-x-2">
+                        <button onclick="closeModal('modal-view-idp-plan'); openRemedialBooksModal(window.selectedEvalEmpId || 'emp-101')" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs border border-slate-200 shadow-2xs transition flex items-center space-x-1.5">
+                            <i class="fas fa-book-medical text-slate-600"></i>
                             <span>Prescribe LMS Books</span>
                         </button>
-                        <button onclick="closeModal('modal-view-idp-plan'); switchSubTab('perf', 'idp'); showIDPDetail(window.selectedEvalEmpId || 'emp-101')" class="btn-primary px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-xs flex items-center space-x-1.5">
+                        <button onclick="closeModal('modal-view-idp-plan'); switchSubTab('perf', 'idp'); showIDPDetail(window.selectedEvalEmpId || 'emp-101')" class="btn-primary px-4 py-2 text-xs font-bold shadow-xs flex items-center space-x-1.5">
                             <span>Open Stage 6 Workspace &rarr;</span>
                         </button>
                     </div>
@@ -3353,13 +3405,13 @@
         <div id="modal-add-specific-task" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden transform transition-all animate-scaleUp">
                 
-                <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-50 via-white to-indigo-50">
+                <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-base shadow-2xs">
+                        <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-base shadow-2xs border border-slate-200">
                             <i class="fas fa-plus"></i>
                         </div>
                         <div>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">Action Plan Task</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">Action Plan Task</span>
                             <h3 id="modal-add-task-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Add Specific Goal Task</h3>
                         </div>
                     </div>
@@ -3374,29 +3426,29 @@
 
                     <div class="space-y-1">
                         <label class="font-bold text-slate-800 text-[11px]">Select Active Goal *</label>
-                        <select id="add-task-goal-select" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                        <select id="add-task-goal-select" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none bg-white">
                             <!-- Populated dynamically -->
                         </select>
                     </div>
 
                     <div class="space-y-1">
                         <label class="font-bold text-slate-800 text-[11px]">Specific Task Title *</label>
-                        <input type="text" id="add-task-title" required placeholder="e.g. Shadow Senior Front Desk Supervisor on VIP Arrivals" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                        <input type="text" id="add-task-title" required placeholder="e.g. Shadow Senior Front Desk Supervisor on VIP Arrivals" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none bg-white">
                     </div>
 
                     <div class="space-y-1">
                         <label class="font-bold text-slate-800 text-[11px]">Target Completion Date *</label>
-                        <input type="date" id="add-task-target-date" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white">
+                        <input type="date" id="add-task-target-date" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none bg-white">
                     </div>
 
                     <div class="space-y-1">
                         <label class="font-bold text-slate-800 text-[11px]">Task Instructions &amp; Success Metric</label>
-                        <textarea id="add-task-description" rows="2" placeholder="Detail specific standards, SOP checklists, or supervisor observation criteria..." class="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none custom-scrollbar bg-white"></textarea>
+                        <textarea id="add-task-description" rows="2" placeholder="Detail specific standards, SOP checklists, or supervisor observation criteria..." class="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-white"></textarea>
                     </div>
 
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2">
                         <button type="button" onclick="closeModal('modal-add-specific-task')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
-                        <button type="submit" id="btn-submit-specific-task" class="btn-primary px-5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 border-blue-600 shadow-xs flex items-center space-x-1.5">
+                        <button type="submit" id="btn-submit-specific-task" class="btn-primary px-5 py-2 text-xs font-bold shadow-xs flex items-center space-x-1.5">
                             <i class="fas fa-check"></i>
                             <span>Save Task to Database</span>
                         </button>
@@ -3411,14 +3463,14 @@
         <div id="modal-review-tasks" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden transform transition-all animate-scaleUp">
                 
-                <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-amber-50 via-white to-blue-50">
+                <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-base shadow-2xs">
-                            <i class="fas fa-list-check"></i>
+                        <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-base shadow-2xs border border-slate-200">
+                            <i class="fas fa-rotate"></i>
                         </div>
                         <div>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Stage 7 Review</span>
-                            <h3 id="modal-review-tasks-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Review Plan &amp; Tasks for Re-Execution</h3>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">Stage 7 Review</span>
+                            <h3 id="modal-review-tasks-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Reset Shift Tasks for Performance Retry</h3>
                         </div>
                     </div>
                     <button onclick="closeModal('modal-review-tasks')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
@@ -3426,133 +3478,165 @@
                     </button>
                 </div>
 
-                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs">
-                    <div class="p-4 bg-amber-50/70 rounded-2xl border border-amber-200 flex items-center justify-between gap-3">
-                        <div class="space-y-0.5">
-                            <p class="font-bold text-amber-950 text-xs">Remediation Task Re-do Protocol</p>
-                            <p class="text-[11px] text-amber-800">Review all action tasks. You can reset completed tasks back to pending for re-execution or delete obsolete tasks before returning to Continuous Monitoring.</p>
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs bg-slate-50/30">
+                    <!-- Associate Header Card -->
+                    <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between gap-3">
+                        <div class="flex items-center space-x-3">
+                            <div id="review-tasks-avatar" class="w-10 h-10 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-2xs flex-shrink-0">
+                                EM
+                            </div>
+                            <div>
+                                <p id="review-tasks-emp-name" class="font-bold text-slate-900 text-sm leading-tight">Employee Name</p>
+                                <p id="review-tasks-emp-role" class="text-[11px] text-slate-500">Position · Department</p>
+                            </div>
                         </div>
-                        <button onclick="openAddSpecificTaskModal(window.selectedEvalEmpId || 'emp-101')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-xs flex-shrink-0 transition flex items-center space-x-1">
-                            <i class="fas fa-plus"></i>
-                            <span>Add Task</span>
-                        </button>
+                        <span id="review-tasks-score-pill" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+                            ⭐ 2.80 / 5.0 (Developing)
+                        </span>
                     </div>
 
-                    <!-- Tasks List for Re-Execution -->
+                    <!-- Notice Card -->
+                    <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+                        <h5 class="font-bold text-slate-900 text-xs flex items-center space-x-1.5">
+                            <i class="fas fa-info-circle text-slate-600"></i>
+                            <span>Performance Retry &amp; Task Re-Initialization</span>
+                        </h5>
+                        <p class="text-slate-600 leading-relaxed text-[11px]">
+                            To allow the associate to improve their rating, all assigned shift monitoring tasks under their active approved goals will be re-opened (set to pending).
+                        </p>
+                    </div>
+
+                    <!-- Active Tasks List -->
                     <div class="space-y-2">
-                        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center space-x-1.5">
-                            <i class="fas fa-tasks text-amber-600"></i>
-                            <span>Assigned Action Tasks</span>
-                        </h4>
-                        <div id="review-tasks-modal-list" class="space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
+                        <h5 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center space-x-1.5">
+                            <i class="fas fa-list-check text-slate-600"></i>
+                            <span>Tasks To Be Reset for Shift Monitoring</span>
+                        </h5>
+                        <div id="review-tasks-list-container" class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar">
                             <!-- Populated dynamically -->
                         </div>
                     </div>
                 </div>
 
-                <div class="p-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <button type="button" onclick="closeModal('modal-review-tasks')" class="btn-secondary px-4 py-2 text-xs font-bold">Close</button>
-                    <div id="review-tasks-footer-actions" class="flex items-center space-x-2">
-                        <button id="btn-proceed-to-monitoring" onclick="proceedFromTasksToMonitoring()" class="btn-primary px-5 py-2 text-xs font-bold bg-teal-600 hover:bg-teal-700 border-teal-600 shadow-xs flex items-center space-x-2">
-                            <span>Proceed to Continuous Monitoring (Stage 3)</span>
-                            <i class="fas fa-arrow-right text-[10px]"></i>
+                <div class="p-4 bg-white border-t border-slate-100 flex items-center justify-between">
+                    <button type="button" onclick="closeModal('modal-review-tasks')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
+                    <button id="btn-proceed-to-monitoring" onclick="proceedFromTasksToMonitoring()" class="btn-primary px-5 py-2 text-xs font-bold shadow-xs flex items-center space-x-2">
+                        <span>Proceed to Continuous Monitoring (Stage 3)</span>
+                        <i class="fas fa-arrow-right text-[10px]"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- MODAL: STAGE 6 IDP DETAIL WORKSPACE MODAL                -->
+        <!-- ======================================================== -->
+        <div id="modal-idp-detail" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-5xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
+                <!-- Header -->
+                <div class="px-6 py-4 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-slate-50/70 flex-shrink-0">
+                    <div class="flex items-center space-x-3 min-w-0 pr-2">
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-base font-bold border border-emerald-200/60 shadow-2xs flex-shrink-0">
+                            <i class="fas fa-seedling"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center space-x-2 flex-wrap gap-1">
+                                <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100/80 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200">Phase 6 · Development Planning</span>
+                                <h3 id="idp-detail-title" class="font-heading font-bold text-base text-slate-900">70-20-10 Individual Development Plan (IDP)</h3>
+                            </div>
+                            <p id="idp-detail-subtitle" class="text-xs text-slate-500 mt-0.5">Strengths and developmental focus areas mapped to tailored 70-20-10 learning actions.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2.5 flex-wrap justify-end">
+                        <div id="idp-header-actions" class="flex items-center flex-wrap gap-2">
+                            <!-- Dynamic header actions -->
+                        </div>
+                        <button onclick="closeModal('modal-idp-detail')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90 flex-shrink-0" title="Close">
+                            <i class="fas fa-times text-xs"></i>
                         </button>
                     </div>
                 </div>
+
+                <!-- Body -->
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs bg-slate-100/50">
+                    <!-- Container 1: Diagnostic Assessment Section -->
+                    <div class="p-4.5 bg-white rounded-2xl border border-slate-200/80 space-y-3.5 shadow-2xs">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                            <span class="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-1.5">
+                                <i class="fas fa-chart-pie text-slate-400"></i>
+                                <span>1. Diagnostic Competency Strengths &amp; Gaps</span>
+                            </span>
+                            <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                                3.0 Benchmark
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                            <!-- Strengths Card -->
+                            <div class="p-4 bg-slate-50/70 rounded-xl border border-slate-200/80 space-y-2.5">
+                                <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                                    <span class="font-bold text-slate-900 text-xs flex items-center">
+                                        <i class="fas fa-circle-check mr-2 text-emerald-600 text-sm"></i>
+                                        Identified Strengths &amp; Competencies
+                                    </span>
+                                    <span id="idp-strengths-count" class="text-[10px] font-semibold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">0 Calibrated</span>
+                                </div>
+                                <ul id="idp-detail-strengths-list" class="space-y-2 text-slate-700 max-h-44 overflow-y-auto custom-scrollbar pr-1">
+                                    <!-- Populated dynamically by js/performance.js -->
+                                </ul>
+                            </div>
+
+                            <!-- Gaps Card -->
+                            <div class="p-4 bg-slate-50/70 rounded-xl border border-slate-200/80 space-y-2.5">
+                                <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                                    <span class="font-bold text-slate-900 text-xs flex items-center">
+                                        <i class="fas fa-circle-exclamation mr-2 text-amber-500 text-sm"></i>
+                                        Development Gaps (&lt; 3.0 Threshold)
+                                    </span>
+                                    <span id="idp-gaps-count" class="text-[10px] font-semibold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">Action Required</span>
+                                </div>
+                                <ul id="idp-detail-gaps-list" class="space-y-2 text-slate-700 max-h-44 overflow-y-auto custom-scrollbar pr-1">
+                                    <!-- Populated dynamically by js/performance.js -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Container 2: 70-20-10 IDP Plan Cards Section -->
+                    <div class="p-4.5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs space-y-3.5">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div>
+                                <h4 class="font-heading font-bold text-slate-900 text-sm flex items-center space-x-1.5">
+                                    <i class="fas fa-seedling text-emerald-600"></i>
+                                    <span>2. 70-20-10 Active Development Commitments</span>
+                                </h4>
+                                <p class="text-slate-500 text-[11px] mt-0.5">Experiential (70%), Social Mentorship (20%) &amp; Formal LMS (10%) actions</p>
+                            </div>
+                            <div id="idp-commitments-header-action">
+                                <!-- Dynamic Link -->
+                            </div>
+                        </div>
+
+                        <div id="idp-perf-commitments-container" class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                            <!-- Populated dynamically by js/performance.js -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
+                    <button onclick="viewEmployeeCompetencyRadar(window.selectedEvalEmpId || 'emp-101')" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition flex items-center space-x-1.5" title="Inspect Associate Competency Radar &amp; Gap Diagnostic">
+                        <i class="fas fa-chart-radar text-slate-600"></i>
+                        <span>View Competency Radar &amp; Gaps</span>
+                    </button>
+                    <button type="button" onclick="closeModal('modal-idp-detail')" class="btn-secondary px-5 py-2 text-xs font-bold">
+                        Close Plan
+                    </button>
+                </div>
             </div>
         </div>
-<!-- Modal: Stage 6 Individual Development Plan (IDP) Detail Modal -->
-<div id="modal-idp-detail" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-    <div class="modal-card max-w-4xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
-        <!-- Header -->
-        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
-            <div class="flex items-center space-x-3">
-                <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-lg font-bold border border-emerald-100 shadow-2xs">
-                    <i class="fas fa-seedling"></i>
-                </div>
-                <div>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">Phase 6: Development Planning</span>
-                        <h3 id="idp-detail-title" class="font-heading font-bold text-base text-slate-900">70-20-10 Individual Development Plan (IDP)</h3>
-                    </div>
-                    <p id="idp-detail-subtitle" class="text-xs text-slate-500 mt-0.5">Based on appraisal results, employee strengths and development gaps are mapped to tailored 70-20-10 learning actions.</p>
-                </div>
-            </div>
-            <div class="flex items-center space-x-2">
-                <div id="idp-header-actions" class="flex items-center space-x-2">
-                    <!-- Dynamic header actions (Send Kudos or Prescribe LMS / Add Action) -->
-                </div>
-                <button onclick="closeModal('modal-idp-detail')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
-                    <i class="fas fa-times text-xs"></i>
-                </button>
-            </div>
-        </div>
 
-        <!-- Body -->
-        <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-5 text-xs bg-slate-50/40">
-            <!-- Strengths vs Gaps Breakdown from Database -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Strengths Card -->
-                <div class="p-5 bg-white rounded-2xl border border-emerald-100 shadow-2xs space-y-3">
-                    <div class="flex items-center justify-between border-b border-emerald-100 pb-2.5">
-                        <span class="font-bold text-emerald-950 text-xs flex items-center">
-                            <i class="fas fa-award mr-2 text-emerald-600 text-sm"></i>
-                            Identified Strengths &amp; Core Competencies
-                        </span>
-                        <span id="idp-strengths-count" class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">0 Calibrated</span>
-                    </div>
-                    <ul id="idp-detail-strengths-list" class="space-y-2 text-slate-700 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-                        <!-- Populated dynamically by js/performance.js -->
-                    </ul>
-                </div>
-
-                <!-- Gaps Card -->
-                <div class="p-5 bg-white rounded-2xl border border-amber-200/80 shadow-2xs space-y-3">
-                    <div class="flex items-center justify-between border-b border-amber-200/80 pb-2.5">
-                        <span class="font-bold text-amber-950 text-xs flex items-center">
-                            <i class="fas fa-triangle-exclamation mr-2 text-amber-600 text-sm"></i>
-                            Development Gaps (&lt; 3.0 Threshold)
-                        </span>
-                        <span id="idp-gaps-count" class="text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">Action Required</span>
-                    </div>
-                    <ul id="idp-detail-gaps-list" class="space-y-2 text-slate-700 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-                        <!-- Populated dynamically by js/performance.js -->
-                    </ul>
-                </div>
-            </div>
-
-            <!-- 70-20-10 IDP Plan Cards Section from Database -->
-            <div class="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div>
-                        <h4 class="font-heading font-bold text-slate-900 text-sm">70-20-10 Active Development Commitments</h4>
-                        <p class="text-slate-500 text-[11px]">Experiential, Mentorship &amp; Formal LMS actions mapped for growth</p>
-                    </div>
-                    <div id="idp-commitments-header-action">
-                        <!-- Dynamic Link -->
-                    </div>
-                </div>
-
-                <div id="idp-perf-commitments-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <!-- Populated dynamically by js/performance.js -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
-            <button onclick="viewEmployeeCompetencyRadar(window.selectedEvalEmpId || 'emp-101')" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold shadow-2xs transition flex items-center space-x-1.5" title="Inspect Associate Competency Radar &amp; Gap Diagnostic">
-                <i class="fas fa-chart-radar text-indigo-600"></i>
-                <span>View Competency Radar &amp; Gap Interventions</span>
-            </button>
-            <button type="button" onclick="closeModal('modal-idp-detail')" class="btn-secondary px-5 py-2 text-xs font-bold">
-                Close Plan
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal: Stage 7 Next Cycle Transition Detail Modal -->
+        <!-- Modal: Stage 7 Next Cycle Transition Detail Modal -->
 <div id="modal-cycle-detail" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
         <!-- Header -->
@@ -3716,24 +3800,24 @@
             </div>
 
             <!-- Primary Supervisor Appraisal Assessment Card -->
-            <div class="p-5 bg-white rounded-2xl border border-purple-200/90 space-y-4 text-xs shadow-2xs">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-100 pb-3">
+            <div class="p-5 bg-white rounded-2xl border border-slate-200/80 space-y-4 text-xs shadow-2xs">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                     <div class="flex items-center space-x-2">
-                        <div class="w-8 h-8 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center text-xs">
+                        <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-xs border border-slate-200 shadow-2xs">
                             <i class="fas fa-user-tie"></i>
                         </div>
                         <div>
-                            <span class="font-bold text-purple-950 uppercase text-[11px] tracking-wide block">Supervisor Appraisal Scorecard</span>
+                            <span class="font-bold text-slate-900 uppercase text-[11px] tracking-wide block">Supervisor Appraisal Scorecard</span>
                             <span class="text-[10px] text-slate-500">Official calibrated rating recorded in database</span>
                         </div>
                     </div>
-                    <span id="eval-detail-super-status-badge" class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full self-start sm:self-auto">Rated</span>
+                    <span id="eval-detail-super-status-badge" class="text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-full self-start sm:self-auto">Rated</span>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center bg-purple-50/50 p-4 rounded-xl border border-purple-100">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 shadow-2xs">
                     <div>
                         <span class="text-[11px] font-semibold text-slate-500 block">Overall Supervisor Rating:</span>
-                        <div id="eval-detail-super-score" class="font-heading font-bold text-2xl text-purple-950 mt-0.5">
+                        <div id="eval-detail-super-score" class="font-heading font-bold text-2xl text-slate-900 mt-0.5">
                             0.00 <span class="text-sm font-normal text-slate-400">/ 5.0 (Pending Evaluation)</span>
                         </div>
                     </div>
@@ -3751,7 +3835,7 @@
                 </div>
 
                 <!-- Supervisor Recommendation / Notes -->
-                <div class="pt-3 border-t border-purple-100 space-y-1">
+                <div class="pt-3 border-t border-slate-100 space-y-1">
                     <span class="font-bold text-slate-800 text-xs block">Supervisor Endorsement &amp; Coaching Notes:</span>
                     <div id="eval-detail-super-recommendation" class="text-slate-700 leading-relaxed text-xs">
                         <!-- Populated dynamically -->
@@ -3766,12 +3850,12 @@
                 <button type="button" onclick="closeModal('modal-view-appraisal')" class="btn-secondary px-5 py-2 text-xs font-bold">
                     Close
                 </button>
-                <button onclick="viewEmployeeCompetencyRadar(window.selectedEvalEmpId || 'emp-101')" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 rounded-xl text-xs font-bold shadow-2xs transition flex items-center space-x-1.5" title="Inspect Associate Competency Radar &amp; Gap Diagnostic">
-                    <i class="fas fa-chart-radar text-indigo-600"></i>
+                <button onclick="viewEmployeeCompetencyRadar(window.selectedEvalEmpId || 'emp-101')" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold shadow-2xs transition flex items-center space-x-1.5" title="Inspect Associate Competency Radar &amp; Gap Diagnostic">
+                    <i class="fas fa-chart-radar text-slate-500"></i>
                     <span>Competency Radar &amp; Gaps</span>
                 </button>
             </div>
-            <button onclick="closeModal('modal-view-appraisal'); switchSubTab('perf', 'review');" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
+            <button onclick="closeModal('modal-view-appraisal'); switchSubTab('perf', 'review');" class="btn-primary px-4 py-2 text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
                 <span>Proceed to Phase 5: Calibration</span>
                 <i class="fas fa-arrow-right text-[10px]"></i>
             </button>
@@ -3781,11 +3865,11 @@
 
 <!-- Modal: Stage 5 Discussion Minutes & Calibration Detail Modal -->
 <div id="modal-view-calibration" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-    <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
+    <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
         <!-- Header -->
-        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 flex-shrink-0">
             <div class="flex items-center space-x-3">
-                <div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center text-lg font-bold border border-indigo-100 shadow-2xs">
+                <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold border border-slate-200 shadow-2xs">
                     <i class="fas fa-sliders"></i>
                 </div>
                 <div>

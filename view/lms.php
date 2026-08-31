@@ -116,7 +116,8 @@
                                         <table class="w-full text-left text-xs border-collapse">
                                             <thead>
                                                 <tr class="border-b border-[#E8DEDC] text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-[#FAF8F7]/50">
-                                                    <th class="py-3 px-3 rounded-l-xl">Enrolled Associate</th>
+                                                    <th class="py-3 px-3 w-10 text-center rounded-l-xl">#</th>
+                                                    <th class="py-3 px-3">Enrolled Associate</th>
                                                     <th class="py-3 px-3">Handbook Title &amp; Department</th>
                                                     <th class="py-3 px-3">Quiz Points &amp; Progress</th>
                                                     <th class="py-3 px-3">Rating / Status</th>

@@ -988,7 +988,7 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                     return;
                 }
 
-                tbody.innerHTML = filtered.map(item => {
+                tbody.innerHTML = filtered.map((item, idx) => {
                     const scorePct = typeof item.progress === 'number' && item.progress > 0 ? item.progress : Math.round(((item.quizScore || 0) / (item.quizMax || 100)) * 100);
                     let barColor = 'bg-red-500';
                     if (scorePct >= 80 || (item.status && item.status.toLowerCase() === 'passed')) barColor = 'bg-emerald-500';
@@ -999,6 +999,11 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 
                     return `
                         <tr class="hover:bg-slate-50/80 transition group">
+                            <!-- Numbering -->
+                            <td class="py-3.5 px-3 text-center font-mono font-bold text-slate-400 text-xs">
+                                ${idx + 1}
+                            </td>
+
                             <!-- Enrolled Associate -->
                             <td class="py-3.5 px-3">
                                 <div class="flex items-center space-x-3">
@@ -1249,10 +1254,7 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                 }
             };
 
-            window.prescribedBooksPerAssociate = window.prescribedBooksPerAssociate || {
-                maria: ['book_sommelier'],
-                'emp-101': ['book_sommelier']
-            };
+            window.prescribedBooksPerAssociate = window.prescribedBooksPerAssociate || {};
 
             let currentRemedialKey = 'maria';
 
@@ -1317,6 +1319,15 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
             }
             window.isEmployeeEnrolledInLms = isEmployeeEnrolledInLms;
 
+            function updateRemedialAssociateSync(empKey) {
+                currentRemedialKey = empKey;
+                const emp = remedialAssociates[empKey] || remedialAssociates['maria'];
+                const nameEl = document.getElementById('remedial-associate-name');
+                const detailEl = document.getElementById('remedial-associate-detail');
+                if (nameEl) nameEl.textContent = emp.name;
+                if (detailEl) detailEl.innerHTML = `${emp.detail}`;
+            }
+
             function openRemedialBooksModal(empKey) {
                 if (empKey) {
                     const k = empKey.toString().toLowerCase().trim();
@@ -1335,11 +1346,17 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                     if (selectEl) selectEl.value = currentRemedialKey;
                 }
                 const empId = window.selectedEvalEmpId || (currentRemedialKey === 'maria' ? 'emp-101' : (currentRemedialKey === 'antonio' ? 'emp-102' : currentRemedialKey));
+                
+                // 1. INSTANT 0ms local render & open modal immediately
+                updateRemedialAssociateSync(currentRemedialKey);
+                renderRemedialBooksList();
+                openModal('modal-remedial-books');
+
+                // 2. Fetch fresh database data asynchronously without blocking user UI
                 fetchPrescribedLms(empId).then(() => {
                     updateRemedialAssociate(currentRemedialKey);
                     renderRemedialBooksList();
-                    openModal('modal-remedial-books');
-                });
+                }).catch(() => {});
             }
             window.openRemedialBooksModal = openRemedialBooksModal;
 
@@ -1384,19 +1401,21 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                 container.innerHTML = books.map(book => {
                     const isRecommended = book.id === emp.recommendedBookId;
                     const isAlreadyPrescribed = isEmployeeEnrolledInLms(empId, book.id) || isEmployeeEnrolledInLms(currentRemedialKey, book.id);
+                    const isStagedDraft = (window.stagedIdpPlans?.[empId]?.prescribedBooks || []).some(b => b.bookId === book.id) ||
+                                          (window.stagedIdpPlans?.[currentRemedialKey]?.prescribedBooks || []).some(b => b.bookId === book.id);
                     const deptDisplay = book.deptName || book.department_name || (book.departments && book.departments.name) || 'Property-Wide';
                     const pagesDisplay = book.pages || (book.estimated_pages ? `${book.estimated_pages} Pages` : '18 Pages');
 
                     return `
-                        <div class="p-3.5 rounded-2xl border ${isAlreadyPrescribed ? 'border-emerald-200 bg-emerald-50/20' : (isRecommended ? 'border-primary/40 bg-primary-50/30 shadow-xs' : 'border-[#E8DEDC] bg-white hover:bg-[#FAF8F7]')} flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition">
+                        <div class="p-3.5 rounded-2xl border ${isAlreadyPrescribed ? 'border-emerald-200/80 bg-emerald-50/20' : (isStagedDraft ? 'border-amber-300/80 bg-amber-50/30' : (isRecommended ? 'border-slate-300 bg-slate-50/50 shadow-2xs' : 'border-slate-200/80 bg-white hover:bg-slate-50/60'))} flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition">
                             <div class="flex items-start space-x-3">
-                                <div class="w-9 h-9 rounded-xl ${isAlreadyPrescribed ? 'bg-emerald-100 text-emerald-800' : 'bg-[#FAF8F7] text-primary'} border border-[#E8DEDC] flex items-center justify-center text-sm shadow-2xs flex-shrink-0">
+                                <div class="w-9 h-9 rounded-xl ${isAlreadyPrescribed ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : (isStagedDraft ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-slate-100 text-slate-700 border-slate-200')} border flex items-center justify-center text-sm shadow-2xs flex-shrink-0">
                                     <i class="fas ${book.icon || 'fa-book-open'}"></i>
                                 </div>
                                 <div class="space-y-0.5">
                                     <div class="flex items-center space-x-2">
                                         <p class="font-bold text-slate-900 text-xs">${book.title}</p>
-                                        ${isAlreadyPrescribed ? '<span class="px-2 py-0.2 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">✓ Enrolled in lms_prescribed</span>' : (isRecommended ? '<span class="badge-terracotta text-[9px] uppercase tracking-wider font-extrabold">Gap Match</span>' : '')}
+                                        ${isAlreadyPrescribed ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/80">✓ Enrolled in DB</span>' : (isStagedDraft ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80">In Draft IDP</span>' : (isRecommended ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wider">Gap Match</span>' : ''))}
                                     </div>
                                     <p class="text-[11px] text-slate-500">${deptDisplay} · ${book.category || 'SOP Manual'} · <span class="font-medium text-slate-700">${pagesDisplay}</span></p>
                                 </div>
@@ -1408,17 +1427,23 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                                 </button>
                                 ${isAlreadyPrescribed ? `
                                     <button disabled
-                                        class="px-3.5 py-1.5 bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-xl cursor-not-allowed flex items-center space-x-1 opacity-90 shadow-2xs" title="Already prescribed in lms_prescribed database">
+                                        class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-semibold rounded-xl cursor-not-allowed flex items-center space-x-1 shadow-2xs" title="Already active in database">
                                         <i class="fas fa-check text-emerald-600 mr-1"></i>
                                         <span>Prescribed</span>
+                                    </button>
+                                ` : (isStagedDraft ? `
+                                    <button onclick="removeStagedIdpBook('${empId}', '${book.id}')"
+                                        class="px-3.5 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 text-xs font-semibold rounded-xl transition flex items-center space-x-1 shadow-2xs" title="Remove from draft IDP plan">
+                                        <i class="fas fa-times text-slate-400 mr-1"></i>
+                                        <span>In Draft (Remove)</span>
                                     </button>
                                 ` : `
                                     <button onclick="assignBookToIdp('${book.id}')"
                                         class="px-3.5 py-1.5 btn-primary text-xs font-bold transition flex items-center space-x-1 shadow-2xs">
                                         <i class="fas fa-plus mr-1"></i>
-                                        <span>Assign to IDP</span>
+                                        <span>+ Add to Draft IDP</span>
                                     </button>
-                                `}
+                                `)}
                             </div>
                         </div>
                     `;
@@ -1426,7 +1451,7 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
             }
             window.renderRemedialBooksList = renderRemedialBooksList;
 
-            async function assignBookToIdp(bookId, goalId = null) {
+            function assignBookToIdp(bookId, goalId = null) {
                 const books = (window.dynamicLmsState && window.dynamicLmsState.documents && window.dynamicLmsState.documents.length > 0)
                     ? window.dynamicLmsState.documents
                     : (window.lmsTrainingBooks || []);
@@ -1442,77 +1467,24 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                     if (activeGoal) targetGoalId = activeGoal.id;
                 }
 
-                // 1. Insert prescription into lms_prescribed database table in Supabase
-                try {
-                    const res = await fetch('api/lms.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            action: 'prescribe_document',
-                            employee: empId,
-                            lms_id: bookId,
-                            goal_id: targetGoalId || null,
-                            for: targetGoalId ? 'goal' : 'both',
-                            status: 'Needs Retake',
-                            scores: 0,
-                            ratings: 0,
-                            progress: 0
-                        })
+                // 1. Stage into Draft IDP without writing to DB immediately
+                window.stagedIdpPlans = window.stagedIdpPlans || {};
+                window.stagedIdpPlans[empId] = window.stagedIdpPlans[empId] || { tasks: [], prescribedBooks: [] };
+                window.stagedIdpPlans[empId].prescribedBooks = window.stagedIdpPlans[empId].prescribedBooks || [];
+
+                if (!window.stagedIdpPlans[empId].prescribedBooks.some(b => b.bookId === bookId)) {
+                    window.stagedIdpPlans[empId].prescribedBooks.push({
+                        bookId: book.id,
+                        bookTitle: book.title,
+                        targetGoalId: targetGoalId || null
                     });
-                    const json = await res.json();
-                    if (json.success && json.data) {
-                        window.dynamicLmsState.prescribed = window.dynamicLmsState.prescribed || [];
-                        window.dynamicLmsState.prescribed.push(json.data);
-                    }
-                } catch (err) {
-                    console.error('Failed to insert into lms_prescribed:', err);
-                }
-
-                // 2. Local state fallback sync
-                window.prescribedBooksPerAssociate[currentRemedialKey] = window.prescribedBooksPerAssociate[currentRemedialKey] || [];
-                if (!window.prescribedBooksPerAssociate[currentRemedialKey].includes(bookId)) {
-                    window.prescribedBooksPerAssociate[currentRemedialKey].push(bookId);
-                }
-                if (empId) {
-                    window.prescribedBooksPerAssociate[empId] = window.prescribedBooksPerAssociate[empId] || [];
-                    if (!window.prescribedBooksPerAssociate[empId].includes(bookId)) {
-                        window.prescribedBooksPerAssociate[empId].push(bookId);
-                    }
-                }
-
-                // 3. Add card into the IDP commitments container
-                const idpContainer = document.getElementById('idp-perf-commitments-container');
-                if (idpContainer) {
-                    const newCommitment = document.createElement('div');
-                    newCommitment.className = 'p-5 bg-amber-50/70 hover:bg-white rounded-2xl border border-amber-300 transition shadow-2xs hover:shadow-xs flex flex-col justify-between space-y-3 animate-fadeIn';
-                    newCommitment.innerHTML = `
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between">
-                                <span class="text-[10px] font-bold bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full">10% Formal</span>
-                                <span class="text-[10px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">&lt; 3.0 Remedial</span>
-                            </div>
-                            <h5 class="font-heading font-bold text-slate-900 text-sm">${book.title}</h5>
-                            <p class="text-slate-600 text-xs leading-relaxed">Assigned to close competency gap for ${emp.name.split('·')[0].trim()}. Complete handbook and pass quiz for calibration.</p>
-                        </div>
-                        <div class="pt-3 border-t border-amber-200 flex items-center justify-between text-xs">
-                            <span class="text-amber-800 text-[11px] font-semibold"><i class="fas fa-book-medical mr-1"></i>Prescribed</span>
-                            <span class="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-xl border border-emerald-300">Enrolled in lms_prescribed</span>
-                        </div>
-                    `;
-                    idpContainer.prepend(newCommitment);
                 }
 
                 renderRemedialBooksList();
                 if (typeof showIDPDetail === 'function') {
-                    showIDPDetail(currentRemedialKey);
+                    showIDPDetail(empId);
                 }
-                if (typeof loadAndRenderPlanningGoals === 'function') {
-                    loadAndRenderPlanningGoals();
-                }
-                if (typeof loadAndRenderMonitoringData === 'function') {
-                    loadAndRenderMonitoringData();
-                }
-                showToast(`📚 Handbook "${book.title}" prescribed & assigned as Specific Action Task for ${emp.name.split('·')[0].trim()}!`, 'success');
+                showToast(`📚 Handbook "${book.title}" added to draft IDP for ${emp.name.split('·')[0].trim()}! Click "Finish & Save IDP Plan" when ready to commit.`, 'success');
             }
             window.assignBookToIdp = assignBookToIdp;
 

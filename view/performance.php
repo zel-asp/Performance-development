@@ -44,101 +44,98 @@
                             </div>
 
                             <!-- 7-Stage Continuous Cycle Interactive Stepper -->
-                            <div class="card-clean p-4 overflow-x-auto custom-scrollbar bg-white">
-                                <div class="min-w-[840px] flex items-center justify-between text-xs select-none">
+                            <div class="card-clean p-5 overflow-x-auto custom-scrollbar bg-white">
+                                <div class="min-w-[840px] relative text-xs select-none py-1">
 
-                                    <div onclick="switchSubTab('perf', 'plan')"
-                                        class="flex items-center space-x-2 cursor-pointer group perf-step-item" data-step-key="plan">
-                                        <div
-                                            class="perf-step-bubble w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold ring-4 ring-primary/20 shadow-xs group-hover:scale-110 transition">
-                                            1</div>
-                                        <div>
-                                            <p
-                                                class="perf-step-title font-bold text-primary text-[11px] group-hover:text-primary transition">
-                                                1. Planning</p>
-                                            <p class="perf-step-sub text-[9px] text-primary/70 font-medium">Goals & KPIs</p>
-                                        </div>
+                                    <!-- Connecting Stepper Track & Dynamic Traveling Beam -->
+                                    <div class="stepper-track-container absolute top-[18px] left-[6%] right-[6%] h-[3px] bg-[#E2DCD5] rounded-full z-0 overflow-hidden pointer-events-none">
+                                        <div id="perf-stepper-progress-fill" class="absolute top-0 left-0 h-full bg-slate-800 rounded-full transition-all duration-500 ease-out" style="width: 0%;"></div>
+                                        <div id="perf-stepper-glider" class="stepper-glider-beam opacity-0" style="left: 0px; width: 0px;"></div>
                                     </div>
-                                    <div class="perf-step-line flex-1 h-0.5 bg-slate-200 mx-2 transition-colors"></div>
 
-                                    <div onclick="switchSubTab('perf', 'approve')"
-                                        class="flex items-center space-x-2 cursor-pointer group perf-step-item" data-step-key="approve">
-                                        <div
-                                            class="perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-200 transition">
-                                            2</div>
-                                        <div>
-                                            <p
-                                                class="perf-step-title font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">
-                                                2. Approval</p>
-                                            <p class="perf-step-sub text-[9px] text-slate-400">Calibration</p>
+                                    <div class="relative z-10 flex items-start justify-between">
+                                        <!-- Step 1 -->
+                                        <div onclick="switchSubTab('perf', 'plan')"
+                                            class="flex flex-col items-center text-center cursor-pointer group perf-step-item w-28" data-step-key="plan">
+                                            <div class="perf-step-bubble w-9 h-9 rounded-full bg-primary text-white ring-4 ring-primary/25 ring-offset-2 ring-offset-white flex items-center justify-center text-xs font-bold shadow-md scale-110 transition-all duration-300">
+                                                1
+                                            </div>
+                                            <p class="perf-step-title font-bold text-primary text-[11px] mt-2 group-hover:text-primary transition-colors">
+                                                1. Planning
+                                            </p>
+                                            <p class="perf-step-sub text-[9px] text-slate-400 font-medium mt-0.5">0 Pending</p>
                                         </div>
-                                    </div>
-                                    <div class="perf-step-line flex-1 h-0.5 bg-slate-200 mx-2 transition-colors"></div>
 
-                                    <div onclick="switchSubTab('perf', 'monitor')"
-                                        class="flex items-center space-x-2 cursor-pointer group perf-step-item" data-step-key="monitor">
-                                        <div
-                                            class="perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-200 transition">
-                                            3</div>
-                                        <div>
-                                            <p class="perf-step-title font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">3. Monitoring</p>
-                                            <p class="perf-step-sub text-[9px] text-slate-400">Continuous Log</p>
+                                        <!-- Step 2 -->
+                                        <div onclick="switchSubTab('perf', 'approve')"
+                                            class="flex flex-col items-center text-center cursor-pointer group perf-step-item w-28" data-step-key="approve">
+                                            <div class="perf-step-bubble w-9 h-9 rounded-full bg-slate-100 text-slate-500 ring-4 ring-white flex items-center justify-center text-xs font-bold group-hover:bg-slate-200 transition-all duration-300">
+                                                2
+                                            </div>
+                                            <p class="perf-step-title font-medium text-slate-600 text-[11px] mt-2 group-hover:text-slate-900 transition-colors">
+                                                2. Approval
+                                            </p>
+                                            <p class="perf-step-sub text-[9px] text-slate-400 font-medium mt-0.5">1 Approved</p>
                                         </div>
-                                    </div>
-                                    <div class="perf-step-line flex-1 h-0.5 bg-slate-200 mx-2 transition-colors"></div>
 
-                                    <div onclick="switchSubTab('perf', 'eval')"
-                                        class="flex items-center space-x-2 cursor-pointer group perf-step-item" data-step-key="eval">
-                                        <div
-                                            class="perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-200 transition">
-                                            4</div>
-                                        <div>
-                                            <p
-                                                class="perf-step-title font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">
-                                                4. Evaluation</p>
-                                            <p class="perf-step-sub text-[9px] text-slate-400">Self & Super</p>
+                                        <!-- Step 3 -->
+                                        <div onclick="switchSubTab('perf', 'monitor')"
+                                            class="flex flex-col items-center text-center cursor-pointer group perf-step-item w-28" data-step-key="monitor">
+                                            <div class="perf-step-bubble w-9 h-9 rounded-full bg-slate-100 text-slate-500 ring-4 ring-white flex items-center justify-center text-xs font-bold group-hover:bg-slate-200 transition-all duration-300">
+                                                3
+                                            </div>
+                                            <p class="perf-step-title font-medium text-slate-600 text-[11px] mt-2 group-hover:text-slate-900 transition-colors">
+                                                3. Monitoring
+                                            </p>
+                                            <p class="perf-step-sub text-[9px] text-slate-400 font-medium mt-0.5">1 Monitored</p>
                                         </div>
-                                    </div>
-                                    <div class="perf-step-line flex-1 h-0.5 bg-slate-200 mx-2 transition-colors"></div>
 
-                                    <div onclick="switchSubTab('perf', 'review')"
-                                        class="flex items-center space-x-2 cursor-pointer group perf-step-item" data-step-key="review">
-                                        <div
-                                            class="perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-200 transition">
-                                            5</div>
-                                        <div>
-                                            <p
-                                                class="perf-step-title font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">
-                                                5. Review</p>
-                                            <p class="perf-step-sub text-[9px] text-slate-400">1-on-1 & Calib</p>
+                                        <!-- Step 4 -->
+                                        <div onclick="switchSubTab('perf', 'eval')"
+                                            class="flex flex-col items-center text-center cursor-pointer group perf-step-item w-28" data-step-key="eval">
+                                            <div class="perf-step-bubble w-9 h-9 rounded-full bg-slate-100 text-slate-500 ring-4 ring-white flex items-center justify-center text-xs font-bold group-hover:bg-slate-200 transition-all duration-300">
+                                                4
+                                            </div>
+                                            <p class="perf-step-title font-medium text-slate-600 text-[11px] mt-2 group-hover:text-slate-900 transition-colors">
+                                                4. Evaluation
+                                            </p>
+                                            <p class="perf-step-sub text-[9px] text-slate-400 font-medium mt-0.5">0 Pending</p>
                                         </div>
-                                    </div>
-                                    <div class="perf-step-line flex-1 h-0.5 bg-slate-200 mx-2 transition-colors"></div>
 
-                                    <div onclick="switchSubTab('perf', 'idp')"
-                                        class="flex items-center space-x-2 cursor-pointer group perf-step-item" data-step-key="idp">
-                                        <div
-                                            class="perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-200 transition">
-                                            6</div>
-                                        <div>
-                                            <p
-                                                class="perf-step-title font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">
-                                                6. IDP Plan</p>
-                                            <p class="perf-step-sub text-[9px] text-slate-400">70-20-10</p>
+                                        <!-- Step 5 -->
+                                        <div onclick="switchSubTab('perf', 'review')"
+                                            class="flex flex-col items-center text-center cursor-pointer group perf-step-item w-28" data-step-key="review">
+                                            <div class="perf-step-bubble w-9 h-9 rounded-full bg-slate-100 text-slate-500 ring-4 ring-white flex items-center justify-center text-xs font-bold group-hover:bg-slate-200 transition-all duration-300">
+                                                5
+                                            </div>
+                                            <p class="perf-step-title font-medium text-slate-600 text-[11px] mt-2 group-hover:text-slate-900 transition-colors">
+                                                5. Review
+                                            </p>
+                                            <p class="perf-step-sub text-[9px] text-slate-400 font-medium mt-0.5">0 Calibrated</p>
                                         </div>
-                                    </div>
-                                    <div class="perf-step-line flex-1 h-0.5 bg-slate-200 mx-2 transition-colors"></div>
 
-                                    <div onclick="switchSubTab('perf', 'cycle')"
-                                        class="flex items-center space-x-2 cursor-pointer group perf-step-item" data-step-key="cycle">
-                                        <div
-                                            class="perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-200 transition">
-                                            7</div>
-                                        <div>
-                                            <p
-                                                class="perf-step-title font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition">
-                                                7. Next Cycle</p>
-                                            <p class="perf-step-sub text-[9px] text-slate-400">Roll Forward</p>
+                                        <!-- Step 6 -->
+                                        <div onclick="switchSubTab('perf', 'idp')"
+                                            class="flex flex-col items-center text-center cursor-pointer group perf-step-item w-28" data-step-key="idp">
+                                            <div class="perf-step-bubble w-9 h-9 rounded-full bg-slate-100 text-slate-500 ring-4 ring-white flex items-center justify-center text-xs font-bold group-hover:bg-slate-200 transition-all duration-300">
+                                                6
+                                            </div>
+                                            <p class="perf-step-title font-medium text-slate-600 text-[11px] mt-2 group-hover:text-slate-900 transition-colors">
+                                                6. IDP Plan
+                                            </p>
+                                            <p class="perf-step-sub text-[9px] text-slate-400 font-medium mt-0.5">0 IDP Plans</p>
+                                        </div>
+
+                                        <!-- Step 7 -->
+                                        <div onclick="switchSubTab('perf', 'cycle')"
+                                            class="flex flex-col items-center text-center cursor-pointer group perf-step-item w-28" data-step-key="cycle">
+                                            <div class="perf-step-bubble w-9 h-9 rounded-full bg-slate-100 text-slate-500 ring-4 ring-white flex items-center justify-center text-xs font-bold group-hover:bg-slate-200 transition-all duration-300">
+                                                7
+                                            </div>
+                                            <p class="perf-step-title font-medium text-slate-600 text-[11px] mt-2 group-hover:text-slate-900 transition-colors">
+                                                7. Next Cycle
+                                            </p>
+                                            <p class="perf-step-sub text-[9px] text-slate-400 font-medium mt-0.5">0 Transitions</p>
                                         </div>
                                     </div>
 
@@ -189,25 +186,22 @@
                                 <div class="card-clean bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
                                     <!-- Header Section -->
                                     <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                        <div class="space-y-1">
+                                        <div class="space-y-0.5">
                                             <div class="flex items-center space-x-2">
-                                                <span class="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-700/10 px-2.5 py-0.5 rounded-full">
+                                                <span class="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-700/10 px-2.5 py-0.5 rounded-full">
                                                     Phase 1 Stepper
                                                 </span>
                                                 <span class="text-xs text-slate-400 font-medium">•</span>
                                                 <span class="text-xs text-slate-500 font-medium">Goal Definition &amp; Metrics</span>
                                             </div>
-                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 1: Performance Objectives &amp; Deliverables Roster</h3>
-                                            <p class="text-slate-500 text-xs">Defined baseline commitments, hospitality KPIs, weights, and expected deliverables for team members.</p>
+                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 1: Objectives &amp; Deliverables</h3>
                                         </div>
 
                                         <!-- Header Action Controls -->
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
-                                            <div class="relative">
-                                                <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                                </svg>
-                                                <input id="search-planning-goals" oninput="onPlanningGoalsSearch(this.value)" type="text" placeholder="Search objectives..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-700 w-44 sm:w-48 transition" />
+                                            <div class="search-box-pixel">
+                                                <i class="fas fa-magnifying-glass absolute left-2.5 text-slate-400 text-xs pointer-events-none"></i>
+                                                <input id="search-planning-goals" oninput="onPlanningGoalsSearch(this.value)" type="text" placeholder="Search objectives..." class="search-input-pixel" />
                                             </div>
                                             <select id="filter-planning-status" onchange="filterPlanningByStatus(this.value)" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none shadow-2xs">
                                                 <option value="all">All Goals</option>
@@ -218,13 +212,13 @@
                                             </select>
                                             <button onclick="confirmApproveAllPendingGoals()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
                                                 <i class="fas fa-check-double"></i>
-                                                <span>Approve All Pending Goals</span>
+                                                <span>Approve All Pending</span>
                                             </button>
                                             <button id="btn-stage1-bulk-delete" onclick="confirmBulkDeleteStage1()" class="hidden px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
                                                 <i class="fas fa-trash-can"></i>
                                                 <span>Delete (<span id="stage1-selected-count">0</span>)</span>
                                             </button>
-                                            <button onclick="openModal('modal-create-goal')" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1.5 shadow-xs">
+                                            <button onclick="openModal('modal-create-goal')" class="btn-primary text-xs font-bold flex items-center space-x-1.5 shadow-xs">
                                                 <i class="fas fa-plus text-[11px]"></i>
                                                 <span>Define Objective</span>
                                             </button>
@@ -239,6 +233,7 @@
                                                     <th class="px-4 py-3 w-8 text-center">
                                                         <input type="checkbox" id="stage1-select-all" onchange="toggleSelectAllStage1(this.checked)" class="rounded border-slate-300 text-primary focus:ring-primary">
                                                     </th>
+                                                    <th class="px-3 py-3 w-10 text-center font-bold text-slate-400">#</th>
                                                     <th class="px-5 py-3">Employee</th>
                                                     <th class="px-5 py-3">Objective &amp; Dept</th>
                                                     <th class="px-5 py-3">Target Metric / KPI</th>
@@ -261,27 +256,24 @@
                                 <div id="general-tasks-matrix-card" class="card-clean bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
                                     <!-- Header Section -->
                                     <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                        <div class="space-y-1">
+                                        <div class="space-y-0.5">
                                             <div class="flex items-center space-x-2">
-                                                <span class="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider bg-primary/10 text-primary ring-1 ring-inset ring-primary/20 px-2.5 py-0.5 rounded-full">
+                                                <span class="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary ring-1 ring-inset ring-primary/20 px-2.5 py-0.5 rounded-full">
                                                     Supervisor Matrix
                                                 </span>
                                                 <span class="text-xs text-slate-400 font-medium">•</span>
-                                                <span class="text-xs text-slate-500 font-medium">Standard Baseline Checklists</span>
+                                                <span class="text-xs text-slate-500 font-medium">Baseline Checklists</span>
                                             </div>
-                                            <h3 class="font-heading font-bold text-base text-slate-900">General Tasks &amp; Operational Checklist Matrix</h3>
-                                            <p class="text-slate-500 text-xs">Standard checklist items automatically assigned to all employees setting performance objectives.</p>
+                                            <h3 class="font-heading font-bold text-base text-slate-900">General Tasks Matrix</h3>
                                         </div>
 
                                         <!-- Header Action Controls -->
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
-                                            <div class="relative">
-                                                <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                                </svg>
-                                                <input id="search-general-tasks" oninput="onGeneralTasksSearch(this.value)" type="text" placeholder="Search tasks..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-700 w-44 sm:w-48 transition" />
+                                            <div class="search-box-pixel">
+                                                <i class="fas fa-magnifying-glass absolute left-2.5 text-slate-400 text-xs pointer-events-none"></i>
+                                                <input id="search-general-tasks" oninput="onGeneralTasksSearch(this.value)" type="text" placeholder="Search tasks..." class="search-input-pixel" />
                                             </div>
-                                            <button onclick="openCreateGeneralTaskModal()" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1.5 shadow-xs">
+                                            <button onclick="openCreateGeneralTaskModal()" class="btn-primary text-xs font-bold flex items-center space-x-1.5 shadow-xs">
                                                 <i class="fas fa-plus text-[11px]"></i>
                                                 <span>Add General Task</span>
                                             </button>
@@ -293,6 +285,7 @@
                                         <table class="w-full text-left text-xs border-collapse">
                                             <thead class="bg-slate-50/80 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-200/80">
                                                 <tr>
+                                                    <th class="px-3 py-3 w-10 text-center font-bold text-slate-400">#</th>
                                                     <th class="px-5 py-3">Task Title &amp; Category</th>
                                                     <th class="px-5 py-3">SOP Requirements / Guidelines</th>
                                                     <th class="px-5 py-3">Target Deadline Offset</th>
@@ -309,17 +302,17 @@
                                 </div>
 
                                 <!-- Initial Development Needs Identification -->
-                                <div class="card-clean p-5 bg-indigo-50/40 border border-indigo-100 rounded-xl flex items-start space-x-3.5 text-xs">
+                                <div class="card-clean p-4.5 bg-indigo-50/40 border border-indigo-100 rounded-xl flex items-start space-x-3.5 text-xs">
                                     <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-sm flex-shrink-0 shadow-2xs">
                                         <i class="fas fa-lightbulb"></i>
                                     </div>
-                                    <div class="space-y-1 flex-1">
-                                        <p class="font-bold text-indigo-950 text-sm">Initial Development Needs Identified for this Period</p>
-                                        <p class="text-slate-700 leading-relaxed">During the joint planning session, supervisor Marco noted that to sustain the <strong>+18% Upsell target</strong>, Maria requires advanced mentorship in French &amp; Italian reserve wine pairing and Micros POS fast-split billing.</p>
-                                        <button onclick="switchSubTab('perf', 'idp')" class="text-indigo-600 hover:text-indigo-800 font-bold underline text-xs inline-block pt-1">
-                                            View mapped Individual Development Plan (IDP) &rarr;
-                                        </button>
+                                    <div class="space-y-0.5 flex-1">
+                                        <p class="font-bold text-indigo-950 text-xs">Development Needs Identified</p>
+                                        <p class="text-slate-600 leading-relaxed">Associate Maria is scheduled for reserve wine pairing mentorship to sustain the <strong>+18% Upsell target</strong>.</p>
                                     </div>
+                                    <button onclick="switchSubTab('perf', 'idp')" class="text-indigo-600 hover:text-indigo-800 font-bold underline text-xs flex-shrink-0">
+                                        View IDP &rarr;
+                                    </button>
                                 </div>
                             </div>
 
@@ -330,25 +323,22 @@
                                 <div class="card-clean bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
                                     <!-- Header Section -->
                                     <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                        <div class="space-y-1">
+                                        <div class="space-y-0.5">
                                             <div class="flex items-center space-x-2">
-                                                <span class="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-700/10 px-2.5 py-0.5 rounded-full">
+                                                <span class="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-700/10 px-2.5 py-0.5 rounded-full">
                                                     Phase 2 Stepper
                                                 </span>
                                                 <span class="text-xs text-slate-400 font-medium">•</span>
-                                                <span class="text-xs text-slate-500 font-medium">Approved Objectives Baseline</span>
+                                                <span class="text-xs text-slate-500 font-medium">Approved Objectives</span>
                                             </div>
-                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 2: Goal Calibration &amp; Formal Approval Roster</h3>
-                                            <p class="text-slate-500 text-xs">Approved performance objectives forming the locked baseline for continuous shift monitoring.</p>
+                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 2: Goal Calibration &amp; Approval</h3>
                                         </div>
 
                                         <!-- Header Action Controls -->
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
-                                            <div class="relative">
-                                                <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                                </svg>
-                                                <input id="search-approved-goals" oninput="onApprovedGoalsSearch(this.value)" type="text" placeholder="Search approved goals..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-slate-700 w-44 sm:w-48 transition" />
+                                            <div class="search-box-pixel">
+                                                <i class="fas fa-magnifying-glass absolute left-2.5 text-slate-400 text-xs pointer-events-none"></i>
+                                                <input id="search-approved-goals" oninput="onApprovedGoalsSearch(this.value)" type="text" placeholder="Search approved goals..." class="search-input-pixel" />
                                             </div>
                                             <button id="btn-stage2-bulk-delete" onclick="confirmBulkDeleteStage2()" class="hidden px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
                                                 <i class="fas fa-trash-can"></i>
@@ -386,25 +376,22 @@
                                 <div class="card-clean bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
                                     <!-- Header Section -->
                                     <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                        <div class="space-y-1">
+                                        <div class="space-y-0.5">
                                             <div class="flex items-center space-x-2">
-                                                <span class="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-700/10 px-2.5 py-0.5 rounded-full">
+                                                <span class="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-700/10 px-2.5 py-0.5 rounded-full">
                                                     Phase 3 Stepper
                                                 </span>
                                                 <span class="text-xs text-slate-400 font-medium">•</span>
-                                                <span class="text-xs text-slate-500 font-medium">Continuous Shift Monitoring</span>
+                                                <span class="text-xs text-slate-500 font-medium">Continuous Monitoring</span>
                                             </div>
-                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 3: Continuous Shift Performance Monitoring</h3>
-                                            <p class="text-slate-500 text-xs">Live shift monitoring, task completions, and supervisor ratings.</p>
+                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 3: Shift Performance Monitoring</h3>
                                         </div>
 
                                         <!-- Header Action Controls -->
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
-                                            <div class="relative">
-                                                <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                                </svg>
-                                                <input id="search-monitoring-emp" oninput="onMonitoringEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-700 w-44 sm:w-48 transition" />
+                                            <div class="search-box-pixel">
+                                                <i class="fas fa-magnifying-glass absolute left-2.5 text-slate-400 text-xs pointer-events-none"></i>
+                                                <input id="search-monitoring-emp" oninput="onMonitoringEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="search-input-pixel" />
                                             </div>
                                             <select id="filter-monitoring-dept" onchange="filterMonitoringByDept(this.value)" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-primary focus:outline-none shadow-2xs">
                                                 <option value="all">All Departments</option>
@@ -413,7 +400,7 @@
                                                 <option value="Culinary">Culinary</option>
                                                 <option value="Housekeeping">Housekeeping</option>
                                             </select>
-                                            <button onclick="autoCalculateAllMonitoringProgress()" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 shadow-xs border-indigo-600">
+                                            <button onclick="autoCalculateAllMonitoringProgress()" class="btn-primary text-xs font-bold flex items-center space-x-1.5 shadow-xs">
                                                 <i class="fas fa-bolt text-[11px]"></i>
                                                 <span>Auto-Calculate KPIs</span>
                                             </button>
@@ -425,6 +412,7 @@
                                         <table class="w-full text-left text-xs border-collapse">
                                             <thead class="bg-slate-50/80 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-200/80">
                                                 <tr>
+                                                    <th class="px-3 py-3 w-10 text-center font-bold text-slate-400">#</th>
                                                     <th class="px-5 py-3">Employee &amp; Position</th>
                                                     <th class="px-5 py-3">Department</th>
                                                     <th class="px-5 py-3">Supervisor Rating</th>
@@ -449,25 +437,22 @@
                                 <div id="eval-roster-list-card" class="card-clean bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
                                     <!-- Header Section -->
                                     <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                        <div class="space-y-1">
+                                        <div class="space-y-0.5">
                                             <div class="flex items-center space-x-2">
-                                                <span class="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-700/10 px-2.5 py-0.5 rounded-full">
+                                                <span class="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-700/10 px-2.5 py-0.5 rounded-full">
                                                     Phase 4 Stepper
                                                 </span>
                                                 <span class="text-xs text-slate-400 font-medium">•</span>
-                                                <span class="text-xs text-slate-500 font-medium">Multi-Factor Assessment</span>
+                                                <span class="text-xs text-slate-500 font-medium">Evaluation Roster</span>
                                             </div>
-                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 4: Employee Appraisal Evaluation Roster</h3>
-                                            <p class="text-slate-500 text-xs">Evaluate associate performance against agreed objectives, deliverables, and 5-star hospitality competencies.</p>
+                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 4: Appraisal Evaluation</h3>
                                         </div>
 
                                         <!-- Header Action Controls -->
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
-                                            <div class="relative">
-                                                <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                                </svg>
-                                                <input id="search-eval-emp" oninput="onEvalEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-slate-700 w-44 sm:w-48 transition" />
+                                            <div class="search-box-pixel">
+                                                <i class="fas fa-magnifying-glass absolute left-2.5 text-slate-400 text-xs pointer-events-none"></i>
+                                                <input id="search-eval-emp" oninput="onEvalEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="search-input-pixel" />
                                             </div>
                                         </div>
                                     </div>
@@ -477,6 +462,7 @@
                                         <table class="w-full text-left text-xs border-collapse">
                                             <thead class="bg-slate-50/80 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-200/80">
                                                 <tr>
+                                                    <th class="px-3 py-3 w-10 text-center font-bold text-slate-400">#</th>
                                                     <th class="px-5 py-3">Employee &amp; Position</th>
                                                     <th class="px-5 py-3">Department</th>
                                                     <th class="px-5 py-3">Objectives Progress</th>
@@ -503,25 +489,22 @@
                                 <div class="card-clean bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
                                     <!-- Header Section -->
                                     <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                        <div class="space-y-1">
+                                        <div class="space-y-0.5">
                                             <div class="flex items-center space-x-2">
-                                                <span class="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-700/10 px-2.5 py-0.5 rounded-full">
+                                                <span class="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-700/10 px-2.5 py-0.5 rounded-full">
                                                     Phase 5 Stepper
                                                 </span>
                                                 <span class="text-xs text-slate-400 font-medium">•</span>
-                                                <span class="text-xs text-slate-500 font-medium">1-on-1 Review &amp; Final Rating</span>
+                                                <span class="text-xs text-slate-500 font-medium">1-on-1 Review &amp; Calibration</span>
                                             </div>
-                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 5: 1-on-1 Review &amp; Final Rating Roster</h3>
-                                            <p class="text-slate-500 text-xs">Formal 1-on-1 review discussion, feedback sign-off, and final calibrated rating.</p>
+                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 5: 1-on-1 Review &amp; Rating</h3>
                                         </div>
 
                                         <!-- Header Action Controls -->
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
-                                            <div class="relative">
-                                                <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                                </svg>
-                                                <input id="search-review-emp" oninput="onReviewEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-700 w-44 sm:w-48 transition" />
+                                            <div class="search-box-pixel">
+                                                <i class="fas fa-magnifying-glass absolute left-2.5 text-slate-400 text-xs pointer-events-none"></i>
+                                                <input id="search-review-emp" oninput="onReviewEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="search-input-pixel" />
                                             </div>
                                         </div>
                                     </div>
@@ -531,6 +514,7 @@
                                         <table class="w-full text-left text-xs border-collapse">
                                             <thead class="bg-slate-50/80 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-200/80">
                                                 <tr>
+                                                    <th class="px-3 py-3 w-10 text-center font-bold text-slate-400">#</th>
                                                     <th class="px-5 py-3">Employee &amp; Position</th>
                                                     <th class="px-5 py-3">Department</th>
                                                     <th class="px-5 py-3">Appraisal Rating</th>
@@ -556,25 +540,22 @@
                                 <div class="card-clean bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
                                     <!-- Header Section -->
                                     <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                        <div class="space-y-1">
+                                        <div class="space-y-0.5">
                                             <div class="flex items-center space-x-2">
-                                                <span class="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-700/10 px-2.5 py-0.5 rounded-full">
+                                                <span class="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-700/10 px-2.5 py-0.5 rounded-full">
                                                     Phase 6 Stepper
                                                 </span>
                                                 <span class="text-xs text-slate-400 font-medium">•</span>
-                                                <span class="text-xs text-slate-500 font-medium">Development Planning (IDP)</span>
+                                                <span class="text-xs text-slate-500 font-medium">70-20-10 Learning Action Plan</span>
                                             </div>
-                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 6: Individual Development Plan (IDP) Roster</h3>
-                                            <p class="text-slate-500 text-xs">70-20-10 experiential, social, and formal learning plans with competency uplift and rewards.</p>
+                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 6: Individual Development Plan (IDP)</h3>
                                         </div>
 
                                         <!-- Header Action Controls -->
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
-                                            <div class="relative">
-                                                <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                                </svg>
-                                                <input id="search-idp-emp" oninput="onIDPEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 w-44 sm:w-48 transition" />
+                                            <div class="search-box-pixel">
+                                                <i class="fas fa-magnifying-glass absolute left-2.5 text-slate-400 text-xs pointer-events-none"></i>
+                                                <input id="search-idp-emp" oninput="onIDPEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="search-input-pixel" />
                                             </div>
                                         </div>
                                     </div>
@@ -584,6 +565,7 @@
                                         <table class="w-full text-left text-xs border-collapse">
                                             <thead class="bg-slate-50/80 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-200/80">
                                                 <tr>
+                                                    <th class="px-3 py-3 w-10 text-center font-bold text-slate-400">#</th>
                                                     <th class="px-5 py-3">Employee</th>
                                                     <th class="px-5 py-3">Position &amp; Department</th>
                                                     <th class="px-5 py-3">IDP 70-20-10 Mapping</th>
@@ -608,25 +590,22 @@
                                 <div class="card-clean bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
                                     <!-- Header Section -->
                                     <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                        <div class="space-y-1">
+                                        <div class="space-y-0.5">
                                             <div class="flex items-center space-x-2">
-                                                <span class="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider bg-teal-50 text-teal-700 ring-1 ring-inset ring-teal-700/10 px-2.5 py-0.5 rounded-full">
+                                                <span class="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-teal-50 text-teal-700 ring-1 ring-inset ring-teal-700/10 px-2.5 py-0.5 rounded-full">
                                                     Phase 7 Stepper
                                                 </span>
                                                 <span class="text-xs text-slate-400 font-medium">•</span>
-                                                <span class="text-xs text-slate-500 font-medium">Implementation &amp; Next Cycle</span>
+                                                <span class="text-xs text-slate-500 font-medium">Cycle Transition &amp; Baseline</span>
                                             </div>
-                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 7: Next Cycle Transition &amp; Rollover Roster</h3>
-                                            <p class="text-slate-500 text-xs">Rollover active quarterly targets and performance growth lifts into the next cycle baseline.</p>
+                                            <h3 class="font-heading font-bold text-base text-slate-900">Stage 7: Next Cycle Transition</h3>
                                         </div>
 
                                         <!-- Header Action Controls -->
                                         <div class="flex items-center gap-2 self-end lg:self-center flex-wrap">
-                                            <div class="relative">
-                                                <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                                </svg>
-                                                <input id="search-cycle-emp" oninput="onCycleEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-slate-700 w-44 sm:w-48 transition" />
+                                            <div class="search-box-pixel">
+                                                <i class="fas fa-magnifying-glass absolute left-2.5 text-slate-400 text-xs pointer-events-none"></i>
+                                                <input id="search-cycle-emp" oninput="onCycleEmployeeSearch(this.value)" type="text" placeholder="Search employee..." class="search-input-pixel" />
                                             </div>
                                         </div>
                                     </div>
@@ -636,6 +615,7 @@
                                         <table class="w-full text-left text-xs border-collapse">
                                             <thead class="bg-slate-50/80 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-200/80">
                                                 <tr>
+                                                    <th class="px-3 py-3 w-10 text-center font-bold text-slate-400">#</th>
                                                     <th class="px-5 py-3">Employee</th>
                                                     <th class="px-5 py-3">Department</th>
                                                     <th class="px-5 py-3">Growth Lift</th>

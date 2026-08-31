@@ -584,18 +584,69 @@ document.addEventListener('DOMContentLoaded', () => {
     initPerformanceViews();
 });
 
-async function initPerformanceViews() {
-    // 1. Instant local render so user sees objectives immediately without waiting for network
-    if (window.dbGoals && window.dbGoals.length > 0) {
-        renderEmployeePulseGoals(window.dbGoals);
+function renderActiveStageTable(targetStage = null) {
+    let subKey = targetStage;
+    if (!subKey) {
+        const activeBtn = document.querySelector('.subnav-perf.active');
+        subKey = activeBtn ? activeBtn.getAttribute('data-sub') : null;
+        if (!subKey) {
+            try {
+                subKey = localStorage.getItem('oxford_active_subtab_perf') || 'plan';
+            } catch(e) {
+                subKey = 'plan';
+            }
+        }
     }
+
+    switch(subKey) {
+        case 'plan':
+            renderPlanningRosterTable();
+            renderGeneralTasksTable();
+            break;
+        case 'approve':
+            renderApprovalRosterTable();
+            break;
+        case 'monitor':
+            renderMonitoringRosterTable();
+            break;
+        case 'eval':
+            renderEvaluationRosterTable();
+            break;
+        case 'review':
+            renderReviewRosterTable();
+            break;
+        case 'idp':
+            renderIDPRosterTable();
+            break;
+        case 'cycle':
+            renderCycleRosterTable();
+            break;
+        default:
+            renderPlanningRosterTable();
+            renderGeneralTasksTable();
+            break;
+    }
+}
+window.renderActiveStageTable = renderActiveStageTable;
+
+function renderAllStageTables() {
     renderPlanningRosterTable();
     renderApprovalRosterTable();
     renderMonitoringRosterTable();
+    renderGeneralTasksTable();
     renderEvaluationRosterTable();
     renderReviewRosterTable();
     renderIDPRosterTable();
     renderCycleRosterTable();
+}
+window.renderAllStageTables = renderAllStageTables;
+
+async function initPerformanceViews() {
+    // 1. Instant local render of active stage first (0ms latency)
+    if (window.dbGoals && window.dbGoals.length > 0) {
+        renderEmployeePulseGoals(window.dbGoals);
+    }
+    renderActiveStageTable();
     updateAllPerfStepperBadges();
 
     if (typeof loadSupervisorsForModal === 'function') {
@@ -837,27 +888,26 @@ async function loadAndRenderPlanningGoals() {
             weightAllocEl.textContent = `${data.calibration || '100%'} Calibrated`;
         }
 
-        // Fast render of active objectives and tables
+        // Fast batch render of active table & cached badges
         renderEmployeePulseGoals(goals);
-        renderPlanningRosterTable();
-        renderApprovalRosterTable();
-        renderMonitoringRosterTable();
-        renderGeneralTasksTable();
-        renderEvaluationRosterTable();
-        renderReviewRosterTable();
-        renderIDPRosterTable();
-        renderCycleRosterTable();
+        renderActiveStageTable();
         updateAllPerfStepperBadges();
+
+        // Render remaining background tables asynchronously so UI never hitches
+        if (window.requestIdleCallback) {
+            window.requestIdleCallback(() => {
+                renderAllStageTables();
+            });
+        } else {
+            setTimeout(() => {
+                renderAllStageTables();
+            }, 50);
+        }
 
     } catch (err) {
         console.warn('Fallback to local state rendering:', err);
         renderEmployeePulseGoals(window.dbGoals || []);
-        renderPlanningRosterTable();
-        renderGeneralTasksTable();
-        renderEvaluationRosterTable();
-        renderReviewRosterTable();
-        renderIDPRosterTable();
-        renderCycleRosterTable();
+        renderActiveStageTable();
         updateAllPerfStepperBadges();
     }
 }
@@ -906,7 +956,7 @@ function renderEmployeePulseGoals(goals) {
     // Fetch prescribed LMS list if not cached yet
     if ((!window.dynamicLmsState || !window.dynamicLmsState.prescribed) && !window._fetchingPulsePrescribed) {
         window._fetchingPulsePrescribed = true;
-        fetch(`api/lms.php?action=get_prescribed&employee=${encodeURIComponent(currentUserId)}`)
+        fetch('api/lms.php?action=get_prescribed')
             .then(res => res.json())
             .then(json => {
                 if (json.success && Array.isArray(json.data)) {
@@ -1669,8 +1719,7 @@ function renderPlanningRosterTable() {
     const startIdx = isAll ? 0 : (planningCurrentPage - 1) * effectivePageSize;
     const pageGoals = isAll ? allGoals : allGoals.slice(startIdx, startIdx + effectivePageSize);
 
-    // List paginated live objectives from Supabase
-    pageGoals.forEach((goal, index) => {
+    tbody.innerHTML = pageGoals.map((goal, index) => {
         let emp = window.perfRoster.find(e => e.id === goal.employee_id || (e.id === 'emp-101' && (goal.employee_id === 'emp-1' || goal.employee_id === 'OXF-EMP-1001')) || (e.id === 'emp-102' && (goal.employee_id === 'emp-2' || goal.employee_id === 'OXF-SUP-2001')));
         if (!emp) {
             const isSup = (goal.role === 'Supervisor' || goal.role === 'supervisor');
@@ -1689,134 +1738,131 @@ function renderPlanningRosterTable() {
         const isFailed = goalStatus === 'failed';
         const isRevised = !!goal.supervisor_notes || (goal.updated_at && goal.created_at && goal.updated_at !== goal.created_at);
 
-        const tr = document.createElement('tr');
-        tr.className = `hover:bg-slate-50/80 transition text-xs border-b border-slate-100 ${index === 0 ? 'bg-emerald-50/10' : ''}`;
-
         const tasks = goal.tasks || [];
         const completedTasks = tasks.filter(t => t.status === 'completed').length;
         const totalTasks = tasks.length;
         const taskProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : (isCompleted ? 100 : 0);
 
-        tr.innerHTML = `
-            <!-- Checkbox Column -->
-            <td class="px-4 py-4 text-center">
-                <input type="checkbox" class="stage1-goal-checkbox rounded border-slate-300 text-primary focus:ring-primary" value="${goal.id}" onchange="updateStage1BulkDeleteState()">
-            </td>
+        return `
+            <tr class="hover:bg-slate-50/80 transition text-xs border-b border-slate-100 ${index === 0 ? 'bg-emerald-50/10' : ''}">
+                <!-- Checkbox Column -->
+                <td class="px-4 py-4 text-center">
+                    <input type="checkbox" class="stage1-goal-checkbox rounded border-slate-300 text-primary focus:ring-primary" value="${goal.id}" onchange="updateStage1BulkDeleteState()">
+                </td>
 
-            <!-- 1. Employee Column -->
-            <td class="px-5 py-4">
-                <div class="flex items-center space-x-3">
-                    <div class="w-9 h-9 rounded-full ${emp.avatarBg || 'bg-primary'} text-white font-bold text-xs flex items-center justify-center shadow-2xs flex-shrink-0">
-                        ${emp.avatar || emp.name.slice(0, 2).toUpperCase()}
-                    </div>
+                <!-- Numbering Column -->
+                <td class="px-3 py-4 text-center font-mono font-bold text-slate-400 text-xs">
+                    ${startIdx + index + 1}
+                </td>
+
+                <!-- 1. Employee Column -->
+                <td class="px-5 py-4">
                     <div>
-                        <p class="font-bold text-slate-900 text-xs leading-tight max-w-[150px] truncate" title="${emp.name}">${emp.name}</p>
-                        <p class="text-[10px] text-slate-500 font-medium max-w-[150px] truncate" title="${emp.position}">${emp.position}</p>
+                        <p class="font-bold text-slate-900 text-xs leading-tight max-w-[160px] truncate" title="${emp.name}">${emp.name}</p>
+                        <p class="text-[10px] text-slate-500 font-medium max-w-[160px] truncate" title="${emp.position}">${emp.position}</p>
                     </div>
-                </div>
-            </td>
+                </td>
 
-            <!-- 2. Objective & Scope -->
-            <td class="px-5 py-4">
-                <div class="space-y-1 max-w-[240px]">
-                    <div class="flex items-center space-x-1.5 flex-wrap">
-                        <p class="font-bold text-slate-900 text-xs leading-snug line-clamp-2" title="${goal.title}">${goal.title}</p>
-                        ${isRevised ? `<span class="px-1.5 py-0.2 rounded text-[8px] font-bold bg-purple-100 text-purple-700 border border-purple-200">Edited</span>` : ''}
+                <!-- 2. Objective & Scope -->
+                <td class="px-5 py-4">
+                    <div class="space-y-1 max-w-[240px]">
+                        <div class="flex items-center space-x-1.5 flex-wrap">
+                            <p class="font-bold text-slate-900 text-xs leading-snug line-clamp-2" title="${goal.title}">${goal.title}</p>
+                            ${isRevised ? `<span class="px-1.5 py-0.2 rounded text-[8px] font-bold bg-purple-100 text-purple-700 border border-purple-200">Edited</span>` : ''}
+                        </div>
+                        <span class="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded inline-block max-w-[200px] truncate" title="${goal.department || emp.department}">${goal.department || emp.department}</span>
                     </div>
-                    <span class="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded inline-block max-w-[200px] truncate" title="${goal.department || emp.department}">${goal.department || emp.department}</span>
-                </div>
-            </td>
+                </td>
 
-            <!-- 3. Target Metric / KPI -->
-            <td class="px-5 py-4">
-                <span class="text-primary font-bold font-mono text-[11px] bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10 block w-fit max-w-[180px] truncate" title="${goal.target_metric}">
-                    ${goal.target_metric}
-                </span>
-            </td>
+                <!-- 3. Target Metric / KPI -->
+                <td class="px-5 py-4">
+                    <span class="text-primary font-bold font-mono text-[11px] bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10 block w-fit max-w-[180px] truncate" title="${goal.target_metric}">
+                        ${goal.target_metric}
+                    </span>
+                </td>
 
-            <!-- 4. Target Date -->
-            <td class="px-5 py-4 whitespace-nowrap">
-                <span class="text-slate-700 font-mono text-xs font-semibold">
-                    ${goal.target_date || 'Q3 2026'}
-                </span>
-            </td>
+                <!-- 4. Target Date -->
+                <td class="px-5 py-4 whitespace-nowrap">
+                    <span class="text-slate-700 font-mono text-xs font-semibold">
+                        ${goal.target_date || 'Q3 2026'}
+                    </span>
+                </td>
 
-            <!-- 5. Weight -->
-            <td class="px-5 py-4 whitespace-nowrap">
-                <span class="text-slate-700 font-bold text-[11px] bg-slate-100 px-2 py-1 rounded-lg">
-                    ${goal.weight ? goal.weight.split(' ')[0] : '20%'}
-                </span>
-            </td>
+                <!-- 5. Weight -->
+                <td class="px-5 py-4 whitespace-nowrap">
+                    <span class="text-slate-700 font-bold text-[11px] bg-slate-100 px-2 py-1 rounded-lg">
+                        ${goal.weight ? goal.weight.split(' ')[0] : '20%'}
+                    </span>
+                </td>
 
-            <!-- 6. Checklist Progress -->
-            <td class="px-5 py-4 min-w-[140px]">
-                <div class="space-y-1">
-                    <div class="flex items-center justify-between text-[10px] font-bold">
-                        <span class="text-slate-600">${completedTasks}/${totalTasks} Done</span>
-                        <span class="text-primary font-mono">${taskProgress}%</span>
+                <!-- 6. Checklist Progress -->
+                <td class="px-5 py-4 min-w-[140px]">
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between text-[10px] font-bold">
+                            <span class="text-slate-600">${completedTasks}/${totalTasks} Done</span>
+                            <span class="text-primary font-mono">${taskProgress}%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div class="${taskProgress >= 100 ? 'bg-emerald-500' : (isFailed ? 'bg-rose-500' : 'bg-primary')} h-1.5 rounded-full transition-all duration-300" style="width: ${taskProgress}%"></div>
+                        </div>
                     </div>
-                    <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                        <div class="${taskProgress >= 100 ? 'bg-emerald-500' : (isFailed ? 'bg-rose-500' : 'bg-primary')} h-1.5 rounded-full transition-all duration-300" style="width: ${taskProgress}%"></div>
-                    </div>
-                </div>
-            </td>
+                </td>
 
-            <!-- 7. Status Badge (Pending / Approved / Completed / Failed) -->
-            <td class="px-5 py-4 text-center whitespace-nowrap">
-                ${isFailed ? `
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 inline-flex items-center space-x-1">
-                        <i class="fas fa-times-circle text-rose-600 text-[9px]"></i><span>Failed</span>
-                    </span>
-                ` : (isCompleted ? `
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 inline-flex items-center space-x-1">
-                        <i class="fas fa-circle-check text-indigo-600 text-[9px]"></i><span>Completed</span>
-                    </span>
-                ` : (isApproved ? `
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 inline-flex items-center space-x-1">
-                        <i class="fas fa-check-circle text-emerald-600 text-[9px]"></i><span>Approved</span>
-                    </span>
-                ` : `
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 inline-flex items-center space-x-1">
-                        <i class="fas fa-clock text-amber-600 text-[9px]"></i><span>Pending</span>
-                    </span>
-                `))}
-            </td>
+                <!-- 7. Status Badge (Pending / Approved / Completed / Failed) -->
+                <td class="px-5 py-4 text-center whitespace-nowrap">
+                    ${isFailed ? `
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 inline-flex items-center space-x-1">
+                            <i class="fas fa-times-circle text-rose-600 text-[9px]"></i><span>Failed</span>
+                        </span>
+                    ` : (isCompleted ? `
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 inline-flex items-center space-x-1">
+                            <i class="fas fa-circle-check text-indigo-600 text-[9px]"></i><span>Completed</span>
+                        </span>
+                    ` : (isApproved ? `
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 inline-flex items-center space-x-1">
+                            <i class="fas fa-check-circle text-emerald-600 text-[9px]"></i><span>Approved</span>
+                        </span>
+                    ` : `
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 inline-flex items-center space-x-1">
+                            <i class="fas fa-clock text-amber-600 text-[9px]"></i><span>Pending</span>
+                        </span>
+                    `))}
+                </td>
 
-            <!-- 8. Actions -->
-            <td class="px-5 py-4 text-right space-x-1 whitespace-nowrap">
-                <button onclick="openViewGoalModal('${goal.id || emp.id}')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex items-center justify-center transition shadow-2xs" title="View Full Details">
-                    <i class="fas fa-eye text-xs"></i>
-                </button>
-                ${(isApproved || isCompleted || isFailed) ? `
-                    <button disabled class="w-7 h-7 rounded-lg bg-slate-100 text-slate-300 inline-flex items-center justify-center cursor-not-allowed opacity-40 shadow-2xs" title="Revise disabled for approved, completed, or failed goals">
-                        <i class="fas fa-pen-to-square text-xs"></i>
+                <!-- 8. Actions -->
+                <td class="px-5 py-4 text-right space-x-1 whitespace-nowrap">
+                    <button onclick="openViewGoalModal('${goal.id || emp.id}')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex items-center justify-center transition shadow-2xs" title="View Full Details">
+                        <i class="fas fa-eye text-xs"></i>
                     </button>
-                ` : `
-                    <button onclick="openReviseGoalModal('${goal.id || emp.id}')" class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center justify-center transition shadow-2xs" title="Edit / Revise Objective">
-                        <i class="fas fa-pen-to-square text-xs"></i>
+                    ${(isApproved || isCompleted || isFailed) ? `
+                        <button disabled class="w-7 h-7 rounded-lg bg-slate-100 text-slate-300 inline-flex items-center justify-center cursor-not-allowed opacity-40 shadow-2xs" title="Revise disabled for approved, completed, or failed goals">
+                            <i class="fas fa-pen-to-square text-xs"></i>
+                        </button>
+                    ` : `
+                        <button onclick="openReviseGoalModal('${goal.id || emp.id}')" class="w-7 h-7 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center justify-center transition shadow-2xs" title="Edit / Revise Objective">
+                            <i class="fas fa-pen-to-square text-xs"></i>
+                        </button>
+                    `}
+                    <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}', this)" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 inline-flex items-center justify-center transition shadow-2xs" title="Delete Objective">
+                        <i class="fas fa-trash text-xs"></i>
                     </button>
-                `}
-                <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}', this)" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 inline-flex items-center justify-center transition shadow-2xs" title="Delete Objective">
-                    <i class="fas fa-trash text-xs"></i>
-                </button>
-                ${isFailed ? `
-                    <span class="w-7 h-7 rounded-lg text-rose-700 bg-rose-50 border border-rose-200 inline-flex items-center justify-center text-xs" title="Objective Permanently Failed">
-                        <i class="fas fa-times"></i>
-                    </span>
-                ` : ((isApproved || isCompleted) ? `
-                    <span class="w-7 h-7 rounded-lg text-emerald-700 bg-emerald-50 border border-emerald-200 inline-flex items-center justify-center text-xs" title="${isCompleted ? 'Objective Completed' : 'Objective Approved & Locked'}">
-                        <i class="fas ${isCompleted ? 'fa-circle-check' : 'fa-lock'}"></i>
-                    </span>
-                ` : `
-                    <button onclick="confirmApproveSingleGoal('${goal.id}', '${emp.id}', '${(goal.title || '').replace(/'/g, "\\'")}')" class="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white inline-flex items-center justify-center shadow-xs transition" title="Approve Objective">
-                        <i class="fas fa-check text-xs"></i>
-                    </button>
-                `)}
-            </td>
+                    ${isFailed ? `
+                        <span class="w-7 h-7 rounded-lg text-rose-700 bg-rose-50 border border-rose-200 inline-flex items-center justify-center text-xs" title="Objective Permanently Failed">
+                            <i class="fas fa-times"></i>
+                        </span>
+                    ` : ((isApproved || isCompleted) ? `
+                        <span class="w-7 h-7 rounded-lg text-emerald-700 bg-emerald-50 border border-emerald-200 inline-flex items-center justify-center text-xs" title="${isCompleted ? 'Objective Completed' : 'Objective Approved & Locked'}">
+                            <i class="fas ${isCompleted ? 'fa-circle-check' : 'fa-lock'}"></i>
+                        </span>
+                    ` : `
+                        <button onclick="confirmApproveSingleGoal('${goal.id}', '${emp.id}', '${(goal.title || '').replace(/'/g, "\\'")}')" class="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white inline-flex items-center justify-center shadow-xs transition" title="Approve Objective">
+                            <i class="fas fa-check text-xs"></i>
+                        </button>
+                    `)}
+                </td>
+            </tr>
         `;
-
-        tbody.appendChild(tr);
-    });
+    }).join('');
 
     renderPaginationControls('planning-pagination-container', planningCurrentPage, allGoals.length, planningPageSize, 'setPlanningPage', 'setPlanningPageSize');
     updateStage1BulkDeleteState();
@@ -2020,11 +2066,11 @@ function renderGeneralTasksTable() {
     const startIdx = isAll ? 0 : (generalTasksCurrentPage - 1) * effectivePageSize;
     const pageTasks = isAll ? tasks : tasks.slice(startIdx, startIdx + effectivePageSize);
 
-    pageTasks.forEach(t => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50/80 transition text-xs border-b border-slate-100';
-
-        tr.innerHTML = `
+    tbody.innerHTML = pageTasks.map((t, idx) => `
+        <tr class="hover:bg-slate-50/80 transition text-xs border-b border-slate-100">
+            <td class="px-3 py-3.5 text-center font-mono font-bold text-slate-400 text-xs">
+                ${startIdx + idx + 1}
+            </td>
             <td class="px-5 py-3.5">
                 <div class="space-y-1">
                     <p class="font-bold text-slate-900 text-xs max-w-[200px] truncate" title="${t.title}">${t.title}</p>
@@ -2049,9 +2095,8 @@ function renderGeneralTasksTable() {
                     <i class="fas fa-trash mr-1"></i>Delete
                 </button>
             </td>
-        `;
-        tbody.appendChild(tr);
-    });
+        </tr>
+    `).join('');
 
     renderPaginationControls('general-tasks-pagination-container', generalTasksCurrentPage, tasks.length, generalTasksPageSize, 'setGeneralTasksPage', 'setGeneralTasksPageSize');
 }
@@ -3187,7 +3232,7 @@ function renderApprovalRosterTable() {
     const startIdx = isAll ? 0 : (approvalCurrentPage - 1) * effectivePageSize;
     const pageGoals = isAll ? approvedGoals : approvedGoals.slice(startIdx, startIdx + effectivePageSize);
 
-    pageGoals.forEach(goal => {
+    container.innerHTML = pageGoals.map(goal => {
         let emp = window.perfRoster.find(e => isSameEmployee(e.id, goal.employee_id));
         if (!emp) {
             emp = {
@@ -3204,62 +3249,58 @@ function renderApprovalRosterTable() {
         const totalTasks = tasks.length;
         const taskProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-        const div = document.createElement('div');
-        div.className = 'p-5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs space-y-3';
-        div.innerHTML = `
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div class="flex items-center space-x-3">
-                    <input type="checkbox" class="stage2-goal-checkbox rounded border-slate-300 text-amber-600 focus:ring-amber-500" value="${goal.id}" onchange="updateStage2BulkDeleteState()">
-                    <div class="w-9 h-9 rounded-full ${emp.avatarBg || 'bg-primary'} text-white font-bold text-xs flex items-center justify-center">
-                        ${emp.avatar || emp.name.slice(0, 2).toUpperCase()}
+        return `
+            <div class="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" class="stage2-goal-checkbox rounded border-slate-300 text-amber-600 focus:ring-amber-500" value="${goal.id}" onchange="updateStage2BulkDeleteState()">
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm">${emp.name}</h4>
+                            <p class="text-[11px] text-slate-500">${emp.position} · <span class="text-primary font-bold">${goal.department || emp.department}</span></p>
+                        </div>
                     </div>
-                    <div>
-                        <h4 class="font-bold text-slate-900 text-sm">${emp.name}</h4>
-                        <p class="text-[11px] text-slate-500">${emp.position} · <span class="text-primary font-bold">${goal.department || emp.department}</span></p>
-                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center space-x-1">
+                        <i class="fas fa-circle-check text-emerald-600 text-[9px]"></i>
+                        <span>Approved Baseline</span>
+                    </span>
                 </div>
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center space-x-1">
-                    <i class="fas fa-circle-check text-emerald-600 text-[9px]"></i>
-                    <span>Approved Baseline</span>
-                </span>
-            </div>
 
-            <div class="p-3 bg-slate-50 rounded-xl space-y-1.5 text-xs">
-                <div class="flex justify-between items-start">
-                    <span class="font-bold text-slate-900 text-xs">${goal.title}</span>
-                    <span class="font-mono text-primary font-bold">${goal.target_metric || goal.kpi || 'N/A'}</span>
-                </div>
-                <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                    <span>Target Date: <strong>${goal.target_date || 'Q3 2026'}</strong></span>
-                    <span>Weight: <strong>${goal.weight || '20%'}</strong></span>
-                </div>
-                <div class="pt-1.5 space-y-1">
-                    <div class="flex justify-between text-[10px] font-bold">
-                        <span class="text-slate-600">Tasks Checklist: ${completedTasks}/${totalTasks}</span>
-                        <span class="text-primary font-mono">${taskProgress}%</span>
+                <div class="p-3 bg-slate-50 rounded-xl space-y-1.5 text-xs">
+                    <div class="flex justify-between items-start">
+                        <span class="font-bold text-slate-900 text-xs">${goal.title}</span>
+                        <span class="font-mono text-primary font-bold">${goal.target_metric || goal.kpi || 'N/A'}</span>
                     </div>
-                    <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                        <div class="${taskProgress >= 100 ? 'bg-emerald-500' : 'bg-primary'} h-1.5 rounded-full" style="width: ${taskProgress}%"></div>
+                    <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                        <span>Target Date: <strong>${goal.target_date || 'Q3 2026'}</strong></span>
+                        <span>Weight: <strong>${goal.weight || '20%'}</strong></span>
+                    </div>
+                    <div class="pt-1.5 space-y-1">
+                        <div class="flex justify-between text-[10px] font-bold">
+                            <span class="text-slate-600">Tasks Checklist: ${completedTasks}/${totalTasks}</span>
+                            <span class="text-primary font-mono">${taskProgress}%</span>
+                        </div>
+                        <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                            <div class="${taskProgress >= 100 ? 'bg-emerald-500' : 'bg-primary'} h-1.5 rounded-full" style="width: ${taskProgress}%"></div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="pt-2 flex items-center justify-end space-x-2 border-t border-slate-100">
-                <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}', this)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition flex items-center space-x-1" title="Delete Objective">
-                    <i class="fas fa-trash text-xs"></i>
-                    <span>Delete</span>
-                </button>
-                <button onclick="openViewGoalModal('${goal.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
-                    View Details
-                </button>
-                <button onclick="searchEmployeeInStage('monitor', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1.5">
-                    <i class="fas fa-chart-line text-[11px]"></i>
-                    <span>See Progress &rarr;</span>
-                </button>
+                <div class="pt-2 flex items-center justify-end space-x-2 border-t border-slate-100">
+                    <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}', this)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition flex items-center space-x-1" title="Delete Objective">
+                        <i class="fas fa-trash text-xs"></i>
+                        <span>Delete</span>
+                    </button>
+                    <button onclick="openViewGoalModal('${goal.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+                        View Details
+                    </button>
+                    <button onclick="searchEmployeeInStage('monitor', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1.5">
+                        <i class="fas fa-chart-line text-[11px]"></i>
+                        <span>See Progress &rarr;</span>
+                    </button>
+                </div>
             </div>
         `;
-        container.appendChild(div);
-    });
+    }).join('');
 
     renderPaginationControls('approval-pagination-container', approvalCurrentPage, approvedGoals.length, approvalPageSize, 'setApprovalPage', 'setApprovalPageSize');
     updateStage2BulkDeleteState();
@@ -3506,17 +3547,16 @@ function renderMonitoringRosterTable() {
     const startIdx = isAll ? 0 : (monitoringCurrentPage - 1) * effectivePageSize;
     const pageList = isAll ? list : list.slice(startIdx, startIdx + effectivePageSize);
 
-    pageList.forEach(emp => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
+    const dbEvals = getDbEvaluations();
 
+    container.innerHTML = pageList.map((emp, idx) => {
         emp.monitoringProgress = calculateEmployeeProgress(emp);
         emp.monitoringStatus = emp.monitoringProgress >= 90 ? 'Exceeding' : (emp.monitoringProgress >= 70 ? 'On Track' : 'Needs Support');
 
         const progressColor = emp.monitoringProgress >= 90 ? 'bg-emerald-500' : (emp.monitoringProgress >= 70 ? 'bg-primary' : 'bg-amber-500');
         
         // Find existing evaluation if any
-        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const evalRec = dbEvals.find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const hasEval = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0;
         const supScore = hasEval ? parseFloat(evalRec.supervisor_rating) : (emp.supervisorRating || 0);
 
@@ -3526,15 +3566,15 @@ function renderMonitoringRosterTable() {
         const retryCount = getEmployeeRetryCount(emp.id);
         const allTasksDone = isEmployeeTasksFullyCompleted(emp);
 
-        tr.innerHTML = `
-            <td class="px-5 py-4">
-                <div class="flex items-center space-x-3">
-                    <div class="w-9 h-9 rounded-full ${emp.avatarBg || 'bg-primary'} text-white font-bold text-xs flex items-center justify-center flex-shrink-0">
-                        ${emp.avatar || emp.name.slice(0, 2).toUpperCase()}
-                    </div>
+        return `
+            <tr class="hover:bg-slate-50 transition text-xs border-b border-slate-100">
+                <td class="px-3 py-4 text-center font-mono font-bold text-slate-400 text-xs">
+                    ${startIdx + idx + 1}
+                </td>
+                <td class="px-5 py-4">
                     <div>
-                        <p class="font-bold text-slate-900 text-sm leading-tight max-w-[150px] truncate" title="${emp.name}">${emp.name}</p>
-                        <span class="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded max-w-[150px] truncate block" title="${emp.position}">${emp.position}</span>
+                        <p class="font-bold text-slate-900 text-sm leading-tight max-w-[160px] truncate" title="${emp.name}">${emp.name}</p>
+                        <span class="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded max-w-[160px] truncate block" title="${emp.position}">${emp.position}</span>
                         ${inTraining ? `
                             <div class="mt-1.5 p-1.5 bg-rose-50/90 rounded-lg border border-rose-200 text-[10px] space-y-0.5 max-w-[180px]">
                                 <div class="flex items-center space-x-1 font-bold text-rose-800 truncate" title="${tnNeed?.title || 'Mandatory Formal Training'}">
@@ -3548,74 +3588,72 @@ function renderMonitoringRosterTable() {
                             </div>
                         ` : ''}
                     </div>
-                </div>
-            </td>
-            <td class="px-5 py-4">
-                <span class="font-semibold text-slate-700 max-w-[130px] truncate block" title="${emp.department}">${emp.department}</span>
-                ${inTraining ? `<span class="mt-1 inline-block px-2 py-0.5 bg-rose-100 text-rose-800 rounded text-[9px] font-bold">Needs Training: True</span>` : ''}
-            </td>
-            <td class="px-5 py-4">
-                ${hasEval ? `
-                    <div class="space-y-0.5">
-                        <span class="font-bold text-slate-900 text-xs flex items-center space-x-1">
-                            <i class="fas fa-star text-amber-500 text-xs"></i>
-                            <span>${supScore.toFixed(2)} / 5.0</span>
-                        </span>
-                        <span class="text-[10px] text-emerald-700 font-semibold block">${evalRec.tier_label || 'Appraised'}</span>
+                </td>
+                <td class="px-5 py-4">
+                    <span class="font-semibold text-slate-700 max-w-[130px] truncate block" title="${emp.department}">${emp.department}</span>
+                    ${inTraining ? `<span class="mt-1 inline-block px-2 py-0.5 bg-rose-100 text-rose-800 rounded text-[9px] font-bold">Needs Training: True</span>` : ''}
+                </td>
+                <td class="px-5 py-4">
+                    ${hasEval ? `
+                        <div class="space-y-0.5">
+                            <span class="font-bold text-slate-900 text-xs flex items-center space-x-1">
+                                <i class="fas fa-star text-amber-500 text-xs"></i>
+                                <span>${supScore.toFixed(2)} / 5.0</span>
+                            </span>
+                            <span class="text-[10px] text-emerald-700 font-semibold block">${evalRec.tier_label || 'Appraised'}</span>
+                        </div>
+                    ` : `
+                        <span class="text-slate-400 italic text-[11px]">Pending Appraisal</span>
+                    `}
+                </td>
+                <td class="px-5 py-4 min-w-[140px]">
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[11px] font-bold">
+                            <span class="text-slate-700">${emp.monitoringProgress}% Met</span>
+                            <span class="text-slate-400">${emp.monitoringStatus}</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                            <div class="${progressColor} h-2 rounded-full transition-all duration-300" style="width: ${emp.monitoringProgress}%"></div>
+                        </div>
                     </div>
-                ` : `
-                    <span class="text-slate-400 italic text-[11px]">Pending Appraisal</span>
-                `}
-            </td>
-            <td class="px-5 py-4 min-w-[140px]">
-                <div class="space-y-1">
-                    <div class="flex justify-between text-[11px] font-bold">
-                        <span class="text-slate-700">${emp.monitoringProgress}% Met</span>
-                        <span class="text-slate-400">${emp.monitoringStatus}</span>
-                    </div>
-                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div class="${progressColor} h-2 rounded-full transition-all duration-300" style="width: ${emp.monitoringProgress}%"></div>
-                    </div>
-                </div>
-            </td>
-            <td class="px-5 py-4 text-right space-x-2 whitespace-nowrap">
-                <button onclick="toggleEmployeeMonitoringDetail('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition" title="View Full Employee Logs">
-                    <i class="fas fa-eye text-primary"></i>
-                    <span>Logs</span>
-                </button>
-                ${retryCount >= 3 ? `
-                    <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}', true);" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1 inline-flex" title="Exceeded Retries! Open Stage 6 IDP for Mandatory 1-on-1 Training">
-                        <i class="fas fa-triangle-exclamation"></i>
-                        <span>Mandatory Training</span>
+                </td>
+                <td class="px-5 py-4 text-right space-x-2 whitespace-nowrap">
+                    <button onclick="toggleEmployeeMonitoringDetail('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition" title="View Full Employee Logs">
+                        <i class="fas fa-eye text-primary"></i>
+                        <span>Logs</span>
                     </button>
-                ` : `
-                    ${(inTraining && !isScored) ? `
-                        <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed flex items-center space-x-1 inline-flex" title="In Training: Post-training evaluation locked until training score is recorded.">
-                            <i class="fas fa-lock text-[10px]"></i>
-                            <span>In Training</span>
-                        </button>
-                    ` : ((inTraining && isScored) ? `
-                        <button onclick="triggerEvaluationForEmployee('${emp.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1 inline-flex" title="Training Completed! Open Post-Training Re-Evaluation">
-                            <i class="fas fa-star-half-stroke"></i>
-                            <span>Re-Evaluate (After Training)</span>
-                        </button>
-                    ` : (!allTasksDone ? `
-                        <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed flex items-center space-x-1 inline-flex" title="All shift monitoring tasks must be 100% completed before appraisal evaluation.">
-                            <i class="fas fa-lock text-[10px]"></i>
-                            <span>Tasks Incomplete</span>
+                    ${retryCount >= 3 ? `
+                        <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}', true);" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1 inline-flex" title="Exceeded Retries! Open Stage 6 IDP for Mandatory 1-on-1 Training">
+                            <i class="fas fa-triangle-exclamation"></i>
+                            <span>Mandatory Training</span>
                         </button>
                     ` : `
-                        <button onclick="triggerEvaluationForEmployee('${emp.id}')" class="px-3.5 py-1.5 ${hasEval ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-primary hover:bg-primary-dark'} text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1 inline-flex">
-                            <i class="fas fa-star-half-stroke"></i>
-                            <span>${hasEval ? 'Re-Evaluate' : 'Evaluate'}</span>
-                        </button>
-                    `))}
-                `}
-            </td>
+                        ${(inTraining && !isScored) ? `
+                            <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed flex items-center space-x-1 inline-flex" title="In Training: Post-training evaluation locked until training score is recorded.">
+                                <i class="fas fa-lock text-[10px]"></i>
+                                <span>In Training</span>
+                            </button>
+                        ` : ((inTraining && isScored) ? `
+                            <button onclick="triggerEvaluationForEmployee('${emp.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1 inline-flex" title="Training Completed! Open Post-Training Re-Evaluation">
+                                <i class="fas fa-star-half-stroke"></i>
+                                <span>Re-Evaluate (After Training)</span>
+                            </button>
+                        ` : (!allTasksDone ? `
+                            <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed flex items-center space-x-1 inline-flex" title="All shift monitoring tasks must be 100% completed before appraisal evaluation.">
+                                <i class="fas fa-lock text-[10px]"></i>
+                                <span>Tasks Incomplete</span>
+                            </button>
+                        ` : `
+                            <button onclick="triggerEvaluationForEmployee('${emp.id}')" class="px-3.5 py-1.5 ${hasEval ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-primary hover:bg-primary-dark'} text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1 inline-flex">
+                                <i class="fas fa-star-half-stroke"></i>
+                                <span>${hasEval ? 'Re-Evaluate' : 'Evaluate'}</span>
+                            </button>
+                        `))}
+                    `}
+                </td>
+            </tr>
         `;
-
-        container.appendChild(tr);
-    });
+    }).join('');
 
     renderPaginationControls('monitoring-pagination-container', monitoringCurrentPage, list.length, monitoringPageSize, 'setMonitoringPage', 'setMonitoringPageSize');
 }
@@ -4212,10 +4250,9 @@ function renderEvaluationRosterTable() {
     const startIdx = isAll ? 0 : (evalCurrentPage - 1) * effectivePageSize;
     const pageList = isAll ? rosterWithGoals : rosterWithGoals.slice(startIdx, startIdx + effectivePageSize);
 
-    pageList.forEach(emp => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
+    const dbEvals = getDbEvaluations();
 
+    container.innerHTML = pageList.map((emp, idx) => {
         // Calculate actual task progress for this employee from Database Approved Goals
         const empGoals = (window.dbGoals || []).filter(g => g.status === 'Approved' && isSameEmployee(g.employee_id, emp.id));
         let totalTasks = 0;
@@ -4230,7 +4267,7 @@ function renderEvaluationRosterTable() {
         const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
         // Read evaluation record directly from Database
-        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const evalRec = dbEvals.find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const supervisorRating = (evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0)
             ? parseFloat(evalRec.supervisor_rating)
             : ((emp.supervisorRating && parseFloat(emp.supervisorRating) > 0) ? parseFloat(emp.supervisorRating) : 0.0);
@@ -4243,115 +4280,126 @@ function renderEvaluationRosterTable() {
         const isBelowBenchmark = isRated && supervisorRating > 0 && supervisorRating < 3.0;
         const tierLabel = evalRec && evalRec.tier_label ? evalRec.tier_label : (supervisorRating >= 4.5 ? 'Master Tier' : (supervisorRating >= 3.5 ? 'Advanced Tier' : (supervisorRating >= 3.0 ? 'Proficient' : 'Needs PIP')));
 
-        tr.innerHTML = `
-            <td class="px-5 py-4">
-                <div class="flex items-center space-x-3">
-                    <div class="w-9 h-9 rounded-full ${emp.avatarBg || 'bg-primary'} text-white font-bold text-xs flex items-center justify-center shadow-2xs flex-shrink-0">
-                        ${emp.avatar || emp.name.slice(0, 2).toUpperCase()}
-                    </div>
+        return `
+            <tr class="hover:bg-slate-50 transition text-xs border-b border-slate-100">
+                <td class="px-3 py-4 text-center font-mono font-bold text-slate-400 text-xs">
+                    ${startIdx + idx + 1}
+                </td>
+                <td class="px-5 py-4">
                     <div>
-                        <p class="font-bold text-slate-900 text-sm leading-tight max-w-[150px] truncate" title="${emp.name}">${emp.name}</p>
-                        <p class="text-[10px] text-slate-500 font-medium max-w-[150px] truncate" title="${emp.position}">${emp.position}</p>
+                        <p class="font-bold text-slate-900 text-sm leading-tight max-w-[160px] truncate" title="${emp.name}">${emp.name}</p>
+                        <p class="text-[10px] text-slate-500 font-medium max-w-[160px] truncate" title="${emp.position}">${emp.position}</p>
                     </div>
-                </div>
-            </td>
-            <td class="px-5 py-4">
-                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 max-w-[130px] truncate block" title="${emp.department}">${emp.department}</span>
-            </td>
-            <td class="px-5 py-4 min-w-[130px]">
-                <div class="space-y-1">
-                    <div class="flex items-center justify-between text-[10px] font-bold">
-                        <span class="text-slate-600">${completedTasks}/${totalTasks} Tasks</span>
-                        <span class="text-primary font-mono">${progressPct}%</span>
-                    </div>
-                    <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                        <div class="${progressPct >= 100 ? 'bg-emerald-500' : 'bg-primary'} h-1.5 rounded-full" style="width: ${progressPct}%"></div>
-                    </div>
-                </div>
-            </td>
-            <!-- Self Evaluation Column -->
-            <td class="px-5 py-4 whitespace-nowrap">
-                ${selfEvaluation !== null ? `
-                    <span class="font-bold text-purple-900 text-xs bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200 inline-flex items-center space-x-1 shadow-2xs">
-                        <i class="fas fa-user-pen text-purple-600 text-[10px]"></i>
-                        <span><i class="fas fa-star text-amber-500 text-[10px] mr-0.5"></i>${selfEvaluation.toFixed(2)} / 5.0</span>
-                    </span>
-                ` : `
-                    <span class="text-[10px] text-slate-400 italic bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
-                        Pending Self-Review
-                    </span>
-                `}
-            </td>
-            <!-- Supervisor Rating Column -->
-            <td class="px-5 py-4 whitespace-nowrap">
-                ${isRated ? (isBelowBenchmark ? `
+                </td>
+                <td class="px-5 py-4">
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 max-w-[130px] truncate block" title="${emp.department}">${emp.department}</span>
+                </td>
+                <td class="px-5 py-4 min-w-[130px]">
                     <div class="space-y-1">
-                        <span class="font-bold text-rose-700 text-xs bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 inline-flex items-center space-x-1.5 shadow-2xs">
-                            <i class="fas fa-triangle-exclamation text-rose-600"></i>
-                            <span><i class="fas fa-star text-amber-500 text-[10px] mr-0.5"></i>${supervisorRating.toFixed(2)} / 5.0</span>
-                        </span>
-                        <span class="text-[9px] text-rose-600 font-bold block flex items-center space-x-1">
-                            <span><i class="fas fa-triangle-exclamation mr-0.5 text-rose-600"></i>Below 3.0 (Needs PIP)</span>
-                        </span>
+                        <div class="flex items-center justify-between text-[10px] font-bold">
+                            <span class="text-slate-600">${completedTasks}/${totalTasks} Tasks</span>
+                            <span class="text-primary font-mono">${progressPct}%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div class="${progressPct >= 100 ? 'bg-emerald-500' : 'bg-primary'} h-1.5 rounded-full" style="width: ${progressPct}%"></div>
+                        </div>
                     </div>
-                ` : `
-                    <div class="space-y-0.5">
-                        <span class="font-bold text-emerald-800 text-xs bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center space-x-1 shadow-2xs">
-                            <span><i class="fas fa-star text-amber-500 text-[10px] mr-0.5"></i>${supervisorRating.toFixed(2)} / 5.0</span>
+                </td>
+                <!-- Self Evaluation Column -->
+                <td class="px-5 py-4 whitespace-nowrap">
+                    ${selfEvaluation !== null ? `
+                        <span class="font-bold text-purple-900 text-xs bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200 inline-flex items-center space-x-1 shadow-2xs">
+                            <i class="fas fa-user-pen text-purple-600 text-[10px]"></i>
+                            <span><i class="fas fa-star text-amber-500 text-[10px] mr-0.5"></i>${selfEvaluation.toFixed(2)} / 5.0</span>
                         </span>
-                        <span class="text-[9px] text-emerald-700 font-semibold block">${tierLabel}</span>
-                    </div>
-                `) : `
-                    <span class="text-[10px] text-amber-700 font-bold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 inline-flex items-center space-x-1 shadow-2xs">
-                        <i class="fas fa-clock text-[9px]"></i><span>Pending Evaluation</span>
-                    </span>
-                `}
-            </td>
-            <td class="px-5 py-4 text-center whitespace-nowrap">
-                ${isRated ? (isBelowBenchmark ? `
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                        <i class="fas fa-triangle-exclamation mr-1 text-rose-700"></i>Evaluated (Needs PIP)
-                    </span>
-                ` : `
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                        <i class="fas fa-check mr-1 text-emerald-700"></i>Evaluated (${tierLabel})
-                    </span>
-                `) : `
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                        Pending
-                    </span>
-                `}
-            </td>
-            <td class="px-5 py-4 text-right space-x-1.5 whitespace-nowrap">
-                <button onclick="showEmployeeEvalDetail('${emp.id}', true)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition shadow-2xs" title="View Full Appraisal">
-                    <i class="fas fa-eye mr-1"></i>View
-                </button>
-                ${(isEmployeeInTraining(emp.id) && !isEmployeeTrainingScored(emp.id)) ? `
-                    <button disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg text-[11px] font-bold cursor-not-allowed inline-flex items-center space-x-1" title="Associate is currently enrolled in Mandatory Formal Training. Evaluation is locked until training score is recorded.">
-                        <i class="fas fa-lock text-[10px]"></i>
-                        <span>In Training</span>
+                    ` : `
+                        <span class="text-[10px] text-slate-400 italic bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                            Pending Self-Review
+                        </span>
+                    `}
+                </td>
+                <!-- Supervisor Rating Column -->
+                <td class="px-5 py-4 whitespace-nowrap">
+                    ${isRated ? (isBelowBenchmark ? `
+                        <div class="space-y-1">
+                            <span class="font-bold text-rose-700 text-xs bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 inline-flex items-center space-x-1.5 shadow-2xs">
+                                <i class="fas fa-triangle-exclamation text-rose-600"></i>
+                                <span><i class="fas fa-star text-amber-500 text-[10px] mr-0.5"></i>${supervisorRating.toFixed(2)} / 5.0</span>
+                            </span>
+                            <span class="text-[9px] text-rose-600 font-bold block flex items-center space-x-1">
+                                <span><i class="fas fa-triangle-exclamation mr-0.5 text-rose-600"></i>Below 3.0 (Needs PIP)</span>
+                            </span>
+                        </div>
+                    ` : `
+                        <div class="space-y-0.5">
+                            <span class="font-bold text-emerald-800 text-xs bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center space-x-1 shadow-2xs">
+                                <span><i class="fas fa-star text-amber-500 text-[10px] mr-0.5"></i>${supervisorRating.toFixed(2)} / 5.0</span>
+                            </span>
+                            <span class="text-[9px] text-emerald-700 font-semibold block">${tierLabel}</span>
+                        </div>
+                    `) : `
+                        <span class="text-[10px] text-amber-700 font-bold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 inline-flex items-center space-x-1 shadow-2xs">
+                            <i class="fas fa-clock text-[9px]"></i><span>Pending Evaluation</span>
+                        </span>
+                    `}
+                </td>
+                <td class="px-5 py-4 text-center whitespace-nowrap">
+                    ${isRated ? (isBelowBenchmark ? `
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                            <i class="fas fa-triangle-exclamation mr-1 text-rose-700"></i>Evaluated (Needs PIP)
+                        </span>
+                    ` : `
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            <i class="fas fa-check mr-1 text-emerald-700"></i>Evaluated (${tierLabel})
+                        </span>
+                    `) : `
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                            Pending
+                        </span>
+                    `}
+                </td>
+                <td class="px-5 py-4 text-right space-x-1.5 whitespace-nowrap">
+                    <button onclick="showEmployeeEvalDetail('${emp.id}', true)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition shadow-2xs" title="View Full Appraisal">
+                        <i class="fas fa-eye mr-1"></i>View
                     </button>
-                ` : ((isEmployeeInTraining(emp.id) && isEmployeeTrainingScored(emp.id)) ? `
-                    <button onclick="openAppraisalModal('${emp.id}', true)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold shadow-xs transition inline-flex items-center space-x-1" title="Training Completed! Open Post-Training Appraisal">
-                        <i class="fas fa-star-half-stroke"></i>
-                        <span>Evaluate (After Training)</span>
-                    </button>
-                ` : `
-                    <button onclick="openAppraisalModal('${emp.id}')" class="px-3 py-1.5 ${isRated ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-primary hover:bg-primary-dark'} text-white rounded-lg text-[11px] font-bold shadow-xs transition inline-flex items-center space-x-1" title="Open Appraisal Scoring Form">
-                        <i class="fas fa-star-half-stroke"></i>
-                        <span>${isRated ? 'Re-Evaluate' : 'Evaluate'}</span>
-                    </button>
-                `)}
-                ${isRated ? `
-                    <button onclick="searchEmployeeInStage('review', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-[11px] font-bold transition inline-flex items-center space-x-1" title="Proceed to Stage 5 Calibration & 1-on-1 Review">
-                        <i class="fas fa-comments text-purple-600"></i>
-                        <span>Review &rarr;</span>
-                    </button>
-                ` : ''}
-            </td>
+                    ${(isEmployeeInTraining(emp.id) && !isEmployeeTrainingScored(emp.id)) ? `
+                        <button disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg text-[11px] font-bold cursor-not-allowed inline-flex items-center space-x-1" title="Associate is currently enrolled in Mandatory Formal Training. Evaluation is locked until training score is recorded.">
+                            <i class="fas fa-lock text-[10px]"></i>
+                            <span>In Training</span>
+                        </button>
+                    ` : ((isEmployeeInTraining(emp.id) && isEmployeeTrainingScored(emp.id)) ? `
+                        <button onclick="openAppraisalModal('${emp.id}', true)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold shadow-xs transition inline-flex items-center space-x-1" title="Training Completed! Open Post-Training Appraisal">
+                            <i class="fas fa-star-half-stroke"></i>
+                            <span>Evaluate (After Training)</span>
+                        </button>
+                    ` : (!allTasksDone ? `
+                        <button disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg text-[11px] font-bold cursor-not-allowed inline-flex items-center space-x-1" title="All shift monitoring tasks must be 100% completed in Stage 3 before appraisal evaluation.">
+                            <i class="fas fa-lock text-[10px]"></i>
+                            <span>Tasks Incomplete</span>
+                        </button>
+                    ` : `
+                        <button onclick="openAppraisalModal('${emp.id}')" class="px-3 py-1.5 ${isRated ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-primary hover:bg-primary-dark'} text-white rounded-lg text-[11px] font-bold shadow-xs transition inline-flex items-center space-x-1" title="Open Appraisal Scoring Form">
+                            <i class="fas fa-star-half-stroke"></i>
+                            <span>${isRated ? 'Re-Evaluate' : 'Evaluate'}</span>
+                        </button>
+                    `))}
+                    ${isRated ? `
+                        ${!allTasksDone ? `
+                            <button disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg text-[11px] font-bold cursor-not-allowed inline-flex items-center space-x-1" title="Tasks must remain 100% completed before final review.">
+                                <i class="fas fa-lock text-slate-400 text-[10px]"></i>
+                                <span>Review (Locked)</span>
+                            </button>
+                        ` : `
+                            <button onclick="searchEmployeeInStage('review', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-[11px] font-bold transition inline-flex items-center space-x-1" title="Proceed to Stage 5 Calibration & 1-on-1 Review">
+                                <i class="fas fa-comments text-purple-600"></i>
+                                <span>Review &rarr;</span>
+                            </button>
+                        `}
+                    ` : ''}
+                </td>
+            </tr>
         `;
-        container.appendChild(tr);
-    });
+    }).join('');
 
     renderPaginationControls('eval-pagination-container', evalCurrentPage, rosterWithGoals.length, evalPageSize, 'setEvalPage', 'setEvalPageSize');
 }
@@ -4921,95 +4969,104 @@ function renderReviewRosterTable() {
     }
     showCalibrationDetail(window.selectedCalibEmpId, false);
 
-    pageList.forEach(emp => {
-        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+    const dbEvals = getDbEvaluations();
+
+    container.innerHTML = pageList.map((emp, idx) => {
+        const evalRec = dbEvals.find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
 
         const rawSupScore = evalRec ? parseFloat(evalRec.supervisor_rating || 0) : (parseFloat(emp.supervisorRating || emp.managerRating || 0));
-        const calibScore = evalRec && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : (rawSupScore > 0 ? rawSupScore : null);
-        const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
-        const tierLabel = evalRec?.tier_label || (calibScore ? (calibScore >= 4.5 ? 'Master Tier' : (calibScore >= 3.5 ? 'Advanced Tier' : (calibScore >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)'))) : 'Pending');
-        const effectiveScore = calibScore !== null ? calibScore : rawSupScore;
+        const isCalibrated = evalRec && evalRec.status === 'Calibrated' && evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && parseFloat(evalRec.calibrated_score) > 0;
+        const calibScore = isCalibrated ? parseFloat(evalRec.calibrated_score) : null;
+        const tierLabel = isCalibrated ? (evalRec?.tier_label || (calibScore >= 4.5 ? 'Master Tier' : (calibScore >= 3.5 ? 'Advanced Tier' : (calibScore >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)')))) : 'Pending';
+        const effectiveScore = isCalibrated && calibScore !== null ? calibScore : rawSupScore;
 
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
-        tr.innerHTML = `
-            <td class="px-5 py-4">
-                <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-800 font-bold flex items-center justify-center text-xs">
-                        ${emp.avatar || (emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0, 2) : 'EM')}
-                    </div>
+        return `
+            <tr class="hover:bg-slate-50 transition text-xs border-b border-slate-100">
+                <td class="px-3 py-4 text-center font-mono font-bold text-slate-400 text-xs">
+                    ${startIdx + idx + 1}
+                </td>
+                <td class="px-5 py-4">
                     <div>
-                        <p class="font-bold text-slate-900 leading-tight max-w-[150px] truncate" title="${emp.name}">${emp.name}</p>
-                        <p class="text-[10px] text-slate-400 max-w-[150px] truncate" title="${emp.position}">${emp.position}</p>
+                        <p class="font-bold text-slate-900 leading-tight max-w-[160px] truncate" title="${emp.name}">${emp.name}</p>
+                        <p class="text-[10px] text-slate-400 max-w-[160px] truncate" title="${emp.position}">${emp.position}</p>
                     </div>
-                </div>
-            </td>
-            <td class="px-5 py-4 text-slate-600 font-medium max-w-[130px] truncate" title="${emp.department}">${emp.department}</td>
-            <td class="px-5 py-4">
-                ${rawSupScore > 0 ? `
-                    <span class="font-mono font-bold text-xs ${rawSupScore < 3.0 ? 'text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200' : 'text-slate-800'}">
-                        <i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${rawSupScore.toFixed(2)} / 5.0
-                    </span>
-                ` : `<span class="text-slate-400 italic text-[11px]">Unrated</span>`}
-            </td>
-            <td class="px-5 py-4">
-                ${calibScore ? `
-                    <div class="space-y-0.5">
-                        <span class="font-bold font-mono text-xs ${calibScore < 3.0 ? 'text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200' : 'text-indigo-700'}">
-                            <i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${calibScore.toFixed(2)} / 5.0
+                </td>
+                <td class="px-5 py-4 text-slate-600 font-medium max-w-[130px] truncate" title="${emp.department}">${emp.department}</td>
+                <td class="px-5 py-4">
+                    ${rawSupScore > 0 ? `
+                        <span class="font-mono font-bold text-xs ${rawSupScore < 3.0 ? 'text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200' : 'text-slate-800'}">
+                            <i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${rawSupScore.toFixed(2)} / 5.0
                         </span>
-                        <span class="text-[10px] text-slate-500 block font-medium">(${tierLabel})</span>
+                    ` : `<span class="text-slate-400 italic text-[11px]">Unrated</span>`}
+                </td>
+                <td class="px-5 py-4">
+                    ${isCalibrated && calibScore !== null ? `
+                        <div class="space-y-0.5">
+                            <span class="font-bold font-mono text-xs ${calibScore < 3.0 ? 'text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200' : 'text-indigo-700'}">
+                                <i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${calibScore.toFixed(2)} / 5.0
+                            </span>
+                            <span class="text-[10px] text-slate-500 block font-medium">(${tierLabel})</span>
+                        </div>
+                    ` : `<span class="text-amber-700 font-bold text-[10px] bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 inline-flex items-center space-x-1"><i class="fas fa-clock text-[9px]"></i><span>Pending 1-on-1</span></span>`}
+                </td>
+                <td class="px-5 py-4 text-center">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isCalibrated ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}">
+                        ${isCalibrated ? '<i class="fas fa-check mr-1 text-emerald-700"></i>Finalized' : '<i class="fas fa-hourglass-half mr-1 text-amber-600"></i>Pending 1-on-1'}
+                    </span>
+                </td>
+                <td class="px-5 py-4 text-right">
+                    <div class="flex items-center justify-end space-x-1.5">
+                        <button onclick="showCalibrationDetail('${emp.id}', true)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition flex items-center space-x-1" title="View Calibration Detail Card">
+                            <i class="fas fa-eye text-indigo-600"></i>
+                            <span>View</span>
+                        </button>
+                        ${effectiveScore >= 3.0 ? `
+                            <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl text-xs border border-amber-200 transition flex items-center space-x-1" title="Send Colleague Kudos">
+                                <i class="fas fa-award text-amber-600"></i>
+                                <span>Send Kudos</span>
+                            </button>
+                        ` : `
+                            <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}', true);" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold rounded-xl text-xs border border-rose-200 transition flex items-center space-x-1" title="Create Development Plan in Stage 6">
+                                <i class="fas fa-file-pen text-rose-600"></i>
+                                <span>Create Dev Plan</span>
+                            </button>
+                        `}
+                        ${(isEmployeeInTraining(emp.id) && !isEmployeeTrainingScored(emp.id)) ? `
+                            <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 font-bold rounded-xl text-xs cursor-not-allowed flex items-center space-x-1" title="In Training: Final rating locked until training score is recorded.">
+                                <i class="fas fa-lock text-[10px]"></i>
+                                <span>In Training</span>
+                            </button>
+                        ` : ((isEmployeeInTraining(emp.id) && isEmployeeTrainingScored(emp.id)) ? `
+                            <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="Training completed! Open Post-Training Final Rating">
+                                <i class="fas fa-star-half-stroke"></i>
+                                <span>Final Rating (After Training)</span>
+                            </button>
+                        ` : (!isEmployeeTasksFullyCompleted(emp) ? `
+                            <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 font-bold rounded-xl text-xs cursor-not-allowed flex items-center space-x-1" title="Shift monitoring tasks must be 100% completed in Stage 3 before setting final rating.">
+                                <i class="fas fa-lock text-[10px]"></i>
+                                <span>Final Rating (Tasks Incomplete)</span>
+                            </button>
+                        ` : (rawSupScore === 0 ? `
+                            <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 font-bold rounded-xl text-xs cursor-not-allowed flex items-center space-x-1" title="Complete appraisal evaluation in Stage 4 first.">
+                                <i class="fas fa-lock text-[10px]"></i>
+                                <span>Pending Appraisal</span>
+                            </button>
+                        ` : (isCalibrated ? `
+                            <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="Update Final Rating & 1-on-1 Review">
+                                <i class="fas fa-star-half-stroke"></i>
+                                <span>Update Final Rating</span>
+                            </button>
+                        ` : `
+                            <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="Set Final Rating and Record 1-on-1 Review">
+                                <i class="fas fa-star-half-stroke"></i>
+                                <span>Final Rating</span>
+                            </button>
+                        `))))}
                     </div>
-                ` : `<span class="text-slate-400 italic text-[11px]">Pending 1-on-1</span>`}
-            </td>
-            <td class="px-5 py-4 text-center">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isCalibrated ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}">
-                    ${isCalibrated ? '<i class="fas fa-check mr-1 text-emerald-700"></i>Calibrated' : '<i class="fas fa-hourglass-half mr-1 text-amber-600"></i>Pending 1-on-1'}
-                </span>
-            </td>
-            <td class="px-5 py-4 text-right">
-                <div class="flex items-center justify-end space-x-1.5">
-                    <button onclick="showCalibrationDetail('${emp.id}', true)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition flex items-center space-x-1" title="View Calibration Detail Card">
-                        <i class="fas fa-eye text-indigo-600"></i>
-                        <span>View</span>
-                    </button>
-                    ${effectiveScore >= 3.0 ? `
-                        <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl text-xs border border-amber-200 transition flex items-center space-x-1" title="Send Colleague Kudos">
-                            <i class="fas fa-award text-amber-600"></i>
-                            <span>Send Kudos</span>
-                        </button>
-                    ` : `
-                        <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}', true);" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold rounded-xl text-xs border border-rose-200 transition flex items-center space-x-1" title="Create Development Plan in Stage 6">
-                            <i class="fas fa-file-pen text-rose-600"></i>
-                            <span>Create Dev Plan</span>
-                        </button>
-                    `}
-                    ${(isEmployeeInTraining(emp.id) && !isEmployeeTrainingScored(emp.id)) ? `
-                        <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 font-bold rounded-xl text-xs cursor-not-allowed flex items-center space-x-1" title="In Training: Final rating locked until training score is recorded.">
-                            <i class="fas fa-lock text-[10px]"></i>
-                            <span>In Training</span>
-                        </button>
-                    ` : ((isEmployeeInTraining(emp.id) && isEmployeeTrainingScored(emp.id)) ? `
-                        <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="Training completed! Open Post-Training Final Rating">
-                            <i class="fas fa-star-half-stroke"></i>
-                            <span>Final Rating (After Training)</span>
-                        </button>
-                    ` : (isCalibrated ? `
-                        <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="Update Final Rating & 1-on-1 Review">
-                            <i class="fas fa-star-half-stroke"></i>
-                            <span>Update Final Rating</span>
-                        </button>
-                    ` : `
-                        <button onclick="open1on1CalibrationModal('${emp.id}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="Set Final Rating and Record 1-on-1 Review">
-                            <i class="fas fa-star-half-stroke"></i>
-                            <span>Final Rating</span>
-                        </button>
-                    `))}
-                </div>
-            </td>
+                </td>
+            </tr>
         `;
-        container.appendChild(tr);
-    });
+    }).join('');
 
     renderPaginationControls('review-pagination-container', reviewCurrentPage, evaluatedEmployees.length, reviewPageSize, 'setReviewPage', 'setReviewPageSize');
 }
@@ -5092,18 +5149,18 @@ function showCalibrationDetail(empId, openModalImmediately = false) {
     if (roleEl) roleEl.textContent = `${emp.position} · ${emp.department}`;
     if (avatarEl) avatarEl.textContent = emp.avatar || emp.name.split(' ').map(n => n[0]).join('').substring(0, 2);
 
-    const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
-    const calibScore = isCalibrated && evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : null;
+    const isCalibrated = evalRec && evalRec.status === 'Calibrated' && evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && parseFloat(evalRec.calibrated_score) > 0;
+    const calibScore = isCalibrated ? parseFloat(evalRec.calibrated_score) : null;
     const rawSupScore = evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0.00;
-    const tier = isCalibrated ? (evalRec?.tier_label || (calibScore ? (calibScore >= 4.5 ? 'Master Tier' : (calibScore >= 3.5 ? 'Advanced Tier' : (calibScore >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)'))) : 'Pending Calibration')) : 'Pending 1-on-1 Calibration';
+    const tier = isCalibrated ? (evalRec?.tier_label || (calibScore >= 4.5 ? 'Master Tier' : (calibScore >= 3.5 ? 'Advanced Tier' : (calibScore >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)')))) : 'Pending 1-on-1 Review';
 
     if (statusBadge) {
         if (isCalibrated) {
             statusBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200';
-            statusBadge.innerHTML = '✓ Calibrated &amp; Approved';
+            statusBadge.innerHTML = '<i class="fas fa-check mr-1"></i>Finalized &amp; Approved';
         } else {
             statusBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200';
-            statusBadge.innerHTML = 'Pending 1-on-1 Calibration';
+            statusBadge.innerHTML = '<i class="fas fa-clock mr-1"></i>Pending 1-on-1 Review';
         }
     }
 
@@ -5239,6 +5296,14 @@ function open1on1CalibrationModal(empId) {
         return;
     }
 
+    // 0. Guard check: Shift monitoring tasks must be 100% completed
+    if (!isEmployeeTasksFullyCompleted(emp)) {
+        if (typeof showToast === 'function') {
+            showToast(`⚠️ Cannot calibrate: Shift monitoring tasks are still incomplete for ${emp.name}. Complete all tasks in Stage 3 first.`, 'warning');
+        }
+        return;
+    }
+
     // 1. Guard check: Employee must have active goals in the database
     const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, emp.id));
     if (empGoals.length === 0) {
@@ -5280,6 +5345,9 @@ function open1on1CalibrationModal(empId) {
 
     const supScore = evalRec ? parseFloat(evalRec.supervisor_rating || 0) : 0;
     const selfScore = evalRec?.self_evaluation ? parseFloat(evalRec.self_evaluation) : (evalRec?.selfEvaluation ? parseFloat(evalRec.selfEvaluation) : 0.00);
+    const recScoreEl = document.getElementById('calib-recommended-score-display');
+    const computedRecommended = selfScore > 0 ? ((selfScore + supScore) / 2) : supScore;
+    window.currentModalRecommendedScore = computedRecommended;
 
     if (selfScoreEl) {
         if (selfScore > 0) {
@@ -5290,6 +5358,7 @@ function open1on1CalibrationModal(empId) {
     }
     if (supScoreEl) supScoreEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1"></i>${supScore.toFixed(2)} / 5.0`;
     if (avgScoreEl) avgScoreEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1"></i>${supScore.toFixed(2)} / 5.0`;
+    if (recScoreEl) recScoreEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1"></i>${computedRecommended.toFixed(2)} / 5.0`;
 
     // Initially make calibrated score 1.0 (or keep existing database calibrated score if already calibrated)
     const defaultCalibScore = evalRec && evalRec.status === 'Calibrated' && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : 1.0;
@@ -5305,6 +5374,19 @@ function open1on1CalibrationModal(empId) {
     openModal('modal-1on1-calibration');
 }
 window.open1on1CalibrationModal = open1on1CalibrationModal;
+
+function applyRecommendedRating() {
+    const rec = typeof window.currentModalRecommendedScore === 'number' && window.currentModalRecommendedScore > 0 ? window.currentModalRecommendedScore : 4.0;
+    const sliderEl = document.getElementById('calib-score-slider');
+    if (sliderEl) {
+        sliderEl.value = rec.toFixed(2);
+    }
+    onCalibrationScoreInput(rec, true);
+    if (typeof showToast === 'function') {
+        showToast(`Applied recommended calibrated calculation (${rec.toFixed(2)} / 5.0) to final rating.`, 'info');
+    }
+}
+window.applyRecommendedRating = applyRecommendedRating;
 
 function onCalibrationTierSelect(tier) {
     const sliderEl = document.getElementById('calib-score-slider');
@@ -5561,7 +5643,8 @@ function openViewIDPPlanModal(empId) {
     if (nameEl) nameEl.textContent = emp.name;
     if (roleEl) roleEl.textContent = `${emp.position} · ${emp.department}`;
 
-    const rawScore = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+    const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
+    const rawScore = isCalibrated && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : 0;
     const isPIP = rawScore > 0 && rawScore < 3.0;
     const retryCount = getEmployeeRetryCount(emp.id);
     const isExceededRetry = retryCount >= 3 && isPIP;
@@ -5584,13 +5667,13 @@ function openViewIDPPlanModal(empId) {
     if (statusPill) {
         if (isExceededRetry) {
             statusPill.innerHTML = '<i class="fas fa-circle-xmark mr-1"></i> FAILED (Requires 1-on-1 Training)';
-            statusPill.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs';
+            statusPill.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200';
         } else if (isPIP) {
             statusPill.textContent = 'Mandatory PIP Active';
             statusPill.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200';
         } else {
             statusPill.textContent = '70-20-10 Growth Framework';
-            statusPill.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800';
+            statusPill.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200';
         }
     }
 
@@ -5601,60 +5684,96 @@ function openViewIDPPlanModal(empId) {
     if (strengthsList) {
         if (strengths.length > 0) {
             strengthsList.innerHTML = strengths.map(s => `
-                <li class="p-2 bg-white rounded-lg border border-emerald-100 flex items-center justify-between">
-                    <span class="flex items-center space-x-1.5 font-medium text-slate-800">
-                        <i class="fas fa-check-circle text-emerald-600 text-[10px]"></i>
+                <li class="p-2.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/80 flex items-center justify-between transition">
+                    <span class="flex items-center space-x-2 font-medium text-slate-800">
+                        <i class="fas fa-circle-check text-emerald-600 text-xs"></i>
                         <span>${s.title}</span>
                     </span>
-                    <span class="font-bold text-emerald-700 font-mono text-[11px]"><i class="fas fa-star text-amber-500 text-[10px] mr-1"></i>${parseFloat(s.rating).toFixed(1)}</span>
+                    <span class="font-bold text-slate-700 bg-white px-2 py-0.5 rounded-md border border-slate-200 font-mono text-[11px]"><i class="fas fa-star text-amber-500 text-[10px] mr-1"></i>${parseFloat(s.rating).toFixed(1)}</span>
                 </li>
             `).join('');
         } else {
-            strengthsList.innerHTML = `<li class="p-2.5 text-center text-slate-400 italic bg-white rounded-lg border border-emerald-100">No calibrated strengths recorded.</li>`;
+            strengthsList.innerHTML = `<li class="p-3 text-center text-slate-400 italic bg-slate-50 rounded-xl border border-slate-200/60">No calibrated strengths recorded.</li>`;
         }
     }
 
     if (gapsList) {
         if (gaps.length > 0) {
             gapsList.innerHTML = gaps.map(g => `
-                <li class="p-2 bg-white rounded-lg border border-amber-200 flex items-center justify-between">
-                    <span class="flex items-center space-x-1.5 font-medium text-slate-800">
-                        <i class="fas fa-exclamation-triangle ${g.rating < 3.0 ? 'text-rose-600' : 'text-amber-600'} text-[10px]"></i>
+                <li class="p-2.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/80 flex items-center justify-between transition">
+                    <span class="flex items-center space-x-2 font-medium text-slate-800">
+                        <i class="fas fa-circle-exclamation ${g.rating < 3.0 ? 'text-rose-600' : 'text-amber-600'} text-xs"></i>
                         <span>${g.title}</span>
                     </span>
-                    <span class="font-bold ${g.rating < 3.0 ? 'text-rose-600' : 'text-amber-700'} font-mono text-[11px]"><i class="fas fa-star text-amber-500 text-[10px] mr-1"></i>${parseFloat(g.rating).toFixed(1)}</span>
+                    <span class="font-bold text-slate-700 bg-white px-2 py-0.5 rounded-md border border-slate-200 font-mono text-[11px]"><i class="fas fa-star text-amber-500 text-[10px] mr-1"></i>${parseFloat(g.rating).toFixed(1)}</span>
                 </li>
             `).join('');
         } else {
-            gapsList.innerHTML = `<li class="p-2.5 text-center text-slate-400 italic bg-white rounded-lg border border-amber-100">No development gaps identified.</li>`;
+            gapsList.innerHTML = `<li class="p-3 text-center text-slate-400 italic bg-slate-50 rounded-xl border border-slate-200/60">No development gaps identified.</li>`;
         }
     }
 
     if (commitmentsList) {
-        if (empGoals.length > 0) {
-            commitmentsList.innerHTML = empGoals.map((g, idx) => {
+        const stagedPlan = window.stagedIdpPlans?.[emp.id] || { tasks: [], prescribedBooks: [] };
+        const stagedTasks = stagedPlan.tasks || [];
+        const stagedBooks = stagedPlan.prescribedBooks || [];
+        const stagedTotal = stagedTasks.length + stagedBooks.length;
+
+        const stagedModalCards = [
+            ...stagedTasks.map(t => `
+                <div class="p-3 bg-slate-50/90 rounded-2xl border border-dashed border-amber-300/80 space-y-1.5 shadow-2xs">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 px-2 py-0.5 rounded-full flex items-center space-x-1">
+                            <i class="fas fa-pen-ruler text-[9px] mr-1 text-amber-600"></i>Draft Action Task (Unsaved)
+                        </span>
+                        <button onclick="removeStagedIdpTask('${emp.id}', '${t.id}'); openViewIDPPlanModal('${emp.id}')" class="text-slate-400 hover:text-rose-600 text-[10px] font-medium transition">
+                            <i class="fas fa-times"></i> Remove
+                        </button>
+                    </div>
+                    <p class="font-bold text-slate-900 text-xs">${t.title}</p>
+                    <p class="text-slate-500 text-[11px]">${t.description || 'Pending database save upon clicking Finish & Save IDP Plan.'}</p>
+                </div>
+            `),
+            ...stagedBooks.map(b => `
+                <div class="p-3 bg-slate-50/90 rounded-2xl border border-dashed border-amber-300/80 space-y-1.5 shadow-2xs">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 px-2 py-0.5 rounded-full flex items-center space-x-1">
+                            <i class="fas fa-book-medical text-[9px] mr-1 text-amber-600"></i>Draft LMS Handbook (Unsaved)
+                        </span>
+                        <button onclick="removeStagedIdpBook('${emp.id}', '${b.bookId}'); openViewIDPPlanModal('${emp.id}')" class="text-slate-400 hover:text-rose-600 text-[10px] font-medium transition">
+                            <i class="fas fa-times"></i> Remove
+                        </button>
+                    </div>
+                    <p class="font-bold text-slate-900 text-xs">${b.bookTitle}</p>
+                    <p class="text-slate-500 text-[11px]">Assigned to close competency gap. Will enroll in lms_prescribed on Finish.</p>
+                </div>
+            `)
+        ].join('');
+
+        if (stagedTotal > 0 || empGoals.length > 0) {
+            commitmentsList.innerHTML = stagedModalCards + empGoals.map((g, idx) => {
                 const tasks = g.tasks || [];
                 return `
-                    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <div class="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs space-y-2.5">
                         <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-bold ${idx % 3 === 0 ? 'bg-blue-100 text-blue-800' : (idx % 3 === 1 ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800')} px-2 py-0.5 rounded-full">
+                            <span class="text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-full">
                                 ${idx % 3 === 0 ? '70% Experiential Target' : (idx % 3 === 1 ? '20% Mentorship Target' : '10% Formal Learning')}
                             </span>
-                            <span class="text-[10px] font-bold ${g.status === 'Approved' ? 'text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded' : 'text-amber-700 bg-amber-50 px-2 py-0.5 rounded'}">
+                            <span class="text-[10px] font-bold ${g.status === 'Approved' ? 'text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded' : 'text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded'}">
                                 ${g.status || 'Active'}
                             </span>
                         </div>
                         <p class="font-bold text-slate-900 text-xs">${g.title}</p>
-                        <p class="text-slate-600 text-[11px]">${g.supervisor_notes || g.evidence || 'Active developmental metric.'}</p>
+                        <p class="text-slate-500 text-[11px] leading-relaxed">${g.supervisor_notes || g.evidence || 'Active developmental metric.'}</p>
                         
                         <!-- Tasks list under this goal -->
-                        <div class="pt-2 border-t border-slate-200/80 space-y-1">
-                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Assigned Action Tasks (${tasks.length}):</span>
+                        <div class="pt-2 border-t border-slate-100 space-y-1.5">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Assigned Action Tasks (${tasks.length}):</span>
                             ${tasks.length > 0 ? tasks.map(t => `
-                                <div class="flex items-center justify-between text-[11px] p-1.5 bg-white rounded-lg border border-slate-100">
+                                <div class="flex items-center justify-between text-[11px] p-2 bg-slate-50 rounded-xl border border-slate-100">
                                     <span class="text-slate-700 font-medium">${t.title}</span>
-                                    <span class="text-[10px] font-bold ${t.status === 'completed' ? 'text-emerald-700' : 'text-amber-600'}">
-                                        ${t.status === 'completed' ? '✓ Done' : 'Pending'}
+                                    <span class="text-[10px] font-bold ${t.status === 'completed' ? 'text-emerald-700' : 'text-slate-500'}">
+                                        ${t.status === 'completed' ? '✓ Completed' : 'Pending'}
                                     </span>
                                 </div>
                             `).join('') : '<p class="text-slate-400 italic text-[10px]">No specific tasks assigned yet.</p>'}
@@ -5663,7 +5782,36 @@ function openViewIDPPlanModal(empId) {
                 `;
             }).join('');
         } else {
-            commitmentsList.innerHTML = `<div class="p-6 text-center text-slate-400 italic bg-slate-50 rounded-xl border border-slate-200">No approved commitments or goals assigned in database.</div>`;
+            commitmentsList.innerHTML = `<div class="p-6 text-center text-slate-400 italic bg-white rounded-2xl border border-slate-200/80">No approved commitments or goals assigned in database.</div>`;
+        }
+    }
+
+    const modalFooterActions = document.getElementById('modal-idp-plan-footer-actions');
+    if (modalFooterActions) {
+        const stagedPlan = window.stagedIdpPlans?.[emp.id] || { tasks: [], prescribedBooks: [] };
+        const stagedTotal = (stagedPlan.tasks?.length || 0) + (stagedPlan.prescribedBooks?.length || 0);
+
+        if (stagedTotal > 0) {
+            modalFooterActions.innerHTML = `
+                <button onclick="discardStagedIdpPlan('${emp.id}'); openViewIDPPlanModal('${emp.id}')" class="px-3 py-2 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Discard uncommitted draft items">
+                    <i class="fas fa-trash-can text-slate-400"></i>
+                    <span>Discard (${stagedTotal})</span>
+                </button>
+                <button onclick="commitStagedIdpPlan('${emp.id}'); closeModal('modal-view-idp-plan')" class="btn-finish-idp-plan px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5 ring-2 ring-emerald-400/50">
+                    <i class="fas fa-check-double"></i>
+                    <span>Finish &amp; Save IDP (${stagedTotal})</span>
+                </button>
+            `;
+        } else {
+            modalFooterActions.innerHTML = `
+                <button onclick="closeModal('modal-view-idp-plan'); openRemedialBooksModal('${emp.id}')" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs border border-slate-200 shadow-2xs transition flex items-center space-x-1.5">
+                    <i class="fas fa-book-medical text-slate-600"></i>
+                    <span>Prescribe LMS Books</span>
+                </button>
+                <button onclick="closeModal('modal-view-idp-plan'); switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}')" class="btn-primary px-4 py-2 text-xs font-bold shadow-xs flex items-center space-x-1.5">
+                    <span>Open Stage 6 Workspace &rarr;</span>
+                </button>
+            `;
         }
     }
 
@@ -5714,8 +5862,10 @@ function openAddSpecificTaskModal(empId, preselectedGoalId = null) {
 }
 window.openAddSpecificTaskModal = openAddSpecificTaskModal;
 
+window.stagedIdpPlans = window.stagedIdpPlans || {};
+
 /**
- * Handle Add Specific Task Form Submission
+ * Handle Add Specific Task Form Submission (Saved to Draft first)
  */
 async function handleCreateSpecificTaskSubmit(e) {
     if (e && e.preventDefault) e.preventDefault();
@@ -5735,35 +5885,137 @@ async function handleCreateSpecificTaskSubmit(e) {
         return;
     }
 
-    const submitBtn = document.getElementById('btn-submit-specific-task');
-    const origHtml = submitBtn ? submitBtn.innerHTML : '';
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving...';
+    // Stage in draft IDP plan without inserting into DB immediately
+    window.stagedIdpPlans = window.stagedIdpPlans || {};
+    window.stagedIdpPlans[empId] = window.stagedIdpPlans[empId] || { tasks: [], prescribedBooks: [] };
+    window.stagedIdpPlans[empId].tasks = window.stagedIdpPlans[empId].tasks || [];
+
+    const tempTaskId = 'staged-task-' + Date.now();
+    window.stagedIdpPlans[empId].tasks.push({
+        id: tempTaskId,
+        goal_id: goalId,
+        employee_id: empId,
+        title: title,
+        target_date: targetDate,
+        description: description
+    });
+
+    closeModal('modal-add-specific-task');
+    if (typeof showToast === 'function') {
+        showToast(`✏️ Action task "${title}" added to draft IDP! Click "Finish & Save IDP Plan" when ready to commit.`, 'success');
     }
-
-    try {
-        await PerformanceAPI.createSpecificTask({
-            goal_id: goalId,
-            employee_id: empId,
-            title: title,
-            target_date: targetDate,
-            description: description
-        });
-
-        if (typeof showToast === 'function') {
-            showToast(`✅ Specific action task "${title}" assigned to associate in database!`, 'success');
-        }
-
-        closeModal('modal-add-specific-task');
-    } finally {
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = origHtml;
-        }
+    if (typeof showIDPDetail === 'function') {
+        showIDPDetail(empId);
     }
 }
 window.handleCreateSpecificTaskSubmit = handleCreateSpecificTaskSubmit;
+
+window.commitStagedIdpPlan = async function(empId) {
+    const staged = window.stagedIdpPlans?.[empId];
+    if (!staged || ((!staged.tasks || staged.tasks.length === 0) && (!staged.prescribedBooks || staged.prescribedBooks.length === 0))) {
+        if (typeof showToast === 'function') showToast('No draft IDP items to save.', 'info');
+        return;
+    }
+
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || { name: 'Associate' };
+    const commitBtns = document.querySelectorAll('.btn-finish-idp-plan');
+    commitBtns.forEach(btn => {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Committing to Database...';
+    });
+
+    try {
+        // 1. Batch create all staged tasks in database
+        if (staged.tasks && staged.tasks.length > 0) {
+            for (const task of staged.tasks) {
+                await PerformanceAPI.createSpecificTask({
+                    goal_id: task.goal_id,
+                    employee_id: empId,
+                    title: task.title,
+                    target_date: task.target_date,
+                    description: task.description
+                });
+            }
+        }
+
+        // 2. Batch prescribe all staged books in lms_prescribed
+        if (staged.prescribedBooks && staged.prescribedBooks.length > 0) {
+            for (const item of staged.prescribedBooks) {
+                const res = await fetch('api/lms.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'prescribe_document',
+                        employee: empId,
+                        lms_id: item.bookId,
+                        goal_id: item.targetGoalId || null,
+                        for: item.targetGoalId ? 'goal' : 'both',
+                        status: 'Needs Retake',
+                        scores: 0,
+                        ratings: 0,
+                        progress: 0
+                    })
+                });
+                const json = await res.json();
+                if (json.success && json.data) {
+                    window.dynamicLmsState.prescribed = window.dynamicLmsState.prescribed || [];
+                    window.dynamicLmsState.prescribed.push(json.data);
+                }
+            }
+        }
+
+        // 3. Clear draft state for this employee
+        delete window.stagedIdpPlans[empId];
+
+        // 4. Reload fresh database records
+        await loadAndRenderPlanningGoals();
+        if (typeof loadAndRenderMonitoringData === 'function') {
+            await loadAndRenderMonitoringData();
+        }
+
+        if (typeof showToast === 'function') {
+            showToast(`🎉 IDP Plan successfully finalized & saved to database for ${emp.name}!`, 'success');
+        }
+        showIDPDetail(empId);
+        renderIDPRosterTable();
+    } catch (err) {
+        console.error('Error committing IDP plan:', err);
+        if (typeof showToast === 'function') {
+            showToast(`Error saving IDP plan: ${err.message || 'Server error'}`, 'error');
+        }
+    } finally {
+        commitBtns.forEach(btn => {
+            btn.disabled = false;
+        });
+    }
+};
+
+window.discardStagedIdpPlan = function(empId) {
+    if (!window.stagedIdpPlans?.[empId]) return;
+    delete window.stagedIdpPlans[empId];
+    if (typeof showToast === 'function') showToast('Draft IDP changes discarded.', 'info');
+    showIDPDetail(empId);
+    if (typeof renderRemedialBooksList === 'function') {
+        renderRemedialBooksList();
+    }
+};
+
+window.removeStagedIdpTask = function(empId, taskId) {
+    if (!window.stagedIdpPlans?.[empId]?.tasks) return;
+    window.stagedIdpPlans[empId].tasks = window.stagedIdpPlans[empId].tasks.filter(t => t.id !== taskId);
+    if (typeof showToast === 'function') showToast('Draft task removed.', 'info');
+    showIDPDetail(empId);
+};
+
+window.removeStagedIdpBook = function(empId, bookId) {
+    if (!window.stagedIdpPlans?.[empId]?.prescribedBooks) return;
+    window.stagedIdpPlans[empId].prescribedBooks = window.stagedIdpPlans[empId].prescribedBooks.filter(b => b.bookId !== bookId);
+    if (typeof showToast === 'function') showToast('Draft prescribed handbook removed.', 'info');
+    showIDPDetail(empId);
+    if (typeof renderRemedialBooksList === 'function') {
+        renderRemedialBooksList();
+    }
+};
 
 function showEmptyIDPDetail() {
     const titleEl = document.getElementById('idp-detail-title');
@@ -5801,15 +6053,12 @@ function renderIDPRosterTable() {
     if (!container) return;
     container.innerHTML = '';
 
-    // Show employees who have goals and evaluated ratings in database (Phase 4 / 5 evaluation)
+    // Show employees who have goals and finalized calibrated ratings from Stage 5 in database
     let roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster.filter(emp => {
         const hasGoal = (window.dbGoals || []).some(g => isSameEmployee(g.employee_id, emp.id));
         const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
-        const score = (evalRec && evalRec.calibrated_score !== undefined && evalRec.calibrated_score !== null && parseFloat(evalRec.calibrated_score) > 0)
-            ? parseFloat(evalRec.calibrated_score)
-            : ((evalRec && evalRec.supervisor_rating !== undefined && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0)
-                ? parseFloat(evalRec.supervisor_rating)
-                : 0);
+        const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
+        const score = isCalibrated && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : 0;
         return hasGoal && score > 0;
     }) : [];
 
@@ -5839,81 +6088,80 @@ function renderIDPRosterTable() {
     const startIdx = isAll ? 0 : (idpCurrentPage - 1) * effectivePageSize;
     const pageList = isAll ? roster : roster.slice(startIdx, startIdx + effectivePageSize);
 
-    pageList.forEach(emp => {
-        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
-        const score = (evalRec && evalRec.calibrated_score !== undefined && evalRec.calibrated_score !== null && parseFloat(evalRec.calibrated_score) > 0)
-            ? parseFloat(evalRec.calibrated_score)
-            : ((evalRec && evalRec.supervisor_rating !== undefined && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0)
-                ? parseFloat(evalRec.supervisor_rating)
-                : 0);
+    const dbEvals = getDbEvaluations();
+
+    container.innerHTML = pageList.map((emp, idx) => {
+        const evalRec = dbEvals.find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
+        const score = isCalibrated && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : 0;
         const hasPassed = score >= 3.0;
         const retryCount = getEmployeeRetryCount(emp.id);
-        const isExceededRetry = retryCount >= 3 && !hasPassed;
+        const inTraining = isEmployeeInTraining(emp.id);
+        const isScored = isEmployeeTrainingScored(emp.id);
+        const isGoalFailed = isEmployeeGoalFailed(emp.id);
+        const isNeeds1on1 = (retryCount >= 3 && isScored && !hasPassed) || retryCount >= 4 || isGoalFailed;
+        const isExceededRetry = (retryCount >= 3 && !hasPassed) || isNeeds1on1;
         const xpPts = getKudosXP(score);
         const isGoalCompleted = (window.dbGoals || []).some(g => isSameEmployee(g.employee_id, emp.id) && g.status === 'Completed');
         const isKudosDisabled = !!(emp.kudosSent || isGoalCompleted);
-
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
-        tr.innerHTML = `
-            <td class="px-5 py-4 font-bold text-slate-900">
-                <div class="flex items-center space-x-2.5">
-                    <div class="w-7 h-7 rounded-full ${emp.avatarBg || 'bg-emerald-100 text-emerald-800'} font-bold flex items-center justify-center text-xs shadow-2xs">
-                        ${emp.avatar || (emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0, 2) : 'EM')}
-                    </div>
-                    <span class="max-w-[150px] truncate" title="${emp.name}">${emp.name}</span>
-                </div>
-            </td>
-            <td class="px-5 py-4 text-slate-500 max-w-[150px] truncate" title="${emp.position} · ${emp.department}">${emp.position} · ${emp.department}</td>
-            <td class="px-5 py-4 font-bold text-slate-800">
-                ${isExceededRetry ? `
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-200 text-rose-900 border border-rose-300">
-                        Failed (${score.toFixed(2)}/5.0)
-                    </span>
-                ` : `
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${!hasPassed && score > 0 ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
-                        ${!hasPassed && score > 0 ? `PIP Remediation (${score.toFixed(2)}/5.0)` : `<i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>Proficient (${score.toFixed(2)}/5.0)`}
-                    </span>
-                `}
-            </td>
-            <td class="px-5 py-4">
-                ${isExceededRetry ? `
-                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
-                        <i class="fas fa-circle-xmark mr-1"></i> FAILED (Requires 1-on-1 Training)
-                    </span>
-                ` : `
-                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isGoalCompleted ? 'bg-indigo-100 text-indigo-800' : (hasPassed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}">
-                        ${isGoalCompleted ? 'Goal Completed <i class="fas fa-check text-indigo-700 ml-1"></i>' : (hasPassed ? 'Clearance Active' : 'Action Plan Active')}
-                    </span>
-                `}
-            </td>
-            <td class="px-5 py-4 text-right">
-                <div class="flex items-center justify-end space-x-1.5">
-                    <button onclick="showIDPDetail('${emp.id}', true)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center space-x-1">
-                        <i class="fas fa-eye"></i>
-                        <span>View IDP</span>
-                    </button>
-                    ${hasPassed ? (isKudosDisabled ? `
-                        <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-bold cursor-not-allowed inline-flex items-center space-x-1" title="Kudos already awarded &amp; performance goal marked as completed">
-                            <i class="fas fa-check text-emerald-600"></i>
-                            <span>Kudos Sent (+${xpPts} XP)</span>
-                        </button>
+        return `
+            <tr class="hover:bg-slate-50 transition text-xs border-b border-slate-100">
+                <td class="px-3 py-4 text-center font-mono font-bold text-slate-400 text-xs">
+                    ${startIdx + idx + 1}
+                </td>
+                <td class="px-5 py-4 font-bold text-slate-900">
+                    <span class="max-w-[160px] truncate block" title="${emp.name}">${emp.name}</span>
+                </td>
+                <td class="px-5 py-4 text-slate-500 max-w-[150px] truncate" title="${emp.position} · ${emp.department}">${emp.position} · ${emp.department}</td>
+                <td class="px-5 py-4 font-bold text-slate-800">
+                    ${isExceededRetry ? `
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-200 text-rose-900 border border-rose-300">
+                            Failed (${score.toFixed(2)}/5.0)
+                        </span>
                     ` : `
-                        <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Send Colleague Kudos &amp; Award XP">
-                            <i class="fas fa-award text-amber-600"></i>
-                            <span>Send Kudos (+${xpPts} XP)</span>
-                        </button>
-                    `) : `
-                        <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Proceed to Phase 7 Transition &amp; Rollover">
-                            <i class="fas fa-arrow-right text-rose-600"></i>
-                            <span>Proceed to Phase 7</span>
-                        </button>
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${!hasPassed && score > 0 ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
+                            ${!hasPassed && score > 0 ? `PIP Remediation (${score.toFixed(2)}/5.0)` : `<i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>Proficient (${score.toFixed(2)}/5.0)`}
+                        </span>
                     `}
-                </div>
-            </td>
+                </td>
+                <td class="px-5 py-4">
+                    ${isExceededRetry ? `
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
+                            <i class="fas fa-circle-xmark mr-1"></i> FAILED (Requires 1-on-1 Training)
+                        </span>
+                    ` : `
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isGoalCompleted ? 'bg-indigo-100 text-indigo-800' : (hasPassed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}">
+                            ${isGoalCompleted ? 'Goal Completed <i class="fas fa-check text-indigo-700 ml-1"></i>' : (hasPassed ? 'Clearance Active' : 'Action Plan Active')}
+                        </span>
+                    `}
+                </td>
+                <td class="px-5 py-4 text-right">
+                    <div class="flex items-center justify-end space-x-1.5">
+                        <button onclick="showIDPDetail('${emp.id}', true)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center space-x-1">
+                            <i class="fas fa-eye"></i>
+                            <span>View IDP</span>
+                        </button>
+                        ${hasPassed ? (isKudosDisabled ? `
+                            <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-bold cursor-not-allowed inline-flex items-center space-x-1" title="Kudos already awarded &amp; performance goal marked as completed">
+                                <i class="fas fa-check text-emerald-600"></i>
+                                <span>Kudos Sent (+${xpPts} XP)</span>
+                            </button>
+                        ` : `
+                            <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Send Colleague Kudos &amp; Award XP">
+                                <i class="fas fa-award text-amber-600"></i>
+                                <span>Send Kudos (+${xpPts} XP)</span>
+                            </button>
+                        `) : `
+                            <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Proceed to Phase 7 Transition &amp; Rollover">
+                                <i class="fas fa-arrow-right text-rose-600"></i>
+                                <span>Proceed to Phase 7</span>
+                            </button>
+                        `}
+                    </div>
+                </td>
+            </tr>
         `;
-        container.appendChild(tr);
-    });
+    }).join('');
 
     renderPaginationControls('idp-pagination-container', idpCurrentPage, roster.length, idpPageSize, 'setIDPPage', 'setIDPPageSize');
 
@@ -5945,7 +6193,8 @@ function showIDPDetail(empId, openModalImmediately = false) {
     }
 
     const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
-    const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+    const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
+    const score = isCalibrated && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : 0;
 
     if (score === 0) {
         showEmptyIDPDetail();
@@ -5986,60 +6235,90 @@ function showIDPDetail(empId, openModalImmediately = false) {
     }
     if (subtitleEl) subtitleEl.textContent = `Position: ${emp.position} · ${emp.department} · Review Cycle ${evalRec?.cycle_period || '2026-Q3'}`;
 
+    const stagedPlan = window.stagedIdpPlans?.[emp.id] || { tasks: [], prescribedBooks: [] };
+    const stagedTasks = stagedPlan.tasks || [];
+    const stagedBooks = stagedPlan.prescribedBooks || [];
+    const stagedTotal = stagedTasks.length + stagedBooks.length;
+
     if (headerActions) {
+        const actionButtons = [];
+
+        if (stagedTotal > 0) {
+            actionButtons.push(`
+                <button onclick="discardStagedIdpPlan('${emp.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Discard uncommitted draft items">
+                    <i class="fas fa-trash-can text-slate-400"></i>
+                    <span>Discard Draft (${stagedTotal})</span>
+                </button>
+            `);
+            actionButtons.push(`
+                <button onclick="commitStagedIdpPlan('${emp.id}')" class="btn-finish-idp-plan px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5 ring-2 ring-emerald-400/50">
+                    <i class="fas fa-check-double"></i>
+                    <span>Finish &amp; Save IDP Plan (${stagedTotal})</span>
+                </button>
+            `);
+        }
+
         if (hasPassedBenchmark) {
             if (isKudosDisabled) {
-                headerActions.innerHTML = `
-                    <button disabled class="px-4 py-2 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-bold cursor-not-allowed flex items-center space-x-1.5">
+                actionButtons.push(`
+                    <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-bold cursor-not-allowed flex items-center space-x-1.5">
                         <i class="fas fa-check text-emerald-600"></i>
                         <span>Kudos Sent (+${xpPts} XP) · Goal Completed</span>
                     </button>
-                `;
+                `);
             } else {
-                headerActions.innerHTML = `
-                    <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition">
+                actionButtons.push(`
+                    <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition">
                         <i class="fas fa-award"></i>
                         <span>Send Colleague Kudos (+${xpPts} XP)</span>
                     </button>
-                `;
+                `);
             }
         } else if (isNeeds1on1) {
-            headerActions.innerHTML = `
-                <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition">
+            actionButtons.push(`
+                <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-3.5 py-1.5 bg-rose-700 hover:bg-rose-800 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition">
                     <i class="fas fa-arrow-right"></i>
                     <span>Proceed to Phase 7 Transition &rarr;</span>
                 </button>
-            `;
+            `);
         } else if (isExceededRetry) {
-            headerActions.innerHTML = `
-                <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-3.5 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition">
+            actionButtons.push(`
+                <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-3.5 py-1.5 bg-rose-700 hover:bg-rose-800 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition">
                     <i class="fas fa-arrow-right"></i>
                     <span>Proceed to Phase 7 Transition &rarr;</span>
                 </button>
-                <button onclick="openFormalCurriculumModal('${emp.id}')" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center space-x-1.5 transition">
+            `);
+            actionButtons.push(`
+                <button onclick="openFormalCurriculumModal('${emp.id}')" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center space-x-1.5 transition">
                     <i class="fas fa-chalkboard-user"></i>
                     <span>Assign 1-on-1 Training</span>
                 </button>
-            `;
+            `);
         } else {
-            headerActions.innerHTML = `
-                <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition">
+            actionButtons.push(`
+                <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition">
                     <i class="fas fa-arrow-right"></i>
                     <span>Proceed to Phase 7 Transition &rarr;</span>
                 </button>
-                ${(inTraining && !isScored) ? `
-                    <button disabled class="px-3.5 py-2 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-semibold cursor-not-allowed flex items-center space-x-1.5" title="Associate is currently enrolled in Mandatory Formal Training.">
+            `);
+            if (inTraining && !isScored) {
+                actionButtons.push(`
+                    <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-semibold cursor-not-allowed flex items-center space-x-1.5" title="Associate is currently enrolled in Mandatory Formal Training.">
                         <i class="fas fa-lock"></i>
                         <span>Prescribe LMS Books (Locked)</span>
                     </button>
-                ` : `
-                    <button onclick="openRemedialBooksModal('${emp.id}')" class="px-3.5 py-2 bg-gold hover:bg-gold-dark text-white rounded-xl text-xs font-semibold shadow-xs flex items-center space-x-1.5 transition">
+                `);
+            } else {
+                actionButtons.push(`
+                    <button onclick="openRemedialBooksModal('${emp.id}')" class="px-3.5 py-1.5 bg-gold hover:bg-gold-dark text-white rounded-xl text-xs font-semibold shadow-xs flex items-center space-x-1.5 transition">
                         <i class="fas fa-book-medical"></i>
                         <span>Prescribe LMS Books</span>
                     </button>
-                `}
-            `;
+                `);
+            }
         }
+
+        headerActions.innerHTML = actionButtons.join('');
     }
 
 
@@ -6083,10 +6362,18 @@ function showIDPDetail(empId, openModalImmediately = false) {
     const gaps = criteria.filter(c => parseFloat(c.rating || 0) < 3.5);
 
     const empKey = isSameEmployee(emp.id, 'emp-101') ? 'maria' : (isSameEmployee(emp.id, 'emp-102') ? 'antonio' : emp.id);
-    const prescribedList = [
-        ...(window.prescribedBooksPerAssociate?.[empKey] || []),
-        ...(window.prescribedBooksPerAssociate?.[emp.id] || [])
+    const dbPrescribed = (window.dynamicLmsState && Array.isArray(window.dynamicLmsState.prescribed)) ? window.dynamicLmsState.prescribed : [];
+    const empDbPrescribed = dbPrescribed.filter(item => isSameEmployee(item.employee, emp.id) || (empKey === 'maria' && isSameEmployee(item.employee, 'emp-101')));
+    const memoryPrescribed = [
+        ...(window.prescribedBooksPerAssociate?.[emp.id] || []),
+        ...(window.prescribedBooksPerAssociate?.[empKey] || [])
     ];
+    const prescribedIds = Array.from(new Set([
+        ...empDbPrescribed.map(p => String(p.lms_id)),
+        ...memoryPrescribed.map(p => String(p))
+    ])).filter(Boolean);
+
+    const prescribedList = prescribedIds;
     const isTrainingPrescribed = prescribedList.length > 0;
 
     if (strengthsCount) strengthsCount.textContent = `${strengths.length} Identified`;
@@ -6095,45 +6382,45 @@ function showIDPDetail(empId, openModalImmediately = false) {
     if (strengthsList) {
         if (strengths.length > 0) {
             strengthsList.innerHTML = strengths.map(s => `
-                <li class="p-2.5 bg-white/90 rounded-xl border border-emerald-100 flex items-center justify-between">
+                <li class="p-2.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/80 flex items-center justify-between transition">
                     <span class="flex items-center space-x-2">
                         <i class="fas fa-circle-check text-emerald-600 text-xs"></i>
                         <span class="font-medium text-slate-900">${s.title}</span>
                     </span>
-                    <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px] font-mono"><i class="fas fa-star text-amber-500 text-[10px] mr-1"></i>${parseFloat(s.rating).toFixed(1)} / 5.0</span>
+                    <span class="font-bold text-slate-700 bg-white px-2 py-0.5 rounded-md border border-slate-200 text-[11px] font-mono"><i class="fas fa-star text-amber-500 text-[10px] mr-1"></i>${parseFloat(s.rating).toFixed(1)} / 5.0</span>
                 </li>
             `).join('');
         } else {
-            strengthsList.innerHTML = `<li class="p-3 text-center text-slate-400 italic bg-white rounded-xl border border-emerald-100">No calibrated strengths recorded in database yet.</li>`;
+            strengthsList.innerHTML = `<li class="p-3 text-center text-slate-400 italic bg-slate-50 rounded-xl border border-slate-200/60">No calibrated strengths recorded in database yet.</li>`;
         }
     }
 
     if (gapsList) {
         if (gaps.length > 0) {
             gapsList.innerHTML = gaps.map(g => `
-                <li class="p-2.5 bg-white/90 rounded-xl border border-amber-200/70 flex items-center justify-between gap-2">
+                <li class="p-2.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/80 flex items-center justify-between gap-2 transition">
                     <div class="flex items-center space-x-2 min-w-0">
                         <i class="fas fa-circle-exclamation ${g.rating < 3.0 ? 'text-rose-600' : 'text-amber-600'} text-xs flex-shrink-0"></i>
                         <div class="truncate">
                             <p class="font-semibold text-slate-900 text-xs truncate">${g.title}</p>
-                            <p class="text-[10px] ${g.rating < 3.0 ? 'text-rose-600 font-bold' : 'text-amber-700'}">Appraisal Rating: <i class="fas fa-star text-amber-500 text-[10px] mr-0.5"></i>${parseFloat(g.rating).toFixed(1)} / 5.0</p>
+                            <p class="text-[10px] text-slate-500">Appraisal Rating: <i class="fas fa-star text-amber-500 text-[10px] mr-0.5"></i><span class="font-bold text-slate-700">${parseFloat(g.rating).toFixed(1)} / 5.0</span></p>
                         </div>
                     </div>
                     ${!hasPassedBenchmark ? (isTrainingPrescribed ? `
-                        <button onclick="openRemedialBooksModal('${emp.id}')" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1 shadow-2xs" title="Training module assigned to IDP">
+                        <button onclick="openRemedialBooksModal('${emp.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1 shadow-2xs" title="Training module assigned to IDP">
                             <i class="fas fa-check text-emerald-600 text-[9px]"></i>
                             <span>Prescribed</span>
                         </button>
                     ` : `
-                        <button onclick="openRemedialBooksModal('${emp.id}')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1 shadow-2xs" title="Assign targeted LMS book for this skill deficiency">
-                            <i class="fas fa-plus text-amber-600 text-[9px]"></i>
+                        <button onclick="openRemedialBooksModal('${emp.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1 shadow-2xs" title="Assign targeted LMS book for this skill deficiency">
+                            <i class="fas fa-plus text-slate-600 text-[9px]"></i>
                             <span>Prescribe Book</span>
                         </button>
                     `) : ''}
                 </li>
             `).join('');
         } else {
-            gapsList.innerHTML = `<li class="p-3 text-center text-slate-400 italic bg-white rounded-xl border border-amber-100">No development gaps identified.</li>`;
+            gapsList.innerHTML = `<li class="p-3 text-center text-slate-400 italic bg-slate-50 rounded-xl border border-slate-200/60">No development gaps identified.</li>`;
         }
     }
 
@@ -6153,61 +6440,57 @@ function showIDPDetail(empId, openModalImmediately = false) {
         let topBannerHtml = '';
         if (hasPassedBenchmark) {
             topBannerHtml = `
-                <div class="col-span-full p-5 bg-emerald-50/80 rounded-2xl border border-emerald-200 space-y-3">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/70 pb-3">
+                <div class="col-span-full p-4.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
                         <div class="flex items-center space-x-2.5">
-                            <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                            <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs border border-slate-200">
                                 <i class="fas fa-award"></i>
                             </div>
                             <div>
-                                <h5 class="font-bold text-emerald-950 text-xs">Proficient Performance Clearance</h5>
-                                <p class="text-[11px] text-emerald-800">Evaluated score meets proficiency standards (<i class="fas fa-star text-amber-500 mr-0.5 text-xs"></i><strong>${score.toFixed(2)} / 5.0</strong>). No remedial tasks required.</p>
+                                <h5 class="font-bold text-slate-900 text-xs">Proficient Performance Clearance</h5>
+                                <p class="text-[11px] text-slate-500">Evaluated score meets proficiency standards (<i class="fas fa-star text-amber-500 mr-0.5 text-xs"></i><strong class="text-slate-800">${score.toFixed(2)} / 5.0</strong>). No remedial tasks required.</p>
                             </div>
                         </div>
-                        <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5 self-start sm:self-auto">
-                            <i class="fas fa-award"></i>
-                            <span>Send Colleague Kudos &rarr;</span>
+                        <button onclick="triggerSendKudosForEmployee('${emp.id}')" class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5 self-start sm:self-auto">
+                            <i class="fas fa-award text-amber-400"></i>
+                            <span>Send Kudos &rarr;</span>
                         </button>
                     </div>
                 </div>
             `;
         } else if (isNeeds1on1 || isExceededRetry) {
             topBannerHtml = `
-                <div class="col-span-full p-5 bg-rose-100 rounded-2xl border-2 border-rose-400 space-y-3">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-rose-300 pb-3">
+                <div class="col-span-full p-4.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
                         <div class="flex items-center space-x-2.5">
-                            <div class="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                            <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center font-bold text-xs border border-rose-200">
                                 <i class="fas fa-handshake-angle"></i>
                             </div>
                             <div>
-                                <h5 class="font-bold text-rose-950 text-sm">Needs Mandatory 1-on-1 Training &amp; Direct Supervision</h5>
-                                <p class="text-xs text-rose-900">Current appraisal rating is <i class="fas fa-star text-amber-500 mr-0.5 text-xs"></i><strong>${score.toFixed(2)} / 5.0</strong>. ${isGoalFailed ? 'Performance Goal has Failed.' : 'Retries exhausted. All standard IDP actions are locked.'}</p>
+                                <h5 class="font-bold text-slate-900 text-xs">Needs Mandatory 1-on-1 Training &amp; Direct Supervision</h5>
+                                <p class="text-[11px] text-slate-500">Current rating is <i class="fas fa-star text-amber-500 mr-0.5 text-xs"></i><strong class="text-slate-800">${score.toFixed(2)} / 5.0</strong>. ${isGoalFailed ? 'Performance Goal has Failed.' : 'Retries exhausted. Standard IDP actions are locked.'}</p>
                             </div>
                         </div>
-                        <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-rose-700 text-white shadow-xs">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">
                             ${isGoalFailed ? '<i class="fas fa-circle-xmark mr-1"></i> Goal: FAILED' : '<i class="fas fa-handshake-angle mr-1"></i> Needs 1-on-1 Training'}
                         </span>
                     </div>
 
-                    <div class="p-3 bg-white/95 rounded-xl border border-rose-300 space-y-1.5 text-xs text-slate-800">
-                        <p class="font-bold text-rose-900 flex items-center"><i class="fas fa-circle-exclamation mr-1.5 text-rose-600"></i> Remediation Directive: Require 1-on-1 Training &amp; Final Evaluation</p>
-                        <p class="text-[11px] text-slate-700">All standard tasks, book prescriptions, and re-evaluations are locked. Transition to Phase 7 to proceed with the final 1-on-1 evaluation lifecycle.</p>
+                    <div class="p-3 bg-white rounded-xl border border-slate-200 space-y-1 text-xs text-slate-700">
+                        <p class="font-bold text-slate-900 flex items-center text-[11px]"><i class="fas fa-circle-exclamation mr-1.5 text-rose-600"></i> Remediation Directive: Require 1-on-1 Training &amp; Final Evaluation</p>
+                        <p class="text-[11px] text-slate-500 leading-relaxed">All standard tasks, book prescriptions, and re-evaluations are locked. Transition to Phase 7 to proceed with the final 1-on-1 evaluation lifecycle.</p>
                     </div>
 
-                    <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
-                        <div class="flex items-center space-x-2">
-                            <button disabled class="px-3 py-1.5 bg-slate-200 text-slate-400 border border-slate-300 rounded-xl font-bold text-xs cursor-not-allowed">
+                    <div class="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                        <div class="flex items-center space-x-1.5">
+                            <button disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed">
                                 <i class="fas fa-lock mr-1"></i> Add Task (Locked)
                             </button>
-                            <button disabled class="px-3 py-1.5 bg-slate-200 text-slate-400 border border-slate-300 rounded-xl font-bold text-xs cursor-not-allowed">
+                            <button disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed">
                                 <i class="fas fa-lock mr-1"></i> Prescribe Books (Locked)
                             </button>
-                            <button disabled class="px-3.5 py-1.5 bg-slate-200 text-slate-400 border border-slate-300 rounded-xl font-bold text-xs cursor-not-allowed">
-                                <i class="fas fa-lock mr-1"></i> Re-Evaluate (Locked)
-                            </button>
                         </div>
-                        <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5">
-                            <i class="fas fa-arrow-right"></i>
+                        <button onclick="searchEmployeeInStage('cycle', '${(emp.name || '').replace(/'/g, "\\'")}')" class="btn-primary px-4 py-2 text-xs font-bold shadow-xs flex items-center space-x-1.5">
                             <span>Proceed to Phase 7 Transition &rarr;</span>
                         </button>
                     </div>
@@ -6216,62 +6499,62 @@ function showIDPDetail(empId, openModalImmediately = false) {
         } else {
             topBannerHtml = `
                 ${(inTraining && tnNeed) ? `
-                    <div class="col-span-full p-4 bg-gradient-to-r from-purple-50 via-rose-50 to-amber-50 rounded-2xl border border-purple-200 shadow-2xs space-y-2 text-xs mb-1">
+                    <div class="col-span-full p-4 bg-slate-50 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2 text-xs mb-1">
                         <div class="flex items-center justify-between flex-wrap gap-2">
                             <div class="flex items-center space-x-2">
-                                <div class="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                                <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs border border-slate-200">
                                     <i class="fas fa-graduation-cap"></i>
                                 </div>
                                 <div>
-                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-200 text-purple-900 border border-purple-300">
+                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                                         Enrolled Formal Training: ${tnNeed.status || 'In Training'}
                                     </span>
-                                    <h5 class="font-bold text-purple-950 text-xs mt-0.5">${tnNeed.title}</h5>
+                                    <h5 class="font-bold text-slate-900 text-xs mt-0.5">${tnNeed.title}</h5>
                                 </div>
                             </div>
                             <div class="flex items-center space-x-3 font-mono text-[11px]">
                                 <div class="text-right">
-                                    <span class="text-[9px] text-slate-500 block uppercase font-bold">Training Score</span>
-                                    <span class="font-bold ${isScored ? 'text-emerald-700' : 'text-rose-700'}">${parseFloat(tnNeed.current_score || 0).toFixed(2)} / 5.0</span>
+                                    <span class="text-[9px] text-slate-400 block uppercase font-bold">Training Score</span>
+                                    <span class="font-bold ${isScored ? 'text-emerald-700' : 'text-slate-700'}">${parseFloat(tnNeed.current_score || 0).toFixed(2)} / 5.0</span>
                                 </div>
                                 <div class="text-right">
-                                    <span class="text-[9px] text-slate-500 block uppercase font-bold">Target Benchmark</span>
+                                    <span class="text-[9px] text-slate-400 block uppercase font-bold">Target Benchmark</span>
                                     <span class="font-bold text-slate-800">${parseFloat(tnNeed.required_score || 4.0).toFixed(2)} / 5.0</span>
                                 </div>
                             </div>
                         </div>
-                        <p class="text-[11px] text-slate-600 leading-relaxed">
+                        <p class="text-[11px] text-slate-500 leading-relaxed">
                             ${tnNeed.notes || 'Formal training curriculum assigned. Prescribing LMS books, action tasks, and re-evaluation are locked until training is scored.'}
                         </p>
                     </div>
                 ` : ''}
-                <div class="col-span-full p-5 bg-rose-50 rounded-2xl border border-rose-200 space-y-3">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-rose-200/70 pb-3">
+                <div class="col-span-full p-4.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
                         <div class="flex items-center space-x-2.5">
-                            <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-xs">
-                                <i class="fas fa-triangle-exclamation"></i>
+                            <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs border border-slate-200">
+                                <i class="fas fa-triangle-exclamation text-amber-600"></i>
                             </div>
                             <div>
-                                <h5 class="font-bold text-rose-950 text-xs">Mandatory Performance Improvement Plan (PIP) Workflow</h5>
-                                <p class="text-[11px] text-rose-800">Current appraisal rating is ⭐ <strong>${score.toFixed(2)} / 5.0</strong>. Manage remediation tasks, complete remedial training, and conduct re-evaluation.</p>
+                                <h5 class="font-bold text-slate-900 text-xs">Performance Improvement Plan (PIP) Action Plan</h5>
+                                <p class="text-[11px] text-slate-500">Current appraisal rating is <i class="fas fa-star text-amber-500 mr-0.5 text-xs"></i><strong class="text-slate-800">${score.toFixed(2)} / 5.0</strong>. Complete required development actions and conduct re-evaluation.</p>
                             </div>
                         </div>
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-200 text-rose-900 self-start sm:self-auto">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 self-start sm:self-auto">
                             Retry Review Active (${retryCount}/3 Retries)
                         </span>
                     </div>
 
-                    <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
-                        <div class="flex items-center space-x-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                        <div class="flex items-center space-x-1.5">
                             ${(inTraining && !isScored) ? `
                                 <button disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed flex items-center space-x-1.5" title="Associate is currently enrolled in Mandatory Formal Training.">
                                     <i class="fas fa-lock"></i>
                                     <span>Add Task (Locked)</span>
                                 </button>
                             ` : `
-                                <button onclick="openAddSpecificTaskModal('${emp.id}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5">
-                                    <i class="fas fa-plus"></i>
-                                    <span>${(inTraining && isScored) ? 'Add Task (After Training)' : 'Add Specific Action Task'}</span>
+                                <button onclick="openAddSpecificTaskModal('${emp.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs shadow-2xs transition flex items-center space-x-1.5">
+                                    <i class="fas fa-plus text-slate-600"></i>
+                                    <span>${(inTraining && isScored) ? 'Add Task (After Training)' : 'Add Specific Task'}</span>
                                 </button>
                             `}
                             ${(inTraining && !isScored) ? `
@@ -6280,21 +6563,20 @@ function showIDPDetail(empId, openModalImmediately = false) {
                                     <span>Prescribe Books (Locked)</span>
                                 </button>
                             ` : (isTrainingPrescribed ? `
-                                <button onclick="openRemedialBooksModal('${emp.id}')" class="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5" title="View assigned training modules">
-                                    <i class="fas fa-check-circle text-emerald-700"></i>
-                                    <span>Training Prescribed (${prescribedList.length})</span>
+                                <button onclick="openRemedialBooksModal('${emp.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs shadow-2xs transition flex items-center space-x-1.5" title="View assigned training modules">
+                                    <i class="fas fa-check-circle text-emerald-600"></i>
+                                    <span>Prescribed (${prescribedList.length})</span>
                                 </button>
                             ` : `
-                                <button onclick="openRemedialBooksModal('${emp.id}')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5">
-                                    <i class="fas fa-graduation-cap"></i>
-                                    <span>${(inTraining && isScored) ? 'Prescribe Books (After Training)' : 'Put in Remedial Training'}</span>
+                                <button onclick="openRemedialBooksModal('${emp.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs shadow-2xs transition flex items-center space-x-1.5">
+                                    <i class="fas fa-book-medical text-slate-600"></i>
+                                    <span>${(inTraining && isScored) ? 'Prescribe Books (After Training)' : 'Prescribe Books'}</span>
                                 </button>
                             `)}
                         </div>
 
                         <div class="flex items-center space-x-2">
-                            <span class="text-[11px] text-rose-800 font-semibold bg-rose-100/80 px-2.5 py-1 rounded-lg border border-rose-200 flex items-center space-x-1">
-                                <i class="fas fa-hourglass-half text-rose-600 text-[10px]"></i>
+                            <span class="text-[11px] text-slate-600 font-semibold bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 flex items-center space-x-1 font-mono">
                                 <span>Score (${score.toFixed(2)}/5.0) &lt; 3.0</span>
                             </span>
                             ${(inTraining && !isScored) ? `
@@ -6303,12 +6585,12 @@ function showIDPDetail(empId, openModalImmediately = false) {
                                     <span>In Training (Locked)</span>
                                 </button>
                             ` : (!allTasksDone ? `
-                                <button disabled class="px-3.5 py-1.5 bg-slate-200 text-slate-400 border border-slate-200 cursor-not-allowed rounded-xl font-bold text-xs shadow-none opacity-60 flex items-center space-x-1.5" title="Cannot re-evaluate: Tasks are still not done (${completedAllTasks}/${totalAllTasks} completed). Complete all tasks in Stage 3 Continuous Monitoring first.">
+                                <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed rounded-xl font-bold text-xs shadow-none opacity-70 flex items-center space-x-1.5" title="Cannot re-evaluate: Tasks are still not done (${completedAllTasks}/${totalAllTasks} completed). Complete all tasks in Stage 3 Continuous Monitoring first.">
                                     <i class="fas fa-lock text-[10px]"></i>
                                     <span>Re-Evaluate (Tasks Incomplete)</span>
                                 </button>
                             ` : `
-                                <button onclick="openAppraisalModal('${emp.id}')" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1.5" title="Re-evaluate associate to submit improved rating">
+                                <button onclick="openAppraisalModal('${emp.id}')" class="btn-primary px-3.5 py-1.5 text-xs font-bold shadow-xs flex items-center space-x-1.5" title="Re-evaluate associate to submit improved rating">
                                     <i class="fas fa-star-half-stroke text-[11px]"></i>
                                     <span>${(inTraining && isScored) ? 'Re-Evaluate (After Training) &rarr;' : 'Re-Evaluate Associate'}</span>
                                 </button>
@@ -6319,28 +6601,71 @@ function showIDPDetail(empId, openModalImmediately = false) {
             `;
         }
 
-        if (empGoals.length > 0 || isPIP || hasPassedBenchmark) {
-            commitmentsContainer.innerHTML = topBannerHtml + empGoals.map((g, idx) => `
-                <div class="p-4 bg-slate-50 hover:bg-white rounded-2xl border border-slate-200/80 transition shadow-2xs flex flex-col justify-between space-y-3">
+        const stagedCardsHtml = [
+            ...stagedTasks.map(t => `
+                <div class="p-4 bg-slate-50/90 hover:bg-white rounded-2xl border border-dashed border-amber-300/80 transition shadow-2xs flex flex-col justify-between space-y-3">
                     <div class="space-y-1.5">
                         <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-bold ${idx % 3 === 0 ? 'bg-blue-100 text-blue-800' : (idx % 3 === 1 ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800')} px-2.5 py-0.5 rounded-full">
+                            <span class="text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                                <i class="fas fa-pen-ruler text-[9px] mr-1 text-amber-600"></i>Draft Action Task
+                            </span>
+                            <button onclick="removeStagedIdpTask('${emp.id}', '${t.id}')" class="text-slate-400 hover:text-rose-600 text-[11px] font-medium transition" title="Remove from draft">
+                                <i class="fas fa-times mr-0.5"></i>Remove
+                            </button>
+                        </div>
+                        <h5 class="font-heading font-bold text-slate-900 text-xs">${t.title}</h5>
+                        <p class="text-slate-500 text-[11px] leading-relaxed">${t.description || 'Action plan task held in draft IDP. Click "Finish & Save IDP Plan" to commit.'}</p>
+                    </div>
+                    <div class="pt-2.5 border-t border-slate-200/80 flex items-center justify-between text-xs">
+                        <span class="text-slate-500 text-[10px] font-medium"><i class="fas fa-calendar-check mr-1 text-slate-400"></i>Target: ${t.target_date || '2 Weeks'}</span>
+                        <span class="text-[10px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/80">Draft (Unsaved)</span>
+                    </div>
+                </div>
+            `),
+            ...stagedBooks.map(b => `
+                <div class="p-4 bg-slate-50/90 hover:bg-white rounded-2xl border border-dashed border-amber-300/80 transition shadow-2xs flex flex-col justify-between space-y-3">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+                                <i class="fas fa-book-medical text-[9px] mr-1 text-amber-600"></i>Draft LMS Handbook
+                            </span>
+                            <button onclick="removeStagedIdpBook('${emp.id}', '${b.bookId}')" class="text-slate-400 hover:text-rose-600 text-[11px] font-medium transition" title="Remove from draft">
+                                <i class="fas fa-times mr-0.5"></i>Remove
+                            </button>
+                        </div>
+                        <h5 class="font-heading font-bold text-slate-900 text-xs">${b.bookTitle}</h5>
+                        <p class="text-slate-500 text-[11px] leading-relaxed">Prescribed for competency remediation. Will enroll associate in lms_prescribed on Finish.</p>
+                    </div>
+                    <div class="pt-2.5 border-t border-slate-200/80 flex items-center justify-between text-xs">
+                        <span class="text-slate-500 text-[10px] font-medium"><i class="fas fa-book-open mr-1 text-slate-400"></i>10% Formal LMS</span>
+                        <span class="text-[10px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/80">Draft (Unsaved)</span>
+                    </div>
+                </div>
+            `)
+        ].join('');
+
+        if (stagedTotal > 0 || empGoals.length > 0 || isPIP || hasPassedBenchmark) {
+            commitmentsContainer.innerHTML = topBannerHtml + stagedCardsHtml + empGoals.map((g, idx) => `
+                <div class="p-4 bg-white hover:border-slate-300 rounded-2xl border border-slate-200/80 transition shadow-2xs flex flex-col justify-between space-y-3">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-full">
                                 ${idx % 3 === 0 ? '70% Experiential' : (idx % 3 === 1 ? '20% Mentorship' : '10% Formal LMS')}
                             </span>
-                            <span class="text-[10px] font-mono text-slate-500 font-semibold">${g.target_metric || 'Active Target'}</span>
+                            <span class="text-[10px] font-mono text-slate-400 font-semibold">${g.target_metric || 'Active Target'}</span>
                         </div>
                         <h5 class="font-heading font-bold text-slate-900 text-xs">${g.title}</h5>
-                        <p class="text-slate-600 text-[11px] leading-relaxed line-clamp-2">${g.supervisor_notes || g.evidence || 'Active hospitality developmental target.'}</p>
+                        <p class="text-slate-500 text-[11px] leading-relaxed line-clamp-2">${g.supervisor_notes || g.evidence || 'Active developmental metric.'}</p>
                     </div>
-                    <div class="pt-2.5 border-t border-slate-200/70 flex items-center justify-between text-xs">
+                    <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
                         <span class="text-slate-400 text-[10px]"><i class="fas fa-calendar-check mr-1"></i>${g.target_date || 'Q3 Target'}</span>
                         <div class="flex items-center space-x-1">
                             ${!hasPassedBenchmark ? `
-                                <button onclick="openAddSpecificTaskModal('${emp.id}', '${g.id}')" class="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-[10px] font-bold transition" title="Add Task to Goal">
+                                <button onclick="openAddSpecificTaskModal('${emp.id}', '${g.id}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded text-[10px] font-bold transition" title="Add Task to Goal">
                                     + Task
                                 </button>
                             ` : ''}
-                            <span class="text-[10px] font-bold ${g.status === 'Approved' ? 'text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded' : 'text-amber-700 bg-amber-50 px-2 py-0.5 rounded'}">
+                            <span class="text-[10px] font-bold ${g.status === 'Approved' ? 'text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded' : 'text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded'}">
                                 ${g.status || 'Active'}
                             </span>
                         </div>
@@ -6349,7 +6674,7 @@ function showIDPDetail(empId, openModalImmediately = false) {
             `).join('');
         } else {
             commitmentsContainer.innerHTML = `
-                <div class="col-span-3 p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-400 italic space-y-1.5">
+                <div class="col-span-3 p-8 text-center bg-white rounded-2xl border border-slate-200/80 text-slate-400 italic space-y-1.5">
                     <i class="fas fa-book-open text-2xl text-slate-300 block"></i>
                     <p class="font-semibold text-slate-600 text-xs">No active IDP commitments mapped yet in database.</p>
                     <p class="text-[11px] text-slate-400">Complete performance evaluations in Stage 4 &amp; 5 first.</p>
@@ -6417,7 +6742,6 @@ function showEmptyCycleDetail() {
     }
 }
 window.showEmptyCycleDetail = showEmptyCycleDetail;
-
 function renderCycleRosterTable() {
     const container = document.getElementById('cycle-roster-tbody');
     if (!container) return;
@@ -6425,9 +6749,10 @@ function renderCycleRosterTable() {
 
     // Only show active goals (exclude Completed)
     let roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster.filter(emp => {
-        const hasGoal = (window.dbGoals || []).some(g => g.status === 'Approved' && isSameEmployee(g.employee_id, emp.id));
+        const hasGoal = (window.dbGoals || []).some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
         const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
-        const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+        const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
+        const score = isCalibrated && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : 0;
         return hasGoal && score > 0;
     }) : [];
 
@@ -6457,48 +6782,45 @@ function renderCycleRosterTable() {
     const startIdx = isAll ? 0 : (cycleCurrentPage - 1) * effectivePageSize;
     const pageList = isAll ? roster : roster.slice(startIdx, startIdx + effectivePageSize);
 
-    pageList.forEach(emp => {
+    container.innerHTML = pageList.map((emp, idx) => {
         const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
-        const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+        const score = isCalibrated && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : 0;
         const hasPassed = score >= 3.0;
         const retryCount = getEmployeeRetryCount(emp.id);
         const isExceededRetry = retryCount >= 3 && !hasPassed;
 
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50 transition text-xs border-b border-slate-100';
-        tr.innerHTML = `
-            <td class="px-5 py-4 font-bold text-slate-900">
-                <div class="flex items-center space-x-2.5">
-                    <div class="w-7 h-7 rounded-full bg-teal-100 text-teal-800 font-bold flex items-center justify-center text-xs">
-                        ${emp.avatar || (emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0, 2) : 'EM')}
-                    </div>
-                    <span class="max-w-[150px] truncate" title="${emp.name}">${emp.name}</span>
-                </div>
-            </td>
-            <td class="px-5 py-4 text-slate-500 max-w-[130px] truncate" title="${emp.department}">${emp.department}</td>
-            <td class="px-5 py-4 font-bold ${isCalibrated ? (isExceededRetry ? 'text-rose-700' : (hasPassed ? 'text-emerald-700' : 'text-rose-600')) : 'text-slate-400 font-normal italic'}">
-                ${isCalibrated ? (isExceededRetry ? `<i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${score.toFixed(2)} / 5.0 (Failed)` : `<i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || (hasPassed ? 'Calibrated' : 'Needs PIP')})`) : 'Pending Review'}
-            </td>
-            <td class="px-5 py-4">
-                ${isExceededRetry ? `
-                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
-                        <i class="fas fa-circle-xmark mr-1"></i> FAILED — Transition Suspended
-                    </span>
-                ` : `
-                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${hasPassed ? 'bg-teal-100 text-teal-800' : 'bg-rose-100 text-rose-800'}">
-                        ${hasPassed ? '<i class="fas fa-check mr-1 text-teal-700"></i>Qualified for Next Cycle' : 'Action Plan Incomplete'}
-                    </span>
-                `}
-            </td>
-            <td class="px-5 py-4 text-right">
-                <button onclick="showCycleDetail('${emp.id}', true)" class="px-3.5 py-1.5 ${isExceededRetry ? 'bg-rose-700 hover:bg-rose-800 text-white' : (hasPassed ? 'bg-primary hover:bg-primary-dark text-white' : 'bg-amber-600 hover:bg-amber-700 text-white')} font-bold rounded-xl text-xs shadow-xs transition">
-                    ${isExceededRetry ? '1-on-1 Remand' : (hasPassed ? 'View Rollover' : 'Review Plan')}
-                </button>
-            </td>
+        return `
+            <tr class="hover:bg-slate-50 transition text-xs border-b border-slate-100">
+                <td class="px-3 py-4 text-center font-mono font-bold text-slate-400 text-xs">
+                    ${startIdx + idx + 1}
+                </td>
+                <td class="px-5 py-4 font-bold text-slate-900">
+                    <span class="max-w-[160px] truncate block" title="${emp.name}">${emp.name}</span>
+                </td>
+                <td class="px-5 py-4 text-slate-500 max-w-[130px] truncate" title="${emp.department}">${emp.department}</td>
+                <td class="px-5 py-4 font-bold ${isCalibrated ? (isExceededRetry ? 'text-rose-700' : (hasPassed ? 'text-emerald-700' : 'text-rose-600')) : 'text-slate-400 font-normal italic'}">
+                    ${isCalibrated ? (isExceededRetry ? `<i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${score.toFixed(2)} / 5.0 (Failed)` : `<i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || (hasPassed ? 'Calibrated' : 'Needs PIP')})`) : 'Pending Review'}
+                </td>
+                <td class="px-5 py-4">
+                    ${isExceededRetry ? `
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
+                            <i class="fas fa-circle-xmark mr-1"></i> FAILED — Transition Suspended
+                        </span>
+                    ` : `
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${hasPassed ? 'bg-teal-100 text-teal-800' : 'bg-rose-100 text-rose-800'}">
+                            ${hasPassed ? '<i class="fas fa-check mr-1 text-teal-700"></i>Qualified for Next Cycle' : 'Action Plan Incomplete'}
+                        </span>
+                    `}
+                </td>
+                <td class="px-5 py-4 text-right">
+                    <button onclick="showCycleDetail('${emp.id}', true)" class="px-3.5 py-1.5 ${isExceededRetry ? 'bg-rose-700 hover:bg-rose-800 text-white' : (hasPassed ? 'bg-primary hover:bg-primary-dark text-white' : 'bg-amber-600 hover:bg-amber-700 text-white')} font-bold rounded-xl text-xs shadow-xs transition">
+                        ${isExceededRetry ? '1-on-1 Remand' : (hasPassed ? 'View Rollover' : 'Review Plan')}
+                    </button>
+                </td>
+            </tr>
         `;
-        container.appendChild(tr);
-    });
+    }).join('');
 
     renderPaginationControls('cycle-pagination-container', cycleCurrentPage, roster.length, cyclePageSize, 'setCyclePage', 'setCyclePageSize');
 
@@ -6510,59 +6832,6 @@ function renderCycleRosterTable() {
     }
 }
 window.renderCycleRosterTable = renderCycleRosterTable;
-
-window.onCycleEmployeeSearch = function(query) {
-    window.cycleSearchQuery = query;
-    cycleCurrentPage = 1;
-    renderCycleRosterTable();
-};
-
-function confirmMarkGoalCompleted(empId) {
-    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId));
-    if (!emp) return;
-
-    const empGoals = (window.dbGoals || []).filter(g => g.status === 'Approved' && isSameEmployee(g.employee_id, emp.id));
-    const targetGoal = empGoals[0];
-
-    showActionConfirmModal({
-        title: 'Mark Performance Objective Completed',
-        message: `Mark "${targetGoal ? targetGoal.title : 'Performance Goal'}" for ${emp.name} as Completed? This finalizes the review cycle and allows the employee to set their next performance objective.`,
-        confirmBtnText: 'Mark as Completed',
-        confirmBtnClass: 'btn-primary bg-emerald-600 hover:bg-emerald-700 text-white',
-        iconClass: 'fas fa-circle-check',
-        iconContainerClass: 'bg-emerald-100 text-emerald-700',
-        onConfirm: async () => {
-            const btn = document.getElementById('btn-mark-cycle-completed');
-            const origHtml = btn ? btn.innerHTML : '';
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Marking as Completed...</span>';
-            }
-
-            try {
-                if (targetGoal) {
-                    await PerformanceAPI.markGoalCompleted(targetGoal.id);
-                }
-                if (typeof showToast === 'function') {
-                    showToast(`🎉 Goal for ${emp.name} marked as Completed! The cycle is finalized and the employee can now establish their next objective.`, 'success');
-                }
-                closeModal('modal-cycle-detail');
-                await loadAndRenderPlanningGoals();
-            } catch (err) {
-                console.error('Mark completed error:', err);
-                if (typeof showToast === 'function') {
-                    showToast(err.message || 'Failed to mark goal as completed.', 'error');
-                }
-            } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = origHtml;
-                }
-            }
-        }
-    });
-}
-window.confirmMarkGoalCompleted = confirmMarkGoalCompleted;
 
 function showCycleDetail(empId, openModalImmediately = false) {
     if (!empId) {
@@ -6577,7 +6846,8 @@ function showCycleDetail(empId, openModalImmediately = false) {
     }
 
     const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
-    const score = evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0);
+    const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
+    const score = isCalibrated && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : 0;
 
     if (score === 0) {
         showEmptyCycleDetail();
@@ -6586,10 +6856,9 @@ function showCycleDetail(empId, openModalImmediately = false) {
 
     window.selectedEvalEmpId = emp.id;
 
-    const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
     const effectiveScore = (evalRec?.new_calibrated_score && parseFloat(evalRec.new_calibrated_score) > 0)
         ? parseFloat(evalRec.new_calibrated_score)
-        : (evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : (evalRec?.new_supervisor_rating ? parseFloat(evalRec.new_supervisor_rating) : (evalRec?.supervisor_rating ? parseFloat(evalRec.supervisor_rating) : 0)));
+        : (isCalibrated && evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : 0);
     const hasPassed = effectiveScore >= 3.0;
 
     const retryCount = getEmployeeRetryCount(emp.id);
@@ -6848,25 +7117,9 @@ async function openFormalCurriculumModal(empId) {
     if (nameEl) nameEl.textContent = `${emp.name} · ${emp.position} (${emp.department})`;
     if (goalTitleEl) goalTitleEl.textContent = `Target Goal: ${targetGoal ? targetGoal.title : 'Performance IDP Remediation'}`;
 
-    if (container) {
-        container.innerHTML = `
-            <div class="p-8 text-center text-slate-400 italic bg-slate-50 rounded-2xl border border-slate-200">
-                <i class="fas fa-spinner fa-spin text-lg mb-2 block text-rose-500"></i>
-                Loading formal training programs from database...
-            </div>
-        `;
-    }
-
-    openModal('modal-formal-curriculum');
-
-    try {
-        const res = await PerformanceAPI.getTrainingPrograms();
-        const programs = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
-        window.dbTrainingPrograms = programs;
-
+    const renderProgramsList = (programs) => {
         if (!container) return;
-
-        if (programs.length === 0) {
+        if (!programs || programs.length === 0) {
             container.innerHTML = `
                 <div class="p-8 text-center text-slate-400 italic bg-slate-50 rounded-2xl border border-slate-200">
                     No formal training programs found in database.
@@ -6876,7 +7129,6 @@ async function openFormalCurriculumModal(empId) {
         }
 
         const existingNeed = getEmployeeTrainingNeed(emp.id);
-
         container.innerHTML = programs.map(p => {
             const isEnrolled = existingNeed && (existingNeed.linked_program_id === p.id || existingNeed.linkedProgramId === p.id);
             const passingScore = p.passing_score ? parseFloat(p.passing_score) : 80;
@@ -6898,7 +7150,7 @@ async function openFormalCurriculumModal(empId) {
                                     <i class="fas fa-building mr-0.5"></i>${p.dept || 'General'}
                                 </span>
                             </div>
-                            <h5 class="font-heading font-bold text-slate-900 text-sm">${p.title}</h5>
+                            <h5 class="font-heading font-bold text-slate-900 text-sm">${p.title || p.name}</h5>
                             <p class="text-slate-600 text-xs leading-relaxed">${p.description || 'Targeted training curriculum with practical modules and evaluation quiz.'}</p>
                         </div>
                         <div class="text-right flex-shrink-0 self-start sm:self-auto">
@@ -6940,9 +7192,29 @@ async function openFormalCurriculumModal(empId) {
                 </div>
             `;
         }).join('');
+    };
+
+    if (window.dbTrainingPrograms && window.dbTrainingPrograms.length > 0) {
+        renderProgramsList(window.dbTrainingPrograms);
+    } else if (container) {
+        container.innerHTML = `
+            <div class="p-8 text-center text-slate-400 italic bg-slate-50 rounded-2xl border border-slate-200">
+                <i class="fas fa-spinner fa-spin text-lg mb-2 block text-rose-500"></i>
+                Loading formal training programs from database...
+            </div>
+        `;
+    }
+
+    openModal('modal-formal-curriculum');
+
+    try {
+        const res = await PerformanceAPI.getTrainingPrograms();
+        const programs = Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+        window.dbTrainingPrograms = programs;
+        renderProgramsList(programs);
     } catch (err) {
         console.error('Error loading training programs:', err);
-        if (container) {
+        if (container && (!window.dbTrainingPrograms || window.dbTrainingPrograms.length === 0)) {
             container.innerHTML = `<div class="p-6 text-center text-rose-600 italic bg-rose-50 rounded-2xl border border-rose-200">Failed to load training programs: ${err.message || ''}</div>`;
         }
     }
@@ -7364,37 +7636,43 @@ function updateAllPerfStepperBadges() {
     const stages = ['plan', 'approve', 'monitor', 'eval', 'review', 'idp', 'cycle'];
     const stageNumbers = { plan: 1, approve: 2, monitor: 3, eval: 4, review: 5, idp: 6, cycle: 7 };
 
-    // Stage 1 (Planning): Count only objectives that are in pending status (awaiting review/approval)
-    const pendingPlanCount = (window.dbGoals || []).filter(g => {
+    const goals = window.dbGoals || [];
+    const evals = getDbEvaluations();
+    const roster = window.perfRoster || [];
+
+    // Fast single-pass counters
+    let pendingPlanCount = 0;
+    let approvedGoalsCount = 0;
+    const monitoredEmpSet = new Set();
+
+    goals.forEach(g => {
         const s = (g.status || '').toLowerCase().trim();
-        return s === 'pending approval' || s === 'pending' || s === 'draft' || s === '';
+        if (s === 'pending approval' || s === 'pending' || s === 'draft' || s === '') {
+            pendingPlanCount++;
+        } else if (s === 'approved' || s === 'completed') {
+            approvedGoalsCount++;
+            if (g.employee_id) monitoredEmpSet.add(String(g.employee_id).toLowerCase());
+        }
+    });
+
+    const monitoredEmployeesCount = roster.filter(e => {
+        const id = String(e.id).toLowerCase();
+        return monitoredEmpSet.has(id) || (id === 'emp-101' && monitoredEmpSet.has('oxf-emp-1001')) || (id === 'emp-102' && monitoredEmpSet.has('oxf-sup-2001'));
     }).length;
 
-    // Stage 2 (Approval): Count only objectives that are approved/active
-    const approvedGoalsCount = (window.dbGoals || []).filter(g => {
-        const s = (g.status || '').toLowerCase().trim();
-        return s === 'approved' || s === 'completed';
-    }).length;
-
-    const monitoredEmployeesCount = (window.perfRoster || []).filter(e => (window.dbGoals || []).some(g => {
-        const s = (g.status || '').toLowerCase().trim();
-        return (s === 'approved' || s === 'completed') && isSameEmployee(g.employee_id, e.id);
-    })).length;
-
-    // Stage 4 (Evaluation): Count only associates who have 100% completed their monitoring tasks and are pending evaluation
-    const pendingEvaluationEmployees = (window.perfRoster || []).filter(emp => {
-        const hasApprovedGoal = (window.dbGoals || []).some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+    // Stage 4 pending evaluation
+    const pendingEvaluationCount = roster.filter(emp => {
+        const hasApprovedGoal = goals.some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
         if (!hasApprovedGoal) return false;
         if (!isEmployeeTasksFullyCompleted(emp)) return false;
 
-        const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        const evalRec = evals.find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const hasRatedScore = evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0;
         return !hasRatedScore;
-    });
-    const pendingEvaluationCount = pendingEvaluationEmployees.length;
+    }).length;
 
-    const evaluatedEmployeesCount = getDbEvaluations().filter(ev => typeof ev.supervisor_rating !== 'undefined' && ev.supervisor_rating !== null && parseFloat(ev.supervisor_rating) > 0).length;
-    const calibratedEmployeesCount = getDbEvaluations().filter(ev => ev.status === 'Calibrated' && typeof ev.calibrated_score !== 'undefined' && ev.calibrated_score !== null && parseFloat(ev.calibrated_score) > 0).length;
+    const evaluatedEmployeesCount = evals.filter(ev => typeof ev.supervisor_rating !== 'undefined' && ev.supervisor_rating !== null && parseFloat(ev.supervisor_rating) > 0).length;
+    const calibratedEmployeesCount = evals.filter(ev => ev.status === 'Calibrated' && typeof ev.calibrated_score !== 'undefined' && ev.calibrated_score !== null && parseFloat(ev.calibrated_score) > 0).length;
     const idpCount = evaluatedEmployeesCount;
     const cycleCount = evaluatedEmployeesCount;
 

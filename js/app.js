@@ -297,56 +297,132 @@ function switchSubTab(pillarPrefix, subKey) {
     }, 80);
 }
 
-// 7-Stage Performance Stepper Dynamic Progress State (Pure numerical count, no check icons)
+// Track previous active stepper stage for traveling line animation
+window.lastPerfActiveIdx = typeof window.lastPerfActiveIdx !== 'undefined' ? window.lastPerfActiveIdx : 0;
+
+// 7-Stage Performance Stepper Dynamic Progress State with Forward & Backward Traveling Line Animation
 function updatePerfStepper(activeSubKey) {
     const perfStages = ['plan', 'approve', 'monitor', 'eval', 'review', 'idp', 'cycle'];
     const activeIdx = perfStages.indexOf(activeSubKey);
     if (activeIdx === -1) return;
 
-    const stepItems = document.querySelectorAll('.perf-step-item');
-    const stepLines = document.querySelectorAll('.perf-step-line');
+    const fromIdx = window.lastPerfActiveIdx;
+    window.lastPerfActiveIdx = activeIdx;
 
+    const stepItems = document.querySelectorAll('.perf-step-item');
+    const track = document.querySelector('.stepper-track-container');
+    const glider = document.getElementById('perf-stepper-glider');
+    const fill = document.getElementById('perf-stepper-progress-fill');
+
+    // Update Progress Fill line
+    if (fill) {
+        const fillPct = (activeIdx / (perfStages.length - 1)) * 100;
+        fill.style.width = `${fillPct}%`;
+    }
+
+    // Dynamic Traveling Laser Glider: Shows traveling from fromIdx to activeIdx (forward or backward)
+    if (glider && track && stepItems.length >= 7 && fromIdx !== activeIdx) {
+        const trackRect = track.getBoundingClientRect();
+        const fromBubble = stepItems[fromIdx]?.querySelector('.perf-step-bubble');
+        const toBubble = stepItems[activeIdx]?.querySelector('.perf-step-bubble');
+
+        if (fromBubble && toBubble && trackRect.width > 0) {
+            const fromRect = fromBubble.getBoundingClientRect();
+            const toRect = toBubble.getBoundingClientRect();
+
+            const fromCenterX = fromRect.left + fromRect.width / 2 - trackRect.left;
+            const toCenterX = toRect.left + toRect.width / 2 - trackRect.left;
+
+            const isForward = toCenterX > fromCenterX;
+            const minX = Math.min(fromCenterX, toCenterX);
+            const maxX = Math.max(fromCenterX, toCenterX);
+            const travelDistance = maxX - minX;
+
+            // Clear any active animation timers
+            if (window._perfGliderTimer1) clearTimeout(window._perfGliderTimer1);
+            if (window._perfGliderTimer2) clearTimeout(window._perfGliderTimer2);
+
+            // Phase 1: Initialize beam at source position
+            glider.style.transition = 'none';
+            glider.style.opacity = '1';
+
+            if (isForward) {
+                glider.className = 'stepper-glider-beam glider-forward';
+                glider.style.left = `${fromCenterX}px`;
+                glider.style.width = '0px';
+
+                // Phase 2: Shoot forward to target
+                requestAnimationFrame(() => {
+                    glider.style.transition = 'left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                    glider.style.left = `${fromCenterX}px`;
+                    glider.style.width = `${travelDistance}px`;
+
+                    window._perfGliderTimer1 = setTimeout(() => {
+                        // Phase 3: Tail contracts to target bubble
+                        glider.style.transition = 'left 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                        glider.style.left = `${toCenterX}px`;
+                        glider.style.width = '0px';
+
+                        window._perfGliderTimer2 = setTimeout(() => {
+                            glider.style.opacity = '0';
+                        }, 350);
+                    }, 160);
+                });
+            } else {
+                glider.className = 'stepper-glider-beam glider-backward';
+                glider.style.left = `${fromCenterX}px`;
+                glider.style.width = '0px';
+
+                // Phase 2: Shoot backward to target
+                requestAnimationFrame(() => {
+                    glider.style.transition = 'left 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                    glider.style.left = `${toCenterX}px`;
+                    glider.style.width = `${travelDistance}px`;
+
+                    window._perfGliderTimer1 = setTimeout(() => {
+                        // Phase 3: Tail contracts to target bubble
+                        glider.style.transition = 'left 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                        glider.style.left = `${toCenterX}px`;
+                        glider.style.width = '0px';
+
+                        window._perfGliderTimer2 = setTimeout(() => {
+                            glider.style.opacity = '0';
+                        }, 350);
+                    }, 160);
+                });
+            }
+        }
+    }
+
+    // Update Bubbles and Title states
     stepItems.forEach((item, idx) => {
         const bubble = item.querySelector('.perf-step-bubble');
         const title = item.querySelector('.perf-step-title');
 
         if (idx < activeIdx) {
-            // Passed stage
             if (bubble) {
-                bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold shadow-2xs group-hover:scale-105 transition';
+                bubble.className = 'perf-step-bubble w-9 h-9 rounded-full bg-slate-800 text-white ring-4 ring-white flex items-center justify-center text-xs font-bold shadow-2xs group-hover:scale-105 transition-all duration-300';
                 bubble.textContent = (idx + 1);
             }
             if (title) {
-                title.className = 'perf-step-title font-bold text-slate-800 text-[11px] group-hover:text-primary transition';
+                title.className = 'perf-step-title font-bold text-slate-800 text-[11px] mt-2 group-hover:text-primary transition-colors';
             }
         } else if (idx === activeIdx) {
-            // Active current stage
             if (bubble) {
-                bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold ring-4 ring-primary/20 shadow-xs group-hover:scale-110 transition';
+                bubble.className = 'perf-step-bubble w-9 h-9 rounded-full bg-primary text-white ring-4 ring-primary/25 ring-offset-2 ring-offset-white flex items-center justify-center text-xs font-bold shadow-md scale-110 transition-all duration-300';
                 bubble.textContent = (idx + 1);
             }
             if (title) {
-                title.className = 'perf-step-title font-bold text-primary text-[11px]';
+                title.className = 'perf-step-title font-bold text-primary text-[11px] mt-2 transition-colors';
             }
         } else {
-            // Upcoming stage
             if (bubble) {
-                bubble.className = 'perf-step-bubble w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[10px] font-bold group-hover:bg-slate-200 transition';
+                bubble.className = 'perf-step-bubble w-9 h-9 rounded-full bg-slate-100 text-slate-500 ring-4 ring-white flex items-center justify-center text-xs font-bold group-hover:bg-slate-200 transition-all duration-300';
                 bubble.textContent = (idx + 1);
             }
             if (title) {
-                title.className = 'perf-step-title font-medium text-slate-600 text-[11px] group-hover:text-slate-900 transition';
+                title.className = 'perf-step-title font-medium text-slate-500 text-[11px] mt-2 group-hover:text-slate-900 transition-colors';
             }
-        }
-    });
-
-    stepLines.forEach((line, idx) => {
-        if (idx < activeIdx) {
-            line.className = 'perf-step-line flex-1 h-0.5 bg-slate-800 mx-2 transition-colors';
-        } else if (idx === activeIdx) {
-            line.className = 'perf-step-line flex-1 h-0.5 bg-primary/40 mx-2 transition-colors';
-        } else {
-            line.className = 'perf-step-line flex-1 h-0.5 bg-slate-200 mx-2 transition-colors';
         }
     });
 }
