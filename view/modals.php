@@ -3495,6 +3495,11 @@
                         </span>
                     </div>
 
+                    <!-- Staged Performance Development Plan (Stage 6 IDP / PIP Draft) -->
+                    <div id="review-plan-dev-plan-container" class="space-y-2">
+                        <!-- Populated dynamically with draft action tasks and LMS books -->
+                    </div>
+
                     <!-- Notice Card -->
                     <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
                         <h5 class="font-bold text-slate-900 text-xs flex items-center space-x-1.5">
@@ -3510,7 +3515,7 @@
                     <div class="space-y-2">
                         <h5 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center space-x-1.5">
                             <i class="fas fa-list-check text-slate-600"></i>
-                            <span>Tasks To Be Reset for Shift Monitoring</span>
+                            <span>Active Shift Tasks for Monitoring</span>
                         </h5>
                         <div id="review-tasks-list-container" class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar">
                             <!-- Populated dynamically -->
@@ -3518,12 +3523,14 @@
                     </div>
                 </div>
 
-                <div class="p-4 bg-white border-t border-slate-100 flex items-center justify-between">
+                <div class="p-4 bg-white border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
                     <button type="button" onclick="closeModal('modal-review-tasks')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
-                    <button id="btn-proceed-to-monitoring" onclick="proceedFromTasksToMonitoring()" class="btn-primary px-5 py-2 text-xs font-bold shadow-xs flex items-center space-x-2">
-                        <span>Proceed to Continuous Monitoring (Stage 3)</span>
-                        <i class="fas fa-arrow-right text-[10px]"></i>
-                    </button>
+                    <div id="review-tasks-footer-actions" class="flex items-center space-x-2">
+                        <button id="btn-proceed-to-monitoring" onclick="proceedFromTasksToMonitoring()" class="btn-primary px-5 py-2 text-xs font-bold shadow-xs flex items-center space-x-2">
+                            <span>Proceed to Continuous Monitoring (Stage 3)</span>
+                            <i class="fas fa-arrow-right text-[10px]"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

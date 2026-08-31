@@ -204,6 +204,31 @@ try {
             $response = $controller->markGoalFailed($payload);
             break;
 
+        // ── Development Plan (Phase 6 Draft & Phase 7 Deploy) ──────────────
+        case 'get_development_plans':
+            $response = $controller->getDevelopmentPlans($payload);
+            break;
+
+        case 'add_draft_task':
+            $response = $controller->addDraftTask($payload);
+            break;
+
+        case 'add_draft_book':
+            $response = $controller->addDraftBook($payload);
+            break;
+
+        case 'remove_draft_item':
+            $response = $controller->removeDraftItem($payload);
+            break;
+
+        case 'discard_draft_plan':
+            $response = $controller->discardDraftPlan($payload);
+            break;
+
+        case 'deploy_development_plan':
+            $response = $controller->deployDevelopmentPlan($payload);
+            break;
+
         default:
             http_response_code(400);
             $response = [

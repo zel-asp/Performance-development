@@ -1401,8 +1401,9 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                 container.innerHTML = books.map(book => {
                     const isRecommended = book.id === emp.recommendedBookId;
                     const isAlreadyPrescribed = isEmployeeEnrolledInLms(empId, book.id) || isEmployeeEnrolledInLms(currentRemedialKey, book.id);
-                    const isStagedDraft = (window.stagedIdpPlans?.[empId]?.prescribedBooks || []).some(b => b.bookId === book.id) ||
-                                          (window.stagedIdpPlans?.[currentRemedialKey]?.prescribedBooks || []).some(b => b.bookId === book.id);
+                    // Check draft status from DB-backed cache
+                    const draftData = window.dbDraftPlans?.[empId] || window.dbDraftPlans?.[currentRemedialKey] || {};
+                    const isStagedDraft = (draftData.lms_books || []).some(b => (b.lms_document_id || b.id) === book.id);
                     const deptDisplay = book.deptName || book.department_name || (book.departments && book.departments.name) || 'Property-Wide';
                     const pagesDisplay = book.pages || (book.estimated_pages ? `${book.estimated_pages} Pages` : '18 Pages');
 
@@ -1467,24 +1468,28 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
                     if (activeGoal) targetGoalId = activeGoal.id;
                 }
 
-                // 1. Stage into Draft IDP without writing to DB immediately
-                window.stagedIdpPlans = window.stagedIdpPlans || {};
-                window.stagedIdpPlans[empId] = window.stagedIdpPlans[empId] || { tasks: [], prescribedBooks: [] };
-                window.stagedIdpPlans[empId].prescribedBooks = window.stagedIdpPlans[empId].prescribedBooks || [];
-
-                if (!window.stagedIdpPlans[empId].prescribedBooks.some(b => b.bookId === bookId)) {
-                    window.stagedIdpPlans[empId].prescribedBooks.push({
-                        bookId: book.id,
-                        bookTitle: book.title,
-                        targetGoalId: targetGoalId || null
+                // Save draft book to DB (performance_development_plans, item_type='lms_book')
+                if (typeof PerformanceAPI !== 'undefined' && typeof PerformanceAPI.addDraftBook === 'function') {
+                    PerformanceAPI.addDraftBook({
+                        employee_id: empId,
+                        lms_document_id: bookId,
+                        book_title: book.title,
+                        goal_id: targetGoalId || null,
+                        plan_type: 'IDP'
+                    }).then(async () => {
+                        // Refresh draft cache
+                        if (typeof window.loadDraftSummary === 'function') {
+                            await window.loadDraftSummary(empId);
+                        }
+                        renderRemedialBooksList();
+                        if (typeof showIDPDetail === 'function') showIDPDetail(empId);
+                        showToast(`📚 Handbook "${book.title}" added to draft plan! Proceed to Phase 7 to deploy.`, 'success');
+                    }).catch(err => {
+                        showToast(`Error adding book to draft: ${err.message}`, 'error');
                     });
+                } else {
+                    showToast('PerformanceAPI not available.', 'error');
                 }
-
-                renderRemedialBooksList();
-                if (typeof showIDPDetail === 'function') {
-                    showIDPDetail(empId);
-                }
-                showToast(`📚 Handbook "${book.title}" added to draft IDP for ${emp.name.split('·')[0].trim()}! Click "Finish & Save IDP Plan" when ready to commit.`, 'success');
             }
             window.assignBookToIdp = assignBookToIdp;
 

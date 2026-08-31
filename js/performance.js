@@ -229,6 +229,35 @@ const PerformanceAPI = {
             goal_id: goalId,
             employee_id: employeeId
         });
+    },
+
+    // 18. Development Plan — Phase 6 Draft Management
+    getDevelopmentPlans(employeeId) {
+        return this.request('get_development_plans', 'GET', { employee_id: employeeId });
+    },
+
+    addDraftTask(data) {
+        return this.request('add_draft_task', 'POST', data);
+    },
+
+    addDraftBook(data) {
+        return this.request('add_draft_book', 'POST', data);
+    },
+
+    removeDraftItem(id) {
+        return this.request('remove_draft_item', 'POST', { id });
+    },
+
+    discardDraftPlan(employeeId) {
+        return this.request('discard_draft_plan', 'POST', { employee_id: employeeId });
+    },
+
+    // 19. Development Plan — Phase 7 Deploy
+    deployDevelopmentPlan(employeeId, goalId = null) {
+        return this.request('deploy_development_plan', 'POST', {
+            employee_id: employeeId,
+            goal_id: goalId
+        });
     }
 };
 
@@ -772,6 +801,9 @@ async function loadAndRenderPlanningGoals() {
         const generalTasks = data.general_tasks || [];
         window.dbGoals = goals;
         window.dbGeneralTasks = generalTasks;
+        if (data.draft_plans && typeof data.draft_plans === 'object') {
+            window.dbDraftPlans = Object.assign(window.dbDraftPlans || {}, data.draft_plans);
+        }
 
         // Apply monitoring roster if available
         if (monResult.status === 'fulfilled' && monResult.value?.roster && Array.isArray(monResult.value.roster)) {
@@ -5862,10 +5894,32 @@ function openAddSpecificTaskModal(empId, preselectedGoalId = null) {
 }
 window.openAddSpecificTaskModal = openAddSpecificTaskModal;
 
-window.stagedIdpPlans = window.stagedIdpPlans || {};
+// ============================================================================
+// IDP DRAFT PLAN — DB-Backed (performance_development_plans table)
+// Replaces window.stagedIdpPlans (in-memory only). Draft items are persisted
+// to the DB in Phase 6. Phase 7 deploy calls deployDevelopmentPlan().
+// ============================================================================
+
+// In-memory cache of draft summaries: { [empId]: { tasks, lms_books, task_count, book_count } }
+window.dbDraftPlans = window.dbDraftPlans || {};
+
+async function loadDraftSummary(empId, forceRefresh = false) {
+    if (!forceRefresh && window.dbDraftPlans && window.dbDraftPlans[empId]) {
+        return window.dbDraftPlans[empId];
+    }
+    try {
+        const summary = await PerformanceAPI.getDevelopmentPlans(empId);
+        window.dbDraftPlans[empId] = summary;
+        return summary;
+    } catch (err) {
+        window.dbDraftPlans[empId] = window.dbDraftPlans[empId] || { tasks: [], lms_books: [], task_count: 0, book_count: 0, total: 0 };
+        return window.dbDraftPlans[empId];
+    }
+}
+window.loadDraftSummary = loadDraftSummary;
 
 /**
- * Handle Add Specific Task Form Submission (Saved to Draft first)
+ * Handle Add Specific Task Form Submission — saves to DB draft immediately
  */
 async function handleCreateSpecificTaskSubmit(e) {
     if (e && e.preventDefault) e.preventDefault();
@@ -5885,135 +5939,98 @@ async function handleCreateSpecificTaskSubmit(e) {
         return;
     }
 
-    // Stage in draft IDP plan without inserting into DB immediately
-    window.stagedIdpPlans = window.stagedIdpPlans || {};
-    window.stagedIdpPlans[empId] = window.stagedIdpPlans[empId] || { tasks: [], prescribedBooks: [] };
-    window.stagedIdpPlans[empId].tasks = window.stagedIdpPlans[empId].tasks || [];
+    const submitBtn = document.querySelector('#modal-add-specific-task button[type="submit"]');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving Draft...'; }
 
-    const tempTaskId = 'staged-task-' + Date.now();
-    window.stagedIdpPlans[empId].tasks.push({
-        id: tempTaskId,
-        goal_id: goalId,
-        employee_id: empId,
-        title: title,
-        target_date: targetDate,
-        description: description
-    });
+    try {
+        // Save draft task to DB (performance_development_plans, item_type='task')
+        await PerformanceAPI.addDraftTask({
+            employee_id: empId,
+            goal_id: goalId,
+            title: title,
+            target_date: targetDate,
+            description: description,
+            plan_type: 'IDP'
+        });
 
-    closeModal('modal-add-specific-task');
-    if (typeof showToast === 'function') {
-        showToast(`✏️ Action task "${title}" added to draft IDP! Click "Finish & Save IDP Plan" when ready to commit.`, 'success');
-    }
-    if (typeof showIDPDetail === 'function') {
-        showIDPDetail(empId);
+        closeModal('modal-add-specific-task');
+        if (typeof showToast === 'function') {
+            showToast(`✏️ Draft task "${title}" saved to plan! Click "Proceed & Deploy" in Phase 7 to activate.`, 'success');
+        }
+        // Refresh draft cache then re-render IDP detail
+        await loadDraftSummary(empId);
+        if (typeof showIDPDetail === 'function') showIDPDetail(empId);
+    } catch (err) {
+        console.error('Error saving draft task:', err);
+        if (typeof showToast === 'function') showToast(`Error saving draft task: ${err.message || 'Server error'}`, 'error');
+    } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = 'Add to Draft Plan'; }
     }
 }
 window.handleCreateSpecificTaskSubmit = handleCreateSpecificTaskSubmit;
 
-window.commitStagedIdpPlan = async function(empId) {
-    const staged = window.stagedIdpPlans?.[empId];
-    if (!staged || ((!staged.tasks || staged.tasks.length === 0) && (!staged.prescribedBooks || staged.prescribedBooks.length === 0))) {
-        if (typeof showToast === 'function') showToast('No draft IDP items to save.', 'info');
+/**
+ * View draft plan summary for an employee (opens a review modal).
+ * Called from the "View Draft" button in Phase 6.
+ */
+window.viewDraftPlan = async function(empId) {
+    const summary = await loadDraftSummary(empId);
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || { name: 'Associate' };
+    const total = summary.total || 0;
+    if (total === 0) {
+        if (typeof showToast === 'function') showToast('No draft items found for this employee yet.', 'info');
         return;
     }
+    if (typeof showToast === 'function') {
+        showToast(`📋 ${emp.name}'s draft plan: ${summary.task_count} task(s), ${summary.book_count} LMS book(s) staged.`, 'info');
+    }
+    // Re-render IDP detail to refresh the draft cards view
+    showIDPDetail(empId);
+};
 
-    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || { name: 'Associate' };
-    const commitBtns = document.querySelectorAll('.btn-finish-idp-plan');
-    commitBtns.forEach(btn => {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Committing to Database...';
-    });
-
+/**
+ * Discard all draft items for an employee — removes from DB
+ */
+window.discardStagedIdpPlan = async function(empId) {
     try {
-        // 1. Batch create all staged tasks in database
-        if (staged.tasks && staged.tasks.length > 0) {
-            for (const task of staged.tasks) {
-                await PerformanceAPI.createSpecificTask({
-                    goal_id: task.goal_id,
-                    employee_id: empId,
-                    title: task.title,
-                    target_date: task.target_date,
-                    description: task.description
-                });
-            }
-        }
-
-        // 2. Batch prescribe all staged books in lms_prescribed
-        if (staged.prescribedBooks && staged.prescribedBooks.length > 0) {
-            for (const item of staged.prescribedBooks) {
-                const res = await fetch('api/lms.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'prescribe_document',
-                        employee: empId,
-                        lms_id: item.bookId,
-                        goal_id: item.targetGoalId || null,
-                        for: item.targetGoalId ? 'goal' : 'both',
-                        status: 'Needs Retake',
-                        scores: 0,
-                        ratings: 0,
-                        progress: 0
-                    })
-                });
-                const json = await res.json();
-                if (json.success && json.data) {
-                    window.dynamicLmsState.prescribed = window.dynamicLmsState.prescribed || [];
-                    window.dynamicLmsState.prescribed.push(json.data);
-                }
-            }
-        }
-
-        // 3. Clear draft state for this employee
-        delete window.stagedIdpPlans[empId];
-
-        // 4. Reload fresh database records
-        await loadAndRenderPlanningGoals();
-        if (typeof loadAndRenderMonitoringData === 'function') {
-            await loadAndRenderMonitoringData();
-        }
-
-        if (typeof showToast === 'function') {
-            showToast(`🎉 IDP Plan successfully finalized & saved to database for ${emp.name}!`, 'success');
-        }
+        await PerformanceAPI.discardDraftPlan(empId);
+        window.dbDraftPlans[empId] = { tasks: [], lms_books: [], task_count: 0, book_count: 0, total: 0 };
+        if (typeof showToast === 'function') showToast('Draft plan discarded and removed from database.', 'info');
         showIDPDetail(empId);
-        renderIDPRosterTable();
+        if (typeof renderRemedialBooksList === 'function') renderRemedialBooksList();
     } catch (err) {
-        console.error('Error committing IDP plan:', err);
-        if (typeof showToast === 'function') {
-            showToast(`Error saving IDP plan: ${err.message || 'Server error'}`, 'error');
-        }
-    } finally {
-        commitBtns.forEach(btn => {
-            btn.disabled = false;
-        });
+        if (typeof showToast === 'function') showToast(`Error discarding draft: ${err.message}`, 'error');
     }
 };
 
-window.discardStagedIdpPlan = function(empId) {
-    if (!window.stagedIdpPlans?.[empId]) return;
-    delete window.stagedIdpPlans[empId];
-    if (typeof showToast === 'function') showToast('Draft IDP changes discarded.', 'info');
-    showIDPDetail(empId);
-    if (typeof renderRemedialBooksList === 'function') {
-        renderRemedialBooksList();
+/**
+ * Remove a single draft task item from DB
+ */
+window.removeStagedIdpTask = async function(empId, taskId) {
+    try {
+        await PerformanceAPI.removeDraftItem(taskId);
+        // Refresh cache
+        await loadDraftSummary(empId);
+        if (typeof showToast === 'function') showToast('Draft task removed from plan.', 'info');
+        showIDPDetail(empId);
+    } catch (err) {
+        if (typeof showToast === 'function') showToast(`Error removing draft task: ${err.message}`, 'error');
     }
 };
 
-window.removeStagedIdpTask = function(empId, taskId) {
-    if (!window.stagedIdpPlans?.[empId]?.tasks) return;
-    window.stagedIdpPlans[empId].tasks = window.stagedIdpPlans[empId].tasks.filter(t => t.id !== taskId);
-    if (typeof showToast === 'function') showToast('Draft task removed.', 'info');
-    showIDPDetail(empId);
-};
-
-window.removeStagedIdpBook = function(empId, bookId) {
-    if (!window.stagedIdpPlans?.[empId]?.prescribedBooks) return;
-    window.stagedIdpPlans[empId].prescribedBooks = window.stagedIdpPlans[empId].prescribedBooks.filter(b => b.bookId !== bookId);
-    if (typeof showToast === 'function') showToast('Draft prescribed handbook removed.', 'info');
-    showIDPDetail(empId);
-    if (typeof renderRemedialBooksList === 'function') {
-        renderRemedialBooksList();
+/**
+ * Remove a single draft LMS book item from DB
+ */
+window.removeStagedIdpBook = async function(empId, bookId) {
+    try {
+        await PerformanceAPI.removeDraftItem(bookId);
+        // Refresh cache
+        await loadDraftSummary(empId);
+        if (typeof showToast === 'function') showToast('Draft LMS handbook removed from plan.', 'info');
+        showIDPDetail(empId);
+        if (typeof renderRemedialBooksList === 'function') renderRemedialBooksList();
+    } catch (err) {
+        if (typeof showToast === 'function') showToast(`Error removing draft book: ${err.message}`, 'error');
     }
 };
 
@@ -6235,25 +6252,41 @@ function showIDPDetail(empId, openModalImmediately = false) {
     }
     if (subtitleEl) subtitleEl.textContent = `Position: ${emp.position} · ${emp.department} · Review Cycle ${evalRec?.cycle_period || '2026-Q3'}`;
 
-    const stagedPlan = window.stagedIdpPlans?.[emp.id] || { tasks: [], prescribedBooks: [] };
-    const stagedTasks = stagedPlan.tasks || [];
-    const stagedBooks = stagedPlan.prescribedBooks || [];
-    const stagedTotal = stagedTasks.length + stagedBooks.length;
+    const dbDraft = window.dbDraftPlans?.[emp.id] || { tasks: [], lms_books: [], task_count: 0, book_count: 0, total: 0 };
+    const stagedTasks = dbDraft.tasks || [];
+    const stagedBooks = dbDraft.lms_books || [];
+    const stagedTotal = dbDraft.total || 0;
+
+    // Load from DB only if cache is missing for this associate
+    if (!window.dbDraftPlans || !window.dbDraftPlans[emp.id]) {
+        loadDraftSummary(emp.id).then(summary => {
+            if ((summary?.total || 0) > 0) {
+                showIDPDetail(empId, false);
+            }
+        });
+    }
 
     if (headerActions) {
         const actionButtons = [];
 
         if (stagedTotal > 0) {
             actionButtons.push(`
-                <button onclick="discardStagedIdpPlan('${emp.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Discard uncommitted draft items">
+                <button onclick="discardStagedIdpPlan('${emp.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Discard all draft items from database">
                     <i class="fas fa-trash-can text-slate-400"></i>
                     <span>Discard Draft (${stagedTotal})</span>
                 </button>
             `);
             actionButtons.push(`
-                <button onclick="commitStagedIdpPlan('${emp.id}')" class="btn-finish-idp-plan px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5 ring-2 ring-emerald-400/50">
-                    <i class="fas fa-check-double"></i>
-                    <span>Finish &amp; Save IDP Plan (${stagedTotal})</span>
+                <button onclick="viewDraftPlan('${emp.id}')" class="btn-view-idp-draft px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>View Draft Plan (${stagedTotal} items)</span>
+                </button>
+            `);
+        } else {
+            actionButtons.push(`
+                <button onclick="openAddSpecificTaskModal('${emp.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center space-x-1">
+                    <i class="fas fa-plus text-slate-600"></i>
+                    <span>Create Draft Plan</span>
                 </button>
             `);
         }
@@ -6790,6 +6823,13 @@ function renderCycleRosterTable() {
         const retryCount = getEmployeeRetryCount(emp.id);
         const isExceededRetry = retryCount >= 3 && !hasPassed;
 
+        // Draft plan summary from cache
+        const draftData = window.dbDraftPlans?.[emp.id] || {};
+        const draftTotal = draftData.total || 0;
+        const draftTaskCount = draftData.task_count || 0;
+        const draftBookCount = draftData.book_count || 0;
+        const hasDraft = draftTotal > 0;
+
         return `
             <tr class="hover:bg-slate-50 transition text-xs border-b border-slate-100">
                 <td class="px-3 py-4 text-center font-mono font-bold text-slate-400 text-xs">
@@ -6803,24 +6843,41 @@ function renderCycleRosterTable() {
                     ${isCalibrated ? (isExceededRetry ? `<i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${score.toFixed(2)} / 5.0 (Failed)` : `<i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || (hasPassed ? 'Calibrated' : 'Needs PIP')})`) : 'Pending Review'}
                 </td>
                 <td class="px-5 py-4">
-                    ${isExceededRetry ? `
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
-                            <i class="fas fa-circle-xmark mr-1"></i> FAILED — Transition Suspended
-                        </span>
-                    ` : `
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${hasPassed ? 'bg-teal-100 text-teal-800' : 'bg-rose-100 text-rose-800'}">
-                            ${hasPassed ? '<i class="fas fa-check mr-1 text-teal-700"></i>Qualified for Next Cycle' : 'Action Plan Incomplete'}
-                        </span>
-                    `}
+                    <div class="flex flex-col space-y-1">
+                        ${isExceededRetry ? `
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-700 text-white shadow-xs">
+                                <i class="fas fa-circle-xmark mr-1"></i> FAILED — Transition Suspended
+                            </span>
+                        ` : `
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${hasPassed ? 'bg-teal-100 text-teal-800' : 'bg-rose-100 text-rose-800'}">
+                                ${hasPassed ? '<i class="fas fa-check mr-1 text-teal-700"></i>Qualified for Next Cycle' : 'Action Plan Incomplete'}
+                            </span>
+                        `}
+                        ${hasDraft ? `
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 inline-flex items-center space-x-1">
+                                <i class="fas fa-clipboard-list text-[9px]"></i>
+                                <span>Draft Plan: ${draftTaskCount} task${draftTaskCount !== 1 ? 's' : ''}, ${draftBookCount} book${draftBookCount !== 1 ? 's' : ''}</span>
+                            </span>
+                        ` : ''}
+                    </div>
                 </td>
                 <td class="px-5 py-4 text-right">
-                    <button onclick="showCycleDetail('${emp.id}', true)" class="px-3.5 py-1.5 ${isExceededRetry ? 'bg-rose-700 hover:bg-rose-800 text-white' : (hasPassed ? 'bg-primary hover:bg-primary-dark text-white' : 'bg-amber-600 hover:bg-amber-700 text-white')} font-bold rounded-xl text-xs shadow-xs transition">
-                        ${isExceededRetry ? '1-on-1 Remand' : (hasPassed ? 'View Rollover' : 'Review Plan')}
-                    </button>
+                    <div class="flex items-center justify-end space-x-1.5">
+                        ${hasDraft ? `
+                            <button onclick="deployDraftPlan('${emp.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="Deploy draft plan to live tasks & LMS">
+                                <i class="fas fa-rocket text-[10px]"></i>
+                                <span>Deploy Plan</span>
+                            </button>
+                        ` : ''}
+                        <button onclick="showCycleDetail('${emp.id}', true)" class="px-3.5 py-1.5 ${isExceededRetry ? 'bg-rose-700 hover:bg-rose-800 text-white' : (hasPassed ? 'bg-primary hover:bg-primary-dark text-white' : 'bg-amber-600 hover:bg-amber-700 text-white')} font-bold rounded-xl text-xs shadow-xs transition">
+                            ${isExceededRetry ? '1-on-1 Remand' : (hasPassed ? 'View Rollover' : 'Review Plan')}
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
     }).join('');
+
 
     renderPaginationControls('cycle-pagination-container', cycleCurrentPage, roster.length, cyclePageSize, 'setCyclePage', 'setCyclePageSize');
 
@@ -6832,6 +6889,58 @@ function renderCycleRosterTable() {
     }
 }
 window.renderCycleRosterTable = renderCycleRosterTable;
+
+/**
+ * Deploy all draft plan items for an employee (Phase 7).
+ * Copies task rows → performance_tasks, lms_book rows → lms_prescribed,
+ * then marks them all as Committed in performance_development_plans.
+ */
+window.deployDraftPlan = async function(empId) {
+    const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || { name: 'Associate' };
+    const draftData = window.dbDraftPlans?.[empId] || {};
+    const total = draftData.total || 0;
+
+    if (total === 0) {
+        if (typeof showToast === 'function') showToast('No draft plan items to deploy for this employee.', 'info');
+        return;
+    }
+
+    // Find active goal for the employee
+    const activeGoal = (window.dbGoals || []).find(g =>
+        isSameEmployee(g.employee_id, empId) && (g.status === 'Approved' || g.status === 'In Progress')
+    );
+    const goalId = activeGoal ? activeGoal.id : null;
+
+    if (typeof showToast === 'function') {
+        showToast(`🚀 Deploying ${total} draft item(s) for ${emp.name}...`, 'info');
+    }
+
+    try {
+        const result = await PerformanceAPI.deployDevelopmentPlan(empId, goalId);
+
+        // Clear local cache
+        window.dbDraftPlans[empId] = { tasks: [], lms_books: [], task_count: 0, book_count: 0, total: 0 };
+
+        if (typeof showToast === 'function') {
+            showToast(
+                `✅ Plan deployed! ${result.tasks_deployed || 0} task(s) → performance_tasks, ${result.books_deployed || 0} book(s) → lms_prescribed for ${emp.name}.`,
+                'success'
+            );
+        }
+
+        // Reload all data to reflect the newly deployed tasks/books
+        await loadAndRenderPlanningGoals();
+        if (typeof loadAndRenderMonitoringData === 'function') {
+            await loadAndRenderMonitoringData();
+        }
+        renderCycleRosterTable();
+    } catch (err) {
+        console.error('Error deploying draft plan:', err);
+        if (typeof showToast === 'function') {
+            showToast(`Error deploying plan: ${err.message || 'Server error'}`, 'error');
+        }
+    }
+};
 
 function showCycleDetail(empId, openModalImmediately = false) {
     if (!empId) {
@@ -7052,6 +7161,12 @@ function showCycleDetail(empId, openModalImmediately = false) {
                     </div>
                 `;
             } else {
+                const draftData = window.dbDraftPlans?.[emp.id] || {};
+                const draftTotal = draftData.total || 0;
+                const draftTaskCount = draftData.task_count || 0;
+                const draftBookCount = draftData.book_count || 0;
+                const hasDraft = draftTotal > 0;
+
                 transitionCard.innerHTML = `
                     <div class="p-6 bg-amber-50/70 rounded-2xl border border-amber-200 space-y-4 text-xs">
                         <div class="flex items-center justify-between flex-wrap gap-2">
@@ -7071,6 +7186,28 @@ function showCycleDetail(empId, openModalImmediately = false) {
                         <p class="text-slate-700 leading-relaxed text-xs">
                             Associate score is below the required 3.0 benchmark. To ensure standard compliance before rollover, review assigned action tasks, reset completed items for employee re-execution in Stage 3 Monitoring, or flag as Needs Training.
                         </p>
+
+                        ${hasDraft ? `
+                            <!-- Staged Performance Development Plan Card -->
+                            <div class="p-4 bg-indigo-50 rounded-2xl border border-indigo-200 shadow-2xs space-y-2">
+                                <div class="flex items-center justify-between flex-wrap gap-2">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                                            <i class="fas fa-clipboard-list"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-slate-900 text-xs">Stage 6 Performance Development Plan (Draft Staged)</p>
+                                            <p class="text-[10px] text-slate-500">${draftTaskCount} Action Task(s) · ${draftBookCount} LMS Handbook(s) staged in Stage 6</p>
+                                        </div>
+                                    </div>
+                                    <button onclick="deployDraftPlan('${emp.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1">
+                                        <i class="fas fa-rocket text-[10px]"></i>
+                                        <span>Deploy Plan</span>
+                                    </button>
+                                </div>
+                            </div>
+                        ` : ''}
+
                         <div class="pt-3 border-t border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <span class="text-xs text-amber-900 font-semibold"><i class="fas fa-rotate mr-1 text-amber-700"></i> Tasks can be reset for employee to re-do in Stage 3 Monitoring</span>
                             <div class="flex items-center space-x-2">
@@ -7267,24 +7404,134 @@ async function toggleNeedsTrainingFlag(empId, needsTraining) {
 }
 window.toggleNeedsTrainingFlag = toggleNeedsTrainingFlag;
 
-function openReviewTasksModal(empId) {
+async function openReviewTasksModal(empId) {
     const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || (window.perfRoster || [])[0];
     if (!emp) return;
 
     window.selectedEvalEmpId = emp.id;
+
+    const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+    const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
+    const score = isCalibrated && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : (parseFloat(emp.supervisorRating || 0));
 
     const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
     const retryCount = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
     const needsTraining = empGoals.some(g => !!g.needs_training) || retryCount > 2;
 
     const titleEl = document.getElementById('modal-review-tasks-title');
-    const listEl = document.getElementById('review-tasks-modal-list');
+    const avatarEl = document.getElementById('review-tasks-avatar');
+    const empNameEl = document.getElementById('review-tasks-emp-name');
+    const empRoleEl = document.getElementById('review-tasks-emp-role');
+    const scorePillEl = document.getElementById('review-tasks-score-pill');
+    const devPlanContainer = document.getElementById('review-plan-dev-plan-container');
+    const listEl = document.getElementById('review-tasks-list-container') || document.getElementById('review-tasks-modal-list');
     const footerActions = document.getElementById('review-tasks-footer-actions');
 
+    // Populate Associate Header Card
     if (titleEl) {
         titleEl.innerHTML = `Review Plan &amp; Tasks: ${emp.name} <span class="ml-2 text-xs font-mono font-normal px-2 py-0.5 rounded-full ${needsTraining ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}">Retry: ${retryCount} · Needs Training: ${needsTraining ? 'True' : 'False'}</span>`;
     }
+    if (avatarEl) {
+        const initials = (emp.name || 'EM').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        avatarEl.textContent = initials;
+    }
+    if (empNameEl) empNameEl.textContent = emp.name;
+    if (empRoleEl) empRoleEl.textContent = `${emp.position || 'Associate'} · ${emp.department || 'Property-Wide'}`;
+    if (scorePillEl) {
+        scorePillEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1"></i>${score > 0 ? score.toFixed(2) : '0.00'} / 5.0 (${evalRec?.tier_label || (score >= 3.0 ? 'Proficient' : 'Developing')})`;
+        scorePillEl.className = `px-2.5 py-1 rounded-full text-[10px] font-bold border font-mono ${score >= 3.0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}`;
+    }
 
+    // Load Development Plan Drafts (Stage 6)
+    let draftSummary = window.dbDraftPlans?.[emp.id];
+    if (!draftSummary && typeof loadDraftSummary === 'function') {
+        draftSummary = await loadDraftSummary(emp.id);
+    }
+    const draftTasks = draftSummary?.tasks || [];
+    const draftBooks = draftSummary?.lms_books || [];
+    const hasDraft = (draftTasks.length + draftBooks.length) > 0;
+
+    // Render Staged Performance Development Plan
+    if (devPlanContainer) {
+        if (hasDraft) {
+            devPlanContainer.innerHTML = `
+                <div class="p-4 bg-indigo-50/70 rounded-2xl border border-indigo-200/80 space-y-3">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                                <i class="fas fa-clipboard-list"></i>
+                            </div>
+                            <div>
+                                <h5 class="font-bold text-slate-900 text-xs">Stage 6 Performance Development Plan (Draft Staged)</h5>
+                                <p class="text-[10px] text-slate-500">Staged during Phase 6 IDP planning. Ready to deploy into active execution.</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                            ${draftTasks.length} Draft Task(s) · ${draftBooks.length} LMS Book(s)
+                        </span>
+                    </div>
+
+                    <!-- Draft Tasks & Books Cards -->
+                    <div class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                        ${draftTasks.map(t => `
+                            <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between gap-2">
+                                <div class="space-y-0.5 min-w-0">
+                                    <div class="flex items-center space-x-1.5">
+                                        <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Draft Action Task</span>
+                                        <span class="text-[10px] text-slate-400 font-mono">${t.target_date || 'Due in 2 wks'}</span>
+                                    </div>
+                                    <p class="font-bold text-slate-900 text-xs truncate">${t.title}</p>
+                                    <p class="text-[10px] text-slate-500 truncate">${t.description || 'Action item to be deployed to performance_tasks'}</p>
+                                </div>
+                                <span class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-lg font-bold flex-shrink-0">
+                                    Pending Deploy
+                                </span>
+                            </div>
+                        `).join('')}
+
+                        ${draftBooks.map(b => `
+                            <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between gap-2">
+                                <div class="space-y-0.5 min-w-0">
+                                    <div class="flex items-center space-x-1.5">
+                                        <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Draft LMS Handbook</span>
+                                        <span class="text-[10px] text-slate-400 font-mono">10% Formal LMS</span>
+                                    </div>
+                                    <p class="font-bold text-slate-900 text-xs truncate">${b.title || 'LMS Training Manual'}</p>
+                                    <p class="text-[10px] text-slate-500 truncate">Doc ID: ${b.lms_document_id || 'N/A'} · Status: Needs Retake on deploy</p>
+                                </div>
+                                <span class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-lg font-bold flex-shrink-0">
+                                    Pending Enroll
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="pt-2 border-t border-indigo-100 flex items-center justify-between text-[11px]">
+                        <span class="text-indigo-900 font-medium"><i class="fas fa-circle-info mr-1 text-indigo-600"></i> Deploying copies tasks to <code>performance_tasks</code> &amp; handbooks to <code>lms_prescribed</code>.</span>
+                        <button onclick="deployDraftPlanFromModal('${emp.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1">
+                            <i class="fas fa-rocket text-[10px]"></i>
+                            <span>Deploy Draft Plan Now</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            devPlanContainer.innerHTML = `
+                <div class="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between text-xs text-slate-500">
+                    <span class="flex items-center space-x-2">
+                        <i class="fas fa-clipboard-check text-slate-400"></i>
+                        <span>No uncommitted Stage 6 development plan drafts staged for this associate.</span>
+                    </span>
+                    <button onclick="closeModal('modal-review-tasks'); if(typeof switchSubTab==='function') switchSubTab('perf', 'idp'); if(typeof showIDPDetail==='function') showIDPDetail('${emp.id}', true);" class="text-indigo-600 hover:text-indigo-800 font-bold hover:underline flex items-center space-x-1">
+                        <span>+ Open Stage 6 IDP Planner</span>
+                        <i class="fas fa-arrow-right text-[10px]"></i>
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    // Render Active Goal Tasks
     const allTasks = [];
     empGoals.forEach(g => {
         (g.tasks || []).forEach(t => {
@@ -7327,7 +7574,7 @@ function openReviewTasksModal(empId) {
         } else {
             listEl.innerHTML = `
                 <div class="p-6 text-center text-slate-400 italic bg-slate-50 rounded-2xl border border-slate-200">
-                    No active tasks assigned yet. Use "+ Add Task" to establish specific action tasks.
+                    No active tasks assigned yet under goals.
                 </div>
             `;
         }
@@ -7339,6 +7586,13 @@ function openReviewTasksModal(empId) {
                 <button onclick="closeModal('modal-review-tasks'); openRemedialBooksModal('${emp.id}');" class="btn-primary px-5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 border-rose-600 shadow-xs flex items-center space-x-2">
                     <i class="fas fa-graduation-cap"></i>
                     <span>Need Training &rarr; Assign Formal Program</span>
+                </button>
+            `;
+        } else if (hasDraft) {
+            footerActions.innerHTML = `
+                <button onclick="deployAndProceedToMonitoring('${emp.id}')" class="btn-primary px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 border-emerald-600 shadow-xs flex items-center space-x-2">
+                    <i class="fas fa-rocket"></i>
+                    <span>Deploy Plan &amp; Proceed to Monitoring (Stage 3)</span>
                 </button>
             `;
         } else {
@@ -7354,6 +7608,30 @@ function openReviewTasksModal(empId) {
     openModal('modal-review-tasks');
 }
 window.openReviewTasksModal = openReviewTasksModal;
+
+/**
+ * Deploy draft plan directly from within Review Tasks modal and refresh modal
+ */
+async function deployDraftPlanFromModal(empId) {
+    if (typeof deployDraftPlan === 'function') {
+        await deployDraftPlan(empId);
+        // Refresh review modal content
+        await openReviewTasksModal(empId);
+    }
+}
+window.deployDraftPlanFromModal = deployDraftPlanFromModal;
+
+/**
+ * Deploy draft plan and immediately transition to Stage 3 monitoring
+ */
+async function deployAndProceedToMonitoring(empId) {
+    if (typeof deployDraftPlan === 'function') {
+        await deployDraftPlan(empId);
+    }
+    await proceedFromTasksToMonitoring();
+}
+window.deployAndProceedToMonitoring = deployAndProceedToMonitoring;
+
 
 /**
  * Reset a task back to pending for employee re-execution

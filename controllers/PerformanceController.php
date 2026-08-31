@@ -6,6 +6,7 @@ require_once __DIR__ . '/../models/PerformanceTaskModel.php';
 require_once __DIR__ . '/../models/PerformanceEvaluationModel.php';
 require_once __DIR__ . '/../models/AuthModel.php';
 require_once __DIR__ . '/../models/NotificationModel.php';
+require_once __DIR__ . '/../models/PerformanceDevelopmentPlanModel.php';
 
 class PerformanceController
 {
@@ -15,6 +16,7 @@ class PerformanceController
     private PerformanceEvaluationModel $evaluationModel;
     private AuthModel $authModel;
     private NotificationModel $notificationModel;
+    private PerformanceDevelopmentPlanModel $devPlanModel;
 
     public function __construct()
     {
@@ -24,6 +26,7 @@ class PerformanceController
         $this->evaluationModel = new PerformanceEvaluationModel();
         $this->authModel = new AuthModel();
         $this->notificationModel = new NotificationModel();
+        $this->devPlanModel = new PerformanceDevelopmentPlanModel();
     }
 
     /**
@@ -371,11 +374,14 @@ class PerformanceController
             }
         }
 
+        $draftSummaries = $this->devPlanModel->getAllDraftSummaries();
+
         return [
             'success' => true,
             'data'    => [
                 'goals'          => $enrichedGoals,
                 'general_tasks'  => $generalTasks,
+                'draft_plans'    => $draftSummaries,
                 'total_goals'    => $activeCount,
                 'approved_count' => $approvedCount,
                 'pending_count'  => $pendingCount,
@@ -1518,6 +1524,115 @@ class PerformanceController
             'success' => true,
             'data'    => $updated,
             'message' => "Performance goal #{$id} successfully marked as Completed! Next cycle is now ready."
+        ];
+    }
+
+    // =========================================================================
+    // PERFORMANCE DEVELOPMENT PLAN — Phase 6 (Draft) & Phase 7 (Deploy)
+    // =========================================================================
+
+    /**
+     * Get all draft plan items for an employee
+     */
+    public function getDevelopmentPlans(array $payload): array
+    {
+        $empId = $payload['employee_id'] ?? null;
+        if (empty($empId)) {
+            return ['success' => false, 'data' => null, 'message' => 'employee_id is required.'];
+        }
+
+        $status = $payload['status'] ?? null;
+        $summary = $this->devPlanModel->getDraftSummary($empId);
+
+        return ['success' => true, 'data' => $summary, 'message' => 'Draft plan items retrieved.'];
+    }
+
+    /**
+     * Add a draft action task to the development plan (Phase 6)
+     */
+    public function addDraftTask(array $payload): array
+    {
+        if (empty($payload['employee_id'])) {
+            return ['success' => false, 'data' => null, 'message' => 'employee_id is required.'];
+        }
+        if (empty($payload['title'])) {
+            return ['success' => false, 'data' => null, 'message' => 'title is required.'];
+        }
+
+        $item = $this->devPlanModel->addDraftTask($payload);
+        return ['success' => true, 'data' => $item, 'message' => 'Draft task added to development plan.'];
+    }
+
+    /**
+     * Add a draft LMS book prescription to the development plan (Phase 6)
+     */
+    public function addDraftBook(array $payload): array
+    {
+        if (empty($payload['employee_id'])) {
+            return ['success' => false, 'data' => null, 'message' => 'employee_id is required.'];
+        }
+        if (empty($payload['lms_document_id'])) {
+            return ['success' => false, 'data' => null, 'message' => 'lms_document_id is required.'];
+        }
+
+        $item = $this->devPlanModel->addDraftBook($payload);
+        return ['success' => true, 'data' => $item, 'message' => 'Draft LMS book added to development plan.'];
+    }
+
+    /**
+     * Remove a single draft item by ID (Phase 6)
+     */
+    public function removeDraftItem(array $payload): array
+    {
+        $id = $payload['id'] ?? null;
+        if (empty($id)) {
+            return ['success' => false, 'data' => null, 'message' => 'id is required.'];
+        }
+
+        $deleted = $this->devPlanModel->removeDraftItem((string)$id);
+        return [
+            'success' => $deleted,
+            'data'    => null,
+            'message' => $deleted ? 'Draft item removed.' : 'Failed to remove draft item.'
+        ];
+    }
+
+    /**
+     * Discard all draft items for an employee (Phase 6 — Discard Plan)
+     */
+    public function discardDraftPlan(array $payload): array
+    {
+        $empId = $payload['employee_id'] ?? null;
+        if (empty($empId)) {
+            return ['success' => false, 'data' => null, 'message' => 'employee_id is required.'];
+        }
+
+        $count = $this->devPlanModel->discardAllDrafts($empId);
+        return [
+            'success' => true,
+            'data'    => ['discarded_count' => $count],
+            'message' => "Discarded {$count} draft item(s) for employee {$empId}."
+        ];
+    }
+
+    /**
+     * Deploy all Draft items for an employee (Phase 7):
+     * Copies tasks → performance_tasks, books → lms_prescribed, marks items Committed.
+     */
+    public function deployDevelopmentPlan(array $payload): array
+    {
+        $empId  = $payload['employee_id'] ?? null;
+        $goalId = !empty($payload['goal_id']) ? (int)$payload['goal_id'] : null;
+
+        if (empty($empId)) {
+            return ['success' => false, 'data' => null, 'message' => 'employee_id is required.'];
+        }
+
+        $result = $this->devPlanModel->deployPlan($empId, $goalId);
+        return [
+            'success' => $result['success'],
+            'data'    => $result,
+            'message' => $result['message']
         ];
     }
 }
