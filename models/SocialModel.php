@@ -354,77 +354,51 @@ class SocialModel extends BaseModel
      */
     public function getLedger(?string $employeeId = null): array
     {
-        // 1. Fetch raw transactions
-        $res = supabaseRequest('xp_transactions?order=created_at.asc', 'GET', null, true);
-        $txns = (is_array($res['data'] ?? null) && !isset($res['data']['code'])) ? $res['data'] : [];
-
-        // Also fetch from xp_ledger table if exists
-        $ledgerRes = supabaseRequest('xp_ledger?order=created_at.asc', 'GET', null, true);
+        // Direct Query on unified xp_ledger table from Supabase
+        $endpoint = 'xp_ledger?order=created_at.asc';
+        if ($employeeId) {
+            $endpoint .= '&employee_id=eq.' . urlencode($employeeId);
+        }
+        $ledgerRes = supabaseRequest($endpoint, 'GET', null, true);
         $ledgerRows = (is_array($ledgerRes['data'] ?? null) && !isset($ledgerRes['data']['code'])) ? $ledgerRes['data'] : [];
 
-        // Combine and filter for employee if provided
         $roster = $this->getRoster();
         $empMap = [];
         foreach ($roster as $r) {
             $empMap[$r['id']] = $r['name'];
         }
 
-        $allTxns = [];
-
-        foreach ($txns as $t) {
-            $recId = $t['recipient_id'] ?? '';
-            if ($employeeId && $recId !== $employeeId) {
-                continue; // User-specific privacy filter
-            }
-            $allTxns[] = [
-                'id'         => $t['id'] ?? uniqid(),
-                'date'       => !empty($t['created_at']) ? date('M d, Y', strtotime($t['created_at'])) : date('M d, Y'),
-                'raw_date'   => $t['created_at'] ?? '',
-                'recipient'  => $empMap[$recId] ?? 'My Account',
-                'sender'     => empty($t['sender_id']) ? 'System LMS' : ($empMap[$t['sender_id']] ?? 'Supervisor'),
-                'rule'       => strtoupper($t['source_type'] ?? 'XP_GRANT'),
-                'category'   => $t['category'] ?? 'Hospitality Milestone',
-                'amount'     => (int)($t['amount'] ?? 50),
-                'note'       => $t['note'] ?? ''
-            ];
-        }
-
-        foreach ($ledgerRows as $lr) {
-            $eId = $lr['employee_id'] ?? '';
-            if ($employeeId && $eId !== $employeeId) {
-                continue; // User-specific privacy filter
-            }
-            $allTxns[] = [
-                'id'         => $lr['id'] ?? uniqid(),
-                'date'       => !empty($lr['created_at']) ? date('M d, Y', strtotime($lr['created_at'])) : date('M d, Y'),
-                'raw_date'   => $lr['created_at'] ?? '',
-                'recipient'  => $empMap[$eId] ?? 'My Account',
-                'sender'     => 'Oxford Operations',
-                'rule'       => strtoupper($lr['source_type'] ?? 'PERFORMANCE_XP'),
-                'category'   => $lr['description'] ?? 'Performance & Development',
-                'amount'     => (int)($lr['points'] ?? 50),
-                'note'       => $lr['description'] ?? ''
-            ];
-        }
-
         // Sort chronologically ascending to calculate running balance
-        usort($allTxns, function($a, $b) {
-            return strcmp($a['raw_date'], $b['raw_date']);
+        usort($ledgerRows, function($a, $b) {
+            return strcmp($a['created_at'] ?? '', $b['created_at'] ?? '');
         });
 
         $runningBalance = 0;
         $mapped = [];
-        foreach ($allTxns as $t) {
-            $runningBalance += $t['amount'];
+        foreach ($ledgerRows as $lr) {
+            $eId = $lr['employee_id'] ?? '';
+            $pts = (int)($lr['points'] ?? 0);
+            $runningBalance += $pts;
+            $rawDate = $lr['created_at'] ?? '';
+            $srcType = $lr['source_type'] ?? 'peer_kudos';
+
             $mapped[] = [
-                'id'        => $t['id'],
-                'date'      => $t['date'],
-                'recipient' => $t['recipient'],
-                'sender'    => $t['sender'],
-                'rule'      => $t['rule'],
-                'category'  => $t['category'],
-                'xpChange'  => '+' . $t['amount'] . ' XP',
-                'balance'   => number_format($runningBalance) . ' XP'
+                'id'                  => $lr['id'] ?? uniqid(),
+                'employee_id'         => $eId,
+                'date'                => !empty($rawDate) ? date('M d, Y', strtotime($rawDate)) : date('M d, Y'),
+                'raw_date'            => $rawDate,
+                'created_at'          => $rawDate,
+                'recipient'           => $empMap[$eId] ?? 'My Account',
+                'sender'              => 'Oxford Operations',
+                'rule'                => strtoupper(str_replace('_', ' ', $srcType)),
+                'source_type'         => $srcType,
+                'category'            => $lr['description'] ?? 'Performance & Development',
+                'amount'              => $pts,
+                'points'              => $pts,
+                'xpChange'            => ($pts >= 0 ? '+' : '') . $pts . ' XP',
+                'balance'             => number_format($runningBalance) . ' XP',
+                'balance_num'         => $runningBalance,
+                'performance_eval_id' => $lr['performance_eval_id'] ?? null
             ];
         }
 
@@ -432,15 +406,15 @@ class SocialModel extends BaseModel
     }
 
     /**
-     * Compute Dynamic User-Scoped Milestone Badges based on their cumulative XP
+     * Compute Dynamic User-Scoped Milestone Badges based on their cumulative XP from xp_ledger
      */
     public function getMilestoneBadges(?string $employeeId = null): array
     {
-        // 1. Fetch real XP transactions
-        $xpRes = supabaseRequest('xp_transactions?order=created_at.desc', 'GET', null, true);
-        $txns = (is_array($xpRes['data'] ?? null) && !isset($xpRes['data']['code'])) ? $xpRes['data'] : [];
-
-        $ledgerRes = supabaseRequest('xp_ledger?order=created_at.desc', 'GET', null, true);
+        $endpoint = 'xp_ledger?order=created_at.desc';
+        if ($employeeId) {
+            $endpoint .= '&employee_id=eq.' . urlencode($employeeId);
+        }
+        $ledgerRes = supabaseRequest($endpoint, 'GET', null, true);
         $ledgerRows = (is_array($ledgerRes['data'] ?? null) && !isset($ledgerRes['data']['code'])) ? $ledgerRes['data'] : [];
 
         $userTotalXp = 0;
@@ -448,31 +422,37 @@ class SocialModel extends BaseModel
         $userPeerXp = 0;
         $userCrisisXp = 0;
 
-        foreach ($txns as $t) {
-            $recId = $t['recipient_id'] ?? '';
-            if ($employeeId && $recId !== $employeeId) continue;
-
-            $pts = (int)($t['amount'] ?? 0);
-            $cat = $t['category'] ?? '';
-            $src = $t['source_type'] ?? '';
-
+        foreach ($ledgerRows as $lr) {
+            $pts = (int)($lr['points'] ?? 0);
             $userTotalXp += $pts;
-            if ($cat === 'safety_haccp' || str_contains($cat, 'safety')) $userSafetyXp += $pts;
-            if ($src === 'peer_kudos' || $cat === 'collaboration') $userPeerXp += $pts;
-            if ($cat === 'crisis_recovery' || str_contains($cat, 'crisis')) $userCrisisXp += $pts;
+            $desc = strtolower($lr['description'] ?? '');
+            $src = strtolower($lr['source_type'] ?? '');
+            if (strpos($desc, 'safety') !== false || strpos($desc, 'haccp') !== false || strpos($src, 'training') !== false) {
+                $userSafetyXp += $pts;
+            }
+            if (strpos($src, 'peer') !== false || strpos($desc, 'peer') !== false) {
+                $userPeerXp += $pts;
+            }
+            if (strpos($desc, 'crisis') !== false || strpos($desc, 'rush') !== false || strpos($desc, 'occupancy') !== false) {
+                $userCrisisXp += $pts;
+            }
         }
 
         foreach ($ledgerRows as $lr) {
-            $eId = $lr['employee_id'] ?? '';
-            if ($employeeId && $eId !== $employeeId) continue;
             $pts = (int)($lr['points'] ?? 0);
             $desc = strtolower($lr['description'] ?? '');
-            $src = $lr['source_type'] ?? '';
+            $src = strtolower($lr['source_type'] ?? '');
 
             $userTotalXp += $pts;
-            if (str_contains($desc, 'haccp') || str_contains($desc, 'safety')) $userSafetyXp += $pts;
-            if ($src === 'peer_kudos' || str_contains($desc, 'peer') || str_contains($desc, 'collaboration')) $userPeerXp += $pts;
-            if (str_contains($desc, 'crisis') || str_contains($desc, 'de-escalation') || str_contains($desc, 'diplomacy')) $userCrisisXp += $pts;
+            if (strpos($desc, 'haccp') !== false || strpos($desc, 'safety') !== false || strpos($src, 'training') !== false) {
+                $userSafetyXp += $pts;
+            }
+            if (strpos($src, 'peer') !== false || strpos($desc, 'peer') !== false || strpos($desc, 'collaboration') !== false) {
+                $userPeerXp += $pts;
+            }
+            if (strpos($desc, 'crisis') !== false || strpos($desc, 'rush') !== false || strpos($desc, 'occupancy') !== false || strpos($desc, 'diplomacy') !== false) {
+                $userCrisisXp += $pts;
+            }
         }
 
         $b1Progress = min(100, (int)round(($userTotalXp / 2500) * 100));

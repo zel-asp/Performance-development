@@ -3,6 +3,55 @@ require_once __DIR__ . '/../config/config.php';
 
 class LmsController
 {
+    private static array $memoryCache = [];
+
+    /**
+     * Get cached payload if fresh
+     */
+    private static function getCache(string $key, int $ttlSeconds = 60)
+    {
+        if (isset(self::$memoryCache[$key]) && (time() - (self::$memoryCache[$key]['time'] ?? 0) < $ttlSeconds)) {
+            return self::$memoryCache[$key]['data'];
+        }
+        $cacheFile = sys_get_temp_dir() . '/lms_cache_' . md5($key) . '.json';
+        if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $ttlSeconds)) {
+            $raw = @file_get_contents($cacheFile);
+            if ($raw) {
+                $decoded = json_decode($raw, true);
+                if ($decoded !== null) {
+                    self::$memoryCache[$key] = ['time' => filemtime($cacheFile), 'data' => $decoded];
+                    return $decoded;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Store payload into cache
+     */
+    private static function setCache(string $key, $data): void
+    {
+        self::$memoryCache[$key] = ['time' => time(), 'data' => $data];
+        $cacheFile = sys_get_temp_dir() . '/lms_cache_' . md5($key) . '.json';
+        @file_put_contents($cacheFile, json_encode($data));
+    }
+
+    /**
+     * Clear LMS cache entries
+     */
+    public static function clearCache(): void
+    {
+        self::$memoryCache = [];
+        $tmpDir = sys_get_temp_dir();
+        $files = @glob($tmpDir . '/lms_cache_*.json');
+        if ($files) {
+            foreach ($files as $f) {
+                @unlink($f);
+            }
+        }
+    }
+
     /**
      * Get LMS Documents from Supabase SQL with Department Joins & Filters
      */
@@ -13,12 +62,22 @@ class LmsController
         $status = $params['status'] ?? null;
         $search = isset($params['search']) ? trim($params['search']) : '';
 
-        // 1. Fetch Departments map
-        $deptRes = supabaseRequest('departments', 'GET', null, true);
-        $departments = is_array($deptRes['data']) ? $deptRes['data'] : [];
-        $deptMap = [];
-        foreach ($departments as $d) {
-            $deptMap[$d['id']] = $d['name'];
+        $cacheKey = 'docs_' . md5(json_encode([$deptId, $category, $status, $search]));
+        $cached = self::getCache($cacheKey, 60);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        // 1. Fetch Departments map (cached for 300s)
+        $deptMap = self::getCache('dept_map', 300);
+        if ($deptMap === null) {
+            $deptRes = supabaseRequest('departments', 'GET', null, true);
+            $departments = is_array($deptRes['data']) ? $deptRes['data'] : [];
+            $deptMap = [];
+            foreach ($departments as $d) {
+                $deptMap[$d['id']] = $d['name'];
+            }
+            self::setCache('dept_map', $deptMap);
         }
 
         // 2. Build Query for lms_documents
@@ -45,15 +104,18 @@ class LmsController
             $dName = $dId && isset($deptMap[$dId]) ? $deptMap[$dId] : 'Property-Wide';
             $doc['department_name'] = $dName;
 
-            // Department filter
+            // Department filter: include specific department match AND all documents that don't have a department (null / Property-Wide)
             if (!empty($deptId) && $deptId !== 'all') {
                 $targetName = $deptSlugMap[strtolower(trim($deptId))] ?? $deptId;
                 $match = false;
-                if ($dId === $deptId) $match = true;
-                if (strcasecmp($dName, $targetName) === 0 || strpos(strtolower($dName), strtolower($targetName)) !== false || strpos(strtolower($targetName), strtolower($dName)) !== false) {
+                if ($dId === null || empty($dId) || strtolower((string)$dId) === 'null' || $dName === 'Property-Wide') {
+                    $match = true; // Property-wide / null department is accessible everywhere
+                } elseif ($dId === $deptId) {
+                    $match = true;
+                } elseif (strcasecmp($dName, $targetName) === 0 || strpos(strtolower($dName), strtolower($targetName)) !== false || strpos(strtolower($targetName), strtolower($dName)) !== false) {
                     $match = true;
                 }
-                if (!$match && $dId !== null) {
+                if (!$match) {
                     continue;
                 }
             }
@@ -81,11 +143,13 @@ class LmsController
             $filtered[] = $doc;
         }
 
-        return [
+        $res = [
             'success' => true,
             'data' => $filtered,
             'total' => count($filtered)
         ];
+        self::setCache($cacheKey, $res);
+        return $res;
     }
 
     /**
@@ -93,6 +157,7 @@ class LmsController
      */
     public function publishDocumentRecord(array $postData): array
     {
+        self::clearCache();
         $title = trim($postData['title'] ?? '');
         if (empty($title)) {
             return ['success' => false, 'message' => 'Document title is required.'];
@@ -530,69 +595,64 @@ class LmsController
             // Auto-create Specific Task in Performance Management for this employee & goal
             $this->addLmsSpecificTaskToPerformance($employee, $lmsId, $goalId);
 
+            self::clearCache();
+
             return [
                 'success' => true,
                 'already_enrolled' => false,
-                'message' => 'LMS document successfully prescribed and enrolled in database!',
+                'message' => 'LMS document successfully prescribed and enrolled!',
                 'data' => $created
             ];
         }
 
         return [
             'success' => false,
-            'message' => 'Failed to insert prescription into lms_prescribed database: ' . ($insertRes['error'] ?? 'Database error')
+            'message' => 'Failed to insert prescription into lms_prescribed: ' . ($insertRes['error'] ?? 'Server error')
         ];
     }
 
     /**
      * Automatically create a specific task in performance_tasks when an LMS document is prescribed
      */
-    public function addLmsSpecificTaskToPerformance(string $employee, string $lmsId, ?int $goalId = null): void
+    private function addLmsSpecificTaskToPerformance(string $employee, string $lmsId, ?int $goalId): void
     {
         try {
-            // 1. Fetch document title
-            $docRes = supabaseRequest('lms_documents?id=eq.' . urlencode($lmsId), 'GET', null, true);
-            $doc = is_array($docRes['data'] ?? null) && !empty($docRes['data']) ? $docRes['data'][0] : null;
-            $docTitle = $doc['title'] ?? 'Operational Handbook';
-
-            // 2. If no goalId provided, find active goal for employee
+            // Find employee's active performance goal
             $targetGoalId = $goalId;
-            $targetDate = date('Y-m-d', strtotime('+14 days'));
-
             if (empty($targetGoalId)) {
-                $goalRes = supabaseRequest('performance_goals?employee_id=eq.' . urlencode($employee) . '&status=in.(Approved,In Progress,Draft)&order=created_at.desc&limit=1', 'GET', null, true);
-                if (!empty($goalRes['data']) && is_array($goalRes['data'])) {
-                    $targetGoalId = $goalRes['data'][0]['id'] ?? null;
-                    if (!empty($goalRes['data'][0]['target_date'])) {
-                        $targetDate = $goalRes['data'][0]['target_date'];
-                    }
+                $gRes = supabaseRequest('performance_goals?employee_id=eq.' . urlencode($employee) . '&order=created_at.desc&limit=1', 'GET', null, true);
+                if (!empty($gRes['data'][0]['id'])) {
+                    $targetGoalId = (int)$gRes['data'][0]['id'];
                 }
             }
 
-            // 3. Check if specific task for this LMS already exists for this employee
-            require_once __DIR__ . '/../models/PerformanceTaskModel.php';
-            $taskModel = new PerformanceTaskModel();
-            
-            $existingTasks = $taskModel->getTasksForEmployee($employee);
-            foreach ($existingTasks as $t) {
-                if (strpos($t['description'] ?? '', "[LMS:{$lmsId}]") !== false || 
-                    (strpos($t['title'] ?? '', $docTitle) !== false && ($t['task_type'] ?? '') === 'specific')) {
-                    // Task already created
-                    return;
-                }
+            if (empty($targetGoalId)) return;
+
+            // Check if specific task for this LMS document already exists
+            $taskTitle = "LMS SOP Study: Handbook [LMS:{$lmsId}]";
+            $existRes = supabaseRequest('performance_tasks?goal_id=eq.' . $targetGoalId . '&title=ilike.' . urlencode("%[LMS:{$lmsId}]%"), 'GET', null, true);
+            if (!empty($existRes['data']) && is_array($existRes['data'])) {
+                return; // Already added
             }
 
-            // 4. Create the specific task in performance_tasks
-            $taskModel->createSpecificTask([
+            // Fetch doc title
+            $docRes = supabaseRequest('lms_documents?id=eq.' . urlencode($lmsId), 'GET', null, true);
+            $docTitle = !empty($docRes['data'][0]['title']) ? $docRes['data'][0]['title'] : "Handbook #{$lmsId}";
+
+            $taskPayload = [
                 'goal_id' => $targetGoalId,
-                'employee_id' => $employee,
-                'task_type' => 'specific',
-                'title' => "Complete LMS: {$docTitle}",
+                'title' => "LMS Certification: {$docTitle} [LMS:{$lmsId}]",
                 'description' => "Mandatory learning module prescribed to IDP. Read the handbook and achieve 100% progress in LMS before completing this task. [LMS:{$lmsId}]",
-                'target_date' => $targetDate
-            ]);
-        } catch (\Throwable $e) {
-            error_log('Error adding LMS specific task: ' . $e->getMessage());
+                'type' => 'specific',
+                'status' => 'Pending',
+                'completion_pct' => 0,
+                'weight' => 20,
+                'created_at' => date('c')
+            ];
+
+            supabaseRequest('performance_tasks', 'POST', $taskPayload, true);
+        } catch (Exception $e) {
+            error_log("Failed to auto-add LMS task to performance: " . $e->getMessage());
         }
     }
 
@@ -602,6 +662,12 @@ class LmsController
     public function getPrescribedDocuments(array $params = []): array
     {
         $employee = trim($params['employee'] ?? $params['employee_id'] ?? '');
+        $cacheKey = 'prescribed_docs_' . md5($employee);
+        $cached = self::getCache($cacheKey, 60);
+        if ($cached !== null) {
+            return $cached;
+        }
+
         $query = 'lms_prescribed?order=created_at.desc';
         if (!empty($employee)) {
             $query .= '&employee=eq.' . urlencode($employee);
@@ -610,20 +676,38 @@ class LmsController
         $res = supabaseRequest($query, 'GET', null, true);
         $records = is_array($res['data']) ? $res['data'] : [];
 
-        // 1. Fetch lms_documents map
-        $docRes = supabaseRequest('lms_documents', 'GET', null, true);
-        $documents = is_array($docRes['data']) ? $docRes['data'] : [];
-        $docMap = [];
-        foreach ($documents as $d) {
-            $docMap[$d['id']] = $d;
+        if (empty($records)) {
+            $out = [
+                'success' => true,
+                'data' => [],
+                'total' => 0
+            ];
+            self::setCache($cacheKey, $out);
+            return $out;
         }
 
-        // 2. Fetch employees map
-        $empRes = supabaseRequest('employees', 'GET', null, true);
-        $employees = is_array($empRes['data']) ? $empRes['data'] : [];
+        // Gather unique IDs to fetch only what's needed
+        $docIds = array_filter(array_unique(array_column($records, 'lms_id')));
+        $empIds = array_filter(array_unique(array_column($records, 'employee')));
+
+        $docMap = [];
+        if (!empty($docIds)) {
+            $cleanDocIds = implode(',', array_map('urlencode', $docIds));
+            $docRes = supabaseRequest("lms_documents?id=in.({$cleanDocIds})", 'GET', null, true);
+            $documents = is_array($docRes['data']) ? $docRes['data'] : [];
+            foreach ($documents as $d) {
+                $docMap[$d['id']] = $d;
+            }
+        }
+
         $empMap = [];
-        foreach ($employees as $e) {
-            $empMap[$e['id']] = $e;
+        if (!empty($empIds)) {
+            $cleanEmpIds = implode(',', array_map('urlencode', $empIds));
+            $empRes = supabaseRequest("employees?id=in.({$cleanEmpIds})", 'GET', null, true);
+            $employees = is_array($empRes['data']) ? $empRes['data'] : [];
+            foreach ($employees as $e) {
+                $empMap[$e['id']] = $e;
+            }
         }
 
         $enriched = [];
@@ -647,11 +731,13 @@ class LmsController
             $enriched[] = $rec;
         }
 
-        return [
+        $result = [
             'success' => true,
             'data' => $enriched,
             'total' => count($enriched)
         ];
+        self::setCache($cacheKey, $result);
+        return $result;
     }
 
     /**
@@ -676,6 +762,7 @@ class LmsController
 
         $res = supabaseRequest('lms_prescribed?id=eq.' . urlencode($id), 'PATCH', $updatePayload, true);
         if ($res['status'] >= 200 && $res['status'] < 300) {
+            self::clearCache();
             return ['success' => true, 'message' => 'LMS prescription updated successfully!', 'data' => $updatePayload];
         }
 

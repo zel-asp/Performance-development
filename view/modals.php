@@ -19,6 +19,38 @@
     </div>
 </div>
 
+<!-- Phase 7 Kudos Completion Award Prompt Modal -->
+<div id="modal-phase7-kudos-prompt" class="fixed inset-0 modal-overlay z-[999] hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-scaleUp">
+        <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl font-bold mx-auto shadow-2xs">
+            <i class="fas fa-award"></i>
+        </div>
+        <div class="text-center space-y-2">
+            <h3 class="font-heading font-bold text-base text-slate-900" id="phase7-kudos-prompt-title">Award Kudos Before Completion?</h3>
+            <p class="text-xs text-slate-600 leading-relaxed" id="phase7-kudos-prompt-msg">
+                This goal has not been awarded with Kudos XP yet. Would you like to award Kudos points and mark the goal as Completed?
+            </p>
+            <div id="phase7-kudos-emp-badge" class="inline-flex items-center space-x-2 px-3 py-1 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-bold font-mono">
+                <i class="fas fa-star text-amber-500"></i>
+                <span id="phase7-kudos-pts-display">+8 XP Award</span>
+            </div>
+        </div>
+        <div class="flex flex-col space-y-2 pt-2">
+            <button type="button" id="btn-p7-award-and-complete" class="btn-primary w-full py-2.5 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-xs flex items-center justify-center space-x-1.5 transition">
+                <i class="fas fa-award"></i>
+                <span>Yes, Award Kudos &amp; Complete</span>
+            </button>
+            <button type="button" id="btn-p7-complete-only" class="btn-secondary w-full py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 border border-slate-200 flex items-center justify-center space-x-1.5 transition">
+                <i class="fas fa-check"></i>
+                <span>No, Mark as Complete Only</span>
+            </button>
+            <button type="button" onclick="closeModal('modal-phase7-kudos-prompt')" class="text-slate-400 hover:text-slate-600 text-[11px] font-semibold pt-1 text-center">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- 1. Modal: Create Goal -->
 <div id="modal-create-goal" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-2xl w-full overflow-hidden max-h-[92vh] flex flex-col">
@@ -645,6 +677,7 @@
 
         <form id="form-appraisal-evaluation" onsubmit="handleAppraisalSubmit(event)" class="flex flex-col flex-1 overflow-hidden">
             <input type="hidden" id="eval-target-emp-id" value="emp-101">
+            <input type="hidden" id="eval-target-goal-id" value="">
 
             <div class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs bg-white flex-1">
                 <!-- 1-5 Scale Guide -->
@@ -1078,9 +1111,9 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <h3 class="font-heading font-bold text-base text-slate-900">Upload Training Document / SOP</h3>
-                        <span class="badge-sage">Supabase Storage</span>
+                        <span class="badge-sage">Document Upload</span>
                     </div>
-                    <p class="text-xs text-slate-500 mt-0.5">Publish PDF handbooks, SOP guides, or documents directly to Supabase storage bucket</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Publish PDF handbooks, SOP guides, or departmental reference documents</p>
                 </div>
             </div>
             <button onclick="closeModal('modal-lms-upload')"
@@ -1354,20 +1387,13 @@
 
         <!-- Body -->
         <div class="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1 text-xs bg-white">
-            <!-- Associate Target Selector & Gap Alert -->
-            <div class="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <!-- Associate Target & Gap Alert -->
+            <div class="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 shadow-2xs">
                 <div class="space-y-1">
-                    <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider flex items-center"><i class="fas fa-triangle-exclamation text-amber-500 mr-1.5"></i> Associate with &lt; 3.0 Gaps</span>
-                    <p id="remedial-associate-name" class="font-bold text-slate-900 text-xs">Lucas Vargas · Junior Host (Front Office)</p>
-                    <p id="remedial-associate-detail" class="text-slate-600 text-[11px]">Evaluated Rating: <strong class="text-slate-900 font-bold">2.80 / 5.0</strong> · Sommelier Wine (<strong class="text-slate-900 font-bold">2.40</strong>) &amp; Conflict De-escalation (<strong class="text-slate-900 font-bold">2.60</strong>)</p>
+                    <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider flex items-center"><i class="fas fa-triangle-exclamation text-amber-500 mr-1.5"></i> Associate Remedial Target</span>
+                    <p id="remedial-associate-name" class="font-bold text-slate-900 text-xs">Associate Name · Position (Department)</p>
+                    <p id="remedial-associate-detail" class="text-slate-600 text-[11px]">Evaluated Rating: <strong class="text-slate-900 font-bold">2.80 / 5.0</strong></p>
                 </div>
-                <select id="remedial-associate-select" onchange="updateRemedialAssociate(this.value)"
-                    class="p-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:outline-none shadow-2xs">
-                    <option value="lucas">Lucas Vargas (Rating: 2.80)</option>
-                    <option value="antonio">Antonio Silva (Rating: 2.90)</option>
-                    <option value="maria">Maria Santos (Gap: Wine 2.40)</option>
-                    <option value="chloe">Chloe Dupont (Rating: 2.95)</option>
-                </select>
             </div>
 
             <!-- List of All Available LMS Books with 1-Click Assignment -->
@@ -1441,15 +1467,15 @@
                 <div class="flex items-center justify-between">
                     <h4 class="font-heading font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center space-x-1.5">
                         <i class="fas fa-chalkboard-user text-rose-600"></i>
-                        <span>Available Formal Training Programs (Supabase Database)</span>
+                        <span>Available Formal Training Programs</span>
                     </h4>
-                    <span class="text-[11px] text-slate-400">Click to enroll into training_needs</span>
+                    <span class="text-[11px] text-slate-400">Click to enroll</span>
                 </div>
 
                 <div id="formal-programs-list" class="space-y-3">
                     <div class="p-8 text-center text-slate-400 italic bg-slate-50 rounded-2xl border border-slate-200">
                         <i class="fas fa-spinner fa-spin text-lg mb-2 block text-rose-500"></i>
-                        Loading training programs from database...
+                        Loading training programs...
                     </div>
                 </div>
             </div>
@@ -1887,7 +1913,7 @@
 
         <!-- Footer -->
         <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
-            <span class="text-[11px] text-slate-400 font-medium hidden sm:inline"><i class="fas fa-shield text-slate-300 mr-1"></i> Official Supabase DB Record</span>
+            <span class="text-[11px] text-slate-400 font-medium hidden sm:inline"><i class="fas fa-shield text-slate-300 mr-1"></i> Official Assessment Record</span>
             <div class="flex items-center space-x-2.5 ml-auto">
                 <button type="button" onclick="closeModal('modal-conduct-assessment')" class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
                 <button type="button" id="btn-submit-assessment" onclick="document.getElementById('form-conduct-assessment').requestSubmit()" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-2xs">
@@ -1998,7 +2024,7 @@
             <button type="button" onclick="closeModal('modal-add-competency')" class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
             <button type="button" id="btn-submit-add-competency" onclick="document.getElementById('form-add-competency').requestSubmit()" class="btn-primary px-5 py-2 text-xs font-bold shadow-2xs flex items-center space-x-1.5">
                 <i class="fas fa-save text-[10px]"></i>
-                <span>Save Competency to Database</span>
+                <span>Save Competency</span>
             </button>
         </div>
     </div>
@@ -3216,7 +3242,7 @@
 
                 <div class="p-4 bg-white border-t border-slate-100 flex items-center justify-between">
                     <button type="button" onclick="closeModal('modal-1on1-minutes-viewer')" class="btn-secondary px-4 py-2 text-xs font-bold">Close</button>
-                    <button id="minutes-modal-btn-calibrate" onclick="closeModal('modal-1on1-minutes-viewer'); open1on1CalibrationModal(window.selectedEvalEmpId || 'emp-101');" class="btn-primary px-4 py-2 text-xs font-bold shadow-xs flex items-center space-x-1.5">
+                    <button id="minutes-modal-btn-calibrate" onclick="closeModal('modal-1on1-minutes-viewer'); openCalibrationModal(window.selectedCalibEmpId || window.selectedEvalEmpId || 'emp-101');" class="btn-primary px-4 py-2 text-xs font-bold shadow-xs flex items-center space-x-1.5">
                         <i class="fas fa-sliders"></i>
                         <span>Edit / Calibrate 1-on-1</span>
                     </button>
@@ -3391,7 +3417,7 @@
                             <i class="fas fa-book-medical text-slate-600"></i>
                             <span>Prescribe LMS Books</span>
                         </button>
-                        <button onclick="closeModal('modal-view-idp-plan'); switchSubTab('perf', 'idp'); showIDPDetail(window.selectedEvalEmpId || 'emp-101')" class="btn-primary px-4 py-2 text-xs font-bold shadow-xs flex items-center space-x-1.5">
+                        <button onclick="proceedFromPhase5ToPhase6(window.selectedEvalEmpId || 'emp-101')" class="btn-primary px-4 py-2 text-xs font-bold shadow-xs flex items-center space-x-1.5">
                             <span>Open Stage 6 Workspace &rarr;</span>
                         </button>
                     </div>
@@ -3450,7 +3476,7 @@
                         <button type="button" onclick="closeModal('modal-add-specific-task')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
                         <button type="submit" id="btn-submit-specific-task" class="btn-primary px-5 py-2 text-xs font-bold shadow-xs flex items-center space-x-1.5">
                             <i class="fas fa-check"></i>
-                            <span>Save Task to Database</span>
+                            <span>Save Task</span>
                         </button>
                     </div>
                 </form>
@@ -3541,7 +3567,7 @@
         <div id="modal-idp-detail" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-5xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
                 <!-- Header -->
-                <div class="px-6 py-4 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-slate-50/70 flex-shrink-0">
+                <div class="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70 flex-shrink-0">
                     <div class="flex items-center space-x-3 min-w-0 pr-2">
                         <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-base font-bold border border-emerald-200/60 shadow-2xs flex-shrink-0">
                             <i class="fas fa-seedling"></i>
@@ -3549,13 +3575,13 @@
                         <div class="min-w-0">
                             <div class="flex items-center space-x-2 flex-wrap gap-1">
                                 <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100/80 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200">Phase 6 · Development Planning</span>
-                                <h3 id="idp-detail-title" class="font-heading font-bold text-base text-slate-900">70-20-10 Individual Development Plan (IDP)</h3>
+                                <h3 id="idp-detail-title" class="font-heading font-bold text-base text-slate-900 truncate">IDP · Development Plan</h3>
                             </div>
-                            <p id="idp-detail-subtitle" class="text-xs text-slate-500 mt-0.5">Strengths and developmental focus areas mapped to tailored 70-20-10 learning actions.</p>
+                            <p id="idp-detail-subtitle" class="text-xs text-slate-500 mt-0.5 truncate">Strengths, gaps and tailored 70-20-10 learning actions.</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2.5 flex-wrap justify-end">
-                        <div id="idp-header-actions" class="flex items-center flex-wrap gap-2">
+                    <div class="flex items-center gap-2 flex-wrap justify-end">
+                        <div id="idp-header-actions" class="flex items-center flex-wrap gap-1.5">
                             <!-- Dynamic header actions -->
                         </div>
                         <button onclick="closeModal('modal-idp-detail')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90 flex-shrink-0" title="Close">
@@ -3571,7 +3597,7 @@
                         <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
                             <span class="text-[11px] font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-1.5">
                                 <i class="fas fa-chart-pie text-slate-400"></i>
-                                <span>1. Diagnostic Competency Strengths &amp; Gaps</span>
+                                <span>1. Diagnostic Strengths &amp; Gaps</span>
                             </span>
                             <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
                                 3.0 Benchmark
@@ -3584,7 +3610,7 @@
                                 <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
                                     <span class="font-bold text-slate-900 text-xs flex items-center">
                                         <i class="fas fa-circle-check mr-2 text-emerald-600 text-sm"></i>
-                                        Identified Strengths &amp; Competencies
+                                        Identified Strengths
                                     </span>
                                     <span id="idp-strengths-count" class="text-[10px] font-semibold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">0 Calibrated</span>
                                 </div>
@@ -3598,7 +3624,7 @@
                                 <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
                                     <span class="font-bold text-slate-900 text-xs flex items-center">
                                         <i class="fas fa-circle-exclamation mr-2 text-amber-500 text-sm"></i>
-                                        Development Gaps (&lt; 3.0 Threshold)
+                                        Development Gaps (&lt; 3.0)
                                     </span>
                                     <span id="idp-gaps-count" class="text-[10px] font-semibold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">Action Required</span>
                                 </div>
@@ -3615,9 +3641,9 @@
                             <div>
                                 <h4 class="font-heading font-bold text-slate-900 text-sm flex items-center space-x-1.5">
                                     <i class="fas fa-seedling text-emerald-600"></i>
-                                    <span>2. 70-20-10 Active Development Commitments</span>
+                                    <span>2. 70-20-10 Development Commitments</span>
                                 </h4>
-                                <p class="text-slate-500 text-[11px] mt-0.5">Experiential (70%), Social Mentorship (20%) &amp; Formal LMS (10%) actions</p>
+                                <p class="text-slate-500 text-[11px] mt-0.5">Experiential (70%), Mentorship (20%) &amp; Formal LMS (10%)</p>
                             </div>
                             <div id="idp-commitments-header-action">
                                 <!-- Dynamic Link -->
@@ -3632,12 +3658,12 @@
 
                 <!-- Footer -->
                 <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
-                    <button onclick="viewEmployeeCompetencyRadar(window.selectedEvalEmpId || 'emp-101')" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition flex items-center space-x-1.5" title="Inspect Associate Competency Radar &amp; Gap Diagnostic">
+                    <button onclick="viewEmployeeCompetencyRadar(window.selectedEvalEmpId || 'emp-101')" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition flex items-center space-x-1.5" title="Inspect Associate Competency Radar">
                         <i class="fas fa-chart-radar text-slate-600"></i>
-                        <span>View Competency Radar &amp; Gaps</span>
+                        <span>Competency Radar</span>
                     </button>
                     <button type="button" onclick="closeModal('modal-idp-detail')" class="btn-secondary px-5 py-2 text-xs font-bold">
-                        Close Plan
+                        Close
                     </button>
                 </div>
             </div>
@@ -3862,7 +3888,7 @@
                     <span>Competency Radar &amp; Gaps</span>
                 </button>
             </div>
-            <button onclick="closeModal('modal-view-appraisal'); switchSubTab('perf', 'review');" class="btn-primary px-4 py-2 text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
+            <button onclick="proceedFromPhase4ToPhase5(window.selectedEvalEmpId)" class="btn-primary px-4 py-2 text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
                 <span>Proceed to Phase 5: Calibration</span>
                 <i class="fas fa-arrow-right text-[10px]"></i>
             </button>
@@ -3921,16 +3947,10 @@
 
         <!-- Footer -->
         <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
-            <div class="flex items-center space-x-2">
-                <button type="button" onclick="closeModal('modal-view-calibration')" class="btn-secondary px-5 py-2 text-xs font-bold">
-                    Close
-                </button>
-                <button onclick="viewEmployeeCompetencyRadar(window.selectedEvalEmpId || 'emp-101')" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 rounded-xl text-xs font-bold shadow-2xs transition flex items-center space-x-1.5" title="Inspect Associate Competency Radar &amp; Gap Diagnostic">
-                    <i class="fas fa-chart-radar text-indigo-600"></i>
-                    <span>Competency Radar &amp; Gaps</span>
-                </button>
-            </div>
-            <button id="calib-detail-btn-open-modal" onclick="open1on1CalibrationModal(window.selectedEvalEmpId || 'emp-101')" class="btn-primary px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-xs flex items-center space-x-1.5">
+            <button type="button" onclick="closeModal('modal-view-calibration')" class="btn-secondary px-5 py-2 text-xs font-bold">
+                Close
+            </button>
+            <button id="calib-detail-btn-open-modal" onclick="closeModal('modal-view-calibration'); openCalibrationModal(window.selectedCalibEmpId || window.selectedEvalEmpId || 'emp-101');" class="btn-primary px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 border-indigo-600 shadow-xs flex items-center space-x-1.5">
                 <i class="fas fa-sliders mr-1"></i>
                 <span>Open Calibration Editor</span>
             </button>
@@ -4089,6 +4109,32 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- FULLSCREEN BLOCKING LOGOUT LOADING OVERLAY                -->
+        <!-- ======================================================== -->
+        <div id="logout-loading-overlay" class="fixed inset-0 z-[99999] hidden items-center justify-center bg-slate-950/80 backdrop-blur-md transition-opacity duration-300 pointer-events-auto select-none" style="cursor: wait;">
+            <div class="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl border border-slate-100 text-center space-y-5 animate-scaleUp">
+                <div class="relative w-20 h-20 mx-auto flex items-center justify-center">
+                    <!-- Ambient Glow -->
+                    <div class="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-50"></div>
+                    <!-- Outer Spinning Ring -->
+                    <div class="w-16 h-16 rounded-full border-4 border-slate-100 border-t-primary animate-spin"></div>
+                    <!-- Inner Icon -->
+                    <div class="absolute inset-0 flex items-center justify-center text-primary">
+                        <i class="fas fa-right-from-bracket text-xl"></i>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-heading text-lg font-bold text-slate-900 tracking-tight">Signing Out</h3>
+                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">Securing your session & returning to login portal...</p>
+                </div>
+                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-primary via-gold to-primary rounded-full animate-pulse w-full"></div>
+                </div>
+                <p class="text-[11px] font-mono text-slate-400">Please wait a moment...</p>
             </div>
         </div>
 

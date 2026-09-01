@@ -77,6 +77,12 @@ try {
             $response = $controller->markGoalCompleted($payload);
             break;
 
+        // 4f. Revert Goal Kudos / XP
+        case 'revert_goal_kudos':
+        case 'revert_goal_xp':
+            $response = $controller->revertGoalKudos($payload);
+            break;
+
         // 5. Planning Tab Data & Aggregates
         case 'get_planning_data':
             $response = $controller->getPlanningData($payload);

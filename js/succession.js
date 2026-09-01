@@ -577,7 +577,7 @@ async function setHRReadinessFlag(candidateId, newFlag) {
         });
         const result = await res.json();
         if (result.success) {
-            showToast(`HR Readiness Flag updated to "${newFlag}" & synced to Supabase!`, 'success');
+            showToast(`HR Readiness Flag updated to "${newFlag}"!`, 'success');
         } else {
             showToast(result.message || 'Updated locally', 'info');
         }
@@ -715,7 +715,7 @@ async function submitNewSuccessionPosition(event) {
         const result = await res.json();
         
         if (result.success) {
-            showToast(`New Succession Position "${title}" created & synced to Supabase!`, 'success');
+            showToast(`New Succession Position "${title}" created successfully!`, 'success');
             await initSuccessionPlanning();
         } else {
             showToast(result.message || 'Position added locally', 'info');

@@ -307,37 +307,21 @@
     </div>
 
     <!-- ======================================================== -->
-    <!-- TAB 3: IDP, CERTIFICATIONS & PERFORMANCE APPRAISAL       -->
+    <!-- TAB 3: PERFORMANCE GOALS & CERTIFICATIONS                 -->
     <!-- ======================================================== -->
     <div id="sub-comp-development" class="sub-panel sub-panel-comp space-y-6">
         
-        <!-- 3.1 70-20-10 Individual Development Plan -->
+        <!-- Active Performance Goals (From performance_goals) -->
         <div class="card-clean p-6 space-y-5">
-            <div id="comp-idp-container">
-                <!-- Populated dynamically by renderIDPView() -->
+            <div id="comp-goals-container">
+                <!-- Populated dynamically by renderGoalsView() with loading state -->
             </div>
         </div>
 
-        <!-- 3.2 Certifications & Licensure Registry -->
+        <!-- Certifications & Licensure Registry (From public.certificates) -->
         <div class="card-clean p-6 space-y-5">
             <div id="comp-certs-container">
-                <!-- Populated dynamically by renderCertificationsRoster() -->
-            </div>
-        </div>
-
-        <!-- 3.3 Performance & Appraisal Matrix Integration -->
-        <div id="comp-perf-integration-container">
-            <!-- Populated dynamically by renderPerformanceIntegrationSummary() -->
-        </div>
-
-        <!-- 3.4 Property Competency Analytics & Reports -->
-        <div class="card-clean p-6 space-y-6">
-            <div>
-                <h3 class="font-heading font-bold text-base text-slate-900">Oxford Suites Competency Intelligence &amp; Analytics</h3>
-                <p class="text-xs text-slate-500">Property-wide skills health index, audit compliance metrics, and training ROI insights.</p>
-            </div>
-            <div id="comp-analytics-container">
-                <!-- Populated dynamically by renderCompetencyAnalyticsDashboard() -->
+                <!-- Populated dynamically by renderCertificationsRoster() with loading state -->
             </div>
         </div>
 

@@ -47,93 +47,77 @@
                                                 <i class="fas fa-plus text-xs"></i>
                                                 <span>Set New Goal</span>
                                             </button>
-                                            <button onclick="openModal('modal-self-assessment')"
-                                                class="btn-secondary px-4 py-2.5 text-xs font-semibold">
-                                                <span>Quarterly Review</span>
-                                            </button>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- 4 Clean KPI Metric Cards -->
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <!-- 3 Database-Driven KPI Metric Cards with Loading State Overlays -->
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                                    <!-- KPI 1 -->
-                                    <div class="card-clean p-5 space-y-3">
-                                        <div
-                                            class="flex justify-between items-center text-xs text-slate-500 font-medium">
-                                            <span>Hospitality Index</span>
-                                            <span class="badge-sage">+4.2%</span>
+                                    <!-- Card 1: Q3 Goals Progress -->
+                                    <div class="card-clean p-5 space-y-3 relative overflow-hidden">
+                                        <!-- Loading Overlay -->
+                                        <div id="kpi-goals-loading" class="hidden absolute inset-0 bg-white/85 backdrop-blur-2xs flex flex-col items-center justify-center z-10">
+                                            <div class="w-6 h-6 rounded-full border-2 border-sage-dark/20 border-t-sage-dark animate-spin mb-1"></div>
+                                            <span class="text-[10px] font-semibold text-slate-500">Querying Goals...</span>
+                                        </div>
+
+                                        <div class="flex justify-between items-center text-xs text-slate-500 font-medium">
+                                            <span class="font-semibold text-slate-700">Q3 Goals Progress</span>
+                                            <span id="kpi-goals-ratio" class="badge-sage">0 of 0 Passed (0/2 Set)</span>
                                         </div>
                                         <div class="flex items-baseline space-x-2">
-                                            <span class="text-3xl font-heading font-bold text-slate-900">89.4%</span>
-                                            <span class="text-xs text-slate-400">Target: 85%</span>
+                                            <span id="kpi-goals-pct" class="text-3xl font-heading font-bold text-slate-900">0%</span>
+                                            <span id="kpi-goals-status" class="text-xs text-slate-400 font-semibold">No Goals Set</span>
                                         </div>
                                         <div class="w-full bg-[#FAF8F7] h-1.5 rounded-full overflow-hidden border border-[#E8DEDC]/50">
-                                            <div class="bg-primary h-1.5 rounded-full" style="width: 89.4%">
-                                            </div>
+                                            <div id="kpi-goals-bar" class="bg-sage h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
                                         </div>
-                                        <p class="text-[11px] text-slate-400">Continuous evaluation active</p>
+                                        <p id="kpi-goals-subtitle" class="text-[11px] text-slate-400">0 goals in progress</p>
                                     </div>
 
-                                    <!-- KPI 2 -->
-                                    <div class="card-clean p-5 space-y-3">
-                                        <div
-                                            class="flex justify-between items-center text-xs text-slate-500 font-medium">
-                                            <span>Q3 Goals Progress</span>
-                                            <span id="kpi-goals-ratio"
-                                                class="badge-sage">6 of 8 Done</span>
+                                    <!-- Card 2: Competency Matrix -->
+                                    <div class="card-clean p-5 space-y-3 relative overflow-hidden">
+                                        <!-- Loading Overlay -->
+                                        <div id="kpi-comp-loading" class="hidden absolute inset-0 bg-white/85 backdrop-blur-2xs flex flex-col items-center justify-center z-10">
+                                            <div class="w-6 h-6 rounded-full border-2 border-dusty-dark/20 border-t-dusty-dark animate-spin mb-1"></div>
+                                            <span class="text-[10px] font-semibold text-slate-500">Querying Competencies...</span>
+                                        </div>
+
+                                        <div class="flex justify-between items-center text-xs text-slate-500 font-medium">
+                                            <span class="font-semibold text-slate-700">Competency Matrix</span>
+                                            <span id="kpi-comp-level" class="badge-dusty">Level 1</span>
                                         </div>
                                         <div class="flex items-baseline space-x-2">
-                                            <span class="text-3xl font-heading font-bold text-slate-900">75%</span>
-                                            <span class="text-xs text-sage-dark font-semibold"><i
-                                                    class="fas fa-check"></i> On Track</span>
+                                            <span id="kpi-comp-val" class="text-3xl font-heading font-bold text-slate-900">0.0<span class="text-base text-slate-400 font-normal">/5</span></span>
+                                            <span id="kpi-comp-tier" class="text-xs text-dusty-dark font-semibold">Core Tier</span>
                                         </div>
                                         <div class="w-full bg-[#FAF8F7] h-1.5 rounded-full overflow-hidden border border-[#E8DEDC]/50">
-                                            <div class="bg-sage h-1.5 rounded-full" style="width: 75%">
-                                            </div>
+                                            <div id="kpi-comp-bar" class="bg-dusty h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
                                         </div>
-                                        <p class="text-[11px] text-slate-400">2 goals in progress</p>
+                                        <p id="kpi-comp-subtitle" class="text-[11px] text-slate-400">Position benchmark alignment</p>
                                     </div>
 
-                                    <!-- KPI 3 -->
-                                    <div class="card-clean p-5 space-y-3">
-                                        <div
-                                            class="flex justify-between items-center text-xs text-slate-500 font-medium">
-                                            <span>Competency Matrix</span>
-                                            <span class="badge-dusty">Level 4</span>
+                                    <!-- Card 3: Gamified XP -->
+                                    <div class="card-clean p-5 space-y-3 relative overflow-hidden">
+                                        <!-- Loading Overlay -->
+                                        <div id="kpi-xp-loading" class="hidden absolute inset-0 bg-white/85 backdrop-blur-2xs flex flex-col items-center justify-center z-10">
+                                            <div class="w-6 h-6 rounded-full border-2 border-gold/20 border-t-gold animate-spin mb-1"></div>
+                                            <span class="text-[10px] font-semibold text-slate-500">Querying XP Ledger...</span>
                                         </div>
-                                        <div class="flex items-baseline space-x-2">
-                                            <span class="text-3xl font-heading font-bold text-slate-900">4.3<span
-                                                    class="text-base text-slate-400 font-normal">/5</span></span>
-                                            <span class="text-xs text-dusty-dark font-semibold">Senior Tier</span>
-                                        </div>
-                                        <div class="w-full bg-[#FAF8F7] h-1.5 rounded-full overflow-hidden border border-[#E8DEDC]/50">
-                                            <div class="bg-dusty h-1.5 rounded-full" style="width: 86%">
-                                            </div>
-                                        </div>
-                                        <p class="text-[11px] text-slate-400">Lead Host promotion track</p>
-                                    </div>
 
-                                    <!-- KPI 4 -->
-                                    <div class="card-clean p-5 space-y-3">
-                                        <div
-                                            class="flex justify-between items-center text-xs text-slate-500 font-medium">
-                                            <span>Gamified XP</span>
-                                            <span id="kpi-xp-level-badge" class="badge-gold">Level 2</span>
+                                        <div class="flex justify-between items-center text-xs text-slate-500 font-medium">
+                                            <span class="font-semibold text-slate-700">Gamified XP</span>
+                                            <span id="kpi-xp-level-badge" class="badge-gold">Level 1</span>
                                         </div>
                                         <div class="flex items-baseline space-x-2">
-                                            <span id="kpi-xp-val"
-                                                class="text-3xl font-heading font-bold text-gold-dark">300
-                                                <span class="text-xs font-normal text-slate-400">XP</span></span>
-                                            <span id="kpi-xp-title" class="text-xs text-slate-500 font-semibold">Bronze Host</span>
+                                            <span id="kpi-xp-val" class="text-3xl font-heading font-bold text-gold-dark">0 <span class="text-xs font-normal text-slate-400">XP</span></span>
+                                            <span id="kpi-xp-title" class="text-xs text-slate-500 font-semibold">Novice Associate</span>
                                         </div>
                                         <div class="w-full bg-[#FAF8F7] h-1.5 rounded-full overflow-hidden border border-[#E8DEDC]/50">
-                                            <div id="kpi-xp-bar" class="bg-gold h-1.5 rounded-full"
-                                                style="width: 20%">
-                                            </div>
+                                            <div id="kpi-xp-bar" class="bg-gold h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
                                         </div>
-                                        <p id="kpi-xp-subtitle" class="text-[11px] text-slate-400">200 XP to Silver Tier</p>
+                                        <p id="kpi-xp-subtitle" class="text-[11px] text-slate-400">250 XP to Bronze Tier</p>
                                     </div>
 
                                 </div>
@@ -182,96 +166,99 @@
                                     </div>
                                 </div>
 
-
-                                <!-- 2-Column: Key Trends + Shift Climate (Balanced Side-by-Side) -->
+                                <!-- 2-Column: XP Received & Gamification Trajectory + My Shift Sentiment & Well-being (Personal Pulse) -->
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                                    <!-- Quality & KPI Trend Line Chart -->
+                                    <!-- XP Received & Gamification Trajectory -->
                                     <div class="card-clean p-6 space-y-3">
                                         <div class="flex items-center justify-between">
                                             <div>
                                                 <h3 class="font-heading font-bold text-base text-slate-900">
-                                                    Hospitality KPI &amp; Performance Trend</h3>
-                                                <p class="text-xs text-slate-500">6-Month Continuous Score vs. Hotel 85% Standard</p>
+                                                    XP Received &amp; Rewards Trajectory</h3>
+                                                <p class="text-xs text-slate-500">Monthly Points &amp; Rewards History Sourced from <code class="text-[10px] bg-slate-100 px-1 py-0.5 rounded text-slate-700">xp_ledger</code></p>
                                             </div>
-                                            <span class="badge-primary">2026 Q3</span>
+                                            <span id="xp-trajectory-badge" class="badge-gold">Live xp_ledger</span>
                                         </div>
-                                        <div class="h-60 w-full">
+                                        <div class="h-60 w-full relative">
                                             <canvas id="chart-performance-trend"></canvas>
+                                            
+                                            <!-- Loading State Indicator -->
+                                            <div id="xp-trajectory-loading" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-white/85 backdrop-blur-2xs rounded-xl p-4 text-center z-10">
+                                                <div class="w-8 h-8 rounded-full border-3 border-gold/25 border-t-gold animate-spin mb-2"></div>
+                                                <p class="font-bold text-xs text-slate-800">Querying Database...</p>
+                                                <p class="text-[10px] text-slate-400">Loading live points from <code>xp_ledger</code></p>
+                                            </div>
+
+                                            <!-- Empty State Indicator -->
+                                            <div id="xp-trajectory-empty" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-white/95 rounded-xl p-4 text-center border border-dashed border-slate-200">
+                                                <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-lg mb-2">
+                                                    <i class="fas fa-receipt"></i>
+                                                </div>
+                                                <p class="font-bold text-xs text-slate-800">No XP Records in Database</p>
+                                                <p class="text-[11px] text-slate-500 max-w-xs mt-0.5">This associate has no recorded transactions in <code class="text-[10px] bg-slate-100 px-1 py-0.5 rounded text-slate-700">xp_ledger</code> yet.</p>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <!-- Realtime Shift Climate Doughnut -->
-                                    <div class="card-clean p-6 space-y-3">
+                                    <!-- My Shift Sentiment & Personal Well-being (Individual Pulse) -->
+                                    <div class="card-clean p-6 space-y-4 flex flex-col justify-between">
                                         <div class="flex items-center justify-between">
                                             <div>
                                                 <h3 class="font-heading font-bold text-base text-slate-900">
-                                                    Shift Climate Pulse</h3>
-                                                <p class="text-xs text-slate-500">Aggregated Employee Sentiment</p>
+                                                    My Shift Climate &amp; Well-being</h3>
+                                                <p class="text-xs text-slate-500">Your personal shift sentiment and mood log</p>
                                             </div>
                                             <button onclick="openModal('modal-sentiment-pulse')"
-                                                class="text-xs font-bold text-primary hover:underline">+ Vote</button>
+                                                class="text-xs font-bold text-primary hover:underline flex items-center space-x-1">
+                                                <i class="fas fa-pen text-[10px]"></i>
+                                                <span>Log Check-In</span>
+                                            </button>
                                         </div>
-                                        <div class="h-48 w-full flex items-center justify-center">
-                                            <canvas id="chart-sentiment-doughnut"></canvas>
+
+                                        <!-- Active Personal Status Banner -->
+                                        <div id="my-shift-sentiment-banner" class="p-4 rounded-2xl bg-sage-50/70 border border-sage-200/80 flex items-center justify-between gap-3">
+                                            <div class="flex items-center space-x-3">
+                                                <div id="my-shift-sentiment-emoji" class="w-12 h-12 rounded-2xl bg-sage-dark text-white flex items-center justify-center text-2xl shadow-xs">
+                                                    😊
+                                                </div>
+                                                <div>
+                                                    <span class="text-[10px] font-bold uppercase tracking-wider text-sage-dark">Today's Check-in</span>
+                                                    <h4 id="my-shift-sentiment-title" class="font-heading font-bold text-slate-900 text-sm">Smooth &amp; Energized</h4>
+                                                    <p id="my-shift-sentiment-desc" class="text-[11px] text-slate-500">Front Desk shift operating on schedule with zero blockers.</p>
+                                                </div>
+                                            </div>
+                                            <span id="my-shift-sentiment-badge" class="badge-sage flex-shrink-0">Active</span>
                                         </div>
-                                        <div
-                                            class="flex justify-around text-center text-xs pt-3 border-t border-[#E8DEDC]">
-                                            <div>
-                                                <p class="font-bold text-sage-dark">68.5%</p>
-                                                <p class="text-[10px] text-slate-500">Smooth</p>
+
+                                        <!-- Quick Sentiment Logger Buttons -->
+                                        <div class="space-y-1.5">
+                                            <span class="text-[11px] font-bold text-slate-600 block">Quick Shift Mood Update:</span>
+                                            <div class="grid grid-cols-3 gap-2">
+                                                <button type="button" onclick="logQuickSentiment('smooth')" class="p-2.5 rounded-xl border border-sage-200 bg-white hover:bg-sage-50 text-slate-800 flex flex-col items-center justify-center space-y-1 transition group">
+                                                    <span class="text-lg group-hover:scale-110 transition-transform">😊</span>
+                                                    <span class="text-[11px] font-bold text-sage-dark">Smooth</span>
+                                                    <span class="text-[9px] text-slate-400">Clear focus</span>
+                                                </button>
+                                                <button type="button" onclick="logQuickSentiment('manageable')" class="p-2.5 rounded-xl border border-dusty-200 bg-white hover:bg-dusty-50 text-slate-800 flex flex-col items-center justify-center space-y-1 transition group">
+                                                    <span class="text-lg group-hover:scale-110 transition-transform">😐</span>
+                                                    <span class="text-[11px] font-bold text-dusty-dark">Manageable</span>
+                                                    <span class="text-[9px] text-slate-400">Steady load</span>
+                                                </button>
+                                                <button type="button" onclick="logQuickSentiment('friction')" class="p-2.5 rounded-xl border border-terracotta-200 bg-white hover:bg-terracotta-50 text-slate-800 flex flex-col items-center justify-center space-y-1 transition group">
+                                                    <span class="text-lg group-hover:scale-110 transition-transform">😟</span>
+                                                    <span class="text-[11px] font-bold text-terracotta-dark">Friction</span>
+                                                    <span class="text-[9px] text-slate-400">Need support</span>
+                                                </button>
                                             </div>
-                                            <div>
-                                                <p class="font-bold text-dusty-dark">23.0%</p>
-                                                <p class="text-[10px] text-slate-500">Manageable</p>
-                                            </div>
-                                            <div>
-                                                <p class="font-bold text-terracotta-dark">8.5%</p>
-                                                <p class="text-[10px] text-slate-500">Friction</p>
-                                            </div>
+                                        </div>
+
+                                        <!-- 7-Day Personal Consistency Track -->
+                                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                                            <span>Weekly Streak: <strong class="text-slate-900">7 Shifts Logged</strong></span>
+                                            <span class="text-sage-dark font-semibold"><i class="fas fa-shield-heart mr-1"></i>94% Positive Climate</span>
                                         </div>
                                     </div>
 
-                                </div>
-
-                                <!-- 6 Fast Module Cards -->
-                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                                    <div onclick="switchPillar('pillar-perf')"
-                                        class="card-clean p-4 cursor-pointer hover:border-primary transition group">
-                                        <i class="fas fa-bullseye text-primary text-xl mb-2 group-hover:scale-105 transition-transform"></i>
-                                        <p class="font-bold text-xs text-slate-900">1. Performance</p>
-                                        <p class="text-[10px] text-slate-500">7-Step Cycle</p>
-                                    </div>
-                                    <div onclick="switchPillar('pillar-comp')"
-                                        class="card-clean p-4 cursor-pointer hover:border-primary transition group">
-                                        <i class="fas fa-cubes text-dusty-dark text-xl mb-2 group-hover:scale-105 transition-transform"></i>
-                                        <p class="font-bold text-xs text-slate-900">2. Competency</p>
-                                        <p class="text-[10px] text-slate-500">Radar &amp; Gaps</p>
-                                    </div>
-                                    <div onclick="switchPillar('pillar-lms')"
-                                        class="card-clean p-4 cursor-pointer hover:border-primary transition group">
-                                        <i class="fas fa-graduation-cap text-sage-dark text-xl mb-2 group-hover:scale-105 transition-transform"></i>
-                                        <p class="font-bold text-xs text-slate-900">3. Learning LMS</p>
-                                        <p class="text-[10px] text-slate-500">TNA &amp; Quizzes</p>
-                                    </div>
-                                    <div onclick="switchPillar('pillar-training')"
-                                        class="card-clean p-4 cursor-pointer hover:border-primary transition group">
-                                        <i class="fas fa-chalkboard-user text-terracotta text-xl mb-2 group-hover:scale-105 transition-transform"></i>
-                                        <p class="font-bold text-xs text-slate-900">4. Training Ops</p>
-                                        <p class="text-[10px] text-slate-500">12 Functions</p>
-                                    </div>
-                                    <div onclick="switchPillar('pillar-succession')"
-                                        class="card-clean p-4 cursor-pointer hover:border-primary transition group">
-                                        <i class="fas fa-sitemap text-dusty-dark text-xl mb-2 group-hover:scale-105 transition-transform"></i>
-                                        <p class="font-bold text-xs text-slate-900">5. Succession</p>
-                                        <p class="text-[10px] text-slate-500">9-Box Bench</p>
-                                    </div>
-                                    <div onclick="switchPillar('pillar-social')"
-                                        class="card-clean p-4 cursor-pointer hover:border-primary transition group">
-                                        <i class="fas fa-trophy text-gold text-xl mb-2 group-hover:scale-105 transition-transform"></i>
-                                        <p class="font-bold text-xs text-slate-900">6. Kudos &amp; XP</p>
-                                        <p class="text-[10px] text-slate-500">Social Climate</p>
-                                    </div>
                                 </div>
 
                             </div>
@@ -400,7 +387,157 @@
 
                                 </div>
 
-                                <!-- 2-Column: Top 5 Gamified XP Leaderboard + Department Multi-Metric Matrix -->
+                                <!-- 6 Fast Core Module Navigation Cards (Property-Wide Architecture) -->
+                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                                    <div onclick="switchPillar('pillar-perf')"
+                                        class="card-clean p-4 cursor-pointer hover:border-primary transition group">
+                                        <i class="fas fa-bullseye text-primary text-xl mb-2 group-hover:scale-105 transition-transform"></i>
+                                        <p class="font-bold text-xs text-slate-900">1. Performance</p>
+                                        <p class="text-[10px] text-slate-500">7-Step Cycle</p>
+                                    </div>
+                                    <div onclick="switchPillar('pillar-comp')"
+                                        class="card-clean p-4 cursor-pointer hover:border-primary transition group">
+                                        <i class="fas fa-cubes text-dusty-dark text-xl mb-2 group-hover:scale-105 transition-transform"></i>
+                                        <p class="font-bold text-xs text-slate-900">2. Competency</p>
+                                        <p class="text-[10px] text-slate-500">Radar &amp; Gaps</p>
+                                    </div>
+                                    <div onclick="switchPillar('pillar-lms')"
+                                        class="card-clean p-4 cursor-pointer hover:border-primary transition group">
+                                        <i class="fas fa-graduation-cap text-sage-dark text-xl mb-2 group-hover:scale-105 transition-transform"></i>
+                                        <p class="font-bold text-xs text-slate-900">3. Learning LMS</p>
+                                        <p class="text-[10px] text-slate-500">TNA &amp; Quizzes</p>
+                                    </div>
+                                    <div onclick="switchPillar('pillar-training')"
+                                        class="card-clean p-4 cursor-pointer hover:border-primary transition group">
+                                        <i class="fas fa-chalkboard-user text-terracotta text-xl mb-2 group-hover:scale-105 transition-transform"></i>
+                                        <p class="font-bold text-xs text-slate-900">4. Training Ops</p>
+                                        <p class="text-[10px] text-slate-500">12 Functions</p>
+                                    </div>
+                                    <div onclick="switchPillar('pillar-succession')"
+                                        class="card-clean p-4 cursor-pointer hover:border-primary transition group">
+                                        <i class="fas fa-sitemap text-dusty-dark text-xl mb-2 group-hover:scale-105 transition-transform"></i>
+                                        <p class="font-bold text-xs text-slate-900">5. Succession</p>
+                                        <p class="text-[10px] text-slate-500">9-Box Bench</p>
+                                    </div>
+                                    <div onclick="switchPillar('pillar-social')"
+                                        class="card-clean p-4 cursor-pointer hover:border-primary transition group">
+                                        <i class="fas fa-trophy text-gold text-xl mb-2 group-hover:scale-105 transition-transform"></i>
+                                        <p class="font-bold text-xs text-slate-900">6. Kudos &amp; XP</p>
+                                        <p class="text-[10px] text-slate-500">Social Climate</p>
+                                    </div>
+                                </div>
+
+                                <!-- 2-Column: Property-Wide Shift Climate Pulse + Department Execution Matrix -->
+                                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+                                    <!-- Column 1: Property Shift Climate Pulse (Doughnut Chart) (5 cols) -->
+                                    <div class="lg:col-span-5 card-clean p-6 space-y-4">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h3 class="font-heading font-bold text-base text-slate-900">
+                                                    Shift Climate Pulse</h3>
+                                                <p class="text-xs text-slate-500">Aggregated Employee Sentiment (All 100 Staff)</p>
+                                            </div>
+                                            <button onclick="openModal('modal-sentiment-pulse')"
+                                                class="text-xs font-bold text-primary hover:underline">+ Property Audit</button>
+                                        </div>
+                                        <div class="h-48 w-full flex items-center justify-center">
+                                            <canvas id="chart-sentiment-doughnut"></canvas>
+                                        </div>
+                                        <div
+                                            class="flex justify-around text-center text-xs pt-3 border-t border-[#E8DEDC]">
+                                            <div>
+                                                <p class="font-bold text-sage-dark">68.5%</p>
+                                                <p class="text-[10px] text-slate-500">Smooth</p>
+                                            </div>
+                                            <div>
+                                                <p class="font-bold text-dusty-dark">23.0%</p>
+                                                <p class="text-[10px] text-slate-500">Manageable</p>
+                                            </div>
+                                            <div>
+                                                <p class="font-bold text-terracotta-dark">8.5%</p>
+                                                <p class="text-[10px] text-slate-500">Friction</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Column 2: Department Completion & Progress Comparison (7 cols) -->
+                                    <div class="lg:col-span-7 card-clean p-6 space-y-4">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h3 class="font-heading font-bold text-base text-slate-900">Department Execution Matrix</h3>
+                                                <p class="text-xs text-slate-500">Goal Approval %, LMS Completion %, and Succession Depth by Department</p>
+                                            </div>
+                                            <span class="badge-primary">Q3 Cycle</span>
+                                        </div>
+
+                                        <!-- Department Comparison Horizontal Bar Chart -->
+                                        <div class="h-44 w-full">
+                                            <canvas id="chart-system-dept-progress"></canvas>
+                                        </div>
+
+                                        <!-- Department Breakdown Mini Table -->
+                                        <div class="overflow-x-auto custom-scrollbar pt-2 border-t border-[#E8DEDC]">
+                                            <table class="w-full text-left text-xs">
+                                                <thead>
+                                                    <tr class="text-slate-400 font-semibold border-b border-[#E8DEDC]">
+                                                        <th class="pb-2 font-medium">Department</th>
+                                                        <th class="pb-2 font-medium text-center">Staff</th>
+                                                        <th class="pb-2 font-medium text-center">Goals Approved</th>
+                                                        <th class="pb-2 font-medium text-center">LMS Rate</th>
+                                                        <th class="pb-2 font-medium text-center">Succession</th>
+                                                        <th class="pb-2 font-medium text-right">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-[#E8DEDC]">
+                                                    <tr>
+                                                        <td class="py-2.5 font-bold text-slate-800">Front Office</td>
+                                                        <td class="py-2.5 text-center text-slate-500">12</td>
+                                                        <td class="py-2.5 text-center font-bold text-sage-dark">96.2%</td>
+                                                        <td class="py-2.5 text-center font-bold text-primary">98.0%</td>
+                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">85.0%</td>
+                                                        <td class="py-2.5 text-right"><span class="badge-sage">Optimal</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="py-2.5 font-bold text-slate-800">Food &amp; Beverage</td>
+                                                        <td class="py-2.5 text-center text-slate-500">24</td>
+                                                        <td class="py-2.5 text-center font-bold text-sage-dark">95.0%</td>
+                                                        <td class="py-2.5 text-center font-bold text-primary">96.5%</td>
+                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">80.0%</td>
+                                                        <td class="py-2.5 text-right"><span class="badge-sage">Optimal</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="py-2.5 font-bold text-slate-800">Kitchen &amp; Culinary</td>
+                                                        <td class="py-2.5 text-center text-slate-500">18</td>
+                                                        <td class="py-2.5 text-center font-bold text-sage-dark">94.0%</td>
+                                                        <td class="py-2.5 text-center font-bold text-primary">92.0%</td>
+                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">78.0%</td>
+                                                        <td class="py-2.5 text-right"><span class="badge-dusty">Good</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="py-2.5 font-bold text-slate-800">Banquet &amp; Events</td>
+                                                        <td class="py-2.5 text-center text-slate-500">18</td>
+                                                        <td class="py-2.5 text-center font-bold text-sage-dark">93.0%</td>
+                                                        <td class="py-2.5 text-center font-bold text-primary">94.0%</td>
+                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">76.0%</td>
+                                                        <td class="py-2.5 text-right"><span class="badge-dusty">Good</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="py-2.5 font-bold text-slate-800">Housekeeping</td>
+                                                        <td class="py-2.5 text-center text-slate-500">28</td>
+                                                        <td class="py-2.5 text-center font-bold text-sage-dark">90.5%</td>
+                                                        <td class="py-2.5 text-center font-bold text-primary">91.0%</td>
+                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">72.5%</td>
+                                                        <td class="py-2.5 text-right"><span class="badge-dusty">Good</span></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <!-- 2-Column: Top 5 Gamified XP Champions Podium & Governance Highlights -->
                                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
                                     <!-- Column 1: Top 5 Highest Gamified XP Staff Leaderboard (5 cols) -->
@@ -467,7 +604,7 @@
                                                             class="pt-2 text-center w-full bg-slate-100/90 sm:bg-transparent rounded-b-lg sm:rounded-none">
                                                             <span
                                                                 class="text-[9px] sm:text-[10px] font-extrabold tracking-wider text-gold-dark uppercase">FIRST</span>
-                                                            <p
+                                                             <p
                                                                 class="text-[8px] text-slate-400 font-medium hidden sm:block">
                                                                 HR Dir</p>
                                                         </div>
@@ -681,77 +818,63 @@
                                         </button>
                                     </div>
 
-                                    <!-- Column 2: Department Completion & Progress Comparison (7 cols) -->
-                                    <div class="lg:col-span-7 card-clean p-6 space-y-4">
+                                    <!-- Column 2: 3 Governance & Operational Velocity Highlights (7 cols) -->
+                                    <div class="lg:col-span-7 space-y-4">
                                         <div class="flex items-center justify-between">
                                             <div>
-                                                <h3 class="font-heading font-bold text-base text-slate-900">Department Execution Matrix</h3>
-                                                <p class="text-xs text-slate-500">Goal Approval %, LMS Completion %, and Succession Depth by Department</p>
+                                                <h3 class="font-heading font-bold text-base text-slate-900">Governance &amp; Operational Velocity</h3>
+                                                <p class="text-xs text-slate-500">Quality calibration compliance, SLA speed, and AI adoption</p>
                                             </div>
-                                            <span class="badge-primary">Q3 Cycle</span>
+                                            <span class="badge-sage">Live Telemetry</span>
                                         </div>
 
-                                        <!-- Department Comparison Horizontal Bar Chart -->
-                                        <div class="h-44 w-full">
-                                            <canvas id="chart-system-dept-progress"></canvas>
+                                        <!-- Highlight 1: Normalization & Bell Curve Status -->
+                                        <div class="card-clean p-5 space-y-2">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                                                    <i class="fas fa-scale-balanced text-dusty-dark"></i>
+                                                    <span>Calibration Normalization</span>
+                                                </span>
+                                                <span class="badge-dusty">100% Calibrated</span>
+                                            </div>
+                                            <p class="text-xs text-slate-500 leading-relaxed">Target normal curve (15% Top / 70% Core / 15% Growth) successfully enforced across 100 evaluations.</p>
+                                            <div class="flex items-center space-x-1.5 text-[11px] pt-1">
+                                                <span class="px-2 py-0.5 bg-sage-50 text-sage-dark rounded-md font-bold border border-sage-100">15 Exceeds</span>
+                                                <span class="px-2 py-0.5 bg-dusty-50 text-dusty-dark rounded-md font-bold border border-dusty-100">70 Core</span>
+                                                <span class="px-2 py-0.5 bg-terracotta-50 text-terracotta-dark rounded-md font-bold border border-terracotta-100">15 Growth</span>
+                                            </div>
                                         </div>
 
-                                        <!-- Department Breakdown Mini Table -->
-                                        <div class="overflow-x-auto custom-scrollbar pt-2 border-t border-[#E8DEDC]">
-                                            <table class="w-full text-left text-xs">
-                                                <thead>
-                                                    <tr class="text-slate-400 font-semibold border-b border-[#E8DEDC]">
-                                                        <th class="pb-2 font-medium">Department</th>
-                                                        <th class="pb-2 font-medium text-center">Staff</th>
-                                                        <th class="pb-2 font-medium text-center">Goals Approved</th>
-                                                        <th class="pb-2 font-medium text-center">LMS Rate</th>
-                                                        <th class="pb-2 font-medium text-center">Succession</th>
-                                                        <th class="pb-2 font-medium text-right">Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody class="divide-y divide-[#E8DEDC]">
-                                                    <tr>
-                                                        <td class="py-2.5 font-bold text-slate-800">Front Office</td>
-                                                        <td class="py-2.5 text-center text-slate-500">12</td>
-                                                        <td class="py-2.5 text-center font-bold text-sage-dark">96.2%</td>
-                                                        <td class="py-2.5 text-center font-bold text-primary">98.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">85.0%</td>
-                                                        <td class="py-2.5 text-right"><span class="badge-sage">Optimal</span></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="py-2.5 font-bold text-slate-800">Food &amp; Beverage</td>
-                                                        <td class="py-2.5 text-center text-slate-500">24</td>
-                                                        <td class="py-2.5 text-center font-bold text-sage-dark">95.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-primary">96.5%</td>
-                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">80.0%</td>
-                                                        <td class="py-2.5 text-right"><span class="badge-sage">Optimal</span></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="py-2.5 font-bold text-slate-800">Kitchen &amp; Culinary</td>
-                                                        <td class="py-2.5 text-center text-slate-500">18</td>
-                                                        <td class="py-2.5 text-center font-bold text-sage-dark">94.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-primary">92.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">78.0%</td>
-                                                        <td class="py-2.5 text-right"><span class="badge-dusty">Good</span></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="py-2.5 font-bold text-slate-800">Banquet &amp; Events</td>
-                                                        <td class="py-2.5 text-center text-slate-500">18</td>
-                                                        <td class="py-2.5 text-center font-bold text-sage-dark">93.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-primary">94.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">76.0%</td>
-                                                        <td class="py-2.5 text-right"><span class="badge-dusty">Good</span></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="py-2.5 font-bold text-slate-800">Housekeeping</td>
-                                                        <td class="py-2.5 text-center text-slate-500">28</td>
-                                                        <td class="py-2.5 text-center font-bold text-sage-dark">90.5%</td>
-                                                        <td class="py-2.5 text-center font-bold text-primary">91.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">72.5%</td>
-                                                        <td class="py-2.5 text-right"><span class="badge-dusty">Good</span></td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
+                                        <!-- Highlight 2: Turnaround Speed -->
+                                        <div class="card-clean p-5 space-y-2">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                                                    <i class="fas fa-stopwatch text-sage-dark"></i>
+                                                    <span>Review Turnaround Speed</span>
+                                                </span>
+                                                <span class="badge-sage">4.2 Days Avg</span>
+                                            </div>
+                                            <p class="text-xs text-slate-500 leading-relaxed">Average duration from associate draft submission to supervisor endorsement and HR approval.</p>
+                                            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                                                <span>SLA Target: &lt; 7.0 Days</span>
+                                                <span class="text-sage-dark font-bold">0 Overdue Reviews</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Highlight 3: AI Copilot Assists -->
+                                        <div class="card-clean p-5 space-y-2">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                                                    <i class="fas fa-robot text-dusty-dark"></i>
+                                                    <span>AI Feedback Adoption</span>
+                                                </span>
+                                                <span class="badge-dusty">312 Assists</span>
+                                            </div>
+                                            <p class="text-xs text-slate-500 leading-relaxed">312 AI-recommended SMART developmental objectives and tailored feedback suggestions accepted this cycle.</p>
+                                            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                                                <span>Goal Clarity: 98.4%</span>
+                                                <span class="text-dusty-dark font-bold">89% Action Rate</span>
+                                            </div>
                                         </div>
                                     </div>
 

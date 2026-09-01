@@ -212,6 +212,17 @@ function switchPillar(pillarKey) {
 
 // Sub-Tab Switcher inside Pillar
 function switchSubTab(pillarPrefix, subKey) {
+    if (pillarPrefix === 'dashboard') {
+        const userObj = window.currentUser || JSON.parse(localStorage.getItem('oxford_session_user') || '{}');
+        const currentRole = String(window.activePersonaRole || userObj.role || (typeof activePersonaKey !== 'undefined' && activePersonaKey === 'supervisor' ? 'Supervisor' : 'Associate')).toLowerCase().trim();
+        const isAssociate = (currentRole === 'associate' || currentRole === 'employee' || currentRole === 'staff' || (typeof activePersonaKey !== 'undefined' && (activePersonaKey === 'associate' || activePersonaKey === 'employee')));
+        if (!isAssociate && subKey === 'pulse') {
+            subKey = 'system';
+        } else if (isAssociate && subKey === 'system') {
+            subKey = 'pulse';
+        }
+    }
+
     // Persist active subtab for this pillar to localStorage
     try {
         localStorage.setItem(`oxford_active_subtab_${pillarPrefix}`, subKey);
@@ -272,8 +283,6 @@ function switchSubTab(pillarPrefix, subKey) {
         } else if (subKey === 'development') {
             if (typeof renderIDPView === 'function') renderIDPView();
             if (typeof renderCertificationsRoster === 'function') renderCertificationsRoster();
-            if (typeof renderPerformanceIntegrationSummary === 'function') renderPerformanceIntegrationSummary();
-            if (typeof renderCompetencyAnalyticsDashboard === 'function') renderCompetencyAnalyticsDashboard();
         }
     } else if (pillarPrefix === 'lms' && subKey === 'tna') {
         if (typeof renderTnaEnrollments === 'function') renderTnaEnrollments();
@@ -504,7 +513,7 @@ personaData['manager'] = personaData.supervisor;
 personaData['hr'] = personaData.hradmin;
 personaData['executive'] = personaData.generalmanager;
 
-function switchRole(userRole) {
+function switchRole(userRole, silent = false) {
     const normalizedKey = String(userRole || '').toLowerCase().trim();
     activePersonaKey = normalizedKey;
     const persona = personaData[normalizedKey] || personaData[userRole] || personaData.associate;
@@ -566,16 +575,29 @@ function switchRole(userRole) {
     if (typeof loadLiveNotifications === 'function') {
         loadLiveNotifications(persona.role, persona.id);
     }
-    if (typeof loadAndRenderPlanningGoals === 'function') {
-        loadAndRenderPlanningGoals();
-    }
-    if (typeof renderEmployeeOverviewCompetencies === 'function') {
-        renderEmployeeOverviewCompetencies(persona.id);
+    
+    const roleName = String(persona.role || '').toLowerCase().trim();
+    const isAssociate = (roleName === 'associate' || roleName === 'employee' || roleName === 'staff');
+    if (isAssociate) {
+        if (typeof loadAndRenderPlanningGoals === 'function') {
+            loadAndRenderPlanningGoals();
+        }
+        if (typeof renderEmployeeOverviewCompetencies === 'function') {
+            renderEmployeeOverviewCompetencies(persona.id);
+        }
+        if (typeof updateXpTrajectoryFromLedger === 'function') {
+            updateXpTrajectoryFromLedger(persona.id);
+        }
     }
     if (typeof renderTnaEnrollments === 'function') {
         renderTnaEnrollments();
     }
-    showToast(`Signed in: ${persona.name} (${persona.tag})`, 'info');
+    if (typeof renderLmsBooks === 'function') {
+        renderLmsBooks();
+    }
+    if (!silent) {
+        showToast(`Signed in: ${persona.name} (${persona.tag})`, 'info');
+    }
 }
 
 
@@ -584,16 +606,34 @@ function applyRoleVisibility(userRole) {
     const roleName = String(userRole || '').toLowerCase().trim();
     const isAssociate = (roleName === 'associate' || roleName === 'employee' || roleName === 'staff');
 
-    // In Overview Hub sub-navigation, hide "2. System & Property Analytics" for Associate
-    const systemSubTabBtn = document.querySelector('button[data-sub="system"]');
-    if (systemSubTabBtn) {
+    // LMS Upload button visibility: hide in Employee view, show for Supervisor/HR/Admin
+    const lmsUploadContainer = document.getElementById('lms-upload-action-container');
+    const lmsUploadBtn = document.getElementById('btn-lms-upload-doc');
+    const targetUpload = lmsUploadContainer || lmsUploadBtn;
+    if (targetUpload) {
         if (isAssociate) {
-            systemSubTabBtn.classList.add('hidden');
-            if (typeof switchSubTab === 'function') {
-                switchSubTab('dashboard', 'pulse');
-            }
+            targetUpload.classList.add('hidden');
         } else {
-            systemSubTabBtn.classList.remove('hidden');
+            targetUpload.classList.remove('hidden');
+        }
+    }
+
+    // In Overview Hub sub-navigation:
+    // For Associate / Employee: Show "1. Shift Focus & My Pulse", Hide "2. System & Property Analytics"
+    // For Supervisor / Manager / HR / GM (not employee): Hide "1. Shift Focus & My Pulse", Show "2. System & Property Analytics"
+    const pulseSubTabBtn = document.querySelector('button[data-sub="pulse"]');
+    const systemSubTabBtn = document.querySelector('button[data-sub="system"]');
+    if (isAssociate) {
+        if (pulseSubTabBtn) pulseSubTabBtn.classList.remove('hidden');
+        if (systemSubTabBtn) systemSubTabBtn.classList.add('hidden');
+        if (typeof switchSubTab === 'function') {
+            switchSubTab('dashboard', 'pulse');
+        }
+    } else {
+        if (pulseSubTabBtn) pulseSubTabBtn.classList.add('hidden');
+        if (systemSubTabBtn) systemSubTabBtn.classList.remove('hidden');
+        if (typeof switchSubTab === 'function') {
+            switchSubTab('dashboard', 'system');
         }
     }
 
@@ -738,22 +778,45 @@ function applyRoleVisibility(userRole) {
 }
 
 async function logOutToAuth() {
+    // 1. Instantly display fullscreen blocking loading overlay
+    const overlay = document.getElementById('logout-loading-overlay');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+    }
+
+    // 2. Prevent user interactions across entire document
+    document.body.style.pointerEvents = 'none';
+    if (overlay) overlay.style.pointerEvents = 'all';
+
+    const blockEvent = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    };
+    window.addEventListener('keydown', blockEvent, true);
+    window.addEventListener('click', blockEvent, true);
+    window.addEventListener('contextmenu', blockEvent, true);
+
+    // 3. Clear session caches and tokens
     localStorage.removeItem('oxford_session_auth');
     localStorage.removeItem('oxford_session_user');
     localStorage.removeItem('oxford_session_role');
+    try {
+        sessionStorage.clear();
+    } catch (e) {}
 
-    showToast('Signed out. Redirecting to login...', 'info');
-
+    // 4. Backend session invalidation
     try {
         await AuthAPI.logout();
     } catch (err) {
         console.warn('Backend logout sync:', err);
     }
 
-    // Redirect to standalone login page
+    // 5. Smooth transition & redirect to login page
     setTimeout(() => {
         window.location.replace('login.php?logout=1');
-    }, 300);
+    }, 700);
 }
 window.logOutToAuth = logOutToAuth;
 
@@ -766,7 +829,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const savedRole = localStorage.getItem('oxford_session_role') || 'associate';
     if (typeof switchRole === 'function') {
-        switchRole(savedRole);
+        switchRole(savedRole, true);
     } else if (typeof applyRoleVisibility === 'function') {
         applyRoleVisibility(savedRole);
     }
@@ -1023,10 +1086,30 @@ function copyAndApplyFeedback() {
     showToast('Coaching feedback posted to employee wall!', 'success');
 }
 
-function submitSelfAssessment() {
-    closeModal('modal-self-assessment');
-    showToast('Self-assessment ratings submitted for calibration!', 'success');
+async function submitSelfAssessment(empId, selfScore, breakdown = []) {
+    try {
+        const id = empId || window.selectedEvalEmpId || 'emp-101';
+        const score = typeof selfScore === 'number' ? selfScore : 4.50;
+        if (window.PerformanceAPI && typeof window.PerformanceAPI.submitSelfAssessment === 'function') {
+            const saved = await window.PerformanceAPI.submitSelfAssessment({
+                employee_id: id,
+                self_evaluation: score,
+                self_breakdown: breakdown
+            });
+            if (typeof updateDbEvaluationRecord === 'function') {
+                updateDbEvaluationRecord(saved);
+            }
+        }
+        closeModal('modal-self-assessment');
+        if (typeof showToast === 'function') {
+            showToast('Self-assessment ratings submitted for calibration!', 'success');
+        }
+    } catch (err) {
+        console.error('Self assessment submission error:', err);
+        closeModal('modal-self-assessment');
+    }
 }
+window.submitSelfAssessment = submitSelfAssessment;
 
 function addGapToIDP(skillName, recommendedModule) {
     const container = document.getElementById('idp-tasks-container');
@@ -1058,6 +1141,42 @@ function submitQuizSuccess() {
     awardXP(100);
     showToast('Congratulations! Scored 100% on the quiz! +100 XP awarded!', 'success');
 }
+
+function logQuickSentiment(sentimentType) {
+    const map = {
+        smooth: { emoji: '😊', title: 'Smooth & Energized', desc: 'Shift operating on schedule with high clarity and zero blockers.', badge: 'badge-sage' },
+        manageable: { emoji: '😐', title: 'Manageable & Steady', desc: 'Standard operating pace maintained with steady guest workflow.', badge: 'badge-dusty' },
+        friction: { emoji: '😟', title: 'Friction / High Pressure', desc: 'Shift experiencing bottlenecks or resource constraints.', badge: 'badge-terracotta' }
+    };
+    const s = map[sentimentType] || map.smooth;
+    const emojiEl = document.getElementById('my-shift-sentiment-emoji');
+    const titleEl = document.getElementById('my-shift-sentiment-title');
+    const descEl = document.getElementById('my-shift-sentiment-desc');
+    const badgeEl = document.getElementById('my-shift-sentiment-badge');
+    const bannerEl = document.getElementById('my-shift-sentiment-banner');
+
+    if (emojiEl) emojiEl.textContent = s.emoji;
+    if (titleEl) titleEl.textContent = s.title;
+    if (descEl) descEl.textContent = s.desc;
+    if (badgeEl) {
+        badgeEl.className = s.badge;
+        badgeEl.textContent = 'Active';
+    }
+    if (bannerEl) {
+        if (sentimentType === 'smooth') bannerEl.className = 'p-4 rounded-2xl bg-sage-50/70 border border-sage-200/80 flex items-center justify-between gap-3';
+        else if (sentimentType === 'manageable') bannerEl.className = 'p-4 rounded-2xl bg-dusty-50/70 border border-dusty-200/80 flex items-center justify-between gap-3';
+        else bannerEl.className = 'p-4 rounded-2xl bg-terracotta-50/70 border border-terracotta-200/80 flex items-center justify-between gap-3';
+    }
+
+    try {
+        localStorage.setItem('oxford_my_shift_sentiment', sentimentType);
+    } catch(e){}
+
+    if (typeof showToast === 'function') {
+        showToast(`Logged shift feeling: ${s.title}`, 'success');
+    }
+}
+window.logQuickSentiment = logQuickSentiment;
 
 // Expose Core Navigation & Modal Functions to Window
 window.switchPillar = switchPillar;

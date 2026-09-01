@@ -15,17 +15,12 @@
                                         <i class="fas fa-chart-pie mr-1.5 text-dusty-dark"></i>
                                         <span>Needs Analysis (TNA)</span>
                                     </button>
-                                    <button onclick="switchSubTab('lms', 'compliance')" class="subnav-pill subnav-lms"
-                                        data-sub="compliance">
-                                        <i class="fas fa-clipboard-check mr-1.5 text-sage-dark"></i>
-                                        <span>Compliance Audit</span>
-                                    </button>
                                 </div>
 
-                                <!-- Action Buttons: Upload Docs & Search -->
-                                <div class="flex items-center space-x-2.5">
-                                    <button onclick="openModal('modal-lms-upload')"
-                                        class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5 flex-shrink-0">
+                                <!-- Action Buttons: Upload Docs (Supervisor/HR only) -->
+                                <div id="lms-upload-action-container" class="flex items-center space-x-2.5">
+                                    <button id="btn-lms-upload-doc" onclick="openModal('modal-lms-upload')"
+                                        class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5 flex-shrink-0 shadow-2xs">
                                         <i class="fas fa-file-arrow-up"></i>
                                         <span>+ Upload Document / SOP</span>
                                     </button>
@@ -61,15 +56,71 @@
                                 </div>
                             </div>
 
-                            <!-- Sub-tab 2: Needs Analysis (TNA) -->
+                            <!-- Sub-tab 2: Needs Analysis (TNA) & Progress Dashboard -->
                             <div id="sub-lms-tna" class="sub-panel sub-panel-lms space-y-5">
-                                <!-- Top 4 Priority TNA Category Cards (Highest Enrolled from Supabase lms_documents & lms_prescribed) -->
-                                <div id="tna-category-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-                                    <!-- Dynamic 4 Categories rendered via JS -->
-                                    <div class="col-span-full py-8 text-center text-slate-400">
-                                        <i class="fas fa-spinner fa-spin text-2xl text-primary mb-2"></i>
-                                        <p class="text-xs font-semibold text-slate-500">Loading top enrolled TNA categories from Supabase...</p>
+                                <!-- Associate Learning & Competency Progress Hub -->
+                                <div id="tna-progress-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                                    
+                                    <!-- Metric 1: Assigned / Enrolled Modules -->
+                                    <div class="card-clean p-4 border-l-4 border-l-gold flex flex-col justify-between">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-slate-500 font-semibold">Enrolled Handbooks</span>
+                                            <i class="fas fa-book-open-reader text-gold-dark text-sm"></i>
+                                        </div>
+                                        <div class="mt-2 flex items-baseline space-x-2">
+                                            <span id="tna-stat-enrolled" class="text-2xl font-heading font-bold text-slate-900">0</span>
+                                            <span class="text-[11px] text-slate-400">Total Prescriptions</span>
+                                        </div>
+                                        <div class="mt-2 text-[11px] text-slate-500">
+                                            <span>Active IDP SOPs</span>
+                                        </div>
                                     </div>
+
+                                    <!-- Metric 2: Completed / Passed -->
+                                    <div class="card-clean p-4 border-l-4 border-l-sage flex flex-col justify-between">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-slate-500 font-semibold">Passed &amp; Certified</span>
+                                            <i class="fas fa-certificate text-sage-dark text-sm"></i>
+                                        </div>
+                                        <div class="mt-2 flex items-baseline space-x-2">
+                                            <span id="tna-stat-passed" class="text-2xl font-heading font-bold text-slate-900">0</span>
+                                            <span id="tna-stat-passed-ratio" class="text-[11px] text-sage-dark font-semibold">0% Passed</span>
+                                        </div>
+                                        <div class="mt-2 text-[11px] text-slate-500">
+                                            <span>Score threshold met</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Metric 3: Overall Study Progress -->
+                                    <div class="card-clean p-4 border-l-4 border-l-primary flex flex-col justify-between">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-slate-500 font-semibold">Study Completion</span>
+                                            <i class="fas fa-bars-progress text-primary text-sm"></i>
+                                        </div>
+                                        <div class="mt-2 flex items-baseline space-x-2">
+                                            <span id="tna-stat-progress-avg" class="text-2xl font-heading font-bold text-slate-900">0%</span>
+                                            <span class="text-[11px] text-slate-400">Average Read</span>
+                                        </div>
+                                        <div class="w-full bg-[#FAF8F7] h-1.5 rounded-full overflow-hidden border border-[#E8DEDC]/50 mt-2">
+                                            <div id="tna-stat-progress-bar" class="bg-primary h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Metric 4: Average Quiz Score -->
+                                    <div class="card-clean p-4 border-l-4 border-l-dusty flex flex-col justify-between">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-slate-500 font-semibold">Average Quiz Score</span>
+                                            <i class="fas fa-award text-dusty-dark text-sm"></i>
+                                        </div>
+                                        <div class="mt-2 flex items-baseline space-x-2">
+                                            <span id="tna-stat-score-avg" class="text-2xl font-heading font-bold text-slate-900">0%</span>
+                                            <span id="tna-stat-score-tier" class="text-[11px] text-dusty-dark font-semibold">No Quizzes Yet</span>
+                                        </div>
+                                        <div class="mt-2 text-[11px] text-slate-500">
+                                            <span>Evaluation benchmark</span>
+                                        </div>
+                                    </div>
+
                                 </div>
 
                                 <!-- Training Needs & Book Enrollment Progress Matrix -->
@@ -129,28 +180,6 @@
                                                 <!-- Dynamic Rows rendered via JS -->
                                             </tbody>
                                         </table>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Sub-tab 3: Compliance Rates -->
-                            <div id="sub-lms-compliance" class="sub-panel sub-panel-lms space-y-4">
-                                <div class="card-clean p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
-                                    <div>
-                                        <h4 class="font-bold text-xs text-slate-800 mb-2">Departmental Training Compliance</h4>
-                                        <div class="h-52 w-full">
-                                            <canvas id="chart-lms-compliance"></canvas>
-                                        </div>
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-3 text-xs">
-                                        <div class="p-4 rounded-2xl bg-[#FAF8F7] border border-[#E8DEDC]">
-                                            <p class="text-slate-500">Hotel Compliance</p>
-                                            <p class="text-2xl font-bold text-sage-dark mt-1">96.2%</p>
-                                        </div>
-                                        <div class="p-4 rounded-2xl bg-[#FAF8F7] border border-[#E8DEDC]">
-                                            <p class="text-slate-500">Overdue Staff</p>
-                                            <p class="text-2xl font-bold text-terracotta-dark mt-1">2</p>
-                                        </div>
                                     </div>
                                 </div>
                             </div>

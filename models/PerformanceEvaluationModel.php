@@ -42,8 +42,38 @@ class PerformanceEvaluationModel extends BaseModel
         if (empty($data['created_at'])) {
             $data['created_at'] = date('c');
         }
+        if (!isset($data['supervisor_rating']) || $data['supervisor_rating'] === null) {
+            $data['supervisor_rating'] = 0.00;
+        }
+        if (!isset($data['calibrated_score']) || $data['calibrated_score'] === null) {
+            $data['calibrated_score'] = 0.00;
+        }
+        if (!isset($data['new_supervisor_rating']) || $data['new_supervisor_rating'] === null) {
+            $data['new_supervisor_rating'] = 0.00;
+        }
+        if (!isset($data['new_calibrated_score']) || $data['new_calibrated_score'] === null) {
+            $data['new_calibrated_score'] = 0.00;
+        }
+        if (!isset($data['criteria_scores'])) {
+            $data['criteria_scores'] = [];
+        }
+        if (!isset($data['self_breakdown'])) {
+            $data['self_breakdown'] = [];
+        }
+        if (!isset($data['peer_feedback'])) {
+            $data['peer_feedback'] = [];
+        }
+        if (!isset($data['digital_signoffs'])) {
+            $data['digital_signoffs'] = new stdClass();
+        }
 
-        supabaseRequest($this->table, 'POST', $data, true);
+        $res = supabaseRequest($this->table, 'POST', $data, true);
+        if ($res['status'] >= 200 && $res['status'] < 300 && !empty($res['data'])) {
+            return is_array($res['data']) && isset($res['data'][0]) ? $res['data'][0] : $res['data'];
+        }
+        if ($res['status'] >= 400) {
+            error_log("[PerformanceEvaluationModel::create Error] " . json_encode($res));
+        }
         return $data;
     }
 
@@ -54,6 +84,9 @@ class PerformanceEvaluationModel extends BaseModel
     {
         $data['updated_at'] = date('c');
         $res = supabaseRequest($this->table . '?id=eq.' . urlencode($id), 'PATCH', $data, true);
+        if ($res['status'] >= 400) {
+            error_log("[PerformanceEvaluationModel::update Error] " . json_encode($res));
+        }
         if ($res['status'] >= 200 && $res['status'] < 300 && !empty($res['data'])) {
             return is_array($res['data']) && isset($res['data'][0]) ? $res['data'][0] : $res['data'];
         }
@@ -133,12 +166,12 @@ class PerformanceEvaluationModel extends BaseModel
         $evaluatorId = $data['evaluator_id'] ?? ($existing['evaluator_id'] ?? 'emp-102');
 
         $supervisorRating = isset($data['supervisor_rating']) ? round((float)$data['supervisor_rating'], 2) : 4.60;
-        $selfEvaluation = isset($data['self_evaluation']) ? round((float)$data['self_evaluation'], 2) : ($existing['self_evaluation'] ?? 4.50);
-        $calibratedScore = isset($data['calibrated_score']) ? round((float)$data['calibrated_score'], 2) : round(($selfEvaluation + $supervisorRating) / 2, 2);
+        $selfEvaluation = isset($data['self_evaluation']) ? round((float)$data['self_evaluation'], 2) : ($existing['self_evaluation'] ?? null);
+        $calibratedScore = isset($data['calibrated_score']) && $data['calibrated_score'] !== '' ? round((float)$data['calibrated_score'], 2) : ($existing['calibrated_score'] ?? 0.00);
 
         $isRetry = !empty($data['is_retry']) || isset($data['new_supervisor_rating']) || isset($data['new_calibrated_score']);
-        $newSupervisorRating = isset($data['new_supervisor_rating']) ? round((float)$data['new_supervisor_rating'], 2) : ($isRetry ? $supervisorRating : ($existing['new_supervisor_rating'] ?? null));
-        $newCalibratedScore = isset($data['new_calibrated_score']) ? round((float)$data['new_calibrated_score'], 2) : ($isRetry ? $calibratedScore : ($existing['new_calibrated_score'] ?? null));
+        $newSupervisorRating = isset($data['new_supervisor_rating']) ? round((float)$data['new_supervisor_rating'], 2) : ($isRetry ? $supervisorRating : ($existing['new_supervisor_rating'] ?? 0.00));
+        $newCalibratedScore = isset($data['new_calibrated_score']) && $data['new_calibrated_score'] !== '' ? round((float)$data['new_calibrated_score'], 2) : ($existing['new_calibrated_score'] ?? 0.00);
 
         $effectiveScore = $isRetry && $newSupervisorRating ? $newSupervisorRating : $supervisorRating;
 
@@ -162,9 +195,12 @@ class PerformanceEvaluationModel extends BaseModel
             'supervisor_endorsed_at' => date('c')
         ]);
 
+        $goalId = isset($data['goal_id']) ? (is_numeric($data['goal_id']) ? (int)$data['goal_id'] : null) : ($existing['goal_id'] ?? null);
+
         $record = [
             'id'                     => $evalId,
             'employee_id'            => $empId,
+            'goal_id'                => $goalId,
             'evaluator_id'           => $evaluatorId,
             'cycle_period'           => $cycle,
             'supervisor_rating'      => $supervisorRating,
@@ -201,14 +237,16 @@ class PerformanceEvaluationModel extends BaseModel
         $empId = $data['employee_id'] ?? 'emp-101';
         $existing = $this->getEvaluationByEmployee($empId);
 
-        $selfEvaluation = isset($data['self_evaluation']) ? round((float)$data['self_evaluation'], 2) : 4.50;
+        $selfEvaluation = isset($data['self_evaluation']) ? round((float)$data['self_evaluation'], 2) : ($existing['self_evaluation'] ?? null);
         $evalId = $existing['id'] ?? ($data['id'] ?? ('eval-' . substr(bin2hex(random_bytes(4)), 0, 8)));
-        $supervisorRating = isset($existing['supervisor_rating']) ? (float)$existing['supervisor_rating'] : (isset($data['supervisor_rating']) ? (float)$data['supervisor_rating'] : 4.60);
-        $calibratedScore = round(($selfEvaluation + $supervisorRating) / 2, 2);
+        $supervisorRating = isset($existing['supervisor_rating']) ? (float)$existing['supervisor_rating'] : (isset($data['supervisor_rating']) ? (float)$data['supervisor_rating'] : 0.00);
+        $calibratedScore = isset($data['calibrated_score']) && $data['calibrated_score'] !== '' ? round((float)$data['calibrated_score'], 2) : ($existing['calibrated_score'] ?? 0.00);
+        $goalId = isset($data['goal_id']) ? (is_numeric($data['goal_id']) ? (int)$data['goal_id'] : null) : ($existing['goal_id'] ?? null);
 
         $record = [
             'id'                => $evalId,
             'employee_id'       => $empId,
+            'goal_id'           => $goalId,
             'self_evaluation'   => $selfEvaluation,
             'calibrated_score'  => $calibratedScore,
             'updated_at'        => date('c')
@@ -224,10 +262,10 @@ class PerformanceEvaluationModel extends BaseModel
         } else {
             $record['cycle_period'] = $data['cycle_period'] ?? '2026 Q3';
             $record['supervisor_rating'] = $supervisorRating;
-            $record['tier_label'] = 'Proficient';
+            $record['tier_label'] = 'Pending';
             $record['status'] = 'Pending';
-            $this->create($record);
-            return $record;
+            $created = $this->create($record);
+            return array_merge($record, $created);
         }
     }
 
@@ -243,16 +281,17 @@ class PerformanceEvaluationModel extends BaseModel
             $existing = $this->saveSupervisorAppraisal($data);
         }
 
-        $selfEvaluation = isset($data['self_evaluation']) ? round((float)$data['self_evaluation'], 2) : (isset($existing['self_evaluation']) ? (float)$existing['self_evaluation'] : 4.50);
+        $selfEvaluation = isset($data['self_evaluation']) ? round((float)$data['self_evaluation'], 2) : (isset($existing['self_evaluation']) ? (float)$existing['self_evaluation'] : null);
         $supervisorRating = isset($existing['supervisor_rating']) ? (float)$existing['supervisor_rating'] : 4.60;
 
         $isRetry = !empty($data['is_retry']) || isset($data['new_calibrated_score']);
-        $defaultCalibrated = round(($selfEvaluation + $supervisorRating) / 2, 2);
-        $calibratedScore = isset($data['calibrated_score']) ? round((float)$data['calibrated_score'], 2) : $defaultCalibrated;
-        $newCalibratedScore = isset($data['new_calibrated_score']) ? round((float)$data['new_calibrated_score'], 2) : ($isRetry ? $calibratedScore : ($existing['new_calibrated_score'] ?? null));
+        $defaultCalibrated = $selfEvaluation !== null ? round(($selfEvaluation + $supervisorRating) / 2, 2) : $supervisorRating;
+        $calibratedScore = isset($data['calibrated_score']) && $data['calibrated_score'] !== '' ? round((float)$data['calibrated_score'], 2) : $defaultCalibrated;
+        $newCalibratedScore = isset($data['new_calibrated_score']) && $data['new_calibrated_score'] !== '' ? round((float)$data['new_calibrated_score'], 2) : ($isRetry ? $calibratedScore : ($existing['new_calibrated_score'] ?? null));
 
         $effectiveScore = $isRetry && $newCalibratedScore ? $newCalibratedScore : $calibratedScore;
         $tierLabel = $data['tier_label'] ?? ($effectiveScore >= 4.5 ? 'Master Tier' : ($effectiveScore >= 3.5 ? 'Advanced Tier' : ($effectiveScore >= 3.0 ? 'Proficient' : 'Developing (Needs PIP)')));
+        $goalId = isset($data['goal_id']) ? (is_numeric($data['goal_id']) ? (int)$data['goal_id'] : null) : ($existing['goal_id'] ?? null);
 
         $record = [
             'self_evaluation'       => $selfEvaluation,
@@ -260,6 +299,7 @@ class PerformanceEvaluationModel extends BaseModel
             'new_calibrated_score'  => $newCalibratedScore,
             'tier_label'            => $tierLabel,
             'status'                => 'Calibrated',
+            'goal_id'               => $goalId,
             'updated_at'            => date('c')
         ];
 

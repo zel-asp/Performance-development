@@ -494,34 +494,45 @@ class CompetencyController
 
             $overallScore = $assessedCount > 0 ? round($scoreSum / $assessedCount, 2) : null;
 
-            // Compute Goal & Performance Objective Status & Retry Warning
+            // Compute Goal & Performance Objective Status from needs_training and in_training columns
             $empGoals = $goalsByEmp[$eId] ?? [];
-            $needsTrainingFlag = false;
-            $unmetCount = 0;
-            $unmetTitles = [];
-            
+            $needsTraining = false;
+            $inTraining = false;
+            $needsTrainingTitles = [];
+            $inTrainingTitles = [];
+
             foreach ($empGoals as $g) {
-                $isNeedsTraining = !empty($g['needs_training']);
-                if ($isNeedsTraining) {
-                    $needsTrainingFlag = true;
+                $nt = $g['needs_training'] ?? null;
+                $it = $g['in_training'] ?? ($g['is_training'] ?? null);
+                
+                $isNT = ($nt === true || $nt === 't' || $nt === 'true' || $nt === 1 || $nt === '1');
+                $isIT = ($it === true || $it === 't' || $it === 'true' || $it === 1 || $it === '1');
+
+                if ($isNT) {
+                    $needsTraining = true;
+                    $needsTrainingTitles[] = $g['title'] ?? 'Objective';
                 }
-                $gStatus = $g['status'] ?? 'Pending Approval';
-                if ($gStatus === 'Needs Revision' || $isNeedsTraining) {
-                    $unmetCount++;
-                    $unmetTitles[] = $g['title'];
+                if ($isIT) {
+                    $inTraining = true;
+                    $inTrainingTitles[] = $g['title'] ?? 'Objective';
                 }
             }
 
-            $needsTraining = $needsTrainingFlag;
-            $hasUnmetObjectives = ($unmetCount > 0 || $needsTraining);
+            $statusLabel = null;
+            if ($needsTraining) {
+                $statusLabel = 'Needs Training';
+            } elseif ($inTraining) {
+                $statusLabel = 'In Training';
+            }
 
             $goalsSummary = [
                 'total_goals' => count($empGoals),
                 'needs_training' => $needsTraining,
-                'has_unmet_objectives' => $hasUnmetObjectives,
-                'unmet_count' => $unmetCount,
-                'unmet_titles' => $unmetTitles,
-                'status_label' => $needsTraining ? 'Needs Training (2+ Retries)' : ($hasUnmetObjectives ? 'Goal Unmet' : (count($empGoals) > 0 ? 'Objectives Met' : 'On Track'))
+                'in_training' => $inTraining,
+                'is_training' => $inTraining,
+                'needs_training_titles' => $needsTrainingTitles,
+                'in_training_titles' => $inTrainingTitles,
+                'status_label' => $statusLabel
             ];
 
             $matrixRows[] = [

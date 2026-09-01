@@ -117,6 +117,9 @@ async function initSocialRecognition() {
         currentTotalXp = !isNaN(parsed) ? parsed : pointsLedgerState.reduce((sum, t) => sum + (parseInt(String(t.xpChange).replace(/[^0-9]/g, ''), 10) || 0), 0);
     }
     syncOverviewGamifiedXP(currentTotalXp);
+    if (typeof updateXpTrajectoryFromLedger === 'function') {
+        updateXpTrajectoryFromLedger(currentUserId);
+    }
 }
 
 function normalizeRecognitionPost(p) {

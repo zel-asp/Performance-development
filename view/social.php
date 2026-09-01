@@ -172,7 +172,7 @@
                     <p class="text-xs text-slate-500">Realtime monitoring of shift stress peaks to dispatch floor support</p>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <span class="badge-sage flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span> Live Supabase Feed</span>
+                    <span class="badge-sage flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span> Live Activity Feed</span>
                     <button onclick="openModal('modal-sentiment-pulse')" class="btn-secondary px-3 py-1 text-xs font-bold">
                         <i class="fas fa-plus mr-1"></i> Log Shift Pulse
                     </button>

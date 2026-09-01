@@ -12,10 +12,12 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
-    CREATE TYPE goal_status_type AS ENUM ('Pending Approval', 'Approved', 'Needs Revision', 'Completed', 'Failed');
+    CREATE TYPE goal_status_type AS ENUM ('Pending Approval', 'Approved', 'Needs Revision', 'Done', 'Completed', 'Failed');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
+
+ALTER TYPE goal_status_type ADD VALUE IF NOT EXISTS 'Done';
 create table public.performance_goals (
   id serial not null,
   employee_id character varying(50) not null,
@@ -35,8 +37,11 @@ create table public.performance_goals (
   retry_count integer null default 0,
   needs_training boolean null default false,
   in_training boolean null default false,
+  exp_id character varying null,
+  final_rating numeric null,
   constraint performance_goals_pkey primary key (id),
-  constraint performance_goals_employee_id_fkey foreign KEY (employee_id) references users (id) on update CASCADE on delete CASCADE
+  constraint performance_goals_employee_id_fkey foreign KEY (employee_id) references users (id) on update CASCADE on delete CASCADE,
+  constraint performance_goals_exp_id_fkey foreign KEY (exp_id) references xp_ledger (id) on delete set null
 ) TABLESPACE pg_default;
 
 create index IF not exists idx_emp_id on public.performance_goals using btree (employee_id) TABLESPACE pg_default;

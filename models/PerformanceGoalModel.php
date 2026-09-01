@@ -64,7 +64,7 @@ class PerformanceGoalModel extends BaseModel
         $scopeEnum = in_array($scopeLower, ['single', 'dept', 'property']) ? $scopeLower : 'single';
 
         $statusVal = trim($data['status'] ?? 'Pending Approval');
-        $validStatuses = ['Pending Approval', 'Approved', 'Needs Revision', 'Completed', 'Failed'];
+        $validStatuses = ['Pending Approval', 'Approved', 'Needs Revision', 'Done', 'Completed', 'Failed'];
         if (!in_array($statusVal, $validStatuses)) {
             $statusVal = 'Pending Approval';
         }
@@ -85,7 +85,8 @@ class PerformanceGoalModel extends BaseModel
             'supervisor_notes' => !empty($data['supervisor_notes']) ? trim($data['supervisor_notes']) : null,
             'retry_count'    => isset($data['retry_count']) ? (int)$data['retry_count'] : 0,
             'needs_training' => isset($data['needs_training']) ? (bool)$data['needs_training'] : false,
-            'in_training'    => isset($data['in_training']) ? (bool)$data['in_training'] : false
+            'in_training'    => isset($data['in_training']) ? (bool)$data['in_training'] : false,
+            'exp_id'         => !empty($data['exp_id']) ? trim($data['exp_id']) : null
         ];
 
         // Direct Supabase insert
@@ -204,6 +205,38 @@ class PerformanceGoalModel extends BaseModel
     }
 
     /**
+     * Update final_rating for a specific goal in Supabase
+     */
+    public function updateFinalRating(string|int $goalId, float $finalRating): ?array
+    {
+        return $this->update((string)$goalId, [
+            'final_rating' => $finalRating,
+            'updated_at'   => date('c')
+        ]);
+    }
+
+    /**
+     * Update final_rating for an employee's performance goals in Supabase
+     */
+    public function setEmployeeGoalsFinalRating(string $empId, float $finalRating, ?int $goalId = null): array
+    {
+        if ($goalId) {
+            $up = $this->updateFinalRating($goalId, $finalRating);
+            return $up ? [$up] : [];
+        }
+
+        $goals = $this->getGoalsByEmployee($empId);
+        $updated = [];
+        foreach ($goals as $g) {
+            if (!empty($g['id'])) {
+                $up = $this->updateFinalRating($g['id'], $finalRating);
+                if ($up) $updated[] = $up;
+            }
+        }
+        return $updated;
+    }
+
+    /**
      * Increment retry_count for a goal in Supabase and sync needs_training
      */
     public function incrementRetryCount(string|int $goalId, int $increment = 1): ?array
@@ -257,12 +290,13 @@ class PerformanceGoalModel extends BaseModel
         if (isset($data['retry_count'])) $update['retry_count'] = (int)$data['retry_count'];
         if (isset($data['needs_training'])) $update['needs_training'] = (bool)$data['needs_training'];
         if (isset($data['in_training'])) $update['in_training'] = (bool)$data['in_training'];
+        if (array_key_exists('exp_id', $data)) $update['exp_id'] = !empty($data['exp_id']) ? trim($data['exp_id']) : null;
 
         return $this->update($id, $update);
     }
 
     /**
-     * Check if an employee has any active (non-completed) goal
+     * Check if an employee has any active (non-completed, non-failed) goal
      */
     public function hasActiveGoal(string $empId): bool
     {
@@ -274,6 +308,52 @@ class PerformanceGoalModel extends BaseModel
             }
         }
         return false;
+    }
+
+    /**
+     * Mark a goal as Done with attached exp_id
+     */
+    public function markDone(string|int $id, ?string $expId = null): ?array
+    {
+        $update = [
+            'status'     => 'Done',
+            'updated_at' => date('c')
+        ];
+        if ($expId !== null) {
+            $update['exp_id'] = $expId;
+        }
+        return $this->update((string)$id, $update);
+    }
+
+    /**
+     * Mark all active approved goals for an employee as Done with attached exp_id
+     */
+    public function markEmployeeGoalsDone(string $empId, ?string $expId = null): array
+    {
+        $goals = $this->getGoalsByEmployee($empId);
+        $doneList = [];
+        foreach ($goals as $g) {
+            if (!empty($g['id'])) {
+                $status = strtolower(trim($g['status'] ?? ''));
+                if ($status === 'approved' || $status === 'in progress') {
+                    $up = $this->markDone($g['id'], $expId);
+                    if ($up) $doneList[] = $up;
+                }
+            }
+        }
+        return $doneList;
+    }
+
+    /**
+     * Revert goal status from Done back to Approved and remove exp_id
+     */
+    public function revertGoalKudos(string|int $id): ?array
+    {
+        return $this->update((string)$id, [
+            'status'     => 'Approved',
+            'exp_id'     => null,
+            'updated_at' => date('c')
+        ]);
     }
 
     /**

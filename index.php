@@ -23,9 +23,15 @@
                     if (isAssociate) {
                         document.documentElement.classList.add('role-associate');
                         document.documentElement.classList.remove('role-management');
+                        if (localStorage.getItem('oxford_active_subtab_dashboard') === 'system') {
+                            localStorage.setItem('oxford_active_subtab_dashboard', 'pulse');
+                        }
                     } else {
                         document.documentElement.classList.add('role-management');
                         document.documentElement.classList.remove('role-associate');
+                        if (localStorage.getItem('oxford_active_subtab_dashboard') === 'pulse') {
+                            localStorage.setItem('oxford_active_subtab_dashboard', 'system');
+                        }
                     }
                 } catch (e) {}
             })();
@@ -217,6 +223,7 @@
             html.role-associate [data-pillar="pillar-succession"],
             html.role-associate [data-pillar="pillar-reports"],
             html.role-associate [data-sub="system"],
+            html.role-associate #sub-dashboard-system,
             html.role-associate #btn-create-program,
             html.role-associate #btn-schedule-session,
             html.role-associate #btn-mark-all-attended,
@@ -224,6 +231,12 @@
             html.role-associate #comp-tna-skills-gap-card,
             html.role-associate #subtab-btn-comp-profiles,
             html.role-associate [data-sub="schedules"].subnav-training {
+                display: none !important;
+            }
+
+            /* Zero-Flash RBAC Guard Styles - Instantly hide individual employee pulse tabs & panels for Supervisor/Management */
+            html.role-management [data-sub="pulse"],
+            html.role-management #sub-dashboard-pulse {
                 display: none !important;
             }
 
@@ -407,10 +420,29 @@
         <?php include_once 'view/footer.php'; ?>
 
         <!-- External Modular JavaScript Scripts from js/ -->
+        <!-- Supabase Client & Realtime WebSocket Engine -->
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="js/supabase.js"></script>
         <script src="js/charts.js"></script>
-        <script src="js/performance.js"></script>
+        <!-- Performance Management Modular Architecture (Stages 1 through 7) -->
+        <script src="js/performance/api.js"></script>
+        <script src="js/performance/navigation.js"></script>
+        <script src="js/performance/stage1_planning.js"></script>
+        <script src="js/performance/stage2_review.js"></script>
+        <script src="js/performance/stage3_monitoring.js"></script>
+        <script src="js/performance/stage4_appraisal.js"></script>
+        <script src="js/performance/stage5_calibration.js"></script>
+        <script src="js/performance/stage6_development.js"></script>
+        <script src="js/performance/stage7_transition.js"></script>
+        <script src="js/performance/index.js"></script>
         <script src="js/competencies.js"></script>
-        <script src="js/lms.js"></script>
+        <!-- Learning Management System (LMS) Modular Architecture -->
+        <script src="js/lms/library.js"></script>
+        <script src="js/lms/reader.js"></script>
+        <script src="js/lms/upload.js"></script>
+        <script src="js/lms/remedial.js"></script>
+        <script src="js/lms/tna.js"></script>
+        <script src="js/lms/index.js"></script>
         <script src="js/training.js"></script>
         <script src="js/succession.js"></script>
         <script src="js/kudos.js"></script>

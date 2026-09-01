@@ -74,11 +74,11 @@ class SocialController
     /**
      * Get Deterministic Ledger
      */
-    public function getLedger(): array
+    public function getLedger(?string $employeeId = null): array
     {
         return [
             'success' => true,
-            'data'    => $this->model->getLedger()
+            'data'    => $this->model->getLedger($employeeId)
         ];
     }
 

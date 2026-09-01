@@ -32,14 +32,18 @@ class PerformanceController
     /**
      * Helper to attach dynamic task stats & progress to goals (Optimized 1-query batch)
      */
-    private function enrichGoalsWithTasks(array $goals): array
+    private function enrichGoalsWithTasks(array $goals, array $filters = []): array
     {
         if (empty($goals)) {
             return [];
         }
 
-        // 1. Fetch all tasks in a single query instead of N queries
-        $allTasks = $this->taskModel->all();
+        // 1. Fetch relevant tasks with filter if available to minimize network payload
+        $taskFilters = [];
+        if (!empty($filters['employee_id'])) {
+            $taskFilters['employee_id'] = $filters['employee_id'];
+        }
+        $allTasks = $this->taskModel->all($taskFilters);
 
         // 2. Index tasks by goal_id
         $tasksByGoal = [];
@@ -100,7 +104,7 @@ class PerformanceController
         }
 
         $goals = $this->goalModel->getGoals($filters);
-        $enrichedGoals = $this->enrichGoalsWithTasks($goals);
+        $enrichedGoals = $this->enrichGoalsWithTasks($goals, $filters);
 
         return [
             'success' => true,
@@ -1076,8 +1080,19 @@ class PerformanceController
         $empId = $payload['employee_id'] ?? 'emp-101';
         $saved = $this->evaluationModel->calibrateEvaluation($payload);
 
+        $calibratedScore = isset($payload['calibrated_score']) && $payload['calibrated_score'] !== ''
+            ? (float)$payload['calibrated_score']
+            : (isset($payload['new_calibrated_score']) && $payload['new_calibrated_score'] !== ''
+                ? (float)$payload['new_calibrated_score']
+                : (float)($saved['calibrated_score'] ?? 0.0));
+
+        // Insert & Update final_rating on performance_goals in Supabase
+        if ($calibratedScore > 0) {
+            $goalId = isset($payload['goal_id']) ? (int)$payload['goal_id'] : (isset($saved['goal_id']) ? (int)$saved['goal_id'] : null);
+            $this->goalModel->setEmployeeGoalsFinalRating($empId, $calibratedScore, $goalId);
+        }
+
         // If calibrated score is below 3.0 after 2nd attempt (retry_count >= 1), automatically flag needs_training = true
-        $calibratedScore = isset($payload['calibrated_score']) ? (float)$payload['calibrated_score'] : (isset($payload['new_calibrated_score']) ? (float)$payload['new_calibrated_score'] : 0.0);
         if ($calibratedScore > 0 && $calibratedScore < 3.0) {
             $goals = $this->goalModel->getGoalsByEmployee($empId);
             $maxRetry = 0;
@@ -1093,7 +1108,7 @@ class PerformanceController
         return [
             'success' => true,
             'data'    => $saved,
-            'message' => "1-on-1 performance calibration successfully recorded."
+            'message' => "1-on-1 performance calibration successfully recorded and goal final rating updated."
         ];
     }
 
@@ -1486,19 +1501,104 @@ class PerformanceController
             ]);
         }
 
-        // Mark active goals for the employee to 'Completed' in performance_goals
+        // Mark active goals for the employee to 'Done' and attach exp_id in performance_goals
+        $goalId = $payload['goal_id'] ?? null;
+        $updatedGoals = [];
         try {
-            $this->goalModel->markEmployeeGoalsCompleted($employeeId);
+            if (!empty($goalId)) {
+                $up = $this->goalModel->markDone($goalId, $ledgerEntry['id']);
+                if ($up) $updatedGoals[] = $up;
+            } else {
+                $updatedGoals = $this->goalModel->markEmployeeGoalsDone($employeeId, $ledgerEntry['id']);
+            }
         } catch (\Throwable $e) {
-            error_log('Error marking goals completed during awardPerformanceXP: ' . $e->getMessage());
+            error_log('Error marking goals done during awardPerformanceXP: ' . $e->getMessage());
         }
 
         return [
-            'success'       => true,
-            'data'          => $ledgerEntry,
-            'points_awarded'=> $points,
-            'balance_after' => $balanceAfter,
-            'message'       => "Awarded +{$points} XP to {$employeeId} and set performance goal to Completed."
+            'success'        => true,
+            'data'           => $ledgerEntry,
+            'exp_id'         => $ledgerEntry['id'],
+            'goal_id'        => $goalId,
+            'goals_updated'  => $updatedGoals,
+            'points_awarded' => $points,
+            'balance_after'  => $balanceAfter,
+            'message'        => "Awarded +{$points} XP to {$employeeId} and set performance goal to Done with exp_id attached."
+        ];
+    }
+
+    /**
+     * Revert Goal Kudos / XP transaction and reset performance goal status back to Approved
+     */
+    public function revertGoalKudos(array $payload): array
+    {
+        $employeeId = $payload['employee_id'] ?? null;
+        $goalId = $payload['goal_id'] ?? $payload['id'] ?? null;
+        $expId = $payload['exp_id'] ?? null;
+
+        $targetGoal = null;
+        if (!empty($goalId)) {
+            $targetGoal = $this->goalModel->find((string)$goalId);
+        }
+        if (!$targetGoal && !empty($employeeId)) {
+            $empGoals = $this->goalModel->getGoalsByEmployee($employeeId);
+            foreach ($empGoals as $g) {
+                if (!empty($g['exp_id']) || ($g['status'] ?? '') === 'Done') {
+                    $targetGoal = $g;
+                    break;
+                }
+            }
+        }
+
+        if (!$targetGoal && !empty($employeeId)) {
+            $empGoals = $this->goalModel->getGoalsByEmployee($employeeId);
+            if (!empty($empGoals[0])) {
+                $targetGoal = $empGoals[0];
+            }
+        }
+
+        if (!$targetGoal) {
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => 'No active goal found to revert.'
+            ];
+        }
+
+        $targetExpId = $expId ?: ($targetGoal['exp_id'] ?? null);
+        $pointsDeducted = 0;
+
+        if (!empty($targetExpId)) {
+            // Fetch the xp_ledger row to know exact points
+            $ledgerRes = supabaseRequest('xp_ledger?id=eq.' . urlencode($targetExpId), 'GET', null, true);
+            if ($ledgerRes['status'] === 200 && is_array($ledgerRes['data']) && !empty($ledgerRes['data'][0])) {
+                $ledgerRow = $ledgerRes['data'][0];
+                $pointsDeducted = (int)($ledgerRow['points'] ?? 0);
+            }
+
+            // Delete from xp_ledger
+            supabaseRequest('xp_ledger?id=eq.' . urlencode($targetExpId), 'DELETE', null, true);
+
+            // Deduct points from user total_xp
+            $empCode = $targetGoal['employee_id'] ?? $employeeId;
+            if ($empCode) {
+                $user = $this->authModel->find($empCode) ?: $this->authModel->findByEmployeeCode($empCode);
+                if ($user && isset($user['id'])) {
+                    $currentTotal = (int)($user['total_xp'] ?? 0);
+                    $newTotal = max(0, $currentTotal - $pointsDeducted);
+                    $this->authModel->update($user['id'], ['total_xp' => $newTotal]);
+                }
+            }
+        }
+
+        // Reset goal status to Approved and clear exp_id
+        $updated = $this->goalModel->revertGoalKudos($targetGoal['id']);
+
+        return [
+            'success'         => true,
+            'data'            => $updated,
+            'points_deducted' => $pointsDeducted,
+            'message'         => "Successfully reverted kudos and reset performance goal #{$targetGoal['id']} back to Approved."
         ];
     }
 
@@ -1509,6 +1609,20 @@ class PerformanceController
     {
         $id = $payload['id'] ?? $payload['goal_id'] ?? null;
         $empId = $payload['employee_id'] ?? null;
+
+        if (empty($id) && !empty($empId)) {
+            $empGoals = $this->goalModel->getGoalsByEmployee($empId);
+            foreach ($empGoals as $g) {
+                $st = strtolower(trim($g['status'] ?? ''));
+                if ($st === 'approved' || $st === 'done') {
+                    $id = $g['id'];
+                    break;
+                }
+            }
+            if (empty($id) && !empty($empGoals[0]['id'])) {
+                $id = $empGoals[0]['id'];
+            }
+        }
 
         if (empty($id)) {
             return [

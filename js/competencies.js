@@ -728,10 +728,10 @@ let associatesCompetencyData = {
 window.associatesCompetencyData = associatesCompetencyData;
 
 // State Variables
-let activeCompetencyEmpKey = 'maria_santos';
+let activeCompetencyEmpKey = 'emp-101';
 let activeRoleProfileKey = 'front_office';
 let competencyViewMode = 'single'; // 'single' | 'team_deck' | 'compare'
-let comparedEmployeeKeys = ['maria_santos', 'carlos_gomez', 'lucas_vargas'];
+let comparedEmployeeKeys = ['emp-101', 'emp-102'];
 
 // ========================================================
 // 3. INITIALIZATION & RENDERING CONTROLLERS
@@ -759,11 +759,6 @@ function renderEmployeeSelectOptions() {
     if (employees.length > 0) {
         select.innerHTML = employees.map(emp => {
             return `<option value="${emp.id}" ${emp.id === activeCompetencyEmpKey ? 'selected' : ''}>${emp.full_name} (${emp.title} · ${emp.department} · ${emp.overall_formatted})</option>`;
-        }).join('');
-    } else {
-        select.innerHTML = Object.keys(associatesCompetencyData).map(key => {
-            const emp = associatesCompetencyData[key];
-            return `<option value="${key}" ${key === activeCompetencyEmpKey ? 'selected' : ''}>${emp.name} (${emp.role} · ${emp.overallCompetencyScore.toFixed(2)})</option>`;
         }).join('');
     }
 }
@@ -804,40 +799,43 @@ function renderCompetencyViewMode() {
     }
 }
 
-// 3.4 Multi-Employee Team Deck Grid (Manage Multiple Associates at a Glance)
+// 3.4 Multi-Employee Team Deck Grid (Directly from Supabase Employees)
 function renderTeamRosterDeck() {
     const container = document.getElementById('team-deck-cards-grid');
     if (!container) return;
 
     const deptFilter = document.getElementById('team-deck-dept-filter')?.value || 'all';
-    const associates = Object.values(associatesCompetencyData).filter(emp => {
-        return (deptFilter === 'all' || emp.deptCode === deptFilter);
+    const associates = (window.dynamicCompetencyState.employees || []).filter(emp => {
+        return (deptFilter === 'all' || emp.department_id === deptFilter || (emp.department || '').toLowerCase() === deptFilter.toLowerCase());
     });
 
     container.innerHTML = associates.map(emp => {
+        const overallScore = emp.overall_score !== null && emp.overall_score !== undefined ? parseFloat(emp.overall_score) : 0;
         let badgeClass = 'badge-sage';
-        let badgeText = `Benchmark Met (+${emp.competencyGap >= 0 ? '+' : ''}${emp.competencyGap.toFixed(2)})`;
-        if (emp.competencyGap < -0.4) {
+        let badgeText = `Proficient (${overallScore.toFixed(2)})`;
+        if (overallScore < 3.8 && overallScore > 0) {
             badgeClass = 'badge-terracotta';
-            badgeText = `Priority TNA (${emp.competencyGap.toFixed(2)})`;
-        } else if (emp.competencyGap < 0) {
+            badgeText = `Priority TNA (${overallScore.toFixed(2)})`;
+        } else if (overallScore < 4.2 && overallScore > 0) {
             badgeClass = 'badge-gold';
-            badgeText = `Minor Gap (${emp.competencyGap.toFixed(2)})`;
+            badgeText = `Developing (${overallScore.toFixed(2)})`;
+        } else if (overallScore === 0) {
+            badgeClass = 'bg-slate-100 text-slate-500 border-slate-200';
+            badgeText = 'Not Assessed';
         }
 
-        const isFocus = emp.empId === activeCompetencyEmpKey;
+        const isFocus = emp.id === activeCompetencyEmpKey;
+        const avatarUrl = emp.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
 
         return `
             <div class="p-5 bg-white rounded-2xl border ${isFocus ? 'border-primary ring-2 ring-primary/20' : 'border-[#E8DEDC]'} hover:border-primary/50 transition shadow-2xs space-y-3.5 flex flex-col justify-between">
                 <div>
                     <div class="flex items-start justify-between">
                         <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-primary text-white font-bold text-sm flex items-center justify-center shadow-xs">
-                                ${emp.avatar}
-                            </div>
+                            <img src="${avatarUrl}" alt="${emp.full_name}" class="w-10 h-10 rounded-full object-cover border border-[#E8DEDC] shadow-2xs flex-shrink-0">
                             <div>
-                                <h4 class="font-heading font-bold text-sm text-slate-900">${emp.name}</h4>
-                                <p class="text-[11px] text-slate-500">${emp.role} · ${emp.dept}</p>
+                                <h4 class="font-heading font-bold text-sm text-slate-900">${emp.full_name}</h4>
+                                <p class="text-[11px] text-slate-500">${emp.title} · ${emp.department}</p>
                             </div>
                         </div>
                         <span class="${badgeClass} text-[10px]">${badgeText}</span>
@@ -846,24 +844,20 @@ function renderTeamRosterDeck() {
                     <div class="mt-3 p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] space-y-2 text-xs">
                         <div class="flex justify-between items-center font-semibold">
                             <span class="text-slate-500">Overall Rating:</span>
-                            <span class="font-heading font-bold text-sm text-primary">${emp.overallCompetencyScore.toFixed(2)} / 5.0</span>
+                            <span class="font-heading font-bold text-sm text-primary">${emp.overall_formatted} / 5.0</span>
                         </div>
                         <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                            <div class="bg-primary h-2 rounded-full" style="width: ${(emp.overallCompetencyScore / 5.0) * 100}%"></div>
-                        </div>
-                        <div class="text-[11px] space-y-0.5 pt-1">
-                            <p class="text-slate-700"><i class="fas fa-circle-check text-emerald-600 mr-1 text-[10px]"></i><strong>Top Strength:</strong> <span class="text-sage-dark font-medium">${emp.topStrength}</span></p>
-                            <p class="text-slate-700"><i class="fas fa-circle-exclamation text-amber-500 mr-1 text-[10px]"></i><strong>Critical Gap:</strong> <span class="${emp.competencyGap < 0 ? 'text-terracotta' : 'text-slate-500'} font-medium">${emp.criticalGap}</span></p>
+                            <div class="bg-primary h-2 rounded-full" style="width: ${overallScore > 0 ? (overallScore / 5.0) * 100 : 0}%"></div>
                         </div>
                     </div>
                 </div>
 
                 <div class="pt-2 border-t border-[#E8DEDC] flex items-center justify-between gap-2 flex-wrap">
-                    <button onclick="selectCompetencyAssociate('${emp.empId}'); setCompetencyViewMode('single');" class="px-3 py-1.5 rounded-xl border border-[#E8DEDC] hover:bg-slate-50 text-xs font-semibold text-slate-700 transition flex items-center space-x-1">
+                    <button onclick="selectCompetencyAssociate('${emp.id}'); setCompetencyViewMode('single');" class="px-3 py-1.5 rounded-xl border border-[#E8DEDC] hover:bg-slate-50 text-xs font-semibold text-slate-700 transition flex items-center space-x-1">
                         <i class="fas fa-eye text-primary"></i>
                         <span>Deep-Dive</span>
                     </button>
-                    <button onclick="launchAssessmentModalFor('${emp.empId}')" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1">
+                    <button onclick="launchDynamicEvaluationModal('${emp.id}')" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1">
                         <i class="fas fa-clipboard-check"></i>
                         <span>Evaluate</span>
                     </button>
@@ -1210,41 +1204,83 @@ async function renderSelectedEmployeeRadarView() {
         `;
     }
 
-    // 1. Fetch live assessments directly from Supabase for this employee
-
+    // 1. Fetch live assessments with 0ms caching
+    const assessCacheKey = `comp_assess_${emp.id}`;
     let liveAssessMap = {};
-    try {
-        const assessRes = await fetch(`api/competencies.php?action=get_assessments&employee_id=${encodeURIComponent(emp.id)}`);
-        const assessJson = await assessRes.json();
-        if (assessJson.success && Array.isArray(assessJson.data)) {
-            assessJson.data.forEach(a => {
-                liveAssessMap[a.competency_id] = a;
-            });
-        }
-    } catch (err) {
-        console.error('Error fetching live assessments for radar view:', err);
+    if (window.dynamicCompetencyState?.cache?.[assessCacheKey]) {
+        liveAssessMap = window.dynamicCompetencyState.cache[assessCacheKey];
+    } else {
+        try {
+            const storedAssess = sessionStorage.getItem(assessCacheKey);
+            if (storedAssess) {
+                liveAssessMap = JSON.parse(storedAssess);
+                window.dynamicCompetencyState.cache = window.dynamicCompetencyState.cache || {};
+                window.dynamicCompetencyState.cache[assessCacheKey] = liveAssessMap;
+            }
+        } catch (e) {}
     }
 
-    // 2. Fetch applicable competencies from Supabase for this employee
-    let applicableComps = [];
-    try {
-        const deptObj = (window.dynamicCompetencyState.departments || []).find(d => 
-            d.name.toLowerCase() === (emp.department || '').toLowerCase() || d.id === emp.department_id
-        );
-        const deptId = emp.department_id || (deptObj ? deptObj.id : null);
-        const res = await fetch(`api/competencies.php?action=get_competencies${deptId ? '&department_id=' + encodeURIComponent(deptId) : ''}`);
-        const json = await res.json();
-        const allComps = json.data || [];
-        applicableComps = allComps.filter(c => {
-            if (c.scope === 'General') return true;
-            if (c.scope === 'Specific' && c.position) {
-                return (emp.title.toLowerCase() === c.position.toLowerCase() || emp.title.toLowerCase().includes(c.position.toLowerCase()));
+    if (Object.keys(liveAssessMap).length === 0) {
+        try {
+            const assessRes = await fetch(`api/competencies.php?action=get_assessments&employee_id=${encodeURIComponent(emp.id)}`);
+            const assessJson = await assessRes.json();
+            if (assessJson.success && Array.isArray(assessJson.data)) {
+                assessJson.data.forEach(a => {
+                    liveAssessMap[a.competency_id] = a;
+                });
+                window.dynamicCompetencyState.cache = window.dynamicCompetencyState.cache || {};
+                window.dynamicCompetencyState.cache[assessCacheKey] = liveAssessMap;
+                try {
+                    sessionStorage.setItem(assessCacheKey, JSON.stringify(liveAssessMap));
+                } catch (e) {}
             }
-            return true;
-        });
-    } catch (e) {
-        console.error('Error fetching competencies for radar view:', e);
-        applicableComps = window.dynamicCompetencyState.competencies || [];
+        } catch (err) {
+            console.error('Error fetching live assessments for radar view:', err);
+        }
+    }
+
+    // 2. Fetch applicable competencies with caching
+    const deptObj = (window.dynamicCompetencyState.departments || []).find(d => 
+        d.name.toLowerCase() === (emp.department || '').toLowerCase() || d.id === emp.department_id
+    );
+    const deptId = emp.department_id || (deptObj ? deptObj.id : null);
+    const compCacheKey = `comp_applicable_${deptId || 'all'}`;
+    let applicableComps = [];
+
+    if (window.dynamicCompetencyState?.cache?.[compCacheKey]) {
+        applicableComps = window.dynamicCompetencyState.cache[compCacheKey];
+    } else {
+        try {
+            const storedComps = sessionStorage.getItem(compCacheKey);
+            if (storedComps) {
+                applicableComps = JSON.parse(storedComps);
+                window.dynamicCompetencyState.cache = window.dynamicCompetencyState.cache || {};
+                window.dynamicCompetencyState.cache[compCacheKey] = applicableComps;
+            }
+        } catch (e) {}
+    }
+
+    if (applicableComps.length === 0) {
+        try {
+            const res = await fetch(`api/competencies.php?action=get_competencies${deptId ? '&department_id=' + encodeURIComponent(deptId) : ''}`);
+            const json = await res.json();
+            const allComps = json.data || [];
+            applicableComps = allComps.filter(c => {
+                if (c.scope === 'General') return true;
+                if (c.scope === 'Specific' && c.position) {
+                    return (emp.title.toLowerCase() === c.position.toLowerCase() || emp.title.toLowerCase().includes(c.position.toLowerCase()));
+                }
+                return true;
+            });
+            window.dynamicCompetencyState.cache = window.dynamicCompetencyState.cache || {};
+            window.dynamicCompetencyState.cache[compCacheKey] = applicableComps;
+            try {
+                sessionStorage.setItem(compCacheKey, JSON.stringify(applicableComps));
+            } catch (e) {}
+        } catch (e) {
+            console.error('Error fetching competencies for radar view:', e);
+            applicableComps = window.dynamicCompetencyState.competencies || [];
+        }
     }
 
     // Ensure all competencies present in liveAssessMap are included in applicableComps
@@ -1907,277 +1943,281 @@ window.assignLmsAndScheduleTraining = assignLmsAndScheduleTraining;
 window.syncCompetencyWithPerformance = syncCompetencyWithPerformance;
 window.findCompetencyKeyByEmployeeId = findCompetencyKeyByEmployeeId;
 
-// 3.19 Render IDP View
-function renderIDPView() {
-    const emp = associatesCompetencyData[activeCompetencyEmpKey];
-    const container = document.getElementById('comp-idp-container');
+function resolveCompetencyActiveEmployee() {
+    const dynEmps = window.dynamicCompetencyState?.employees || [];
+    let emp = dynEmps.find(e => e.id === activeCompetencyEmpKey);
+    if (!emp && dynEmps.length > 0) {
+        emp = dynEmps[0];
+    }
+    if (emp) {
+        emp.name = emp.full_name || emp.name;
+        emp.role = emp.title || emp.role;
+        emp.dept = emp.department || emp.dept;
+    }
+    return emp || {
+        id: 'emp-101',
+        full_name: 'Maria Santos',
+        name: 'Maria Santos',
+        title: 'Front Desk Host',
+        role: 'Front Desk Host',
+        department: 'Front Office',
+        dept: 'Front Office',
+        overall_formatted: 'Not Assessed',
+        overall_score: null,
+        scores: {}
+    };
+}
+window.resolveCompetencyActiveEmployee = resolveCompetencyActiveEmployee;
+
+// 3.19 Render IDP View (Connected to performance_goals & IDP Milestones with Caching)
+// 3.20 Render Active Performance Goals (Instant Cached + Live SWR Background Update)
+async function renderIDPView(forceRefresh = false) {
+    const emp = resolveCompetencyActiveEmployee();
+    const container = document.getElementById('comp-goals-container') || document.getElementById('comp-idp-container');
     if (!container || !emp) return;
 
-    if (!emp.idpGoals || emp.idpGoals.length === 0) {
+    const goalsCacheKey = `comp_goals_cache_${emp.id}`;
+    let goals = window.dynamicCompetencyState?.cache?.[goalsCacheKey];
+    if (!goals) {
+        try {
+            const cached = sessionStorage.getItem(goalsCacheKey);
+            if (cached) {
+                goals = JSON.parse(cached);
+                window.dynamicCompetencyState.cache = window.dynamicCompetencyState.cache || {};
+                window.dynamicCompetencyState.cache[goalsCacheKey] = goals;
+            }
+        } catch (e) {}
+    }
+
+    const renderGoalsHtml = (goalList) => {
+        const list = Array.isArray(goalList) ? goalList : [];
+        if (list.length === 0) {
+            container.innerHTML = `
+                <div class="p-8 text-center bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-3">
+                    <i class="fas fa-bullseye text-3xl text-slate-300"></i>
+                    <h4 class="font-heading font-bold text-slate-800 text-sm">No Active Performance Goals on Record for ${emp.name}</h4>
+                    <p class="text-xs text-slate-500">Operational performance targets will appear here once approved in Performance Planning.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const goalsHtml = list.map(g => {
+            const status = g.status || 'Active';
+            let statusBadge = 'badge-primary';
+            if (status === 'Approved' || status === 'Completed' || status === 'Done') statusBadge = 'badge-sage';
+            else if (status === 'Needs Revision' || status === 'Failed') statusBadge = 'badge-terracotta';
+
+            let trainingTag = '';
+            if (g.needs_training) {
+                trainingTag = `<span class="badge-terracotta font-bold flex items-center space-x-1"><i class="fas fa-triangle-exclamation text-[9px]"></i><span>Needs Training</span></span>`;
+            } else if (g.in_training) {
+                trainingTag = `<span class="badge-primary font-bold flex items-center space-x-1"><i class="fas fa-chalkboard-user text-[9px]"></i><span>In Training</span></span>`;
+            }
+
+            const finalRatingHtml = (g.final_rating !== null && g.final_rating !== undefined && !isNaN(parseFloat(g.final_rating)))
+                ? `<span class="badge-sage font-bold flex items-center space-x-1"><span>⭐ ${parseFloat(g.final_rating).toFixed(1)} / 5.0 Final Rating</span></span>`
+                : `<span class="text-[10px] text-slate-400 font-medium">Pending Final Calibration</span>`;
+
+            return `
+                <div class="p-5 bg-white rounded-2xl border border-[#E8DEDC] space-y-3 shadow-2xs hover:border-slate-300 transition">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2 flex-wrap gap-1">
+                                <span class="${statusBadge}">${status}</span>
+                                ${trainingTag}
+                                <span class="text-xs text-slate-500 font-semibold">${g.department || emp.department || 'Operations'}</span>
+                                <span class="text-[10px] text-slate-400">Target: <strong>${g.target_date || 'Q3 Cycle'}</strong></span>
+                            </div>
+                            <h4 class="font-heading font-bold text-sm text-slate-900">${g.title}</h4>
+                            <p class="text-xs text-slate-600 font-medium">Target Metric: <span class="text-primary font-bold">${g.target_metric || 'Standard'}</span> · Weight: <span class="text-slate-500">${g.weight || 'Core Objective'}</span></p>
+                            ${g.evidence ? `<p class="text-[11px] text-slate-400">Evidence: ${g.evidence}</p>` : ''}
+                        </div>
+                        <div class="text-right">
+                            ${finalRatingHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
         container.innerHTML = `
-            <div class="p-8 text-center bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-3">
-                <i class="fas fa-route text-3xl text-slate-300"></i>
-                <h4 class="font-heading font-bold text-slate-800 text-sm">No Active IDP Goals for ${emp.name}</h4>
-                <p class="text-xs text-slate-500">Run a Skills Gap Analysis or click below to create an Individual Development Plan.</p>
-                <button onclick="openModal('modal-create-idp')" class="btn-primary px-4 py-2 text-xs font-bold inline-flex items-center space-x-1.5">
-                    <i class="fas fa-plus"></i>
-                    <span>Create New IDP Goal</span>
-                </button>
-            </div>
-        `;
-        return;
-    }
-
-    const goalsHtml = emp.idpGoals.map(goal => {
-        let catBadge = 'badge-primary';
-        if (goal.category.includes('70%')) catBadge = 'badge-primary';
-        if (goal.category.includes('20%')) catBadge = 'badge-sage';
-        if (goal.category.includes('10%')) catBadge = 'badge-dusty';
-
-        const tasksHtml = goal.actionItems.map((item, taskIdx) => `
-            <label class="flex items-center space-x-3 p-2.5 bg-white rounded-xl border border-[#E8DEDC] hover:bg-primary-50/20 cursor-pointer transition text-xs">
-                <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleIdpTask('${goal.id}', ${taskIdx})" class="accent-[#9E1B20] w-4 h-4 rounded">
-                <span class="${item.done ? 'line-through text-slate-400 font-medium' : 'text-slate-800 font-semibold'}">${item.task}</span>
-            </label>
-        `).join('');
-
-        return `
-            <div class="p-5 bg-white rounded-2xl border border-[#E8DEDC] space-y-3.5 shadow-2xs">
-                <div class="flex items-center justify-between flex-wrap gap-2">
-                    <div>
-                        <div class="flex items-center space-x-2">
-                            <span class="${catBadge}">${goal.category}</span>
-                            <span class="text-[10px] text-slate-400">Target: ${goal.targetDate}</span>
-                        </div>
-                        <h4 class="font-heading font-bold text-sm text-slate-900 mt-1">${goal.title}</h4>
-                        <p class="text-[11px] text-slate-500">Linked Dimension: <strong>${goal.competencyName}</strong> · Mentor: ${goal.mentor}</p>
-                    </div>
-                    <div class="text-right">
-                        <span class="font-heading font-bold text-sm text-primary">${goal.progress}% Complete</span>
-                        <div class="w-28 bg-[#FAF8F7] h-2 rounded-full overflow-hidden border border-[#E8DEDC] mt-1">
-                            <div class="bg-primary h-2 rounded-full transition-all duration-300" style="width: ${goal.progress}%"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-1.5 pt-1">
-                    <p class="text-[11px] font-bold text-slate-700">Action Milestones:</p>
-                    <div class="space-y-1.5">${tasksHtml}</div>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    container.innerHTML = `
-        <div class="space-y-4">
-            <div class="flex items-center justify-between">
+            <div class="space-y-4">
                 <div>
-                    <h3 class="font-heading font-bold text-base text-slate-900">${emp.name}'s 70-20-10 Individual Development Plan</h3>
-                    <p class="text-xs text-slate-500">Targeted experiential, social coaching, and formal LMS milestones.</p>
+                    <h3 class="font-heading font-bold text-base text-slate-900">${emp.name}'s Active Performance Objectives</h3>
+                    <p class="text-xs text-slate-500">Live operational targets synchronized directly from <code>public.performance_goals</code> in database.</p>
                 </div>
-                <button onclick="openModal('modal-create-idp')" class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5">
-                    <i class="fas fa-plus"></i>
-                    <span>+ Add IDP Milestone</span>
-                </button>
+                <div class="space-y-3">${goalsHtml}</div>
             </div>
-            <div class="space-y-3.5">${goalsHtml}</div>
-        </div>
-    `;
-}
+        `;
+    };
 
-// 3.20 Toggle IDP Action Task Status
-function toggleIdpTask(goalId, taskIdx) {
-    const emp = associatesCompetencyData[activeCompetencyEmpKey];
-    if (!emp) return;
+    if (goals) {
+        renderGoalsHtml(goals);
+    }
 
-    const goal = emp.idpGoals.find(g => g.id === goalId);
-    if (goal && goal.actionItems[taskIdx]) {
-        goal.actionItems[taskIdx].done = !goal.actionItems[taskIdx].done;
-        const total = goal.actionItems.length;
-        const completed = goal.actionItems.filter(t => t.done).length;
-        goal.progress = Math.round((completed / total) * 100);
-
-        renderIDPView();
-        showToast(`Updated IDP progress to ${goal.progress}%`, 'success');
+    try {
+        const res = await fetch(`api/performance.php?action=get_goals&employee_id=${encodeURIComponent(emp.id)}`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+            goals = json.data;
+            window.dynamicCompetencyState.cache = window.dynamicCompetencyState.cache || {};
+            window.dynamicCompetencyState.cache[goalsCacheKey] = goals;
+            try { sessionStorage.setItem(goalsCacheKey, JSON.stringify(goals)); } catch (e) {}
+            renderGoalsHtml(goals);
+        }
+    } catch (e) {
+        console.warn('Could not fetch performance goals:', e);
     }
 }
 
-// 3.21 Render Certifications Roster
-function renderCertificationsRoster() {
-    const emp = associatesCompetencyData[activeCompetencyEmpKey];
+// 3.21 Render Certifications Roster (Instant Cached + Live SWR Background Update)
+async function renderCertificationsRoster(forceRefresh = false) {
+    const emp = resolveCompetencyActiveEmployee();
     const container = document.getElementById('comp-certs-container');
     if (!container || !emp) return;
 
-    const certsHtml = emp.certifications.map(c => {
-        let statusBadge = 'badge-sage';
-        if (c.status === 'Expiring Soon') statusBadge = 'badge-gold';
-        if (c.status === 'Expired') statusBadge = 'badge-terracotta';
+    const certsCacheKey = `comp_certs_cache_${emp.id}`;
+    let certList = window.dynamicCompetencyState?.cache?.[certsCacheKey];
+    if (!certList) {
+        try {
+            const cached = sessionStorage.getItem(certsCacheKey);
+            if (cached) {
+                certList = JSON.parse(cached);
+                window.dynamicCompetencyState.cache = window.dynamicCompetencyState.cache || {};
+                window.dynamicCompetencyState.cache[certsCacheKey] = certList;
+            }
+        } catch (e) {}
+    }
 
-        return `
-            <div class="p-4 bg-white rounded-2xl border border-[#E8DEDC] flex items-center justify-between flex-wrap gap-3 shadow-2xs hover:border-slate-300 transition">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-xl bg-gold-50 text-gold-dark border border-gold-100 flex items-center justify-center text-base font-bold shadow-2xs">
-                        <i class="fas fa-award"></i>
-                    </div>
+    const renderCertsHtml = (dbCerts) => {
+        const certs = Array.isArray(dbCerts) ? dbCerts : [];
+
+        if (certs.length === 0) {
+            container.innerHTML = `
+                <div class="space-y-4">
                     <div>
-                        <div class="flex items-center space-x-2">
-                            <h4 class="font-heading font-bold text-sm text-slate-900">${c.name}</h4>
-                            <span class="${statusBadge}">${c.status}</span>
+                        <h3 class="font-heading font-bold text-base text-slate-900">${emp.name}'s Verified Qualifications &amp; Licensures</h3>
+                        <p class="text-xs text-slate-500">Official registry directly querying <code>public.certificates</code> in database.</p>
+                    </div>
+                    <div class="p-8 text-center bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2">
+                        <div class="w-12 h-12 rounded-2xl bg-gold-50 text-gold-dark border border-gold-200 flex items-center justify-center text-xl mx-auto shadow-2xs">
+                            <i class="fas fa-certificate"></i>
                         </div>
-                        <p class="text-xs text-slate-500">Issuer: ${c.issuer} · Reg No: <code class="font-mono text-slate-700">${c.certNo}</code></p>
-                        <p class="text-[11px] text-slate-400">Valid: ${c.issuedDate} &rarr; <strong>Expires: ${c.expiryDate}</strong> · Dimension: ${c.linkedCompetency}</p>
+                        <h4 class="font-heading font-bold text-slate-800 text-sm">No Active Certifications on Record</h4>
+                        <p class="text-xs text-slate-500 max-w-sm mx-auto">Official certificates logged in <code>public.certificates</code> will appear here once issued from completed evaluations or training programs.</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-2">
-                    <button onclick="showToast('Verifying digital certificate validity with issuer database...', 'info')" class="px-3 py-1.5 rounded-xl border border-[#E8DEDC] hover:bg-slate-50 text-xs font-semibold text-slate-700 transition">
-                        Verify Digital ID
-                    </button>
-                    ${c.status !== 'Active' ? `
-                        <button onclick="showToast('Sent certification renewal reminder and scheduled refresher LMS course.', 'success')" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1">
-                            <i class="fas fa-bell"></i>
-                            <span>Renew Credential</span>
+            `;
+            return;
+        }
+
+        window.currentRenderedCerts = certs;
+
+        const certsHtml = certs.map((c, idx) => {
+            const programTitle = c.program_title || c.programTitle || 'Certified Program';
+            const certNo = c.certificate_number || c.certificateNumber || 'N/A';
+            const issueDate = c.issue_date || c.issueDate || (c.created_at ? new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A');
+            const scoreDisplay = (c.score !== null && c.score !== undefined) ? `${c.score}% Pass Score` : 'Certified';
+            const gmSig = c.gm_signature || c.gmSignature || 'General Manager, Oxford Suites';
+            const category = c.category || 'Hospitality Operational Excellence';
+            const dept = c.dept || emp.department || 'Operations';
+
+            return `
+                <div class="p-5 bg-white rounded-2xl border border-[#E8DEDC] flex items-center justify-between flex-wrap gap-4 shadow-2xs hover:border-slate-300 transition">
+                    <div class="flex items-center space-x-3.5">
+                        <div class="w-11 h-11 rounded-2xl bg-gold-50 text-gold-dark border border-gold-200 flex items-center justify-center text-lg font-bold shadow-2xs">
+                            <i class="fas fa-certificate"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h4 class="font-heading font-bold text-sm text-slate-900">${programTitle}</h4>
+                                <span class="badge-sage">${scoreDisplay}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">Dept: <span class="font-semibold text-slate-700">${dept}</span> · Category: <span class="text-slate-600">${category}</span></p>
+                            <p class="text-[11px] text-slate-400 mt-0.5">Cert No: <code class="font-mono text-slate-700 font-bold">${certNo}</code> · Issued: <strong>${issueDate}</strong> · Signed: ${gmSig}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="showCompetencyCertificateByIndex(${idx})" class="px-3.5 py-1.5 rounded-xl bg-gold-50 hover:bg-gold-100 border border-gold-200 text-xs font-bold text-gold-dark transition flex items-center space-x-1.5 shadow-2xs">
+                            <i class="fas fa-certificate text-gold-dark text-xs"></i>
+                            <span>View Certificate</span>
                         </button>
-                    ` : ''}
+                    </div>
                 </div>
-            </div>
-        `;
-    }).join('');
+            `;
+        }).join('');
 
-    const roleName = String(window.currentUser?.role || window.activePersonaRole || '').toLowerCase().trim();
-    const isAssociate = (roleName === 'associate' || roleName === 'employee' || roleName === 'staff');
-
-    container.innerHTML = `
-        <div class="space-y-4">
-            <div class="flex items-center justify-between">
+        container.innerHTML = `
+            <div class="space-y-4">
                 <div>
                     <h3 class="font-heading font-bold text-base text-slate-900">${emp.name}'s Verified Qualifications &amp; Licensures</h3>
-                    <p class="text-xs text-slate-500">Official registry tracking expiration alerts and recertification cycles.</p>
+                    <p class="text-xs text-slate-500">Official registry directly querying <code>public.certificates</code> in database.</p>
                 </div>
-                ${!isAssociate ? `
-                    <button onclick="openModal('modal-add-certificate')" class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5">
-                        <i class="fas fa-plus"></i>
-                        <span>+ Record New Certificate</span>
-                    </button>
-                ` : ''}
+                <div class="space-y-3">${certsHtml}</div>
             </div>
-            <div class="space-y-3">${certsHtml.length > 0 ? certsHtml : '<p class="text-xs text-slate-400 italic p-4 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC]">No active credentials logged.</p>'}</div>
-        </div>
-    `;
+        `;
+    };
 
+    if (certList) {
+        renderCertsHtml(certList);
+    }
+
+    try {
+        const res = await fetch(`api/training.php?action=get_certificates&associate_id=${encodeURIComponent(emp.id)}`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+            certList = json.data;
+            window.dynamicCompetencyState.cache = window.dynamicCompetencyState.cache || {};
+            window.dynamicCompetencyState.cache[certsCacheKey] = certList;
+            try { sessionStorage.setItem(certsCacheKey, JSON.stringify(certList)); } catch (e) {}
+            renderCertsHtml(certList);
+        }
+    } catch (e) {
+        console.warn('Could not fetch certificates for roster view:', e);
+    }
 }
 
-// 3.22 Render Performance Integration Summary
+// 3.22 Open Digital Certificate Modal for Competency Certificates
+function showCompetencyCertificateByIndex(idx) {
+    const cert = (window.currentRenderedCerts || [])[idx];
+    if (!cert) return;
+    const emp = resolveCompetencyActiveEmployee();
+
+    const elCertName = document.getElementById('cert-modal-associate-name');
+    const elCertProgram = document.getElementById('cert-modal-program-title');
+    const elCertId = document.getElementById('cert-modal-cert-id');
+    const elCertDate = document.getElementById('cert-modal-date');
+    const elCertTrainer = document.getElementById('cert-modal-trainer-name');
+    const elCertScore = document.getElementById('cert-modal-score');
+
+    if (elCertName) elCertName.textContent = cert.associate_name || cert.associateName || emp?.name || 'Associate';
+    if (elCertProgram) elCertProgram.textContent = cert.program_title || cert.programTitle || 'Certified Hospitality Program';
+    if (elCertId) elCertId.textContent = cert.certificate_number || cert.certificateNumber || cert.certificateReference || 'OXF-CERT-2026-0889';
+    const issueDateStr = cert.issue_date || cert.issueDate || (cert.created_at ? new Date(cert.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Aug 29, 2026');
+    if (elCertDate) elCertDate.textContent = issueDateStr;
+    if (elCertTrainer) elCertTrainer.textContent = cert.trainerName || cert.trainer_name || 'Elena Vance';
+    if (elCertScore) elCertScore.textContent = `Score: ${cert.score !== null && cert.score !== undefined ? cert.score : 96}% (Mastery Level Achieved)`;
+
+    if (typeof openModal === 'function') {
+        openModal('modal-training-certificate');
+    }
+}
+window.showCompetencyCertificateByIndex = showCompetencyCertificateByIndex;
+
+// 3.22 Render Performance Integration Summary (Deprecated - Replaced with Live Database Performance Goals View)
 function renderPerformanceIntegrationSummary() {
-    const emp = associatesCompetencyData[activeCompetencyEmpKey];
-    const container = document.getElementById('comp-perf-integration-container');
-    if (!container || !emp) return;
-
-    const compScore = emp.overallCompetencyScore;
-    const goalScore = 4.60;
-    const compositeAppraisal = (compScore * 0.40) + (goalScore * 0.60);
-
-    container.innerHTML = `
-        <div class="p-6 bg-white rounded-3xl border border-[#E8DEDC] space-y-5 shadow-xs">
-            <div class="flex items-center justify-between flex-wrap gap-2">
-                <div>
-                    <span class="badge-primary">Q3 Performance Appraisal Integration</span>
-                    <h3 class="font-heading font-bold text-lg text-slate-900 mt-1">${emp.name} · Composite Merit Rating</h3>
-                </div>
-                <div class="text-right">
-                    <span class="text-xs text-slate-400 block font-medium">Overall Composite Score</span>
-                    <span class="font-heading font-bold text-2xl text-primary">${compositeAppraisal.toFixed(2)} / 5.0</span>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2">
-                    <div class="flex justify-between font-bold text-xs text-slate-800">
-                        <span>1. Competency Behavioral Score (40% Weight)</span>
-                        <span class="text-primary">${compScore.toFixed(2)} / 5.0</span>
-                    </div>
-                    <div class="w-full bg-white h-2 rounded-full overflow-hidden border border-[#E8DEDC]">
-                        <div class="bg-primary h-2" style="width: ${(compScore / 5.0) * 100}%"></div>
-                    </div>
-                    <p class="text-[11px] text-slate-500">Evaluated across 5 functional dimensions by Supervisor &amp; HR Calibration.</p>
-                </div>
-
-                <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2">
-                    <div class="flex justify-between font-bold text-xs text-slate-800">
-                        <span>2. SMART Operational Goals (60% Weight)</span>
-                        <span class="text-sage-dark">${goalScore.toFixed(2)} / 5.0</span>
-                    </div>
-                    <div class="w-full bg-white h-2 rounded-full overflow-hidden border border-[#E8DEDC]">
-                        <div class="bg-sage h-2" style="width: ${(goalScore / 5.0) * 100}%"></div>
-                    </div>
-                    <p class="text-[11px] text-slate-500">Measured against VIP NPS Index &ge; +92, Upsell Conversion, and Audit Pass.</p>
-                </div>
-            </div>
-
-            <div class="p-4 bg-sage-50/70 rounded-2xl border border-sage-100 flex items-center justify-between flex-wrap gap-2 text-xs text-sage-dark font-medium">
-                <div class="flex items-center space-x-2">
-                    <i class="fas fa-check-circle text-sage text-base"></i>
-                    <span>Competency assessment is synchronized with <strong>Phase 4 &amp; 5 Formal Appraisal</strong>.</span>
-                </div>
-                <button onclick="showToast('Synchronized live competency records with Q3 appraisal sheet.', 'success')" class="btn-primary px-4 py-2 text-xs font-bold">
-                    Sync to Q3 Appraisal Matrix
-                </button>
-            </div>
-        </div>
-    `;
+    renderIDPView();
 }
 
 // 3.23 Render Competency Analytics Dashboard
 function renderCompetencyAnalyticsDashboard() {
     const container = document.getElementById('comp-analytics-container');
-    if (!container) return;
-
-    container.innerHTML = `
-        <div class="space-y-6">
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="p-5 bg-white rounded-2xl border border-[#E8DEDC] space-y-1 shadow-2xs">
-                    <span class="text-slate-400 text-xs font-medium">Property Competency Index</span>
-                    <h3 class="font-heading font-bold text-2xl text-slate-900">4.42 <span class="text-xs text-sage-dark font-bold">+0.18 Q3</span></h3>
-                    <p class="text-[11px] text-slate-500">Across 100 Associates</p>
-                </div>
-                <div class="p-5 bg-white rounded-2xl border border-[#E8DEDC] space-y-1 shadow-2xs">
-                    <span class="text-slate-400 text-xs font-medium">Benchmark Compliance</span>
-                    <h3 class="font-heading font-bold text-2xl text-sage-dark">92.4%</h3>
-                    <p class="text-[11px] text-slate-500">Met / Exceeded Target</p>
-                </div>
-                <div class="p-5 bg-white rounded-2xl border border-[#E8DEDC] space-y-1 shadow-2xs">
-                    <span class="text-slate-400 text-xs font-medium">Active IDP Plans</span>
-                    <h3 class="font-heading font-bold text-2xl text-primary">28 Enrolled</h3>
-                    <p class="text-[11px] text-slate-500">74% Average Completion</p>
-                </div>
-                <div class="p-5 bg-white rounded-2xl border border-[#E8DEDC] space-y-1 shadow-2xs">
-                    <span class="text-slate-400 text-xs font-medium">License Compliance</span>
-                    <h3 class="font-heading font-bold text-2xl text-gold-dark">98.5%</h3>
-                    <p class="text-[11px] text-slate-500">2 Expirations Pending</p>
-                </div>
-            </div>
-
-            <div class="p-4 bg-white rounded-2xl border border-[#E8DEDC] flex items-center justify-between flex-wrap gap-3">
-                <div class="flex items-center space-x-2">
-                    <i class="fas fa-file-shield text-primary"></i>
-                    <span class="text-xs font-bold text-slate-900">Official Oxford Suites Competency &amp; TNA Audit Dossier</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <button onclick="exportCompetencyReportCSV()" class="btn-secondary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5">
-                        <i class="fas fa-file-csv text-primary"></i>
-                        <span>Export CSV Matrix</span>
-                    </button>
-                    <button onclick="window.print()" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5">
-                        <i class="fas fa-print"></i>
-                        <span>Print Audit Dossier</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
+    if (container) container.innerHTML = '';
 }
 
 // ========================================================
-// 4. DYNAMIC SUPABASE COMPETENCY ENGINE & MODALS
+// 4. DYNAMIC SUPABASE COMPETENCY ENGINE & MODALS WITH CACHING
 // ========================================================
 
 window.dynamicCompetencyState = {
@@ -2186,61 +2226,110 @@ window.dynamicCompetencyState = {
     employees: [],
     activeDept: 'all',
     minScore: 0,
-    loading: false
+    loading: false,
+    cache: {}
 };
 
-// 4.1 Load Departments from Supabase into Dropdowns
-async function loadDepartmentDropdowns() {
+// Populate memory from session storage for 0ms initial render
+try {
+    const cachedDepts = sessionStorage.getItem('comp_departments_cache');
+    if (cachedDepts) window.dynamicCompetencyState.departments = JSON.parse(cachedDepts);
+    const cachedMatrix = sessionStorage.getItem('comp_matrix_cache_all');
+    if (cachedMatrix) {
+        const parsed = JSON.parse(cachedMatrix);
+        window.dynamicCompetencyState.competencies = parsed.competencies || [];
+        window.dynamicCompetencyState.employees = parsed.employees || [];
+        window.dynamicCompetencyState.cache['comp_matrix_cache_all'] = parsed;
+    }
+} catch (e) {}
+
+// Helper to populate department selects
+function populateDeptDropdowns(depts) {
+    if (!Array.isArray(depts)) return;
+    const matrixDeptSelect = document.getElementById('matrix-filter-dept');
+    if (matrixDeptSelect) {
+        const currentVal = matrixDeptSelect.value || 'all';
+        matrixDeptSelect.innerHTML = `<option value="all">All Departments (${depts.length} Depts)</option>` +
+            depts.map(d => `<option value="${d.id}" ${d.id === currentVal ? 'selected' : ''}>${d.name}</option>`).join('');
+    }
+
+    const teamDeptSelect = document.getElementById('team-deck-dept-filter');
+    if (teamDeptSelect) {
+        const currentVal = teamDeptSelect.value || 'all';
+        teamDeptSelect.innerHTML = `<option value="all">All Departments</option>` +
+            depts.map(d => `<option value="${d.id}" ${d.id === currentVal ? 'selected' : ''}>${d.name}</option>`).join('');
+    }
+
+    const addCompDeptSelect = document.getElementById('comp-add-dept');
+    if (addCompDeptSelect) {
+        addCompDeptSelect.innerHTML = depts.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+    }
+}
+
+// 4.1 Load Departments from Supabase with Caching
+async function loadDepartmentDropdowns(forceRefresh = false) {
+    if (!forceRefresh && window.dynamicCompetencyState.departments.length > 0) {
+        populateDeptDropdowns(window.dynamicCompetencyState.departments);
+        return;
+    }
     try {
+        const cached = sessionStorage.getItem('comp_departments_cache');
+        if (cached && !forceRefresh) {
+            const data = JSON.parse(cached);
+            window.dynamicCompetencyState.departments = data;
+            populateDeptDropdowns(data);
+            return;
+        }
+
         const res = await fetch('api/competencies.php?action=get_departments');
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
             window.dynamicCompetencyState.departments = json.data;
-
-            // 1. Matrix Filter Dept Dropdown
-            const matrixDeptSelect = document.getElementById('matrix-filter-dept');
-            if (matrixDeptSelect) {
-                const currentVal = matrixDeptSelect.value || 'all';
-                matrixDeptSelect.innerHTML = `<option value="all">All Departments (${json.data.length} Depts)</option>` +
-                    json.data.map(d => `<option value="${d.id}" ${d.id === currentVal ? 'selected' : ''}>${d.name}</option>`).join('');
-            }
-
-            // 2. Team Deck Dept Dropdown
-            const teamDeptSelect = document.getElementById('team-deck-dept-filter');
-            if (teamDeptSelect) {
-                const currentVal = teamDeptSelect.value || 'all';
-                teamDeptSelect.innerHTML = `<option value="all">All Departments</option>` +
-                    json.data.map(d => `<option value="${d.id}" ${d.id === currentVal ? 'selected' : ''}>${d.name}</option>`).join('');
-            }
-
-            // 3. Add Competency Modal Dept Dropdown
-            const addCompDeptSelect = document.getElementById('comp-add-dept');
-            if (addCompDeptSelect) {
-                addCompDeptSelect.innerHTML = json.data.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
-            }
+            try {
+                sessionStorage.setItem('comp_departments_cache', JSON.stringify(json.data));
+            } catch (e) {}
+            populateDeptDropdowns(json.data);
         }
     } catch (err) {
         console.error('Failed to load departments from Supabase:', err);
     }
 }
 
-// 4.2 Fetch Dynamic Competencies & Employee Matrix from Supabase
-async function fetchDynamicCompetencyMatrix(deptFilter, minScore) {
+// 4.2 Fetch Dynamic Competencies & Employee Matrix with 0ms Cache Support
+async function fetchDynamicCompetencyMatrix(deptFilter, minScore, forceRefresh = false) {
     const targetDept = deptFilter !== undefined ? deptFilter : (document.getElementById('matrix-filter-dept')?.value || window.dynamicCompetencyState.activeDept || 'all');
     const targetMin = minScore !== undefined ? parseFloat(minScore) : parseFloat(document.getElementById('matrix-filter-min')?.value || window.dynamicCompetencyState.minScore || 0);
 
     window.dynamicCompetencyState.activeDept = targetDept;
     window.dynamicCompetencyState.minScore = targetMin;
 
-    const tbody = document.getElementById('comp-matrix-tbody');
-    if (tbody) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="15" class="px-5 py-8 text-center text-slate-500 text-xs">
-                    <i class="fas fa-spinner fa-spin text-primary mr-2"></i> Loading dynamic competencies directly from Supabase SQL database...
-                </td>
-            </tr>
-        `;
+    const cacheKey = `comp_matrix_cache_${targetDept}`;
+    let hasRenderedFromCache = false;
+
+    // 1. Instant 0ms render from memory or sessionStorage cache
+    if (!forceRefresh) {
+        if (window.dynamicCompetencyState.cache && window.dynamicCompetencyState.cache[cacheKey]) {
+            const cached = window.dynamicCompetencyState.cache[cacheKey];
+            window.dynamicCompetencyState.competencies = cached.competencies || [];
+            window.dynamicCompetencyState.employees = cached.employees || [];
+            renderCompetencyMatrixTable();
+            renderEmployeeSelectOptions();
+            hasRenderedFromCache = true;
+        } else {
+            try {
+                const stored = sessionStorage.getItem(cacheKey);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    window.dynamicCompetencyState.competencies = parsed.competencies || [];
+                    window.dynamicCompetencyState.employees = parsed.employees || [];
+                    window.dynamicCompetencyState.cache = window.dynamicCompetencyState.cache || {};
+                    window.dynamicCompetencyState.cache[cacheKey] = parsed;
+                    renderCompetencyMatrixTable();
+                    renderEmployeeSelectOptions();
+                    hasRenderedFromCache = true;
+                }
+            } catch (e) {}
+        }
     }
 
     try {
@@ -2249,14 +2338,21 @@ async function fetchDynamicCompetencyMatrix(deptFilter, minScore) {
         if (json.success) {
             window.dynamicCompetencyState.competencies = json.competencies || [];
             window.dynamicCompetencyState.employees = json.employees || [];
+            window.dynamicCompetencyState.cache = window.dynamicCompetencyState.cache || {};
+            window.dynamicCompetencyState.cache[cacheKey] = {
+                competencies: json.competencies || [],
+                employees: json.employees || []
+            };
+            try {
+                sessionStorage.setItem(cacheKey, JSON.stringify(window.dynamicCompetencyState.cache[cacheKey]));
+            } catch (e) {}
             renderCompetencyMatrixTable();
             renderEmployeeSelectOptions();
         } else {
-            showToast(json.message || 'Error loading competencies from database', 'error');
+            showToast(json.message || 'Error loading competencies', 'error');
         }
     } catch (err) {
-        console.error('Error fetching competency matrix from Supabase:', err);
-        showToast('Database connection error while fetching competencies', 'error');
+        console.error('Error fetching competency matrix:', err);
     }
 }
 
@@ -2478,28 +2574,24 @@ function renderCompetencyMatrixTable() {
             overallBadge = `<span class="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Not Assessed</span>`;
         }
 
-        // Performance Objective & Retry Count Status Badge
+        // Training Column Status Badge (strictly reads needs_training and in_training / is_training)
         let goalBadge = '';
         const gs = emp.goals_summary || {};
-        if (gs.needs_training) {
+        const isNeedsTraining = (gs.needs_training === true || gs.needs_training === 1 || gs.needs_training === '1' || gs.needs_training === 'true' || gs.needs_training === 't');
+        const isInTraining = (gs.in_training === true || gs.in_training === 1 || gs.in_training === '1' || gs.in_training === 'true' || gs.in_training === 't' || gs.is_training === true || gs.is_training === 1 || gs.is_training === '1');
+
+        if (isNeedsTraining) {
             goalBadge = `
-                <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-300 shadow-2xs" title="Performance Objective retry count: ${gs.max_retries}. Attempted twice without standard. Flagged for Needs Training.">
+                <span class="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-300 shadow-2xs" title="Performance Objective flagged for Needs Training">
                     <i class="fas fa-triangle-exclamation text-rose-600 text-[8px]"></i>
-                    <span>Needs Training (2+ Retries)</span>
+                    <span>Needs Training</span>
                 </span>
             `;
-        } else if (gs.has_unmet_objectives) {
+        } else if (isInTraining) {
             goalBadge = `
-                <span class="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs" title="Unmet Objectives: ${gs.unmet_titles ? gs.unmet_titles.join(', ') : 'Objectives not met'}">
-                    <i class="fas fa-circle-exclamation text-amber-600 text-[8px]"></i>
-                    <span>Goal Unmet</span>
-                </span>
-            `;
-        } else if (gs.total_goals > 0) {
-            goalBadge = `
-                <span class="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200" title="Performance Objectives Met & Approved">
-                    <i class="fas fa-circle-check text-emerald-500 text-[8px]"></i>
-                    <span>Goal Met</span>
+                <span class="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-primary-50 text-primary border border-primary-200 shadow-2xs" title="Enrolled in Active Training">
+                    <i class="fas fa-chalkboard-user text-primary text-[8px]"></i>
+                    <span>In Training</span>
                 </span>
             `;
         }
@@ -2591,7 +2683,7 @@ async function handleAddCompetencySubmit(e) {
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Saving to Database...';
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Saving Competency...';
     }
 
     const name = document.getElementById('comp-add-name').value;
@@ -2625,7 +2717,7 @@ async function handleAddCompetencySubmit(e) {
         const json = await res.json();
         if (json.success) {
             closeModal('modal-add-competency');
-            showToast(`Competency "${name}" created and saved to database!`, 'success');
+            showToast(`Competency "${name}" created and saved!`, 'success');
             
             // Immediately refresh matrix table and dropdowns from database without requiring page refresh
             await fetchDynamicCompetencyMatrix(window.dynamicCompetencyState.activeDept);
@@ -2737,24 +2829,27 @@ async function launchDynamicEvaluationModal(empId) {
                         <div>
                             <div class="flex items-center space-x-2">
                                 <strong class="font-bold text-rose-900">Training Intervention Required</strong>
-                                <span class="px-1.5 py-0.2 rounded bg-rose-200 text-rose-800 text-[9px] font-bold">2+ Retries on Performance Goals</span>
+                                <span class="px-1.5 py-0.2 rounded bg-rose-200 text-rose-800 text-[9px] font-bold">Needs Training Flagged</span>
                             </div>
                             <p class="text-[11px] text-rose-700 mt-0.5 leading-relaxed">
-                                This associate has attempted their Performance Objective <strong>${gs.max_retries} times</strong> without meeting standard. Recommend assigning targeted training modules and an Individual Development Plan (IDP).
+                                Associate currently has objectives flagged with <strong>Needs Training</strong>: ${gs.needs_training_titles ? gs.needs_training_titles.join(', ') : 'Objectives flagged'}.
                             </p>
                         </div>
                     </div>
                 `;
-            } else if (gs.has_unmet_objectives) {
+            } else if (gs.in_training) {
                 goalAlertBanner = `
-                    <div class="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-start space-x-2.5 text-amber-900 text-xs shadow-2xs mb-1">
-                        <div class="w-7 h-7 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0 font-bold">
-                            <i class="fas fa-circle-exclamation"></i>
+                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-2xl flex items-start space-x-2.5 text-blue-900 text-xs shadow-2xs mb-1">
+                        <div class="w-7 h-7 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0 font-bold">
+                            <i class="fas fa-chalkboard-user"></i>
                         </div>
                         <div>
-                            <strong class="font-bold text-amber-900">Unmet Performance Objective Detected</strong>
-                            <p class="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
-                                Associate currently has unmet or revising goals: ${gs.unmet_titles ? gs.unmet_titles.join(', ') : 'Objectives not met'}. Focus on related competency gaps below.
+                            <div class="flex items-center space-x-2">
+                                <strong class="font-bold text-blue-900">Active Training In Progress</strong>
+                                <span class="px-1.5 py-0.2 rounded bg-blue-200 text-blue-800 text-[9px] font-bold">In Training</span>
+                            </div>
+                            <p class="text-[11px] text-blue-700 mt-0.5 leading-relaxed">
+                                Associate is currently participating in scheduled training modules for: ${gs.in_training_titles ? gs.in_training_titles.join(', ') : 'Active Training'}.
                             </p>
                         </div>
                     </div>
@@ -2950,7 +3045,7 @@ async function handleAssessmentSubmit(e) {
                 await renderSkillsGapAnalysis();
             }
         } else {
-            showToast(json.message || 'Failed to save assessment to database.', 'error');
+            showToast(json.message || 'Failed to save assessment.', 'error');
         }
     } catch (err) {
         console.error('Error submitting assessment:', err);
@@ -3234,7 +3329,8 @@ window.fetchEmployeeSpecificCompetencies = fetchEmployeeSpecificCompetencies;
 
 async function renderEmployeeOverviewCompetencies(empId = 'emp-101') {
     const container = document.getElementById('emp-overview-competencies-container');
-    if (!container) return;
+    const compLoading = document.getElementById('kpi-comp-loading');
+    if (compLoading) compLoading.classList.remove('hidden');
 
     const cleanId = (empId || 'emp-101').toString().toLowerCase();
     const countEl = document.getElementById('emp-overview-comp-count');
@@ -3242,9 +3338,10 @@ async function renderEmployeeOverviewCompetencies(empId = 'emp-101') {
     // 1. Instant Render: Use cached or fallback data immediately with ZERO delay
     const initialList = window._cachedEmpCompetencies[cleanId] || getFallbackCompetencyProfile(cleanId);
     if (initialList && initialList.length > 0) {
-        container.innerHTML = renderCompetencyCardsHTML(initialList);
+        if (container) container.innerHTML = renderCompetencyCardsHTML(initialList);
         if (countEl) countEl.textContent = `${initialList.length} Assigned Competencies`;
-    } else {
+        updateCompetencyKpiCard(initialList, empId);
+    } else if (container) {
         // Skeleton only if no data exists at all
         container.innerHTML = `
             <div class="col-span-1 md:col-span-2 lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
@@ -3269,14 +3366,60 @@ async function renderEmployeeOverviewCompetencies(empId = 'emp-101') {
     try {
         const freshList = await fetchEmployeeSpecificCompetencies(empId);
         if (freshList && freshList.length > 0) {
-            container.innerHTML = renderCompetencyCardsHTML(freshList);
+            if (container) container.innerHTML = renderCompetencyCardsHTML(freshList);
             if (countEl) countEl.textContent = `${freshList.length} Assigned Competencies`;
+            updateCompetencyKpiCard(freshList, empId);
+        } else if (!initialList || initialList.length === 0) {
+            updateCompetencyKpiCard([], empId);
         }
     } catch (e) {
         console.warn('Competency background refresh note:', e);
+    } finally {
+        if (compLoading) compLoading.classList.add('hidden');
+    }
+}
+
+function updateCompetencyKpiCard(list, empId) {
+    const kpiLevel = document.getElementById('kpi-comp-level');
+    const kpiVal = document.getElementById('kpi-comp-val');
+    const kpiTier = document.getElementById('kpi-comp-tier');
+    const kpiBar = document.getElementById('kpi-comp-bar');
+    const kpiSub = document.getElementById('kpi-comp-subtitle');
+
+    if (!list || list.length === 0) {
+        if (kpiLevel) kpiLevel.textContent = 'Level 1';
+        if (kpiVal) kpiVal.innerHTML = `0.0<span class="text-base text-slate-400 font-normal">/5</span>`;
+        if (kpiTier) kpiTier.textContent = 'Entry Tier';
+        if (kpiBar) kpiBar.style.width = '0%';
+        if (kpiSub) kpiSub.textContent = 'No evaluated competencies recorded';
+        return;
+    }
+
+    let sum = 0;
+    list.forEach(c => {
+        sum += Number(c.score || c.rating || c.current_score || 0);
+    });
+    const avg = Number((sum / list.length).toFixed(1));
+    let level = 1;
+    let tier = 'Entry Tier';
+    if (avg >= 4.5) { level = 5; tier = 'Master Tier'; }
+    else if (avg >= 4.0) { level = 4; tier = 'Senior Tier'; }
+    else if (avg >= 3.0) { level = 3; tier = 'Core Tier'; }
+    else if (avg >= 2.0) { level = 2; tier = 'Developing Tier'; }
+
+    const barWidth = Math.min(100, Math.round((avg / 5) * 100));
+
+    if (kpiLevel) kpiLevel.textContent = `Level ${level}`;
+    if (kpiVal) kpiVal.innerHTML = `${avg.toFixed(1)}<span class="text-base text-slate-400 font-normal">/5</span>`;
+    if (kpiTier) kpiTier.textContent = tier;
+    if (kpiBar) kpiBar.style.width = `${barWidth}%`;
+    if (kpiSub) {
+        const personaRole = window.activePersonaRole || 'Front Desk Host';
+        kpiSub.textContent = `${personaRole} promotion track`;
     }
 }
 window.renderEmployeeOverviewCompetencies = renderEmployeeOverviewCompetencies;
+window.updateCompetencyKpiCard = updateCompetencyKpiCard;
 
 // Global exposes
 window.loadDepartmentDropdowns = loadDepartmentDropdowns;
