@@ -1,6 +1,9 @@
 <!-- Universal Reusable Action Confirmation Modal -->
 <div id="modal-action-confirmation" class="fixed inset-0 modal-overlay z-[999] hidden items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-scaleUp">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-scaleUp relative">
+        <button type="button" onclick="closeModal('modal-action-confirmation')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition duration-200 hover:rotate-90 z-10" aria-label="Close">
+            <i class="fas fa-times text-xs"></i>
+        </button>
         <div id="confirm-modal-icon-container" class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl font-bold mx-auto">
             <i id="confirm-modal-icon" class="fas fa-triangle-exclamation"></i>
         </div>
@@ -21,7 +24,10 @@
 
 <!-- Phase 7 Kudos Completion Award Prompt Modal -->
 <div id="modal-phase7-kudos-prompt" class="fixed inset-0 modal-overlay z-[999] hidden items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-scaleUp">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-scaleUp relative">
+        <button type="button" onclick="closeModal('modal-phase7-kudos-prompt')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition duration-200 hover:rotate-90 z-10" aria-label="Close">
+            <i class="fas fa-times text-xs"></i>
+        </button>
         <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl font-bold mx-auto shadow-2xs">
             <i class="fas fa-award"></i>
         </div>
@@ -735,7 +741,10 @@
 
 <!-- Confirmation Modal: No Monitoring Tasks Logged Before Appraisal -->
 <div id="modal-eval-no-tasks-confirm" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-amber-200 space-y-4 animate-scaleUp">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-amber-200 space-y-4 animate-scaleUp relative">
+        <button type="button" onclick="closeModal('modal-eval-no-tasks-confirm')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition duration-200 hover:rotate-90 z-10" aria-label="Close">
+            <i class="fas fa-times text-xs"></i>
+        </button>
         <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl font-bold mx-auto">
             <i class="fas fa-triangle-exclamation"></i>
         </div>
@@ -1685,7 +1694,10 @@
 
 <!-- 7g. Modal: Confirm Goal Failure Double-Check -->
 <div id="modal-confirm-goal-failure" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-    <div class="modal-card max-w-md w-full overflow-hidden flex flex-col bg-white rounded-3xl shadow-2xl border-2 border-rose-300">
+    <div class="modal-card max-w-md w-full overflow-hidden flex flex-col bg-white rounded-3xl shadow-2xl border-2 border-rose-300 relative">
+        <button type="button" onclick="closeModal('modal-confirm-goal-failure')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-rose-100 hover:bg-rose-200 text-rose-500 hover:text-rose-800 flex items-center justify-center transition duration-200 hover:rotate-90 z-10" aria-label="Close">
+            <i class="fas fa-times text-xs"></i>
+        </button>
         <div class="p-6 text-center space-y-4">
             <div class="w-14 h-14 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center text-2xl font-bold mx-auto border border-rose-200">
                 <i class="fas fa-ban"></i>

@@ -191,6 +191,14 @@ class PerformanceController
 
         $created = $this->goalModel->createGoal($data);
 
+        if (!empty($created['error'])) {
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => 'Database error: ' . ($created['error'] ?? 'Failed to save goal to database')
+            ];
+        }
+
         // Auto-assign general tasks matrix checklist to newly set goal
         if (!empty($created['id'])) {
             try {

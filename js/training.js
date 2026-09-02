@@ -33,15 +33,34 @@ const TrainingAPI = {
             options.body = JSON.stringify(payload);
         }
 
+        let toastId = null;
+        if (method !== 'GET' && typeof window.showToast === 'function') {
+            let loadingMsg = 'Processing training request...';
+            if (action.includes('delete') || action.includes('remove')) loadingMsg = 'Deleting training record...';
+            else if (action.includes('program')) loadingMsg = 'Saving training program...';
+            else if (action.includes('session') || action.includes('schedule')) loadingMsg = 'Scheduling training session...';
+            else if (action.includes('attendance')) loadingMsg = 'Updating attendance roster...';
+            else if (action.includes('result') || action.includes('evaluat') || action.includes('quiz')) loadingMsg = 'Processing training evaluation & quiz...';
+            else if (action.includes('need')) loadingMsg = 'Recording training need...';
+            toastId = window.showToast(loadingMsg, 'loading');
+        }
+
         try {
             const response = await fetch(url, options);
             const result = await response.json();
+
+            if (toastId && typeof window.dismissToast === 'function') {
+                window.dismissToast(toastId);
+            }
 
             if (!response.ok || !result.success) {
                 throw new Error(result.message || 'Server request failed');
             }
             return result.data;
         } catch (error) {
+            if (toastId && typeof window.dismissToast === 'function') {
+                window.dismissToast(toastId);
+            }
             console.error(`[TrainingAPI Error] [${action}]:`, error);
             if (typeof window.showToast === 'function') {
                 window.showToast(error.message || 'Server communication error', 'error');

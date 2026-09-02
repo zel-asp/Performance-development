@@ -181,13 +181,10 @@ function renderEmployeePulseGoals(goals) {
 
     let empGoals = allGoals.filter(g => {
         const goalEmpId = (g.employee_id || '').toLowerCase().trim();
-        if (currentUserId === 'emp-101') {
-            return goalEmpId === 'emp-101' || goalEmpId === 'emp-1' || goalEmpId === 'oxf-emp-1001';
-        } else if (currentUserId === 'emp-102') {
-            return goalEmpId === 'emp-102' || goalEmpId === 'emp-2' || goalEmpId === 'oxf-sup-2001';
-        } else {
-            return goalEmpId === currentUserId;
-        }
+        return isSameEmployee(goalEmpId, currentUserId) ||
+               (userObj.id && isSameEmployee(goalEmpId, userObj.id)) ||
+               (userObj.employee_code && isSameEmployee(goalEmpId, userObj.employee_code)) ||
+               (isAssociate && (goalEmpId === 'emp-101' || goalEmpId === 'emp-1' || goalEmpId === 'oxf-emp-1001' || goalEmpId === 'emp-001' || goalEmpId === '3a52667f-53cf-412a-b048-ef96eb407707'));
     });
 
     const totalGoalCount = empGoals.length;
@@ -609,7 +606,7 @@ function renderPlanningRosterTable() {
     const pageGoals = isAll ? allGoals : allGoals.slice(startIdx, startIdx + effectivePageSize);
 
     tbody.innerHTML = pageGoals.map((goal, index) => {
-        let emp = window.perfRoster.find(e => e.id === goal.employee_id || (e.id === 'emp-101' && (goal.employee_id === 'emp-1' || goal.employee_id === 'OXF-EMP-1001')) || (e.id === 'emp-102' && (goal.employee_id === 'emp-2' || goal.employee_id === 'OXF-SUP-2001')));
+        let emp = window.perfRoster.find(e => isSameEmployee(e.id, goal.employee_id));
         if (!emp) {
             const isSup = (goal.role === 'Supervisor' || goal.role === 'supervisor');
             emp = {
@@ -954,12 +951,13 @@ async function handleGoalSubmit(e) {
         return;
     }
 
+    const storedUser = JSON.parse(localStorage.getItem('oxford_session_user') || '{}');
     const isAssociate = (typeof activePersonaKey !== 'undefined' && (activePersonaKey === 'associate' || activePersonaKey === 'employee'));
-    const currentUserId = window.currentUser?.id || (isAssociate ? 'emp-101' : 'emp-102');
-    const currentRole = window.currentUser?.role || (isAssociate ? 'Associate' : 'Supervisor');
+    const currentUserId = window.currentUser?.id || storedUser.id || (isAssociate ? 'emp-101' : 'emp-102');
+    const currentRole = window.currentUser?.role || storedUser.role || (isAssociate ? 'Associate' : 'Supervisor');
 
     const selectedOpt = scopeSelect && scopeSelect.selectedIndex >= 0 ? scopeSelect.options[scopeSelect.selectedIndex] : null;
-    let employeeId = isAssociate ? currentUserId : (selectedOpt ? selectedOpt.value : currentUserId);
+    let employeeId = isAssociate ? currentUserId : (selectedOpt && selectedOpt.value !== 'dept' && selectedOpt.value !== 'property' ? selectedOpt.value : currentUserId);
     let role = isAssociate ? 'Associate' : (selectedOpt ? (selectedOpt.getAttribute('data-role') || currentRole) : currentRole);
     const targetScope = selectedOpt ? (selectedOpt.getAttribute('data-scope') || 'single') : 'single';
 

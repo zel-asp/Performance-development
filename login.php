@@ -48,9 +48,9 @@ require_once 'config/config.php';
             window._toastQueue = [];
             window._activeToastIds = [];
             const MAX_VISIBLE_TOASTS = 3;
-            const TOAST_DURATION = 3000;
+            const TOAST_DURATION = 2500;
 
-            window.showToast = function(msg, type = 'info') {
+            window.showToast = function(msg, type = 'info', customOptions = {}) {
                 if (window.toast) {
                     while (window._activeToastIds.length >= MAX_VISIBLE_TOASTS) {
                         const oldestId = window._activeToastIds.shift();
@@ -58,22 +58,37 @@ require_once 'config/config.php';
                             window.toast.dismiss(oldestId);
                         }
                     }
-                    const options = { duration: TOAST_DURATION };
+                    const isDurationSpecified = typeof customOptions.duration === 'number';
+                    const duration = isDurationSpecified ? customOptions.duration : (type === 'loading' ? 10000 : TOAST_DURATION);
+                    const options = { duration, ...customOptions };
                     let id;
                     if (type === 'success') id = window.toast.success(msg, options);
                     else if (type === 'error') id = window.toast.error(msg, options);
                     else if (type === 'warning') id = window.toast.warning(msg, options);
+                    else if (type === 'loading') id = (typeof window.toast.loading === 'function') ? window.toast.loading(msg, options) : window.toast.info(msg, options);
                     else id = window.toast.info(msg, options);
 
-                    if (id !== undefined) {
+                    if (id !== undefined && !window._activeToastIds.includes(id)) {
                         window._activeToastIds.push(id);
-                        setTimeout(() => {
-                            const idx = window._activeToastIds.indexOf(id);
-                            if (idx > -1) window._activeToastIds.splice(idx, 1);
-                        }, TOAST_DURATION);
+                        if (type !== 'loading') {
+                            setTimeout(() => {
+                                const idx = window._activeToastIds.indexOf(id);
+                                if (idx > -1) window._activeToastIds.splice(idx, 1);
+                            }, duration);
+                        }
                     }
+                    return id;
                 } else {
-                    window._toastQueue.push({ msg, type });
+                    window._toastQueue.push({ msg, type, customOptions });
+                    return null;
+                }
+            };
+
+            window.dismissToast = function(id) {
+                if (window.toast && id !== undefined && id !== null) {
+                    window.toast.dismiss(id);
+                    const idx = window._activeToastIds.indexOf(id);
+                    if (idx > -1) window._activeToastIds.splice(idx, 1);
                 }
             };
         </script>
@@ -81,7 +96,7 @@ require_once 'config/config.php';
             import { toast } from 'https://cdn.jsdelivr.net/npm/vanilla-sonner/+esm';
             window.toast = toast;
             if (window._toastQueue && window._toastQueue.length > 0) {
-                window._toastQueue.forEach(t => window.showToast(t.msg, t.type));
+                window._toastQueue.forEach(t => window.showToast(t.msg, t.type, t.customOptions));
                 window._toastQueue = [];
             }
         </script>

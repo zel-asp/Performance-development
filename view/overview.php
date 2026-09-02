@@ -427,117 +427,7 @@
                                     </div>
                                 </div>
 
-                                <!-- 2-Column: Property-Wide Shift Climate Pulse + Department Execution Matrix -->
-                                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-                                    <!-- Column 1: Property Shift Climate Pulse (Doughnut Chart) (5 cols) -->
-                                    <div class="lg:col-span-5 card-clean p-6 space-y-4">
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <h3 class="font-heading font-bold text-base text-slate-900">
-                                                    Shift Climate Pulse</h3>
-                                                <p class="text-xs text-slate-500">Aggregated Employee Sentiment (All 100 Staff)</p>
-                                            </div>
-                                            <button onclick="openModal('modal-sentiment-pulse')"
-                                                class="text-xs font-bold text-primary hover:underline">+ Property Audit</button>
-                                        </div>
-                                        <div class="h-48 w-full flex items-center justify-center">
-                                            <canvas id="chart-sentiment-doughnut"></canvas>
-                                        </div>
-                                        <div
-                                            class="flex justify-around text-center text-xs pt-3 border-t border-[#E8DEDC]">
-                                            <div>
-                                                <p class="font-bold text-sage-dark">68.5%</p>
-                                                <p class="text-[10px] text-slate-500">Smooth</p>
-                                            </div>
-                                            <div>
-                                                <p class="font-bold text-dusty-dark">23.0%</p>
-                                                <p class="text-[10px] text-slate-500">Manageable</p>
-                                            </div>
-                                            <div>
-                                                <p class="font-bold text-terracotta-dark">8.5%</p>
-                                                <p class="text-[10px] text-slate-500">Friction</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Column 2: Department Completion & Progress Comparison (7 cols) -->
-                                    <div class="lg:col-span-7 card-clean p-6 space-y-4">
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <h3 class="font-heading font-bold text-base text-slate-900">Department Execution Matrix</h3>
-                                                <p class="text-xs text-slate-500">Goal Approval %, LMS Completion %, and Succession Depth by Department</p>
-                                            </div>
-                                            <span class="badge-primary">Q3 Cycle</span>
-                                        </div>
-
-                                        <!-- Department Comparison Horizontal Bar Chart -->
-                                        <div class="h-44 w-full">
-                                            <canvas id="chart-system-dept-progress"></canvas>
-                                        </div>
-
-                                        <!-- Department Breakdown Mini Table -->
-                                        <div class="overflow-x-auto custom-scrollbar pt-2 border-t border-[#E8DEDC]">
-                                            <table class="w-full text-left text-xs">
-                                                <thead>
-                                                    <tr class="text-slate-400 font-semibold border-b border-[#E8DEDC]">
-                                                        <th class="pb-2 font-medium">Department</th>
-                                                        <th class="pb-2 font-medium text-center">Staff</th>
-                                                        <th class="pb-2 font-medium text-center">Goals Approved</th>
-                                                        <th class="pb-2 font-medium text-center">LMS Rate</th>
-                                                        <th class="pb-2 font-medium text-center">Succession</th>
-                                                        <th class="pb-2 font-medium text-right">Status</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody class="divide-y divide-[#E8DEDC]">
-                                                    <tr>
-                                                        <td class="py-2.5 font-bold text-slate-800">Front Office</td>
-                                                        <td class="py-2.5 text-center text-slate-500">12</td>
-                                                        <td class="py-2.5 text-center font-bold text-sage-dark">96.2%</td>
-                                                        <td class="py-2.5 text-center font-bold text-primary">98.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">85.0%</td>
-                                                        <td class="py-2.5 text-right"><span class="badge-sage">Optimal</span></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="py-2.5 font-bold text-slate-800">Food &amp; Beverage</td>
-                                                        <td class="py-2.5 text-center text-slate-500">24</td>
-                                                        <td class="py-2.5 text-center font-bold text-sage-dark">95.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-primary">96.5%</td>
-                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">80.0%</td>
-                                                        <td class="py-2.5 text-right"><span class="badge-sage">Optimal</span></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="py-2.5 font-bold text-slate-800">Kitchen &amp; Culinary</td>
-                                                        <td class="py-2.5 text-center text-slate-500">18</td>
-                                                        <td class="py-2.5 text-center font-bold text-sage-dark">94.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-primary">92.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">78.0%</td>
-                                                        <td class="py-2.5 text-right"><span class="badge-dusty">Good</span></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="py-2.5 font-bold text-slate-800">Banquet &amp; Events</td>
-                                                        <td class="py-2.5 text-center text-slate-500">18</td>
-                                                        <td class="py-2.5 text-center font-bold text-sage-dark">93.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-primary">94.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">76.0%</td>
-                                                        <td class="py-2.5 text-right"><span class="badge-dusty">Good</span></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="py-2.5 font-bold text-slate-800">Housekeeping</td>
-                                                        <td class="py-2.5 text-center text-slate-500">28</td>
-                                                        <td class="py-2.5 text-center font-bold text-sage-dark">90.5%</td>
-                                                        <td class="py-2.5 text-center font-bold text-primary">91.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">72.5%</td>
-                                                        <td class="py-2.5 text-right"><span class="badge-dusty">Good</span></td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-
-                                </div>
-
-                                <!-- 2-Column: Top 5 Gamified XP Champions Podium & Governance Highlights -->
+                                <!-- Row 1: Top 5 Gamified XP Champions + Department Execution Matrix -->
                                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
                                     <!-- Column 1: Top 5 Highest Gamified XP Staff Leaderboard (5 cols) -->
@@ -604,7 +494,7 @@
                                                             class="pt-2 text-center w-full bg-slate-100/90 sm:bg-transparent rounded-b-lg sm:rounded-none">
                                                             <span
                                                                 class="text-[9px] sm:text-[10px] font-extrabold tracking-wider text-gold-dark uppercase">FIRST</span>
-                                                             <p
+                                                            <p
                                                                 class="text-[8px] text-slate-400 font-medium hidden sm:block">
                                                                 HR Dir</p>
                                                         </div>
@@ -818,117 +708,189 @@
                                         </button>
                                     </div>
 
-                                    <!-- Column 2: 3 Governance & Operational Velocity Highlights (7 cols) -->
-                                    <div class="lg:col-span-7 space-y-4">
+                                    <!-- Column 2: Department Completion & Progress Comparison (7 cols) -->
+                                    <div class="lg:col-span-7 card-clean p-6 space-y-4">
                                         <div class="flex items-center justify-between">
                                             <div>
-                                                <h3 class="font-heading font-bold text-base text-slate-900">Governance &amp; Operational Velocity</h3>
-                                                <p class="text-xs text-slate-500">Quality calibration compliance, SLA speed, and AI adoption</p>
+                                                <h3 class="font-heading font-bold text-base text-slate-900">Department Execution Matrix</h3>
+                                                <p class="text-xs text-slate-500">Goal Approval %, LMS Completion %, and Succession Depth by Department</p>
                                             </div>
-                                            <span class="badge-sage">Live Telemetry</span>
+                                            <span class="badge-primary">Q3 Cycle</span>
                                         </div>
 
-                                        <!-- Highlight 1: Normalization & Bell Curve Status -->
-                                        <div class="card-clean p-5 space-y-2">
-                                            <div class="flex items-center justify-between">
-                                                <span class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
-                                                    <i class="fas fa-scale-balanced text-dusty-dark"></i>
-                                                    <span>Calibration Normalization</span>
-                                                </span>
-                                                <span class="badge-dusty">100% Calibrated</span>
-                                            </div>
-                                            <p class="text-xs text-slate-500 leading-relaxed">Target normal curve (15% Top / 70% Core / 15% Growth) successfully enforced across 100 evaluations.</p>
-                                            <div class="flex items-center space-x-1.5 text-[11px] pt-1">
-                                                <span class="px-2 py-0.5 bg-sage-50 text-sage-dark rounded-md font-bold border border-sage-100">15 Exceeds</span>
-                                                <span class="px-2 py-0.5 bg-dusty-50 text-dusty-dark rounded-md font-bold border border-dusty-100">70 Core</span>
-                                                <span class="px-2 py-0.5 bg-terracotta-50 text-terracotta-dark rounded-md font-bold border border-terracotta-100">15 Growth</span>
-                                            </div>
+                                        <!-- Department Comparison Horizontal Bar Chart -->
+                                        <div class="h-44 w-full">
+                                            <canvas id="chart-system-dept-progress"></canvas>
                                         </div>
 
-                                        <!-- Highlight 2: Turnaround Speed -->
-                                        <div class="card-clean p-5 space-y-2">
-                                            <div class="flex items-center justify-between">
-                                                <span class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
-                                                    <i class="fas fa-stopwatch text-sage-dark"></i>
-                                                    <span>Review Turnaround Speed</span>
-                                                </span>
-                                                <span class="badge-sage">4.2 Days Avg</span>
-                                            </div>
-                                            <p class="text-xs text-slate-500 leading-relaxed">Average duration from associate draft submission to supervisor endorsement and HR approval.</p>
-                                            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                                                <span>SLA Target: &lt; 7.0 Days</span>
-                                                <span class="text-sage-dark font-bold">0 Overdue Reviews</span>
-                                            </div>
-                                        </div>
-
-                                        <!-- Highlight 3: AI Copilot Assists -->
-                                        <div class="card-clean p-5 space-y-2">
-                                            <div class="flex items-center justify-between">
-                                                <span class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
-                                                    <i class="fas fa-robot text-dusty-dark"></i>
-                                                    <span>AI Feedback Adoption</span>
-                                                </span>
-                                                <span class="badge-dusty">312 Assists</span>
-                                            </div>
-                                            <p class="text-xs text-slate-500 leading-relaxed">312 AI-recommended SMART developmental objectives and tailored feedback suggestions accepted this cycle.</p>
-                                            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                                                <span>Goal Clarity: 98.4%</span>
-                                                <span class="text-dusty-dark font-bold">89% Action Rate</span>
-                                            </div>
+                                        <!-- Department Breakdown Mini Table -->
+                                        <div class="overflow-x-auto custom-scrollbar pt-2 border-t border-[#E8DEDC]">
+                                            <table class="w-full text-left text-xs">
+                                                <thead>
+                                                    <tr class="text-slate-400 font-semibold border-b border-[#E8DEDC]">
+                                                        <th class="pb-2 font-medium">Department</th>
+                                                        <th class="pb-2 font-medium text-center">Staff</th>
+                                                        <th class="pb-2 font-medium text-center">Goals Approved</th>
+                                                        <th class="pb-2 font-medium text-center">LMS Rate</th>
+                                                        <th class="pb-2 font-medium text-center">Succession</th>
+                                                        <th class="pb-2 font-medium text-right">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-[#E8DEDC]">
+                                                    <tr>
+                                                        <td class="py-2.5 font-bold text-slate-800">Front Office</td>
+                                                        <td class="py-2.5 text-center text-slate-500">12</td>
+                                                        <td class="py-2.5 text-center font-bold text-sage-dark">96.2%</td>
+                                                        <td class="py-2.5 text-center font-bold text-primary">98.0%</td>
+                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">85.0%</td>
+                                                        <td class="py-2.5 text-right"><span class="badge-sage">Optimal</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="py-2.5 font-bold text-slate-800">Food &amp; Beverage</td>
+                                                        <td class="py-2.5 text-center text-slate-500">24</td>
+                                                        <td class="py-2.5 text-center font-bold text-sage-dark">95.0%</td>
+                                                        <td class="py-2.5 text-center font-bold text-primary">96.5%</td>
+                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">80.0%</td>
+                                                        <td class="py-2.5 text-right"><span class="badge-sage">Optimal</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="py-2.5 font-bold text-slate-800">Kitchen &amp; Culinary</td>
+                                                        <td class="py-2.5 text-center text-slate-500">18</td>
+                                                        <td class="py-2.5 text-center font-bold text-sage-dark">94.0%</td>
+                                                        <td class="py-2.5 text-center font-bold text-primary">92.0%</td>
+                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">78.0%</td>
+                                                        <td class="py-2.5 text-right"><span class="badge-dusty">Good</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="py-2.5 font-bold text-slate-800">Banquet &amp; Events</td>
+                                                        <td class="py-2.5 text-center text-slate-500">18</td>
+                                                        <td class="py-2.5 text-center font-bold text-sage-dark">93.0%</td>
+                                                        <td class="py-2.5 text-center font-bold text-primary">94.0%</td>
+                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">76.0%</td>
+                                                        <td class="py-2.5 text-right"><span class="badge-dusty">Good</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="py-2.5 font-bold text-slate-800">Housekeeping</td>
+                                                        <td class="py-2.5 text-center text-slate-500">28</td>
+                                                        <td class="py-2.5 text-center font-bold text-sage-dark">90.5%</td>
+                                                        <td class="py-2.5 text-center font-bold text-primary">91.0%</td>
+                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">72.5%</td>
+                                                        <td class="py-2.5 text-right"><span class="badge-dusty">Good</span></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
 
                                 </div>
 
-                                <!-- Bottom Row: 3 Governance & Operational Velocity Highlights -->
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Row 2: Property Shift Climate Pulse + Governance Highlights -->
+                                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-                                    <!-- Highlight 1: Normalization & Bell Curve Status -->
-                                    <div class="card-clean p-5 space-y-2">
+                                    <!-- Column 1: Property Shift Climate Pulse (Doughnut Chart) (5 cols) -->
+                                    <div class="lg:col-span-5 card-clean p-6 space-y-4">
                                         <div class="flex items-center justify-between">
-                                            <span class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
-                                                <i class="fas fa-scale-balanced text-dusty-dark"></i>
-                                                <span>Calibration Normalization</span>
-                                            </span>
-                                            <span class="badge-dusty">100% Calibrated</span>
+                                            <div>
+                                                <h3 class="font-heading font-bold text-base text-slate-900">
+                                                    Shift Climate Pulse</h3>
+                                                <p class="text-xs text-slate-500">Aggregated Employee Sentiment (All 100 Staff)</p>
+                                            </div>
+                                            <button onclick="openModal('modal-sentiment-pulse')"
+                                                class="text-xs font-bold text-primary hover:underline">+ Property Audit</button>
                                         </div>
-                                        <p class="text-xs text-slate-500 leading-relaxed">Target normal curve (15% Top / 70% Core / 15% Growth) successfully enforced across 100 evaluations.</p>
-                                        <div class="flex items-center space-x-1.5 text-[11px] pt-1">
-                                            <span class="px-2 py-0.5 bg-sage-50 text-sage-dark rounded-md font-bold border border-sage-100">15 Exceeds</span>
-                                            <span class="px-2 py-0.5 bg-dusty-50 text-dusty-dark rounded-md font-bold border border-dusty-100">70 Core</span>
-                                            <span class="px-2 py-0.5 bg-terracotta-50 text-terracotta-dark rounded-md font-bold border border-terracotta-100">15 Growth</span>
+                                        <div class="h-48 w-full flex items-center justify-center">
+                                            <canvas id="chart-sentiment-doughnut"></canvas>
+                                        </div>
+                                        <div
+                                            class="flex justify-around text-center text-xs pt-3 border-t border-[#E8DEDC]">
+                                            <div>
+                                                <p class="font-bold text-sage-dark">68.5%</p>
+                                                <p class="text-[10px] text-slate-500">Smooth</p>
+                                            </div>
+                                            <div>
+                                                <p class="font-bold text-dusty-dark">23.0%</p>
+                                                <p class="text-[10px] text-slate-500">Manageable</p>
+                                            </div>
+                                            <div>
+                                                <p class="font-bold text-terracotta-dark">8.5%</p>
+                                                <p class="text-[10px] text-slate-500">Friction</p>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <!-- Highlight 2: Turnaround Speed -->
-                                    <div class="card-clean p-5 space-y-2">
+                                    <!-- Column 2: Governance & Operational Velocity (7 cols in a single clean card) -->
+                                    <div class="lg:col-span-7 card-clean p-6 space-y-4">
                                         <div class="flex items-center justify-between">
-                                            <span class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
-                                                <i class="fas fa-stopwatch text-sage-dark"></i>
-                                                <span>Review Turnaround</span>
-                                            </span>
-                                            <span class="badge-sage">4.2 Days Avg</span>
+                                            <div>
+                                                <h3 class="font-heading font-bold text-base text-slate-900">Governance &amp; Operational Velocity</h3>
+                                                <p class="text-xs text-slate-500">Cross-module synchronization, calibration compliance, and succession pipeline throughput</p>
+                                            </div>
+                                            <span class="badge-sage">Live Telemetry</span>
                                         </div>
-                                        <p class="text-xs text-slate-500 leading-relaxed">Average duration from associate draft submission to supervisor endorsement and HR approval.</p>
-                                        <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                                            <span>SLA Target: &lt; 7.0 Days</span>
-                                            <span class="text-sage-dark font-bold">0 Overdue Reviews</span>
-                                        </div>
-                                    </div>
 
-                                    <!-- Highlight 3: AI Copilot Assists -->
-                                    <div class="card-clean p-5 space-y-2">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
-                                                <i class="fas fa-robot text-dusty-dark"></i>
-                                                <span>AI Feedback Adoption</span>
-                                            </span>
-                                            <span class="badge-dusty">312 Assists</span>
-                                        </div>
-                                        <p class="text-xs text-slate-500 leading-relaxed">312 AI-recommended SMART developmental objectives and tailored feedback suggestions accepted this cycle.</p>
-                                        <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                                            <span>Goal Clarity: 98.4%</span>
-                                            <span class="text-dusty-dark font-bold">89% Action Rate</span>
+                                        <!-- 2-Column Analytics Grid -->
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                            <!-- Column 1: Appraisal Calibration & Review Velocity -->
+                                            <div class="bg-[#FAF8F7] border border-[#E8DEDC] rounded-2xl p-4 space-y-3 flex flex-col justify-between">
+                                                <div class="space-y-2">
+                                                    <div class="flex items-center justify-between">
+                                                        <span class="text-xs font-bold text-slate-900 flex items-center space-x-2">
+                                                            <i class="fas fa-scale-balanced text-primary text-xs"></i>
+                                                            <span>Appraisal Calibration &amp; SLA</span>
+                                                        </span>
+                                                        <span class="badge-sage text-[10px]">100% Calibrated</span>
+                                                    </div>
+                                                    <p class="text-xs text-slate-500 leading-relaxed">Enforces 15% Top / 70% Core / 15% Growth bell-curve across closed cycles. Closed scores directly feed the 9-Box matrix (40% weight).</p>
+                                                </div>
+                                                
+                                                <div class="space-y-2 pt-2 border-t border-[#E8DEDC]">
+                                                    <div class="flex items-center justify-between text-[11px]">
+                                                        <span class="text-slate-500 font-medium">Review SLA Speed:</span>
+                                                        <span class="font-bold text-sage-dark">4.2d Avg <span class="text-[10px] text-slate-400 font-normal">(&lt; 7.0d Target)</span></span>
+                                                    </div>
+                                                    <div class="flex items-center justify-between text-[11px]">
+                                                        <span class="text-slate-500 font-medium">AI Feedback Assists:</span>
+                                                        <span class="font-bold text-dusty-dark">312 Accepted (89%)</span>
+                                                    </div>
+                                                    <div class="flex flex-wrap gap-1 text-[10px] pt-1">
+                                                        <span class="px-2 py-0.5 bg-sage-50 text-sage-dark rounded-md font-bold border border-sage-100">15 Top</span>
+                                                        <span class="px-2 py-0.5 bg-dusty-50 text-dusty-dark rounded-md font-bold border border-dusty-100">70 Core</span>
+                                                        <span class="px-2 py-0.5 bg-terracotta-50 text-terracotta-dark rounded-md font-bold border border-terracotta-100">15 Growth</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Column 2: Training Ops & Succession Pipeline -->
+                                            <div class="bg-[#FAF8F7] border border-[#E8DEDC] rounded-2xl p-4 space-y-3 flex flex-col justify-between">
+                                                <div class="space-y-2">
+                                                    <div class="flex items-center justify-between">
+                                                        <span class="text-xs font-bold text-slate-900 flex items-center space-x-2">
+                                                            <i class="fas fa-sitemap text-dusty-dark text-xs"></i>
+                                                            <span>Succession &amp; Training Pipeline</span>
+                                                        </span>
+                                                        <span class="badge-dusty text-[10px]">78.5% Bench Ready</span>
+                                                    </div>
+                                                    <p class="text-xs text-slate-500 leading-relaxed">Competency gap alerts automatically trigger Training sessions &amp; LMS SOPs. Passing upgrades competency match (60% weight) and issues XP.</p>
+                                                </div>
+
+                                                <div class="space-y-2 pt-2 border-t border-[#E8DEDC]">
+                                                    <div class="flex items-center justify-between text-[11px]">
+                                                        <span class="text-slate-500 font-medium">Key Roles Covered:</span>
+                                                        <span class="font-bold text-slate-800">14 / 16 Roles <span class="text-[10px] text-sage-dark font-semibold">(2 Fast-Track)</span></span>
+                                                    </div>
+                                                    <div class="flex items-center justify-between text-[11px]">
+                                                        <span class="text-slate-500 font-medium">LMS Quiz Pass Rate:</span>
+                                                        <span class="font-bold text-primary">94.2% <span class="text-[10px] text-slate-400 font-normal">(First Attempt)</span></span>
+                                                    </div>
+                                                    <div class="flex flex-wrap gap-1 text-[10px] pt-1">
+                                                        <span class="px-2 py-0.5 bg-dusty-50 text-dusty-dark rounded-md font-bold border border-dusty-100">8 Ready Now</span>
+                                                        <span class="px-2 py-0.5 bg-gold-50 text-gold-dark rounded-md font-bold border border-gold-100">6 in 1-2 Yrs</span>
+                                                        <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md font-bold border border-slate-200">+150 XP/Cert</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                         </div>
                                     </div>
 

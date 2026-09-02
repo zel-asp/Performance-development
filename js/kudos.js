@@ -1083,6 +1083,11 @@ async function dispatchRecognition() {
         closeModal('modal-recognition');
     }
 
+    let toastId = null;
+    if (typeof showToast === 'function') {
+        toastId = showToast('Dispatching recognition & recording XP ledger...', 'loading');
+    }
+
     for (const r of recipients) {
         const payload = {
             senderId: 'emp-105',
@@ -1148,6 +1153,10 @@ async function dispatchRecognition() {
     }
 
     await initSocialRecognition();
+
+    if (toastId && typeof dismissToast === 'function') {
+        dismissToast(toastId);
+    }
 
     if (typeof showToast === 'function') {
         showToast(`Recognition dispatched to ${recipients.length} colleague(s) & permanently recorded in Supabase!`, 'success');

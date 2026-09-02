@@ -563,7 +563,9 @@ async function setHRReadinessFlag(candidateId, newFlag) {
     renderSuccessionKPIs();
     renderSuccession9BoxGrid();
 
+    let toastId = null;
     try {
+        toastId = showToast(`Calibrating HR readiness flag to "${newFlag}"...`, 'loading');
         const res = await fetch('api/succession.php?action=update_flag', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -576,12 +578,15 @@ async function setHRReadinessFlag(candidateId, newFlag) {
             })
         });
         const result = await res.json();
+        if (toastId) dismissToast(toastId);
+
         if (result.success) {
             showToast(`HR Readiness Flag updated to "${newFlag}"!`, 'success');
         } else {
             showToast(result.message || 'Updated locally', 'info');
         }
     } catch (e) {
+        if (toastId) dismissToast(toastId);
         showToast(`HR Readiness Flag updated locally`, 'info');
     }
 }
@@ -706,13 +711,16 @@ async function submitNewSuccessionPosition(event) {
         status: 'Bench Ready'
     };
 
+    let toastId = null;
     try {
+        toastId = showToast(`Creating succession target position "${title}"...`, 'loading');
         const res = await fetch('api/succession.php?action=create_position', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newRolePayload)
         });
         const result = await res.json();
+        if (toastId) dismissToast(toastId);
         
         if (result.success) {
             showToast(`New Succession Position "${title}" created successfully!`, 'success');
@@ -724,6 +732,7 @@ async function submitNewSuccessionPosition(event) {
             renderSuccessionKPIs();
         }
     } catch (e) {
+        if (toastId) dismissToast(toastId);
         showToast(`Succession Role "${title}" added locally`, 'info');
         successionRolesState.unshift(Object.assign({ id: 'role-' + Date.now() }, newRolePayload));
         renderSuccessionRecords();
@@ -932,13 +941,17 @@ function exportNineBoxMatrix() {
 // =========================================================================
 
 async function quickAssignSuccessor(positionId, employeeId, type = 'primary') {
+    let toastId = null;
     try {
+        toastId = showToast(`Assigning ${type === 'primary' ? 'Primary Successor' : 'Emergency Backup'}...`, 'loading');
         const res = await fetch('api/succession.php?action=assign_successor', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ positionId, employeeId, type })
         });
         const result = await res.json();
+        if (toastId) dismissToast(toastId);
+
         if (result.success) {
             showToast(`Assigned candidate as ${type === 'primary' ? 'Primary Successor' : 'Emergency Backup'} & synced to bench!`, 'success');
             await initSuccessionPlanning();
@@ -946,6 +959,7 @@ async function quickAssignSuccessor(positionId, employeeId, type = 'primary') {
             showToast(result.message || 'Assignment failed', 'error');
         }
     } catch (e) {
+        if (toastId) dismissToast(toastId);
         showToast('Network error assigning successor', 'error');
     }
 }

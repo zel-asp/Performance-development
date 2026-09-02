@@ -2708,13 +2708,17 @@ async function handleAddCompetencySubmit(e) {
         description: desc
     };
 
+    let toastId = null;
     try {
+        toastId = showToast('Creating competency standard in database...', 'loading');
         const res = await fetch('api/competencies.php?action=create_competency', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
         const json = await res.json();
+        if (toastId) dismissToast(toastId);
+
         if (json.success) {
             closeModal('modal-add-competency');
             showToast(`Competency "${name}" created and saved!`, 'success');
@@ -2730,6 +2734,7 @@ async function handleAddCompetencySubmit(e) {
             showToast(json.message || 'Failed to save competency.', 'error');
         }
     } catch (err) {
+        if (toastId) dismissToast(toastId);
         console.error('Error saving competency:', err);
         showToast('Network error while saving competency.', 'error');
     } finally {
@@ -3025,13 +3030,17 @@ async function handleAssessmentSubmit(e) {
         notes: generalNotes
     };
 
+    let toastId = null;
     try {
+        toastId = showToast('Saving 360° competency assessment scores...', 'loading');
         const res = await fetch('api/competencies.php?action=save_assessment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
         const json = await res.json();
+        if (toastId) dismissToast(toastId);
+
         if (json.success) {
             closeModal('modal-conduct-assessment');
             showToast('Competency assessment saved successfully in Supabase database!', 'success');
@@ -3048,6 +3057,7 @@ async function handleAssessmentSubmit(e) {
             showToast(json.message || 'Failed to save assessment.', 'error');
         }
     } catch (err) {
+        if (toastId) dismissToast(toastId);
         console.error('Error submitting assessment:', err);
         showToast('Network error while saving assessment.', 'error');
     } finally {

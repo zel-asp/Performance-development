@@ -70,7 +70,7 @@ function initSupabaseRealtime() {
     if (!supabaseClient) return;
 
     try {
-        // 1. Performance Goals Channel (Instant DOM Mutation)
+        // 1. Performance Goals Channel (Instant DOM Mutation for Stage 1 Planning, Objectives & Competencies)
         if (!realtimeChannels.performance_goals) {
             realtimeChannels.performance_goals = supabaseClient
                 .channel('realtime_perf_goals')
@@ -81,45 +81,148 @@ function initSupabaseRealtime() {
                         const newRow = payload.new || {};
                         const oldRow = payload.old || {};
                         const empId = newRow.employee_id || oldRow.employee_id;
-                        if (!empId) return;
 
-                        const isNT = (newRow.needs_training === true || newRow.needs_training === 1 || newRow.needs_training === '1' || newRow.needs_training === 'true' || newRow.needs_training === 't');
-                        const isIT = (newRow.in_training === true || newRow.in_training === 1 || newRow.in_training === '1' || newRow.in_training === 'true' || newRow.in_training === 't');
-
-                        // 1. Update in-memory employee goals_summary in Matrix table
-                        const employees = window.dynamicCompetencyState?.employees || [];
-                        const targetEmp = employees.find(e => e.id === empId);
-                        if (targetEmp) {
-                            targetEmp.goals_summary = targetEmp.goals_summary || {};
-                            targetEmp.goals_summary.needs_training = isNT;
-                            targetEmp.goals_summary.in_training = isIT;
-                            targetEmp.goals_summary.status_label = isNT ? 'Needs Training' : (isIT ? 'In Training' : (newRow.status || null));
-                            if (typeof renderCompetencyMatrixTable === 'function') {
-                                renderCompetencyMatrixTable();
+                        // 1. Live Sync window.dbGoals for Stage 1 Planning & Performance Module
+                        if (Array.isArray(window.dbGoals)) {
+                            if (payload.eventType === 'INSERT' && newRow.id) {
+                                const exists = window.dbGoals.some(g => g.id == newRow.id);
+                                if (!exists) {
+                                    window.dbGoals.unshift(newRow);
+                                }
+                            } else if (payload.eventType === 'UPDATE' && newRow.id) {
+                                const idx = window.dbGoals.findIndex(g => g.id == newRow.id);
+                                if (idx >= 0) {
+                                    window.dbGoals[idx] = Object.assign({}, window.dbGoals[idx], newRow);
+                                } else {
+                                    window.dbGoals.unshift(newRow);
+                                }
+                            } else if (payload.eventType === 'DELETE' && oldRow.id) {
+                                window.dbGoals = window.dbGoals.filter(g => g.id != oldRow.id);
                             }
                         }
 
-                        // 2. Update in-memory goals cache and live IDP / Objectives container if currently viewing this employee
-                        const goalsCacheKey = `comp_goals_cache_${empId}`;
-                        let cachedGoals = window.dynamicCompetencyState?.cache?.[goalsCacheKey];
-                        if (Array.isArray(cachedGoals)) {
-                            if (payload.eventType === 'INSERT') {
-                                cachedGoals.unshift(newRow);
-                            } else if (payload.eventType === 'UPDATE') {
-                                const idx = cachedGoals.findIndex(g => g.id == newRow.id);
-                                if (idx >= 0) cachedGoals[idx] = Object.assign({}, cachedGoals[idx], newRow);
-                                else cachedGoals.unshift(newRow);
-                            } else if (payload.eventType === 'DELETE') {
-                                cachedGoals = cachedGoals.filter(g => g.id != oldRow.id);
-                                window.dynamicCompetencyState.cache[goalsCacheKey] = cachedGoals;
+                        // 2. Sync perfRoster employee goals
+                        if (Array.isArray(window.perfRoster) && empId) {
+                            const emp = window.perfRoster.find(e => typeof isSameEmployee === 'function' ? isSameEmployee(e.id, empId) : e.id == empId);
+                            if (emp) {
+                                emp.goals = emp.goals || [];
+                                if (payload.eventType === 'INSERT' && newRow.id) {
+                                    const gExists = emp.goals.some(g => g.id == newRow.id);
+                                    if (!gExists) {
+                                        emp.goals.unshift({
+                                            id: newRow.id,
+                                            title: newRow.title,
+                                            category: newRow.department,
+                                            kpi: newRow.target_metric,
+                                            weight: newRow.weight,
+                                            deliverables: newRow.evidence || 'Standard shift operational log verification',
+                                            targetDate: newRow.target_date,
+                                            status: newRow.status || 'Pending Approval',
+                                            supervisor_notes: newRow.supervisor_notes,
+                                            tasks: newRow.tasks || [],
+                                            general_tasks: newRow.general_tasks || [],
+                                            specific_tasks: newRow.specific_tasks || [],
+                                            task_progress: 0,
+                                            created_at: newRow.created_at
+                                        });
+                                    }
+                                } else if (payload.eventType === 'UPDATE' && newRow.id) {
+                                    const gIdx = emp.goals.findIndex(g => g.id == newRow.id);
+                                    if (gIdx >= 0) {
+                                        Object.assign(emp.goals[gIdx], {
+                                            title: newRow.title || emp.goals[gIdx].title,
+                                            category: newRow.department || emp.goals[gIdx].category,
+                                            kpi: newRow.target_metric || emp.goals[gIdx].kpi,
+                                            weight: newRow.weight || emp.goals[gIdx].weight,
+                                            deliverables: newRow.evidence || emp.goals[gIdx].deliverables,
+                                            targetDate: newRow.target_date || emp.goals[gIdx].targetDate,
+                                            status: newRow.status || emp.goals[gIdx].status,
+                                            supervisor_notes: newRow.supervisor_notes !== undefined ? newRow.supervisor_notes : emp.goals[gIdx].supervisor_notes
+                                        });
+                                    }
+                                } else if (payload.eventType === 'DELETE' && oldRow.id) {
+                                    emp.goals = emp.goals.filter(g => g.id != oldRow.id);
+                                }
+                                emp.goalsCount = emp.goals.length;
+                                const hasPending = emp.goals.some(g => {
+                                    const st = (g.status || '').toLowerCase();
+                                    return st !== 'approved' && st !== 'completed' && st !== 'failed';
+                                });
+                                const allFailed = emp.goals.length > 0 && emp.goals.every(g => (g.status || '').toLowerCase() === 'failed');
+                                emp.planningStatus = allFailed ? 'Failed' : (hasPending ? 'Pending Approval' : (emp.goals.length > 0 ? 'Approved' : 'Draft'));
+                                emp.approvalStatus = emp.planningStatus;
                             }
-                            try { sessionStorage.setItem(goalsCacheKey, JSON.stringify(cachedGoals)); } catch (e) {}
                         }
 
-                        if (typeof activeCompetencyEmpKey !== 'undefined' && activeCompetencyEmpKey === empId) {
-                            if (typeof renderIDPView === 'function') {
-                                renderIDPView(false);
+                        // 3. Trigger Instant UI Re-renders for Supervisor & Associate views
+                        if (typeof renderPlanningGoals === 'function') {
+                            renderPlanningGoals();
+                        }
+                        if (typeof renderEmployeePulseGoals === 'function') {
+                            renderEmployeePulseGoals(window.dbGoals);
+                        }
+                        if (typeof updateAllPerfStepperBadges === 'function') {
+                            updateAllPerfStepperBadges();
+                        }
+                        if (typeof renderActiveStageTable === 'function') {
+                            renderActiveStageTable();
+                        }
+                        if (typeof updateStage1BulkDeleteState === 'function') {
+                            updateStage1BulkDeleteState();
+                        }
+
+                        // 4. Update in-memory employee goals_summary in Competency Matrix table
+                        if (empId) {
+                            const isNT = (newRow.needs_training === true || newRow.needs_training === 1 || newRow.needs_training === '1' || newRow.needs_training === 'true' || newRow.needs_training === 't');
+                            const isIT = (newRow.in_training === true || newRow.in_training === 1 || newRow.in_training === '1' || newRow.in_training === 'true' || newRow.in_training === 't');
+
+                            const employees = window.dynamicCompetencyState?.employees || [];
+                            const targetEmp = employees.find(e => typeof isSameEmployee === 'function' ? isSameEmployee(e.id, empId) : e.id == empId);
+                            if (targetEmp) {
+                                targetEmp.goals_summary = targetEmp.goals_summary || {};
+                                targetEmp.goals_summary.needs_training = isNT;
+                                targetEmp.goals_summary.in_training = isIT;
+                                targetEmp.goals_summary.status_label = isNT ? 'Needs Training' : (isIT ? 'In Training' : (newRow.status || null));
+                                if (typeof renderCompetencyMatrixTable === 'function') {
+                                    renderCompetencyMatrixTable();
+                                }
                             }
+
+                            // Update in-memory goals cache and live IDP / Objectives container if currently viewing this employee
+                            const goalsCacheKey = `comp_goals_cache_${empId}`;
+                            let cachedGoals = window.dynamicCompetencyState?.cache?.[goalsCacheKey];
+                            if (Array.isArray(cachedGoals)) {
+                                if (payload.eventType === 'INSERT') {
+                                    cachedGoals.unshift(newRow);
+                                } else if (payload.eventType === 'UPDATE') {
+                                    const idx = cachedGoals.findIndex(g => g.id == newRow.id);
+                                    if (idx >= 0) cachedGoals[idx] = Object.assign({}, cachedGoals[idx], newRow);
+                                    else cachedGoals.unshift(newRow);
+                                } else if (payload.eventType === 'DELETE') {
+                                    cachedGoals = cachedGoals.filter(g => g.id != oldRow.id);
+                                    window.dynamicCompetencyState.cache[goalsCacheKey] = cachedGoals;
+                                }
+                                try { sessionStorage.setItem(goalsCacheKey, JSON.stringify(cachedGoals)); } catch (e) {}
+                            }
+
+                            if (typeof activeCompetencyEmpKey !== 'undefined' && (activeCompetencyEmpKey === empId || (typeof isSameEmployee === 'function' && isSameEmployee(activeCompetencyEmpKey, empId)))) {
+                                if (typeof renderIDPView === 'function') {
+                                    renderIDPView(false);
+                                }
+                            }
+                        }
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'performance_tasks' },
+                    (payload) => {
+                        // Refresh tasks and progress in Stage 1 & Stage 3
+                        if (typeof renderPlanningGoals === 'function') {
+                            renderPlanningGoals();
+                        }
+                        if (typeof renderActiveStageTable === 'function') {
+                            renderActiveStageTable();
                         }
                     }
                 )
@@ -212,6 +315,31 @@ function initSupabaseRealtime() {
                     (payload) => {
                         if (typeof renderRecognitionFeed === 'function') {
                             renderRecognitionFeed();
+                        }
+                    }
+                )
+                .subscribe();
+        }
+
+        // 5. LMS Documents & Learning Records Realtime Channel
+        if (!realtimeChannels.lms_documents) {
+            realtimeChannels.lms_documents = supabaseClient
+                .channel('realtime_lms_documents')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'lms_documents' },
+                    (payload) => {
+                        if (typeof fetchLibraryDocuments === 'function') {
+                            fetchLibraryDocuments(true);
+                        }
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'lms_prescriptions' },
+                    (payload) => {
+                        if (typeof fetchTnaPrescriptions === 'function') {
+                            fetchTnaPrescriptions(true);
                         }
                     }
                 )

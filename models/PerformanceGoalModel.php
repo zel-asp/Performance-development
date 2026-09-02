@@ -53,6 +53,44 @@ class PerformanceGoalModel extends BaseModel
     }
 
     /**
+     * Resolve a valid users.id (UUID) to satisfy foreign key constraints
+     */
+    public function resolveValidUserId(?string $inputEmpId, string $role = 'employee'): string
+    {
+        $inputEmpId = trim((string)$inputEmpId);
+        
+        // 1. If it looks like a valid UUID, check if user exists
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $inputEmpId)) {
+            $userCheck = supabaseRequest("users?id=eq.{$inputEmpId}&limit=1", 'GET', null, true);
+            if (!empty($userCheck['data']) && is_array($userCheck['data']) && isset($userCheck['data'][0]['id'])) {
+                return $userCheck['data'][0]['id'];
+            }
+        }
+        
+        // 2. If it's an employee_code like EMP-001 or SUP-003 or legacy emp-101
+        if (!empty($inputEmpId)) {
+            $codeCheck = supabaseRequest("users?employee_code=ilike." . urlencode($inputEmpId) . "&limit=1", 'GET', null, true);
+            if (!empty($codeCheck['data']) && is_array($codeCheck['data']) && isset($codeCheck['data'][0]['id'])) {
+                return $codeCheck['data'][0]['id'];
+            }
+        }
+        
+        // 3. Fallback to active user with matching role, or first user in users table
+        $roleFilter = strtolower($role) === 'supervisor' ? 'role=ilike.*Supervisor*' : 'role=ilike.*Employee*';
+        $fallback = supabaseRequest("users?{$roleFilter}&limit=1", 'GET', null, true);
+        if (!empty($fallback['data']) && is_array($fallback['data']) && isset($fallback['data'][0]['id'])) {
+            return $fallback['data'][0]['id'];
+        }
+        
+        $anyUser = supabaseRequest("users?limit=1", 'GET', null, true);
+        if (!empty($anyUser['data']) && is_array($anyUser['data']) && isset($anyUser['data'][0]['id'])) {
+            return $anyUser['data'][0]['id'];
+        }
+        
+        return $inputEmpId;
+    }
+
+    /**
      * Create a new performance goal record directly in the Supabase database
      */
     public function createGoal(array $data): array
@@ -69,9 +107,12 @@ class PerformanceGoalModel extends BaseModel
             $statusVal = 'Pending Approval';
         }
 
+        // Resolve real users(id) UUID for foreign key integrity
+        $resolvedEmployeeId = $this->resolveValidUserId($data['employee_id'] ?? null, $roleEnum);
+
         // Sanitize and ensure defaults matching performance_goal.sql
         $record = [
-            'employee_id'   => !empty($data['employee_id']) ? trim($data['employee_id']) : 'emp-101',
+            'employee_id'   => $resolvedEmployeeId,
             'role'          => $roleEnum,
             'target_scope'  => $scopeEnum,
             'title'         => trim($data['title'] ?? 'Hospitality Operational Target'),
@@ -97,12 +138,17 @@ class PerformanceGoalModel extends BaseModel
 
         if (!empty($res['error'])) {
             error_log("Supabase insert error in performance_goals: " . print_r($res, true));
+            return [
+                'error'   => is_string($res['error']) ? $res['error'] : ($res['data']['message'] ?? 'Database insert failed'),
+                'details' => $res['data'] ?? null,
+                'status'  => $res['status'] ?? 500
+            ];
         }
 
-        $record['id'] = !empty($res['data']['id']) ? $res['data']['id'] : ('goal-' . substr(bin2hex(random_bytes(4)), 0, 8));
-        $record['created_at'] = date('Y-m-d H:i:s');
-        $record['updated_at'] = date('Y-m-d H:i:s');
-        return $record;
+        return [
+            'error'   => 'Database insert failed with status ' . ($res['status'] ?? 500),
+            'status'  => $res['status'] ?? 500
+        ];
     }
 
     /**

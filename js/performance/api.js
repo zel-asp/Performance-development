@@ -9,7 +9,7 @@
 const PerformanceAPI = {
     baseUrl: 'api/performance.php',
 
-    async request(action, method = 'GET', payload = null) {
+    async request(action, method = 'GET', payload = null, customLoadingMsg = null) {
         const url = method === 'GET' && payload
             ? `${this.baseUrl}?action=${action}&${new URLSearchParams(payload)}`
             : `${this.baseUrl}?action=${action}`;
@@ -26,15 +26,39 @@ const PerformanceAPI = {
             options.body = JSON.stringify(payload);
         }
 
+        let toastId = null;
+        if (method !== 'GET' && typeof window.showToast === 'function') {
+            let loadingMsg = customLoadingMsg;
+            if (!loadingMsg) {
+                if (action.includes('delete') || action.includes('remove')) loadingMsg = 'Deleting record...';
+                else if (action.includes('create') || action.includes('add') || action.includes('set')) loadingMsg = 'Creating record...';
+                else if (action.includes('update') || action.includes('save') || action.includes('edit')) loadingMsg = 'Saving updates...';
+                else if (action.includes('approve')) loadingMsg = 'Approving goal...';
+                else if (action.includes('calibrate')) loadingMsg = 'Applying calibration...';
+                else if (action.includes('evaluat')) loadingMsg = 'Processing appraisal evaluation...';
+                else if (action.includes('evidence') || action.includes('milestone')) loadingMsg = 'Recording milestone evidence...';
+                else if (action.includes('kudos') || action.includes('xp')) loadingMsg = 'Awarding recognition XP...';
+                else loadingMsg = 'Saving changes...';
+            }
+            toastId = window.showToast(loadingMsg, 'loading');
+        }
+
         try {
             const response = await fetch(url, options);
             const result = await response.json();
+
+            if (toastId && typeof window.dismissToast === 'function') {
+                window.dismissToast(toastId);
+            }
 
             if (!response.ok || !result.success) {
                 throw new Error(result.message || 'Server request failed');
             }
             return result.data;
         } catch (error) {
+            if (toastId && typeof window.dismissToast === 'function') {
+                window.dismissToast(toastId);
+            }
             console.error(`[PerformanceAPI Error] [${action}]:`, error);
             if (typeof window.showToast === 'function') {
                 window.showToast(error.message || 'Network error occurred', 'error');
@@ -512,12 +536,32 @@ function isSameEmployee(idA, idB) {
     const a = idA.toString().toLowerCase().trim();
     const b = idB.toString().toLowerCase().trim();
     if (a === b) return true;
-    const isA_101 = a === 'emp-101' || a === 'emp-1' || a === 'oxf-emp-1001';
-    const isB_101 = b === 'emp-101' || b === 'emp-1' || b === 'oxf-emp-1001';
+
+    // Check active session user alias matching
+    try {
+        const userObj = window.currentUser || JSON.parse(localStorage.getItem('oxford_session_user') || '{}');
+        const myIds = [userObj.id, userObj.employee_code, userObj.emp_id, userObj.empId].filter(Boolean).map(x => x.toString().toLowerCase().trim());
+        if (myIds.includes(a) && myIds.includes(b)) return true;
+        if (myIds.includes(a) && (b === 'emp-101' || b === 'emp-1' || b === 'oxf-emp-1001')) return true;
+        if (myIds.includes(b) && (a === 'emp-101' || a === 'emp-1' || a === 'oxf-emp-1001')) return true;
+    } catch (e) {}
+
+    // Check roster in window
+    try {
+        const roster = window.perfRoster || window.dbEmployees || [];
+        const empA = roster.find(u => (u.id && u.id.toString().toLowerCase() === a) || (u.employee_code && u.employee_code.toString().toLowerCase() === a) || (u.empId && u.empId.toString().toLowerCase() === a));
+        const empB = roster.find(u => (u.id && u.id.toString().toLowerCase() === b) || (u.employee_code && u.employee_code.toString().toLowerCase() === b) || (u.empId && u.empId.toString().toLowerCase() === b));
+        if (empA && empB && (empA.id === empB.id || empA.employee_code === empB.employee_code)) return true;
+    } catch (e) {}
+
+    const isA_101 = a === 'emp-101' || a === 'emp-1' || a === 'oxf-emp-1001' || a === 'emp-001' || a === '3a52667f-53cf-412a-b048-ef96eb407707';
+    const isB_101 = b === 'emp-101' || b === 'emp-1' || b === 'oxf-emp-1001' || b === 'emp-001' || b === '3a52667f-53cf-412a-b048-ef96eb407707';
     if (isA_101 && isB_101) return true;
-    const isA_102 = a === 'emp-102' || a === 'emp-2' || a === 'oxf-sup-2001';
-    const isB_102 = b === 'emp-102' || b === 'emp-2' || b === 'oxf-sup-2001';
+
+    const isA_102 = a === 'emp-102' || a === 'emp-2' || a === 'oxf-sup-2001' || a === 'sup-003' || a === '3bb792e6-b25e-460e-a8fa-712c65c3b2e2';
+    const isB_102 = b === 'emp-102' || b === 'emp-2' || b === 'oxf-sup-2001' || b === 'sup-003' || b === '3bb792e6-b25e-460e-a8fa-712c65c3b2e2';
     if (isA_102 && isB_102) return true;
+
     return false;
 }
 window.isSameEmployee = isSameEmployee;
