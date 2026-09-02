@@ -274,6 +274,159 @@ function syncOverviewGamifiedXP(totalXp) {
 window.syncOverviewGamifiedXP = syncOverviewGamifiedXP;
 window.calculateXpLevel = calculateXpLevel;
 
+/**
+ * Render Top 5 Gamified XP Champions Podium dynamically from xp_ledger data.
+ * If multiple employees have the same XP (e.g. 0 XP), they share the exact same
+ * rank level and visual pillar height.
+ */
+function renderTop5XpChampions(champions) {
+    const container = document.getElementById('overview-top5-podium');
+    if (!container) return;
+
+    // Filter qualifiers with XP > 0
+    const rawList = Array.isArray(champions) ? champions : [];
+    const qualifiers = rawList.filter(c => !c.is_ready && Number(c.total_xp || 0) > 0);
+
+    // Build always exactly 5 slots
+    const slots = [];
+    const rankLabels = { 1: 'FIRST', 2: 'SECOND', 3: 'THIRD', 4: 'FOURTH', 5: 'FIFTH' };
+
+    for (let i = 0; i < 5; i++) {
+        if (i < qualifiers.length) {
+            slots.push(qualifiers[i]);
+        } else {
+            const slotRank = i + 1;
+            slots.push({
+                employee_id: null,
+                name: 'Ready',
+                role: 'Open Slot',
+                total_xp: 0,
+                trophies: 0,
+                rank: slotRank,
+                rank_label: rankLabels[slotRank] || ('RANK ' + slotRank),
+                is_ready: true
+            });
+        }
+    }
+
+    const rankStyles = {
+        1: { avatarBg: 'bg-gold', xpPill: 'text-gold-dark bg-gold-50 border border-gold-100', pillarBg: 'bg-gold', heightClass: 'h-44 sm:h-52', labelColor: 'text-gold-dark', bounceStar: true },
+        2: { avatarBg: 'bg-terracotta', xpPill: 'text-terracotta-dark bg-terracotta-50 border border-terracotta-100', pillarBg: 'bg-terracotta', heightClass: 'h-36 sm:h-44', labelColor: 'text-terracotta', bounceStar: false },
+        3: { avatarBg: 'bg-sage-dark', xpPill: 'text-sage-dark bg-sage-50 border border-sage-100', pillarBg: 'bg-sage-dark', heightClass: 'h-28 sm:h-36', labelColor: 'text-sage-dark', bounceStar: false },
+        4: { avatarBg: 'bg-dusty', xpPill: 'text-dusty-dark bg-dusty-50 border border-dusty-100', pillarBg: 'bg-dusty', heightClass: 'h-22 sm:h-28', labelColor: 'text-dusty', bounceStar: false },
+        5: { avatarBg: 'bg-[#6F6261]', xpPill: 'text-slate-700 bg-slate-100 border border-slate-200', pillarBg: 'bg-[#6F6261]', heightClass: 'h-16 sm:h-22', labelColor: 'text-slate-600', bounceStar: false }
+    };
+
+    container.className = 'grid grid-cols-5 gap-2 sm:gap-3.5 items-end relative z-10';
+    container.style.gridTemplateColumns = '';
+
+    container.innerHTML = slots.map(c => {
+        const rank = c.rank || 1;
+        const style = rankStyles[rank] || rankStyles[5];
+        const rankBadge = String(rank).padStart(2, '0');
+        const displayLabel = c.rank_label || ('RANK ' + rank);
+
+        if (c.is_ready) {
+            return `
+                <div class="flex flex-col items-center justify-end text-center group cursor-pointer" onclick="switchPillar('pillar-social')" title="Open Podium Position ${rank}: Ready for Contender">
+                    <div class="mb-2 flex flex-col items-center space-y-1 w-full opacity-60">
+                        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-dashed border-slate-300 bg-white/70 text-slate-400 font-bold text-[10px] sm:text-xs flex items-center justify-center shadow-2xs">
+                            <i class="fas fa-plus text-[9px] sm:text-[10px] text-slate-400"></i>
+                        </div>
+                        <p class="text-[10px] sm:text-xs font-bold text-slate-400 truncate max-w-full">Ready</p>
+                        <span class="text-[8px] sm:text-[9px] font-medium text-slate-400 bg-slate-100/80 border border-dashed border-slate-200 px-1.5 py-0.2 rounded-full">-- XP</span>
+                        <div class="pt-0.5 text-slate-200 text-sm sm:text-lg">
+                            <i class="far fa-star"></i>
+                        </div>
+                    </div>
+                    <div class="w-full ${style.heightClass} rounded-t-xl sm:rounded-t-2xl bg-slate-100/80 border-2 border-dashed border-slate-200 shadow-2xs group-hover:border-slate-300 transition-all duration-300 flex flex-col items-center justify-between py-2.5 px-1 text-slate-400">
+                        <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-dashed border-slate-300 bg-white/80 flex items-center justify-center font-bold text-[10px] sm:text-xs text-slate-400 shadow-2xs mt-1">
+                            ${rankBadge}
+                        </div>
+                        <div class="space-y-0.5 text-center">
+                            <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ready</p>
+                            <span class="text-[7px] sm:text-[8px] font-medium text-slate-400 bg-black/5 px-1.5 py-0.5 rounded-full inline-flex items-center space-x-0.5">
+                                <span>Open</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="pt-2 text-center w-full bg-slate-100/90 sm:bg-transparent rounded-b-lg sm:rounded-none">
+                        <span class="text-[9px] sm:text-[10px] font-bold tracking-wider text-slate-400 uppercase">${displayLabel}</span>
+                        <p class="text-[8px] text-slate-400 font-medium hidden sm:block">Awaiting XP</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        const xp = Number(c.total_xp || 0);
+        const xpDisplay = xp >= 1000 ? (xp / 1000).toFixed(1) + 'k XP' : `${xp} XP`;
+        const firstName = (c.name || 'Staff').trim().split(/\s+/)[0];
+
+        let initials = '??';
+        if (c.name) {
+            const parts = c.name.trim().split(/\s+/);
+            initials = parts.length === 1 ? parts[0].substring(0, 2).toUpperCase() : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+
+        let tiedLabel = displayLabel;
+        if (c.is_tied) {
+            const ordinals = { 1: '1ST', 2: '2ND', 3: '3RD', 4: '4TH', 5: '5TH' };
+            tiedLabel = `TIED ${ordinals[rank] || rank}`;
+        }
+
+        const roleShort = (c.role || c.department || 'Associate').replace('Director', 'Dir').replace('Supervisor', 'Sup').replace('Associate', 'Assoc');
+
+        return `
+            <div class="flex flex-col items-center justify-end text-center group cursor-pointer" onclick="switchPillar('pillar-social')" title="${c.name} (${c.role || ''}): ${xp.toLocaleString()} XP">
+                <div class="mb-2 flex flex-col items-center space-y-1 w-full">
+                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ${style.avatarBg} text-white font-bold text-[10px] sm:text-xs flex items-center justify-center shadow-xs border-2 border-white">
+                        ${initials}
+                    </div>
+                    <p class="text-[10px] sm:text-xs font-bold text-slate-900 truncate max-w-full" title="${c.name}">${firstName}</p>
+                    <span class="text-[8px] sm:text-[9px] font-bold ${style.xpPill} px-1.5 py-0.2 rounded-full">${xpDisplay}</span>
+                    <div class="pt-0.5 text-gold text-sm sm:text-lg ${style.bounceStar ? 'animate-bounce drop-shadow-xs' : 'drop-shadow-xs'}">
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+
+                <div class="w-full ${style.heightClass} rounded-t-xl sm:rounded-t-2xl ${style.pillarBg} shadow-sm group-hover:shadow-md group-hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center justify-between py-2.5 px-1 text-white border-t-2 border-white/40">
+                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-white bg-black/15 backdrop-blur-xs flex items-center justify-center font-bold text-[10px] sm:text-xs text-white shadow-xs mt-1">
+                        ${rankBadge}
+                    </div>
+                    <div class="space-y-0.5 text-center">
+                        <p class="text-[9px] sm:text-[10px] font-bold text-white leading-tight">${xp.toLocaleString()}</p>
+                        <span class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1.5 py-0.5 rounded-full inline-flex items-center space-x-0.5">
+                            <span>${c.trophies || 0}</span>
+                            <i class="fas fa-trophy text-[7px] text-amber-300"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="pt-2 text-center w-full bg-slate-100/90 sm:bg-transparent rounded-b-lg sm:rounded-none">
+                    <span class="text-[9px] sm:text-[10px] font-extrabold tracking-wider ${style.labelColor} uppercase">${tiedLabel}</span>
+                    <p class="text-[8px] text-slate-400 font-medium hidden sm:block truncate" title="${c.role}">${roleShort}</p>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+window.renderTop5XpChampions = renderTop5XpChampions;
+
+async function loadAndRenderTop5Champions() {
+    const container = document.getElementById('overview-top5-podium');
+    if (!container) return;
+
+    try {
+        const res = await fetch('api/social.php?action=get_top_champions');
+        const json = await res.json();
+        const champions = (json && json.success && Array.isArray(json.data)) ? json.data : [];
+        renderTop5XpChampions(champions);
+    } catch (err) {
+        console.error('Failed to load top 5 XP champions:', err);
+    }
+}
+window.loadAndRenderTop5Champions = loadAndRenderTop5Champions;
+
 // =========================================================================
 // FEED FILTERING & RENDERING
 // =========================================================================

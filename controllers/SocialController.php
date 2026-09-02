@@ -55,8 +55,20 @@ class SocialController
                 'sentiments'   => $sentiments,
                 'roster'       => $roster,
                 'ledger'       => $ledger,
-                'badges'       => $badges
+                'badges'       => $badges,
+                'champions'    => $this->model->getTop5XpChampions()
             ]
+        ];
+    }
+
+    /**
+     * Get Top 5 Gamified XP Champions ranked directly from xp_ledger
+     */
+    public function getTop5Champions(): array
+    {
+        return [
+            'success' => true,
+            'data'    => $this->model->getTop5XpChampions()
         ];
     }
 

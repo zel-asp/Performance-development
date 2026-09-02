@@ -463,254 +463,100 @@
                                                 </div>
 
                                                 <!-- 5 Stepped Vertical Columns -->
-                                                <div class="grid grid-cols-5 gap-2 sm:gap-3.5 items-end relative z-10">
+                                                <?php
+                                                require_once __DIR__ . '/../models/SocialModel.php';
+                                                $socialModelOverview = new SocialModel();
+                                                $overviewChampions = $socialModelOverview->getTop5XpChampions();
+                                                ?>
+                                                <div id="overview-top5-podium" class="grid grid-cols-5 gap-2 sm:gap-3.5 items-end relative z-10">
+                                                <?php
+                                                $rankStylesPhp = [
+                                                    1 => ['avatarBg' => 'bg-gold', 'xpPill' => 'text-gold-dark bg-gold-50 border border-gold-100', 'pillarBg' => 'bg-gold', 'heightClass' => 'h-44 sm:h-52', 'labelColor' => 'text-gold-dark', 'bounceStar' => true],
+                                                    2 => ['avatarBg' => 'bg-terracotta', 'xpPill' => 'text-terracotta-dark bg-terracotta-50 border border-terracotta-100', 'pillarBg' => 'bg-terracotta', 'heightClass' => 'h-36 sm:h-44', 'labelColor' => 'text-terracotta', 'bounceStar' => false],
+                                                    3 => ['avatarBg' => 'bg-sage-dark', 'xpPill' => 'text-sage-dark bg-sage-50 border border-sage-100', 'pillarBg' => 'bg-sage-dark', 'heightClass' => 'h-28 sm:h-36', 'labelColor' => 'text-sage-dark', 'bounceStar' => false],
+                                                    4 => ['avatarBg' => 'bg-dusty', 'xpPill' => 'text-dusty-dark bg-dusty-50 border border-dusty-100', 'pillarBg' => 'bg-dusty', 'heightClass' => 'h-22 sm:h-28', 'labelColor' => 'text-dusty', 'bounceStar' => false],
+                                                    5 => ['avatarBg' => 'bg-[#6F6261]', 'xpPill' => 'text-slate-700 bg-slate-100 border border-slate-200', 'pillarBg' => 'bg-[#6F6261]', 'heightClass' => 'h-16 sm:h-22', 'labelColor' => 'text-slate-600', 'bounceStar' => false],
+                                                ];
 
-                                                    <!-- 01: FIRST - Elena Vance (Rank 1) -->
-                                                    <div
-                                                        class="flex flex-col items-center justify-end text-center group cursor-pointer">
-                                                        <!-- Top Header: Name & Star -->
-                                                        <div class="mb-2 flex flex-col items-center space-y-1 w-full">
-                                                            <div
-                                                                class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gold text-white font-bold text-[10px] sm:text-xs flex items-center justify-center shadow-xs border-2 border-white">
-                                                                EV
+                                                foreach ($overviewChampions as $c):
+                                                    $xp = (int)($c['total_xp'] ?? 0);
+                                                    $rank = (int)($c['rank'] ?? 1);
+                                                    $st = $rankStylesPhp[$rank] ?? $rankStylesPhp[5];
+                                                    $rankBadge = str_pad((string)$rank, 2, '0', STR_PAD_LEFT);
+                                                    $displayLabel = $c['rank_label'] ?? ('RANK ' . $rank);
+
+                                                    if (!empty($c['is_ready'])):
+                                                ?>
+                                                    <!-- Ready Empty State Slot -->
+                                                    <div class="flex flex-col items-center justify-end text-center group cursor-pointer" onclick="switchPillar('pillar-social')" title="Open Podium Position <?= $rank ?>: Ready for Contender">
+                                                        <div class="mb-2 flex flex-col items-center space-y-1 w-full opacity-60">
+                                                            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-dashed border-slate-300 bg-white/70 text-slate-400 font-bold text-[10px] sm:text-xs flex items-center justify-center shadow-2xs">
+                                                                <i class="fas fa-plus text-[9px] sm:text-[10px] text-slate-400"></i>
                                                             </div>
-                                                            <p class="text-[10px] sm:text-xs font-bold text-slate-900 truncate max-w-full"
-                                                                title="Elena Vance">Elena</p>
-                                                            <span
-                                                                class="text-[8px] sm:text-[9px] font-bold text-gold-dark bg-gold-50 px-1.5 py-0.2 rounded-full border border-gold-100">2.8k
-                                                                XP</span>
-                                                            <!-- Star -->
-                                                            <div
-                                                                class="pt-0.5 text-gold text-sm sm:text-lg animate-bounce drop-shadow-xs">
+                                                            <p class="text-[10px] sm:text-xs font-bold text-slate-400 truncate max-w-full">Ready</p>
+                                                            <span class="text-[8px] sm:text-[9px] font-medium text-slate-400 bg-slate-100/80 border border-dashed border-slate-200 px-1.5 py-0.2 rounded-full">-- XP</span>
+                                                            <div class="pt-0.5 text-slate-200 text-sm sm:text-lg">
+                                                                <i class="far fa-star"></i>
+                                                            </div>
+                                                        </div>
+                                                        <div class="w-full <?= $st['heightClass'] ?> rounded-t-xl sm:rounded-t-2xl bg-slate-100/80 border-2 border-dashed border-slate-200 shadow-2xs group-hover:border-slate-300 transition-all duration-300 flex flex-col items-center justify-between py-2.5 px-1 text-slate-400">
+                                                            <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-dashed border-slate-300 bg-white/80 flex items-center justify-center font-bold text-[10px] sm:text-xs text-slate-400 shadow-2xs mt-1">
+                                                                <?= $rankBadge ?>
+                                                            </div>
+                                                            <div class="space-y-0.5 text-center">
+                                                                <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ready</p>
+                                                                <span class="text-[7px] sm:text-[8px] font-medium text-slate-400 bg-black/5 px-1.5 py-0.5 rounded-full inline-flex items-center space-x-0.5">
+                                                                    <span>Open</span>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="pt-2 text-center w-full bg-slate-100/90 sm:bg-transparent rounded-b-lg sm:rounded-none">
+                                                            <span class="text-[9px] sm:text-[10px] font-bold tracking-wider text-slate-400 uppercase"><?= htmlspecialchars($displayLabel) ?></span>
+                                                            <p class="text-[8px] text-slate-400 font-medium hidden sm:block">Awaiting XP</p>
+                                                        </div>
+                                                    </div>
+                                                <?php else:
+                                                    $xpDisplay = $xp >= 1000 ? number_format($xp / 1000, 1) . 'k XP' : ($xp . ' XP');
+                                                    $parts = preg_split('/\s+/', trim($c['name'] ?? 'Staff'));
+                                                    $firstName = $parts[0] ?? 'Staff';
+                                                    $initials = count($parts) > 1 ? strtoupper(substr($parts[0], 0, 1) . substr(end($parts), 0, 1)) : strtoupper(substr($parts[0], 0, 2));
+
+                                                    if (!empty($c['is_tied'])) {
+                                                        $ordinals = [1 => '1ST', 2 => '2ND', 3 => '3RD', 4 => '4TH', 5 => '5TH'];
+                                                        $displayLabel = 'TIED ' . ($ordinals[$rank] ?? $rank);
+                                                    }
+                                                    $roleShort = str_replace(['Director', 'Supervisor', 'Associate'], ['Dir', 'Sup', 'Assoc'], $c['role'] ?? 'Associate');
+                                                ?>
+                                                    <!-- Active Champion Slot -->
+                                                    <div class="flex flex-col items-center justify-end text-center group cursor-pointer" onclick="switchPillar('pillar-social')" title="<?= htmlspecialchars($c['name']) ?> (<?= htmlspecialchars($c['role']) ?>): <?= number_format($xp) ?> XP">
+                                                        <div class="mb-2 flex flex-col items-center space-y-1 w-full">
+                                                            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full <?= $st['avatarBg'] ?> text-white font-bold text-[10px] sm:text-xs flex items-center justify-center shadow-xs border-2 border-white">
+                                                                <?= htmlspecialchars($initials) ?>
+                                                            </div>
+                                                            <p class="text-[10px] sm:text-xs font-bold text-slate-900 truncate max-w-full" title="<?= htmlspecialchars($c['name']) ?>"><?= htmlspecialchars($firstName) ?></p>
+                                                            <span class="text-[8px] sm:text-[9px] font-bold <?= $st['xpPill'] ?> px-1.5 py-0.2 rounded-full"><?= $xpDisplay ?></span>
+                                                            <div class="pt-0.5 text-gold text-sm sm:text-lg <?= !empty($st['bounceStar']) ? 'animate-bounce drop-shadow-xs' : 'drop-shadow-xs' ?>">
                                                                 <i class="fas fa-star"></i>
                                                             </div>
                                                         </div>
-
-                                                        <!-- Vertical Pillar Bar (Rank 1: Tallest) -->
-                                                        <div
-                                                            class="w-full h-44 sm:h-52 rounded-t-xl sm:rounded-t-2xl bg-gold shadow-sm group-hover:shadow-md group-hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center justify-between py-2.5 px-1 text-white border-t-2 border-white/40">
-                                                            <div
-                                                                class="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-white bg-black/15 backdrop-blur-xs flex items-center justify-center font-bold text-[10px] sm:text-xs text-white shadow-xs mt-1">
-                                                                01
+                                                        <div class="w-full <?= $st['heightClass'] ?> rounded-t-xl sm:rounded-t-2xl <?= $st['pillarBg'] ?> shadow-sm group-hover:shadow-md group-hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center justify-between py-2.5 px-1 text-white border-t-2 border-white/40">
+                                                            <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-white bg-black/15 backdrop-blur-xs flex items-center justify-center font-bold text-[10px] sm:text-xs text-white shadow-xs mt-1">
+                                                                <?= $rankBadge ?>
                                                             </div>
                                                             <div class="space-y-0.5 text-center">
-                                                                <p
-                                                                    class="text-[9px] sm:text-[10px] font-bold text-white leading-tight">
-                                                                    2,840</p>
-                                                                <span
-                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1.5 py-0.5 rounded-full inline-flex items-center space-x-0.5"><span>14</span>
-                                                                    <i class="fas fa-trophy text-[7px] text-amber-300"></i></span>
+                                                                <p class="text-[9px] sm:text-[10px] font-bold text-white leading-tight"><?= number_format($xp) ?></p>
+                                                                <span class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1.5 py-0.5 rounded-full inline-flex items-center space-x-0.5">
+                                                                    <span><?= (int)($c['trophies'] ?? 0) ?></span>
+                                                                    <i class="fas fa-trophy text-[7px] text-amber-300"></i>
+                                                                </span>
                                                             </div>
                                                         </div>
-
-                                                        <!-- Bottom Label -->
-                                                        <div
-                                                            class="pt-2 text-center w-full bg-slate-100/90 sm:bg-transparent rounded-b-lg sm:rounded-none">
-                                                            <span
-                                                                class="text-[9px] sm:text-[10px] font-extrabold tracking-wider text-gold-dark uppercase">FIRST</span>
-                                                            <p
-                                                                class="text-[8px] text-slate-400 font-medium hidden sm:block">
-                                                                HR Dir</p>
+                                                        <div class="pt-2 text-center w-full bg-slate-100/90 sm:bg-transparent rounded-b-lg sm:rounded-none">
+                                                            <span class="text-[9px] sm:text-[10px] font-extrabold tracking-wider <?= $st['labelColor'] ?> uppercase"><?= htmlspecialchars($displayLabel) ?></span>
+                                                            <p class="text-[8px] text-slate-400 font-medium hidden sm:block truncate" title="<?= htmlspecialchars($c['role']) ?>"><?= htmlspecialchars($roleShort) ?></p>
                                                         </div>
                                                     </div>
-
-                                                    <!-- 02: SECOND - Chef Marco (Rank 2) -->
-                                                    <div
-                                                        class="flex flex-col items-center justify-end text-center group cursor-pointer">
-                                                        <!-- Top Header: Name & Star -->
-                                                        <div class="mb-2 flex flex-col items-center space-y-1 w-full">
-                                                            <div
-                                                                class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-terracotta text-white font-bold text-[10px] sm:text-xs flex items-center justify-center shadow-xs border-2 border-white">
-                                                                CM
-                                                            </div>
-                                                            <p class="text-[10px] sm:text-xs font-bold text-slate-900 truncate max-w-full"
-                                                                title="Chef Marco">Marco</p>
-                                                            <span
-                                                                class="text-[8px] sm:text-[9px] font-bold text-terracotta-dark bg-terracotta-50 px-1.5 py-0.2 rounded-full border border-terracotta-100">2.4k
-                                                                XP</span>
-                                                            <!-- Star -->
-                                                            <div
-                                                                class="pt-0.5 text-gold text-sm sm:text-lg drop-shadow-xs">
-                                                                <i class="fas fa-star"></i>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- Vertical Pillar Bar (Rank 2) -->
-                                                        <div
-                                                            class="w-full h-36 sm:h-44 rounded-t-xl sm:rounded-t-2xl bg-terracotta shadow-sm group-hover:shadow-md group-hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center justify-between py-2.5 px-1 text-white border-t-2 border-white/40">
-                                                            <div
-                                                                class="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-white bg-black/15 backdrop-blur-xs flex items-center justify-center font-bold text-[10px] sm:text-xs text-white shadow-xs mt-1">
-                                                                02
-                                                            </div>
-                                                            <div class="space-y-0.5 text-center">
-                                                                <p
-                                                                    class="text-[9px] sm:text-[10px] font-bold text-white leading-tight">
-                                                                    2,450</p>
-                                                                <span
-                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1.5 py-0.5 rounded-full inline-flex items-center space-x-0.5"><span>12</span>
-                                                                    <i class="fas fa-trophy text-[7px] text-amber-300"></i></span>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- Bottom Label -->
-                                                        <div
-                                                            class="pt-2 text-center w-full bg-slate-100/90 sm:bg-transparent rounded-b-lg sm:rounded-none">
-                                                            <span
-                                                                class="text-[9px] sm:text-[10px] font-extrabold tracking-wider text-terracotta uppercase">SECOND</span>
-                                                            <p
-                                                                class="text-[8px] text-slate-400 font-medium hidden sm:block">
-                                                                Culinary</p>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- 03: THIRD - Ana Tanaka (Rank 3) -->
-                                                    <div
-                                                        class="flex flex-col items-center justify-end text-center group cursor-pointer">
-                                                        <!-- Top Header: Name & Star -->
-                                                        <div class="mb-2 flex flex-col items-center space-y-1 w-full">
-                                                            <div
-                                                                class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-sage-dark text-white font-bold text-[10px] sm:text-xs flex items-center justify-center shadow-xs border-2 border-white">
-                                                                AT
-                                                            </div>
-                                                            <p class="text-[10px] sm:text-xs font-bold text-slate-900 truncate max-w-full"
-                                                                title="Ana Tanaka">Ana</p>
-                                                            <span
-                                                                class="text-[8px] sm:text-[9px] font-bold text-sage-dark bg-sage-50 px-1.5 py-0.2 rounded-full border border-sage-100">2.1k
-                                                                XP</span>
-                                                            <!-- Star -->
-                                                            <div
-                                                                class="pt-0.5 text-gold text-sm sm:text-lg drop-shadow-xs">
-                                                                <i class="fas fa-star"></i>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- Vertical Pillar Bar (Rank 3) -->
-                                                        <div
-                                                            class="w-full h-30 sm:h-38 rounded-t-xl sm:rounded-t-2xl bg-sage-dark shadow-sm group-hover:shadow-md group-hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center justify-between py-2.5 px-1 text-white border-t-2 border-white/40">
-                                                            <div
-                                                                class="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-white bg-black/15 backdrop-blur-xs flex items-center justify-center font-bold text-[10px] sm:text-xs text-white shadow-xs mt-1">
-                                                                03
-                                                            </div>
-                                                            <div class="space-y-0.5 text-center">
-                                                                <p
-                                                                    class="text-[9px] sm:text-[10px] font-bold text-white leading-tight">
-                                                                    2,190</p>
-                                                                <span
-                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1.5 py-0.5 rounded-full inline-flex items-center space-x-0.5"><span>11</span>
-                                                                    <i class="fas fa-trophy text-[7px] text-amber-300"></i></span>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- Bottom Label -->
-                                                        <div
-                                                            class="pt-2 text-center w-full bg-slate-100/90 sm:bg-transparent rounded-b-lg sm:rounded-none">
-                                                            <span
-                                                                class="text-[9px] sm:text-[10px] font-extrabold tracking-wider text-sage-dark uppercase">THIRD</span>
-                                                            <p
-                                                                class="text-[8px] text-slate-400 font-medium hidden sm:block">
-                                                                Auditor</p>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- 04: FOURTH - Maria Santos (Rank 4) -->
-                                                    <div
-                                                        class="flex flex-col items-center justify-end text-center group cursor-pointer">
-                                                        <!-- Top Header: Name & Star -->
-                                                        <div class="mb-2 flex flex-col items-center space-y-1 w-full">
-                                                            <div
-                                                                class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-dusty text-white font-bold text-[10px] sm:text-xs flex items-center justify-center shadow-xs border-2 border-white">
-                                                                MS
-                                                            </div>
-                                                            <p class="text-[10px] sm:text-xs font-bold text-slate-900 truncate max-w-full"
-                                                                title="Maria Santos">Maria</p>
-                                                            <span
-                                                                class="text-[8px] sm:text-[9px] font-bold text-dusty-dark bg-dusty-50 px-1.5 py-0.2 rounded-full border border-dusty-100">1.4k
-                                                                XP</span>
-                                                            <!-- Star -->
-                                                            <div
-                                                                class="pt-0.5 text-gold text-sm sm:text-lg drop-shadow-xs">
-                                                                <i class="fas fa-star"></i>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- Vertical Pillar Bar (Rank 4) -->
-                                                        <div
-                                                            class="w-full h-24 sm:h-32 rounded-t-xl sm:rounded-t-2xl bg-dusty shadow-sm group-hover:shadow-md group-hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center justify-between py-2.5 px-1 text-white border-t-2 border-white/40">
-                                                            <div
-                                                                class="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-white bg-black/15 backdrop-blur-xs flex items-center justify-center font-bold text-[10px] sm:text-xs text-white shadow-xs mt-1">
-                                                                04
-                                                            </div>
-                                                            <div class="space-y-0.5 text-center">
-                                                                <p
-                                                                    id="leaderboard-rank4-xp"
-                                                                    class="text-[9px] sm:text-[10px] font-bold text-white leading-tight">
-                                                                    300</p>
-                                                                <span
-                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1.5 py-0.5 rounded-full inline-flex items-center space-x-0.5"><span>1</span>
-                                                                    <i class="fas fa-trophy text-[7px] text-amber-300"></i></span>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- Bottom Label -->
-                                                        <div
-                                                            class="pt-2 text-center w-full bg-slate-100/90 sm:bg-transparent rounded-b-lg sm:rounded-none">
-                                                            <span
-                                                                class="text-[9px] sm:text-[10px] font-extrabold tracking-wider text-dusty uppercase">FOURTH</span>
-                                                            <p
-                                                                class="text-[8px] text-slate-400 font-medium hidden sm:block">
-                                                                Front Host</p>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- 05: FIFTH - Carlos Gomez (Rank 5) -->
-                                                    <div
-                                                        class="flex flex-col items-center justify-end text-center group cursor-pointer">
-                                                        <!-- Top Header: Name & Star -->
-                                                        <div class="mb-2 flex flex-col items-center space-y-1 w-full">
-                                                            <div
-                                                                class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#6F6261] text-white font-bold text-[10px] sm:text-xs flex items-center justify-center shadow-xs border-2 border-white">
-                                                                CG
-                                                            </div>
-                                                            <p class="text-[10px] sm:text-xs font-bold text-slate-900 truncate max-w-full"
-                                                                title="Carlos Gomez">Carlos</p>
-                                                            <span
-                                                                class="text-[8px] sm:text-[9px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.2 rounded-full border border-slate-200">1.3k
-                                                                XP</span>
-                                                            <!-- Star -->
-                                                            <div
-                                                                class="pt-0.5 text-gold text-sm sm:text-lg drop-shadow-xs">
-                                                                <i class="fas fa-star"></i>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- Vertical Pillar Bar (Rank 5) -->
-                                                        <div
-                                                            class="w-full h-20 sm:h-26 rounded-t-xl sm:rounded-t-2xl bg-[#6F6261] shadow-sm group-hover:shadow-md group-hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center justify-between py-2.5 px-1 text-white border-t-2 border-white/40">
-                                                            <div
-                                                                class="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-white bg-black/15 backdrop-blur-xs flex items-center justify-center font-bold text-[10px] sm:text-xs text-white shadow-xs mt-1">
-                                                                05
-                                                            </div>
-                                                            <div class="space-y-0.5 text-center">
-                                                                <p
-                                                                    class="text-[9px] sm:text-[10px] font-bold text-white leading-tight">
-                                                                    1,320</p>
-                                                                <span
-                                                                    class="text-[7px] sm:text-[8px] font-semibold bg-black/25 text-white px-1.5 py-0.5 rounded-full inline-flex items-center space-x-0.5"><span>8</span>
-                                                                    <i class="fas fa-trophy text-[7px] text-amber-300"></i></span>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- Bottom Label -->
-                                                        <div
-                                                            class="pt-2 text-center w-full bg-slate-100/90 sm:bg-transparent rounded-b-lg sm:rounded-none">
-                                                            <span
-                                                                class="text-[9px] sm:text-[10px] font-extrabold tracking-wider text-slate-600 uppercase">FIFTH</span>
-                                                            <p
-                                                                class="text-[8px] text-slate-400 font-medium hidden sm:block">
-                                                                Concierge</p>
-                                                        </div>
-                                                    </div>
-
+                                                <?php endif; endforeach; ?>
                                                 </div>
                                             </div>
                                         </div>

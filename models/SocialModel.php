@@ -540,4 +540,134 @@ class SocialModel extends BaseModel
             ['id' => 'emp-105', 'name' => 'Elena Vance', 'role' => 'HR Director & Master Trainer', 'dept' => 'HR & Admin', 'department' => 'HR & Admin', 'avatar' => 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80', 'rating' => '4.95']
         ];
     }
+
+    /**
+     * Get Top 5 Gamified XP Champions ranked directly from xp_ledger.
+     * Ties are handled gracefully: if employees have the same XP (e.g. 0 XP),
+     * they are placed at the same rank level.
+     */
+    public function getTop5XpChampions(): array
+    {
+        // 1. Fetch all records from xp_ledger
+        $ledgerRes = supabaseRequest('xp_ledger?order=created_at.asc', 'GET', null, true);
+        $ledgerRows = (is_array($ledgerRes['data'] ?? null) && !isset($ledgerRes['data']['code'])) ? $ledgerRes['data'] : [];
+
+        // 2. Fetch full active roster
+        $roster = $this->getRoster();
+
+        // 3. Aggregate XP and trophy counts per employee from xp_ledger
+        $empTotals = [];
+        foreach ($roster as $emp) {
+            $eId = (string)($emp['id'] ?? '');
+            $empTotals[$eId] = [
+                'employee_id' => $eId,
+                'name'        => $emp['name'] ?? 'Associate',
+                'role'        => $emp['role'] ?? ($emp['position'] ?? 'Staff'),
+                'department'  => $emp['department'] ?? ($emp['dept'] ?? 'Front Office'),
+                'avatar'      => $emp['avatar'] ?? '',
+                'total_xp'    => 0,
+                'trophies'    => 0
+            ];
+        }
+
+        foreach ($ledgerRows as $row) {
+            $rowEmpId = (string)($row['employee_id'] ?? '');
+            $pts = (int)($row['points'] ?? 0);
+            if (empty($rowEmpId)) continue;
+
+            $matchedKey = null;
+            if (isset($empTotals[$rowEmpId])) {
+                $matchedKey = $rowEmpId;
+            } else {
+                foreach ($empTotals as $k => $eData) {
+                    if (strcasecmp($k, $rowEmpId) === 0) {
+                        $matchedKey = $k;
+                        break;
+                    }
+                }
+            }
+
+            if ($matchedKey) {
+                $empTotals[$matchedKey]['total_xp'] += $pts;
+                if ($pts > 0) {
+                    $empTotals[$matchedKey]['trophies']++;
+                }
+            }
+        }
+
+        // 4. Filter out employees with 0 XP - only employees with XP > 0 qualify for the podium
+        $qualifiers = array_filter($empTotals, function($e) {
+            return ($e['total_xp'] ?? 0) > 0;
+        });
+
+        $champions = array_values($qualifiers);
+        usort($champions, function($a, $b) {
+            if ($b['total_xp'] !== $a['total_xp']) {
+                return $b['total_xp'] - $a['total_xp'];
+            }
+            return strcmp($a['name'], $b['name']);
+        });
+
+        // 5. Calculate Dense Ranking and Rank Levels for qualifiers
+        $currentRank = 1;
+        $prevXp = null;
+        $rankedChampions = [];
+
+        $rankLabels = [
+            1 => 'FIRST',
+            2 => 'SECOND',
+            3 => 'THIRD',
+            4 => 'FOURTH',
+            5 => 'FIFTH'
+        ];
+
+        for ($i = 0; $i < count($champions); $i++) {
+            $c = $champions[$i];
+            $xp = $c['total_xp'];
+
+            if ($prevXp !== null) {
+                if ($xp < $prevXp) {
+                    $currentRank++;
+                }
+            }
+            $prevXp = $xp;
+
+            $c['rank'] = $currentRank;
+            $c['rank_label'] = $rankLabels[$currentRank] ?? ('RANK ' . $currentRank);
+            $c['is_tied'] = false;
+            $c['is_ready'] = false;
+            $rankedChampions[] = $c;
+        }
+
+        // Detect ties among qualifiers
+        $rankCounts = array_count_values(array_column($rankedChampions, 'rank'));
+        foreach ($rankedChampions as &$rc) {
+            if (($rankCounts[$rc['rank']] ?? 0) > 1) {
+                $rc['is_tied'] = true;
+            }
+        }
+        unset($rc);
+
+        // 6. Always ensure exactly 5 podium slots (fill remaining with "Ready" state)
+        $podium = array_slice($rankedChampions, 0, 5);
+
+        while (count($podium) < 5) {
+            $slotIndex = count($podium) + 1;
+            $podium[] = [
+                'employee_id' => null,
+                'name'        => 'Ready',
+                'role'        => 'Open Slot',
+                'department'  => 'Contender',
+                'avatar'      => '',
+                'total_xp'    => 0,
+                'trophies'    => 0,
+                'rank'        => $slotIndex,
+                'rank_label'  => $rankLabels[$slotIndex] ?? ('RANK ' . $slotIndex),
+                'is_tied'     => false,
+                'is_ready'    => true
+            ];
+        }
+
+        return $podium;
+    }
 }

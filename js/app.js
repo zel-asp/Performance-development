@@ -174,11 +174,12 @@ function switchPillar(pillarKey) {
 
     // Resize charts if visible & refresh dynamic data
     setTimeout(() => {
-        if (pillarKey === 'dashboard') {
+        if (pillarKey === 'dashboard' || pillarKey === 'pillar-dashboard') {
             if (chartPerfTrendInstance) chartPerfTrendInstance.resize();
             if (chartSentimentDoughnutInstance) chartSentimentDoughnutInstance.resize();
             if (chartSystemDeptProgressInstance) chartSystemDeptProgressInstance.resize();
             if (typeof loadAndRenderPlanningGoals === 'function') loadAndRenderPlanningGoals();
+            if (typeof loadAndRenderTop5Champions === 'function') loadAndRenderTop5Champions();
         } else if (pillarKey === 'pillar-perf') {
             if (typeof loadAndRenderPlanningGoals === 'function') loadAndRenderPlanningGoals();
             if (typeof loadAndRenderMonitoringData === 'function') loadAndRenderMonitoringData();
@@ -256,6 +257,7 @@ function switchSubTab(pillarPrefix, subKey) {
             setTimeout(() => {
                 if (typeof initDashboardCharts === 'function') initDashboardCharts();
                 if (typeof renderOverviewShiftPulse === 'function') renderOverviewShiftPulse();
+                if (typeof loadAndRenderTop5Champions === 'function') loadAndRenderTop5Champions();
                 if (loadingOverlay) {
                     loadingOverlay.classList.add('opacity-0');
                     setTimeout(() => {
@@ -886,6 +888,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     } catch (e) {
         console.warn('Navigation state restore error:', e);
+    }
+
+    if (typeof loadAndRenderTop5Champions === 'function') {
+        loadAndRenderTop5Champions();
     }
 });
 

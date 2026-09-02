@@ -23,6 +23,10 @@ try {
             echo json_encode($controller->getLedger($empId));
             break;
 
+        case 'get_top_champions':
+            echo json_encode($controller->getTop5Champions());
+            break;
+
         case 'get_badges':
             $empId = $_GET['employeeId'] ?? ($_GET['employee_id'] ?? null);
             echo json_encode($controller->getBadges($empId));
