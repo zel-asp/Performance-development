@@ -537,13 +537,11 @@ function isSameEmployee(idA, idB) {
     const b = idB.toString().toLowerCase().trim();
     if (a === b) return true;
 
-    // Check active session user alias matching
+    // Check active session user alias matching: only match if BOTH a and b are valid aliases of current user
     try {
         const userObj = window.currentUser || JSON.parse(localStorage.getItem('oxford_session_user') || '{}');
         const myIds = [userObj.id, userObj.employee_code, userObj.emp_id, userObj.empId].filter(Boolean).map(x => x.toString().toLowerCase().trim());
         if (myIds.includes(a) && myIds.includes(b)) return true;
-        if (myIds.includes(a) && (b === 'emp-101' || b === 'emp-1' || b === 'oxf-emp-1001')) return true;
-        if (myIds.includes(b) && (a === 'emp-101' || a === 'emp-1' || a === 'oxf-emp-1001')) return true;
     } catch (e) {}
 
     // Check roster in window
@@ -551,17 +549,84 @@ function isSameEmployee(idA, idB) {
         const roster = window.perfRoster || window.dbEmployees || [];
         const empA = roster.find(u => (u.id && u.id.toString().toLowerCase() === a) || (u.employee_code && u.employee_code.toString().toLowerCase() === a) || (u.empId && u.empId.toString().toLowerCase() === a));
         const empB = roster.find(u => (u.id && u.id.toString().toLowerCase() === b) || (u.employee_code && u.employee_code.toString().toLowerCase() === b) || (u.empId && u.empId.toString().toLowerCase() === b));
-        if (empA && empB && (empA.id === empB.id || empA.employee_code === empB.employee_code)) return true;
+        if (empA && empB && (empA.id === empB.id || (empA.employee_code && empA.employee_code === empB.employee_code))) return true;
     } catch (e) {}
 
-    const isA_101 = a === 'emp-101' || a === 'emp-1' || a === 'oxf-emp-1001' || a === 'emp-001' || a === '3a52667f-53cf-412a-b048-ef96eb407707';
-    const isB_101 = b === 'emp-101' || b === 'emp-1' || b === 'oxf-emp-1001' || b === 'emp-001' || b === '3a52667f-53cf-412a-b048-ef96eb407707';
-    if (isA_101 && isB_101) return true;
+    // Check known persona ID aliases for associate and supervisor personas
+    const isA_Associate = a === 'emp-101' || a === 'emp-1' || a === 'oxf-emp-1001' || a === 'emp-001' || a === '3a52667f-53cf-412a-b048-ef96eb407707';
+    const isB_Associate = b === 'emp-101' || b === 'emp-1' || b === 'oxf-emp-1001' || b === 'emp-001' || b === '3a52667f-53cf-412a-b048-ef96eb407707';
+    if (isA_Associate && isB_Associate) return true;
 
-    const isA_102 = a === 'emp-102' || a === 'emp-2' || a === 'oxf-sup-2001' || a === 'sup-003' || a === '3bb792e6-b25e-460e-a8fa-712c65c3b2e2';
-    const isB_102 = b === 'emp-102' || b === 'emp-2' || b === 'oxf-sup-2001' || b === 'sup-003' || b === '3bb792e6-b25e-460e-a8fa-712c65c3b2e2';
-    if (isA_102 && isB_102) return true;
+    const isA_Supervisor = a === 'emp-102' || a === 'emp-2' || a === 'oxf-sup-2001' || a === 'sup-003' || a === '3bb792e6-b25e-460e-a8fa-712c65c3b2e2';
+    const isB_Supervisor = b === 'emp-102' || b === 'emp-2' || b === 'oxf-sup-2001' || b === 'sup-003' || b === '3bb792e6-b25e-460e-a8fa-712c65c3b2e2';
+    if (isA_Supervisor && isB_Supervisor) return true;
 
     return false;
 }
 window.isSameEmployee = isSameEmployee;
+
+/**
+ * Helper to check if current user/persona has Supervisor role
+ */
+function isCurrentUserSupervisor() {
+    if (window.activePersonaRole && window.activePersonaRole.toLowerCase() === 'supervisor') return true;
+    if (window.activePersonaKey && window.activePersonaKey.toLowerCase() === 'supervisor') return true;
+    if (window.currentUser && window.currentUser.role && window.currentUser.role.toLowerCase() === 'supervisor') return true;
+    try {
+        const userObj = JSON.parse(localStorage.getItem('oxford_session_user') || '{}');
+        if (userObj && userObj.role && userObj.role.toLowerCase() === 'supervisor') return true;
+    } catch(e) {}
+    return false;
+}
+window.isCurrentUserSupervisor = isCurrentUserSupervisor;
+
+/**
+ * Helper to check if a goal is concluded (done, completed, or failed)
+ */
+function isGoalConcluded(goal) {
+    if (!goal) return false;
+    const st = (typeof goal === 'string' ? goal : (goal.status || '')).toLowerCase().trim();
+    return st === 'done' || st === 'completed' || st === 'failed';
+}
+window.isGoalConcluded = isGoalConcluded;
+
+/**
+ * Helper to check if an employee has an ACTIVE Approved performance goal (In Progress).
+ * Excludes Completed or Done goals so finished cycles do not leak into Stage 3, 4, or 5.
+ */
+function employeeHasApprovedGoal(emp) {
+    if (!emp) return false;
+    const empId = (emp.id || '').toString().toLowerCase().trim();
+    const empCode = (emp.employee_code || emp.emp_id || '').toString().toLowerCase().trim();
+
+    // 1. Check local goals attached directly to employee - ONLY Active Approved goals
+    if (Array.isArray(emp.goals) && emp.goals.some(g => {
+        const st = (g.status || '').toLowerCase().trim();
+        return st === 'approved' || st === 'in progress';
+    })) {
+        return true;
+    }
+
+    // 2. Check window.dbGoals with strict employee verification - ONLY Active Approved goals
+    const goals = window.dbGoals || [];
+    return goals.some(g => {
+        const st = (g.status || '').toLowerCase().trim();
+        if (st !== 'approved' && st !== 'in progress') return false;
+        return isSameEmployee(g.employee_id, empId) || (empCode && isSameEmployee(g.employee_id, empCode));
+    });
+}
+window.employeeHasApprovedGoal = employeeHasApprovedGoal;
+
+/**
+ * Check if employee has ANY goal (including Completed / Done) for Step 7 Cycle Transition
+ */
+function employeeHasAnyGoal(emp) {
+    if (!emp) return false;
+    const empId = (emp.id || '').toString().toLowerCase().trim();
+    const empCode = (emp.employee_code || emp.emp_id || '').toString().toLowerCase().trim();
+
+    if (Array.isArray(emp.goals) && emp.goals.length > 0) return true;
+    const goals = window.dbGoals || [];
+    return goals.some(g => isSameEmployee(g.employee_id, empId) || (empCode && isSameEmployee(g.employee_id, empCode)));
+}
+window.employeeHasAnyGoal = employeeHasAnyGoal;

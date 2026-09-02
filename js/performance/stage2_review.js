@@ -285,6 +285,14 @@ function openCreateSpecificTaskModal(goalId, empId) {
     const goal = (window.dbGoals || []).find(g => String(g.id) === String(goalId));
     if (!goal) return;
 
+    const st = (goal.status || '').toLowerCase().trim();
+    if (st === 'done' || st === 'completed' || st === 'failed') {
+        if (typeof showToast === 'function') {
+            showToast(`Cannot add tasks: Objective is already marked as ${goal.status}.`, 'warning');
+        }
+        return;
+    }
+
     document.getElementById('specific-task-goal-id').value = goal.id;
     document.getElementById('specific-task-employee-id').value = goal.employee_id || empId || 'emp-101';
     document.getElementById('specific-task-goal-target-date').value = goal.target_date || '';

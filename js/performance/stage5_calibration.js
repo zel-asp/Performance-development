@@ -27,7 +27,7 @@ function renderReviewRosterTable() {
     const searchQuery = ((typeof window.reviewSearchQuery !== 'undefined' && window.reviewSearchQuery !== null) ? window.reviewSearchQuery : (searchInput ? searchInput.value : '')).toLowerCase().trim();
 
     let roster = (window.perfRoster || []).filter(emp => {
-        return (window.dbGoals || []).some(g => g.status === 'Approved' && isSameEmployee(g.employee_id, emp.id));
+        return typeof employeeHasApprovedGoal === 'function' ? employeeHasApprovedGoal(emp) : false;
     });
 
     if (searchQuery) {

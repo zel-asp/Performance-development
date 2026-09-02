@@ -25,13 +25,32 @@ function renderCycleRosterTable() {
     if (!container) return;
     container.innerHTML = '';
 
-    // Show associates with status 'Approved' or 'Done'
+    // Stage 7 strictly shows associates who have an uncompleted performance goal AND have a Final Review Rating or Calibrated Rating.
+    // If completed, do not show here.
     let roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster.filter(emp => {
-        const hasGoal = (window.dbGoals || []).some(g => (g.status === 'Approved' || g.status === 'Done') && isSameEmployee(g.employee_id, emp.id));
+        const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, emp.id));
+        const hasUncompletedGoal = empGoals.some(g => {
+            const st = (g.status || '').toLowerCase().trim();
+            return st !== 'completed' && (st === 'approved' || st === 'in progress' || st === 'done');
+        });
+        if (!hasUncompletedGoal) return false;
+
         const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
-        const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
-        const score = isCalibrated && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : 0;
-        return hasGoal && score > 0;
+
+        // 1. Calibrated Rating (from Stage 5 HR Calibration)
+        const calibratedScore = (evalRec?.new_calibrated_score && parseFloat(evalRec.new_calibrated_score) > 0)
+            ? parseFloat(evalRec.new_calibrated_score)
+            : (evalRec?.calibrated_score && parseFloat(evalRec.calibrated_score) > 0 ? parseFloat(evalRec.calibrated_score) : 0);
+        const isCalibrated = calibratedScore > 0 && (evalRec?.status === 'Calibrated' || evalRec?.status !== 'Rated');
+
+        // 2. Final Review Rating (from Stage 5 1-on-1 Review or Goal Final Rating)
+        const evalFinalRating = evalRec?.final_rating && parseFloat(evalRec.final_rating) > 0 ? parseFloat(evalRec.final_rating) : 0;
+        const goalWithFinal = empGoals.find(g => g.final_rating && parseFloat(g.final_rating) > 0);
+        const goalFinalRating = goalWithFinal ? parseFloat(goalWithFinal.final_rating) : 0;
+        const finalRating = evalFinalRating > 0 ? evalFinalRating : goalFinalRating;
+
+        // Associate MUST have either a calibrated rating OR a final review rating to appear in Stage 7
+        return (isCalibrated && calibratedScore > 0) || finalRating > 0;
     }) : [];
 
     // Search query filter
@@ -90,12 +109,27 @@ function checkEmployeeStage7Tasks(empId) {
 window.checkEmployeeStage7Tasks = checkEmployeeStage7Tasks;
 
     container.innerHTML = pageList.map((emp, idx) => {
+        const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Done' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+        const doneGoal = empGoals.find(g => g.status === 'Done' || g.status === 'Completed' || !!g.exp_id);
+        const isGoalDone = !!doneGoal;
+
         const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
-        const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
-        const score = isCalibrated && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : 0;
-        const hasPassed = score >= 3.0;
+
+        const calibratedScore = (evalRec?.new_calibrated_score && parseFloat(evalRec.new_calibrated_score) > 0)
+            ? parseFloat(evalRec.new_calibrated_score)
+            : (evalRec?.calibrated_score && parseFloat(evalRec.calibrated_score) > 0 ? parseFloat(evalRec.calibrated_score) : 0);
+        const isCalibrated = calibratedScore > 0 && (evalRec?.status === 'Calibrated' || evalRec?.status !== 'Rated');
+
+        const evalFinalRating = evalRec?.final_rating && parseFloat(evalRec.final_rating) > 0 ? parseFloat(evalRec.final_rating) : 0;
+        const goalWithFinal = empGoals.find(g => g.final_rating && parseFloat(g.final_rating) > 0);
+        const goalFinalRating = goalWithFinal ? parseFloat(goalWithFinal.final_rating) : 0;
+        const finalRating = evalFinalRating > 0 ? evalFinalRating : goalFinalRating;
+
+        const score = isCalibrated && calibratedScore > 0 ? calibratedScore : (finalRating > 0 ? finalRating : 0);
+        const hasPassed = score >= 3.0 || isGoalDone;
         const retryCount = getEmployeeRetryCount(emp.id);
         const isExceededRetry = retryCount >= 3 && !hasPassed;
+        const ratingLabel = isCalibrated ? 'Calibrated' : 'Final Review';
 
         // Draft plan summary from cache
         const draftData = window.dbDraftPlans?.[emp.id] || {};
@@ -107,10 +141,6 @@ window.checkEmployeeStage7Tasks = checkEmployeeStage7Tasks;
         const taskCheck = checkEmployeeStage7Tasks(emp.id);
         const allTasksDone = taskCheck.allTasksDone;
 
-        const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Done') && isSameEmployee(g.employee_id, emp.id));
-        const doneGoal = empGoals.find(g => g.status === 'Done' || !!g.exp_id);
-        const isGoalDone = !!doneGoal;
-
         return `
             <tr class="hover:bg-slate-50 transition text-xs border-b border-slate-100">
                 <td class="px-3 py-4 text-center font-mono font-bold text-slate-400 text-xs">
@@ -120,8 +150,8 @@ window.checkEmployeeStage7Tasks = checkEmployeeStage7Tasks;
                     <span class="max-w-[160px] truncate block" title="${emp.name}">${emp.name}</span>
                 </td>
                 <td class="px-5 py-4 text-slate-500 max-w-[130px] truncate" title="${emp.department}">${emp.department}</td>
-                <td class="px-5 py-4 font-bold ${isCalibrated ? (isExceededRetry ? 'text-rose-700' : (hasPassed ? 'text-emerald-700' : 'text-rose-600')) : 'text-slate-400 font-normal italic'}">
-                    ${isCalibrated ? (isExceededRetry ? `<i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${score.toFixed(2)} / 5.0 (Failed)` : `<i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || (hasPassed ? 'Calibrated' : 'Needs PIP')})`) : 'Pending Review'}
+                <td class="px-5 py-4 font-bold ${isExceededRetry ? 'text-rose-700' : (hasPassed ? 'text-emerald-700' : 'text-rose-600')}">
+                    <i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || (hasPassed ? ratingLabel : 'Needs PIP')})
                 </td>
                 <td class="px-5 py-4">
                     <div class="flex flex-col space-y-1">
@@ -272,27 +302,38 @@ function showCycleDetail(empId, openModalImmediately = false) {
         return;
     }
 
-    const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
-    const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
-    const score = isCalibrated && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : 0;
+    const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, emp.id));
+    const hasUncompletedGoal = empGoals.some(g => (g.status || '').toLowerCase().trim() !== 'completed');
+    if (!hasUncompletedGoal) {
+        showEmptyCycleDetail();
+        return;
+    }
 
-    if (score === 0) {
+    const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+    const doneGoal = empGoals.find(g => g.status === 'Done' || !!g.exp_id);
+    const isGoalDone = !!doneGoal;
+
+    const calibratedScore = (evalRec?.new_calibrated_score && parseFloat(evalRec.new_calibrated_score) > 0)
+        ? parseFloat(evalRec.new_calibrated_score)
+        : (evalRec?.calibrated_score && parseFloat(evalRec.calibrated_score) > 0 ? parseFloat(evalRec.calibrated_score) : 0);
+    const isCalibrated = calibratedScore > 0 && (evalRec?.status === 'Calibrated' || evalRec?.status !== 'Rated');
+
+    const evalFinalRating = evalRec?.final_rating && parseFloat(evalRec.final_rating) > 0 ? parseFloat(evalRec.final_rating) : 0;
+    const goalWithFinal = empGoals.find(g => g.final_rating && parseFloat(g.final_rating) > 0);
+    const goalFinalRating = goalWithFinal ? parseFloat(goalWithFinal.final_rating) : 0;
+    const finalRating = evalFinalRating > 0 ? evalFinalRating : goalFinalRating;
+
+    const effectiveScore = isCalibrated && calibratedScore > 0 ? calibratedScore : (finalRating > 0 ? finalRating : 0);
+
+    if (effectiveScore === 0) {
         showEmptyCycleDetail();
         return;
     }
 
     window.selectedEvalEmpId = emp.id;
-
-    const effectiveScore = (evalRec?.new_calibrated_score && parseFloat(evalRec.new_calibrated_score) > 0)
-        ? parseFloat(evalRec.new_calibrated_score)
-        : (isCalibrated && evalRec?.calibrated_score ? parseFloat(evalRec.calibrated_score) : 0);
-    const hasPassed = effectiveScore >= 3.0;
-
-    const retryCount = getEmployeeRetryCount(emp.id);
+    const retryCount = typeof getEmployeeRetryCount === 'function' ? getEmployeeRetryCount(emp.id) : 0;
+    const hasPassed = effectiveScore >= 3.0 || isGoalDone;
     const isExceededRetry = retryCount >= 3 && !hasPassed;
-    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Done') && isSameEmployee(g.employee_id, emp.id));
-    const doneGoal = empGoals.find(g => g.status === 'Done' || !!g.exp_id);
-    const isGoalDone = !!doneGoal;
     const needsTraining = empGoals.some(g => !!g.needs_training);
     const inTraining = isEmployeeInTraining(emp.id);
     const tnNeed = getEmployeeTrainingNeed(emp.id);
@@ -333,7 +374,7 @@ function showCycleDetail(empId, openModalImmediately = false) {
                     </div>
                 </div>
             `;
-        } else if (isCalibrated && hasPassed) {
+        } else if (hasPassed) {
             const taskCheck = checkEmployeeStage7Tasks(emp.id);
             const allTasksDone = taskCheck.allTasksDone;
 
@@ -346,7 +387,7 @@ function showCycleDetail(empId, openModalImmediately = false) {
                     <span class="text-2xl font-bold text-sage-dark font-heading font-mono"><i class="fas fa-star text-amber-500 mr-1 text-lg"></i>${effectiveScore.toFixed(2)} / 5.0</span>
                 </div>
                 <p class="text-xs text-slate-600 leading-relaxed">
-                    By completing the 2026 Q3 performance evaluation and IDP commitments, <strong>${emp.name}</strong> achieved a <strong>${evalRec?.tier_label || 'Calibrated'}</strong> rating. These validated competencies will form the elevated baseline for the upcoming <strong>2026 Q4 Cycle</strong>.
+                    By completing the 2026 Q3 performance evaluation and IDP commitments, <strong>${emp.name}</strong> achieved a <strong>${evalRec?.tier_label || (isCalibrated ? 'Calibrated' : 'Proficient')}</strong> rating (${effectiveScore.toFixed(2)} / 5.0). These validated competencies will form the elevated baseline for the upcoming <strong>2026 Q4 Cycle</strong>.
                 </p>
                 <div class="pt-3 border-t border-[#E8DEDC] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <span class="text-xs text-slate-500">
@@ -1383,7 +1424,7 @@ window.executeConfirmGoalFailure = executeConfirmGoalFailure;
 async function confirmRevertGoalKudos(empId, goalId = null) {
     const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || { id: empId, name: 'Associate' };
     const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, emp.id));
-    const targetGoal = empGoals.find(g => (goalId ? String(g.id) === String(goalId) : (g.status === 'Done' || !!g.exp_id))) || empGoals[0];
+    const targetGoal = empGoals.find(g => (goalId ? String(g.id) === String(goalId) : (g.status === 'Done' || g.status === 'Completed' || !!g.exp_id))) || empGoals[0];
 
     showActionConfirmModal({
         title: 'Revert Kudos & Reset Goal Status',
@@ -1398,7 +1439,7 @@ async function confirmRevertGoalKudos(empId, goalId = null) {
 
                 // Update local memory
                 (window.dbGoals || []).forEach(g => {
-                    if (isSameEmployee(g.employee_id, emp.id) && (g.status === 'Done' || (targetGoal && String(g.id) === String(targetGoal.id)))) {
+                    if (isSameEmployee(g.employee_id, emp.id) && (g.status === 'Done' || g.status === 'Completed' || (targetGoal && String(g.id) === String(targetGoal.id)))) {
                         g.status = 'Approved';
                         g.exp_id = null;
                     }
@@ -1441,7 +1482,7 @@ async function confirmMarkGoalCompleted(empId) {
         return;
     }
 
-    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Done' || g.status === 'In Progress') && isSameEmployee(g.employee_id, emp.id));
+    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Done' || g.status === 'Completed' || g.status === 'In Progress') && isSameEmployee(g.employee_id, emp.id));
     if (empGoals.length === 0) {
         if (typeof showToast === 'function') {
             showToast(`No active goals found for ${emp.name}.`, 'info');
@@ -1449,7 +1490,7 @@ async function confirmMarkGoalCompleted(empId) {
         return;
     }
 
-    const hasKudos = empGoals.some(g => g.status === 'Done' || !!g.exp_id) || !!emp.kudosSent;
+    const hasKudos = empGoals.some(g => g.status === 'Done' || g.status === 'Completed' || !!g.exp_id) || !!emp.kudosSent;
 
     // If Kudos was not awarded yet, display the interactive modal prompt
     if (!hasKudos) {

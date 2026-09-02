@@ -56,7 +56,35 @@ function checkLmsTaskProgress(task, empId = null) {
 window.checkLmsTaskProgress = checkLmsTaskProgress;
 
 function triggerTaskCompletionModal(taskId, goalId, checkboxEl) {
+    const isSupervisor = (typeof isCurrentUserSupervisor === 'function') ? isCurrentUserSupervisor() : (window.activePersonaRole === 'Supervisor');
+    if (isSupervisor) {
+        if (checkboxEl) checkboxEl.checked = false;
+        if (typeof showToast === 'function') {
+            showToast('⚠️ Action Checklist is employee-managed. Supervisors cannot edit or complete tasks.', 'warning');
+        }
+        return;
+    }
+
     let goal = (window.dbGoals || []).find(g => String(g.id) === String(goalId));
+    if (!goal) {
+        (window.perfRoster || []).forEach(emp => {
+            if (!goal && emp.goals) {
+                goal = emp.goals.find(g => String(g.id) === String(goalId));
+            }
+        });
+    }
+
+    if (goal) {
+        const goalStatus = (goal.status || '').toLowerCase().trim();
+        if (goalStatus === 'done' || goalStatus === 'completed' || goalStatus === 'failed') {
+            if (checkboxEl) checkboxEl.checked = false;
+            if (typeof showToast === 'function') {
+                showToast(`⚠️ Action Checklist is locked: Objective is already marked as ${goal.status}.`, 'warning');
+            }
+            return;
+        }
+    }
+
     let task = null;
     if (goal && goal.tasks) task = goal.tasks.find(t => String(t.id) === String(taskId));
     if (!task && goal && goal.specific_tasks) task = goal.specific_tasks.find(t => String(t.id) === String(taskId));
@@ -87,6 +115,15 @@ function triggerTaskCompletionModal(taskId, goalId, checkboxEl) {
 window.triggerTaskCompletionModal = triggerTaskCompletionModal;
 
 function openCompleteTaskModal(taskId, goalId) {
+    const isSupervisor = (typeof isCurrentUserSupervisor === 'function') ? isCurrentUserSupervisor() : (window.activePersonaRole === 'Supervisor');
+    if (isSupervisor) {
+        if (window.lastActiveTaskCheckbox) window.lastActiveTaskCheckbox.checked = false;
+        if (typeof showToast === 'function') {
+            showToast('⚠️ Action Checklist is employee-managed. Supervisors cannot edit or complete tasks.', 'warning');
+        }
+        return;
+    }
+
     let goal = (window.dbGoals || []).find(g => String(g.id) === String(goalId));
     if (!goal) {
         (window.perfRoster || []).forEach(emp => {
@@ -94,6 +131,17 @@ function openCompleteTaskModal(taskId, goalId) {
                 goal = emp.goals.find(g => String(g.id) === String(goalId));
             }
         });
+    }
+
+    if (goal) {
+        const goalStatus = (goal.status || '').toLowerCase().trim();
+        if (goalStatus === 'done' || goalStatus === 'completed' || goalStatus === 'failed') {
+            if (window.lastActiveTaskCheckbox) window.lastActiveTaskCheckbox.checked = false;
+            if (typeof showToast === 'function') {
+                showToast(`⚠️ Action Checklist is locked: Objective is already marked as ${goal.status}.`, 'warning');
+            }
+            return;
+        }
     }
 
     let task = null;
@@ -372,8 +420,7 @@ function renderMonitoringRosterTable() {
     container.innerHTML = '';
     const deptFilter = document.getElementById('filter-monitoring-dept')?.value || 'all';
 
-    // Requirement 5: Do not show goals with status of 'Completed'
-    let list = (window.perfRoster || []).filter(e => (window.dbGoals || []).some(g => g.status === 'Approved' && isSameEmployee(g.employee_id, e.id)));
+    let list = (window.perfRoster || []).filter(e => typeof employeeHasApprovedGoal === 'function' ? employeeHasApprovedGoal(e) : false);
     
     if (deptFilter !== 'all') {
         list = list.filter(e => e.department.toLowerCase().includes(deptFilter.toLowerCase()));
@@ -716,6 +763,8 @@ function renderEmployeeMonitoringStream(emp) {
             return true;
         });
 
+        const goalStatus = (goal.status || '').toLowerCase().trim();
+        const isGoalConcluded = goalStatus === 'done' || goalStatus === 'completed' || goalStatus === 'failed';
         const completedCount = allTasks.filter(t => t.status === 'completed').length;
         const totalCount = allTasks.length;
         const goalProgressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : (goal.status === 'Approved' ? 50 : 0);
@@ -746,12 +795,19 @@ function renderEmployeeMonitoringStream(emp) {
                             <div class="${goalProgressPct >= 100 ? 'bg-emerald-500' : 'bg-primary'} h-1.5 rounded-full" style="width: ${goalProgressPct}%"></div>
                         </div>
                     </div>
-                    ${isSupervisor ? `
-                        <button onclick="openCreateSpecificTaskModal('${goal.id}', '${emp.id}')" class="px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold rounded-lg transition inline-flex items-center space-x-1" title="Assign Specific Task">
-                            <i class="fas fa-plus text-[8px]"></i>
-                            <span>Add Task</span>
-                        </button>
-                    ` : ''}
+                    ${isSupervisor ? (
+                        isGoalConcluded ? `
+                            <button disabled class="px-2.5 py-1 bg-slate-100 text-slate-400 border border-slate-200 text-[10px] font-bold rounded-lg cursor-not-allowed opacity-50 inline-flex items-center space-x-1" title="Add Task disabled: Objective is ${goal.status}">
+                                <i class="fas fa-lock text-[8px]"></i>
+                                <span>Add Task</span>
+                            </button>
+                        ` : `
+                            <button onclick="openCreateSpecificTaskModal('${goal.id}', '${emp.id}')" class="px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold rounded-lg transition inline-flex items-center space-x-1" title="Assign Specific Task">
+                                <i class="fas fa-plus text-[8px]"></i>
+                                <span>Add Task</span>
+                            </button>
+                        `
+                    ) : ''}
                 </div>
             </div>
 

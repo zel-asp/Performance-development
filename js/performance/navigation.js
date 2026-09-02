@@ -59,55 +59,8 @@ window.loadSupervisorsForModal = async function() {
     }
 };
 
-// Dynamic Performance Roster State strictly matching users with performance goals
-window.perfRoster = [
-    {
-        id: 'emp-101',
-        name: 'Maria Santos',
-        position: 'Front Desk Host',
-        department: 'Front Office & Guest Experience',
-        avatar: 'MS',
-        avatarBg: 'bg-primary',
-        attendance: { present: 22, absent: 1, total: 23, percentage: '95.6%' },
-        selfRating: 0.0,
-        managerRating: 0.0,
-        supervisorRating: 0.0,
-        customerRating: 0.0,
-        goalsCount: 3,
-        planningStatus: 'Approved',
-        approvalStatus: 'Approved',
-        monitoringProgress: 0,
-        monitoringStatus: 'On Track',
-        evaluationStatus: 'Pending Evaluation',
-        reviewStatus: 'Pending Review',
-        idpStatus: 'Active',
-        cycleStatus: 'Q3 Active',
-        goals: []
-    },
-    {
-        id: 'emp-102',
-        name: 'Chef Marco Rossi',
-        position: 'Executive Sous Chef',
-        department: 'Culinary & Kitchen Brigade',
-        avatar: 'CR',
-        avatarBg: 'bg-amber-600',
-        attendance: { present: 23, absent: 0, total: 23, percentage: '100%' },
-        selfRating: 0.0,
-        managerRating: 0.0,
-        supervisorRating: 0.0,
-        customerRating: 0.0,
-        goalsCount: 1,
-        planningStatus: 'Approved',
-        approvalStatus: 'Approved',
-        monitoringProgress: 0,
-        monitoringStatus: 'Exceeding',
-        evaluationStatus: 'Pending Evaluation',
-        reviewStatus: 'Pending Review',
-        idpStatus: 'Active',
-        cycleStatus: 'Q3 Active',
-        goals: []
-    }
-];
+// Dynamic Performance Roster State populated from real database users
+window.perfRoster = [];
 
 // Active Goal Selected for View / Revise
 window.selectedGoalContext = null;
@@ -650,20 +603,19 @@ function updateAllPerfStepperBadges() {
         const s = (g.status || '').toLowerCase().trim();
         if (s === 'pending approval' || s === 'pending' || s === 'draft' || s === '') {
             pendingPlanCount++;
-        } else if (s === 'approved' || s === 'completed') {
+        } else if (s === 'approved') {
             approvedGoalsCount++;
             if (g.employee_id) monitoredEmpSet.add(String(g.employee_id).toLowerCase());
         }
     });
 
     const monitoredEmployeesCount = roster.filter(e => {
-        const id = String(e.id).toLowerCase();
-        return monitoredEmpSet.has(id) || (id === 'emp-101' && monitoredEmpSet.has('oxf-emp-1001')) || (id === 'emp-102' && monitoredEmpSet.has('oxf-sup-2001'));
+        return typeof employeeHasApprovedGoal === 'function' ? employeeHasApprovedGoal(e) : false;
     }).length;
 
-    // Stage 4 pending evaluation
+    // Stage 4 pending evaluation (strictly requires approved goal)
     const pendingEvaluationCount = roster.filter(emp => {
-        const hasApprovedGoal = goals.some(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+        const hasApprovedGoal = typeof employeeHasApprovedGoal === 'function' ? employeeHasApprovedGoal(emp) : false;
         if (!hasApprovedGoal) return false;
         if (!isEmployeeTasksFullyCompleted(emp)) return false;
 
@@ -672,10 +624,28 @@ function updateAllPerfStepperBadges() {
         return !hasRatedScore;
     }).length;
 
-    const evaluatedEmployeesCount = evals.filter(ev => typeof ev.supervisor_rating !== 'undefined' && ev.supervisor_rating !== null && parseFloat(ev.supervisor_rating) > 0).length;
-    const calibratedEmployeesCount = evals.filter(ev => ev.status === 'Calibrated' && typeof ev.calibrated_score !== 'undefined' && ev.calibrated_score !== null && parseFloat(ev.calibrated_score) > 0).length;
+    const evaluatedEmployeesCount = roster.filter(emp => {
+        const hasApprovedGoal = typeof employeeHasApprovedGoal === 'function' ? employeeHasApprovedGoal(emp) : false;
+        if (!hasApprovedGoal) return false;
+        const evalRec = evals.find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        return evalRec && typeof evalRec.supervisor_rating !== 'undefined' && evalRec.supervisor_rating !== null && parseFloat(evalRec.supervisor_rating) > 0;
+    }).length;
+
+    const calibratedEmployeesCount = roster.filter(emp => {
+        const hasApprovedGoal = typeof employeeHasApprovedGoal === 'function' ? employeeHasApprovedGoal(emp) : false;
+        if (!hasApprovedGoal) return false;
+        const evalRec = evals.find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
+        return evalRec && evalRec.status === 'Calibrated' && typeof evalRec.calibrated_score !== 'undefined' && evalRec.calibrated_score !== null && parseFloat(evalRec.calibrated_score) > 0;
+    }).length;
+
     const idpCount = evaluatedEmployeesCount;
-    const cycleCount = evaluatedEmployeesCount;
+    const cycleCount = roster.filter(emp => {
+        const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, emp.id));
+        return empGoals.some(g => {
+            const st = (g.status || '').toLowerCase().trim();
+            return st !== 'completed' && (st === 'approved' || st === 'in progress' || st === 'done');
+        });
+    }).length;
 
     const stageDataCounts = {
         plan: { count: pendingPlanCount, label: `${pendingPlanCount} Pending` },

@@ -206,6 +206,19 @@ window.openViewIDPPlanModal = openViewIDPPlanModal;
  * Open Add Specific Task Modal
  */
 function openAddSpecificTaskModal(empId, preselectedGoalId = null) {
+    if (preselectedGoalId) {
+        const goal = (window.dbGoals || []).find(g => String(g.id) === String(preselectedGoalId));
+        if (goal) {
+            const st = (goal.status || '').toLowerCase().trim();
+            if (st === 'done' || st === 'completed' || st === 'failed') {
+                if (typeof showToast === 'function') {
+                    showToast(`Cannot add tasks: Objective is already marked as ${goal.status}.`, 'warning');
+                }
+                return;
+            }
+        }
+    }
+
     const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || (window.perfRoster || [])[0];
     if (!emp) return;
 
@@ -501,7 +514,7 @@ function renderIDPRosterTable() {
 
     // Show employees who have goals and finalized calibrated ratings from Stage 5 in database
     let roster = (window.perfRoster && window.perfRoster.length > 0) ? window.perfRoster.filter(emp => {
-        const hasGoal = (window.dbGoals || []).some(g => isSameEmployee(g.employee_id, emp.id));
+        const hasGoal = typeof employeeHasApprovedGoal === 'function' ? employeeHasApprovedGoal(emp) : false;
         const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
         const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
         const score = isCalibrated && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : 0;
@@ -1096,11 +1109,23 @@ function showIDPDetail(empId, openModalImmediately = false) {
                     <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
                         <span class="text-slate-400 text-[10px]"><i class="fas fa-calendar-check mr-1"></i>${g.target_date || 'Q3 Target'}</span>
                         <div class="flex items-center space-x-1">
-                            ${!hasPassedBenchmark ? `
-                                <button onclick="openAddSpecificTaskModal('${emp.id}', '${g.id}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded text-[10px] font-bold transition" title="Add Task to Goal">
-                                    + Task
-                                </button>
-                            ` : ''}
+                            ${(() => {
+                                const st = (g.status || '').toLowerCase().trim();
+                                const isConcluded = st === 'done' || st === 'completed' || st === 'failed';
+                                if (hasPassedBenchmark) return '';
+                                if (isConcluded) {
+                                    return `
+                                        <button disabled class="px-2 py-0.5 bg-slate-100 text-slate-300 border border-slate-200 rounded text-[10px] font-bold cursor-not-allowed opacity-50" title="Add Task disabled: Objective is ${g.status}">
+                                            <i class="fas fa-lock text-[8px]"></i> Task
+                                        </button>
+                                    `;
+                                }
+                                return `
+                                    <button onclick="openAddSpecificTaskModal('${emp.id}', '${g.id}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded text-[10px] font-bold transition" title="Add Task to Goal">
+                                        + Task
+                                    </button>
+                                `;
+                            })()}
                             <span class="text-[10px] font-bold ${g.status === 'Approved' ? 'text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded' : 'text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded'}">
                                 ${g.status || 'Active'}
                             </span>

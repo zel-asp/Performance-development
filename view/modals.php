@@ -136,19 +136,14 @@
 
             <form id="form-create-goal" onsubmit="handleGoalSubmit(event)" class="space-y-4 text-xs">
 
-                <!-- HR Target Assignment Scope / Supervisor from DB -->
-                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <!-- Select Employee to Assign Objective (Supervisor View) -->
+                <div id="goal-assign-employee-container" class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <label class="font-bold text-slate-800 text-[11px] flex items-center shrink-0">
-                        <i class="fas fa-user-tie text-slate-500 mr-1.5"></i> Assign Goal To (Supervisor / Leader):
+                        <i class="fas fa-user-check text-primary mr-1.5"></i> Select Employee to Assign Objective:
                     </label>
                     <select id="goal-target-scope" onchange="if(typeof handleGoalScopeChange === 'function') handleGoalScopeChange(this)"
                         class="w-full sm:w-auto flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20">
-                        <option value="emp-102" data-scope="single" data-name="Chef Marco Rossi" data-dept="Culinary & Kitchen Brigade" data-role="Supervisor">Chef Marco Rossi (Supervisor · Executive Sous Chef)</option>
-                        <option value="emp-103" data-scope="single" data-name="Elena Vance" data-dept="Human Resources" data-role="HRAdmin">Elena Vance (HRAdmin · Director of People)</option>
-                        <option value="emp-104" data-scope="single" data-name="Robert Sterling" data-dept="Executive Office" data-role="GeneralManager">Robert Sterling (GeneralManager · Managing Director)</option>
-                        <option value="emp-101" data-scope="single" data-name="Maria Santos" data-dept="Front Office & Guest Experience" data-role="Associate">Maria Santos (Associate · Front Desk Host)</option>
-                        <option value="dept" data-scope="dept" data-name="Entire Front Office Department" data-dept="Front Office & Guest Experience" data-role="Associate">Entire Front Office Department (12 Staff)</option>
-                        <option value="property" data-scope="property" data-name="Hotel-wide Benchmark" data-dept="Front Office & Guest Experience" data-role="Associate">Hotel-wide Benchmark (All Staff)</option>
+                        <option value="emp-101" data-scope="single" data-name="Maria Santos" data-dept="Front Office & Guest Experience" data-role="Associate">Maria Santos · Front Desk Host (Front Office)</option>
                     </select>
                 </div>
 

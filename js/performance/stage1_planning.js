@@ -25,10 +25,33 @@ async function loadAndRenderPlanningGoals() {
             window.dbDraftPlans = Object.assign(window.dbDraftPlans || {}, data.draft_plans);
         }
 
-        // Apply monitoring roster if available
+        // Extract real employees from backend
+        const dbEmployees = Array.isArray(data.employees) ? data.employees : [];
+        if (dbEmployees.length > 0) {
+            window.dbEmployees = dbEmployees;
+            window.perfRoster = dbEmployees.map(u => {
+                const role = u.role || 'Employee';
+                const isSup = role.toLowerCase().includes('supervisor') || role.toLowerCase().includes('manager');
+                const name = u.full_name || u.name || 'Associate';
+                const initials = name.split(' ').filter(Boolean).map(w => w[0]).join('').substring(0, 2).toUpperCase() || 'EM';
+                return {
+                    id: u.id,
+                    employee_code: u.employee_code || u.id,
+                    name: name,
+                    position: u.title || u.position || (isSup ? 'Supervisor' : 'Associate'),
+                    department: u.department || 'Hotel Operations',
+                    avatar: initials,
+                    avatarBg: isSup ? 'bg-amber-600' : 'bg-primary',
+                    role: role,
+                    goals: []
+                };
+            });
+        }
+
+        // Apply monitoring roster fields if available
         if (monResult.status === 'fulfilled' && monResult.value?.roster && Array.isArray(monResult.value.roster)) {
             monResult.value.roster.forEach(dynEmp => {
-                const existing = (window.perfRoster || []).find(e => isSameEmployee(e.id, dynEmp.id));
+                const existing = (window.perfRoster || []).find(e => isSameEmployee(e.id, dynEmp.id) || isSameEmployee(e.employee_code, dynEmp.id));
                 if (existing) {
                     Object.assign(existing, dynEmp);
                 } else {
@@ -37,32 +60,15 @@ async function loadAndRenderPlanningGoals() {
             });
         }
 
-        // Reset goals on local employees
-        window.perfRoster.forEach(emp => {
+        // Reset goals on roster employees before mapping
+        (window.perfRoster || []).forEach(emp => {
             emp.goals = [];
         });
 
-        // Map DB goals to employees in perfRoster
+        // Map DB goals strictly to real employees in perfRoster
         goals.forEach(g => {
-            const empId = g.employee_id || 'emp-101';
-            let emp = window.perfRoster.find(e => e.id === empId || e.id === ('emp-' + empId) || (e.id === 'emp-101' && (empId === 'emp-1' || empId === 'OXF-EMP-1001')) || (e.id === 'emp-102' && (empId === 'emp-2' || empId === 'OXF-SUP-2001')));
-
-            if (!emp) {
-                const isSup = (g.role === 'Supervisor' || g.role === 'supervisor');
-                emp = {
-                    id: empId,
-                    name: isSup ? 'Chef Marco Rossi' : 'Maria Santos',
-                    position: isSup ? 'Executive Sous Chef' : 'Front Desk Host',
-                    department: g.department || (isSup ? 'Culinary & F&B' : 'Front Office & Guest Experience'),
-                    avatar: isSup ? 'CM' : 'MS',
-                    avatarBg: isSup ? 'bg-amber-600' : 'bg-primary',
-                    attendance: { present: 23, absent: 0, total: 23, percentage: '100%' },
-                    managerRating: 4.8,
-                    customerRating: 4.9,
-                    goals: []
-                };
-                window.perfRoster.push(emp);
-            }
+            const empId = (g.employee_id || '').toString().toLowerCase().trim();
+            let emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId) || isSameEmployee(e.employee_code, empId));
 
             if (emp) {
                 emp.goals.push({
@@ -415,10 +421,10 @@ function renderEmployeePulseGoals(goals) {
                 <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs gap-2">
                     <span class="text-[10px] text-slate-400 font-medium">${g.weight ? g.weight.split(' ')[0] : '20%'} Weight</span>
                     <div class="flex items-center space-x-1.5">
-                        ${(g.status === 'Completed' || statusLower === 'completed') ? `
-                            <button disabled class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60">
+                        ${(statusLower === 'completed' || statusLower === 'done' || statusLower === 'failed') ? `
+                            <button disabled class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60" title="Self evaluation disabled: Objective is ${g.status || 'Concluded'}">
                                 <i class="fas fa-lock text-[8px] mr-0.5"></i>
-                                <span>Self Reviewed</span>
+                                <span>Self Review</span>
                             </button>
                         ` : `
                             <button type="button" onclick="openEmployeeSelfEvalModal('${g.id}', '${g.employee_id || currentUserId}')" class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 transition inline-flex items-center space-x-1 shadow-2xs" title="Submit Self Review Rating">
@@ -440,6 +446,15 @@ window.renderEmployeePulseGoals = renderEmployeePulseGoals;
 
 function openEmployeeSelfEvalModal(goalId, empId) {
     const goal = (window.dbGoals || []).find(g => String(g.id) === String(goalId));
+    if (goal) {
+        const st = (goal.status || '').toLowerCase().trim();
+        if (st === 'done' || st === 'completed' || st === 'failed') {
+            if (typeof showToast === 'function') {
+                showToast(`Self evaluation is disabled: Objective is already marked as ${goal.status}.`, 'warning');
+            }
+            return;
+        }
+    }
     const targetEmpId = empId || goal?.employee_id || 'emp-101';
     const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, targetEmpId));
 
@@ -474,6 +489,19 @@ async function handleEmployeeSelfEvalSubmit(event) {
     if (event) event.preventDefault();
 
     const goalId = document.getElementById('self-eval-goal-id')?.value;
+    const goal = (window.dbGoals || []).find(g => String(g.id) === String(goalId));
+    if (goal) {
+        const st = (goal.status || '').toLowerCase().trim();
+        if (st === 'done' || st === 'completed' || st === 'failed') {
+            if (typeof showToast === 'function') {
+                showToast(`Self evaluation is locked: Objective is already marked as ${goal.status}.`, 'warning');
+            }
+            if (typeof closeModal === 'function') {
+                closeModal('modal-submit-self-evaluation');
+            }
+            return;
+        }
+    }
     const empId = document.getElementById('self-eval-emp-id')?.value || 'emp-101';
     const rating = parseFloat(document.getElementById('self-eval-rating-input')?.value || '4.5');
     const notes = document.getElementById('self-eval-notes-input')?.value || '';
@@ -558,18 +586,26 @@ function renderPlanningRosterTable() {
         });
     }
 
+    if (!window.planningStatusFilter) {
+        const statusSelect = document.getElementById('filter-planning-status');
+        window.planningStatusFilter = statusSelect ? statusSelect.value : 'pending';
+    }
+
     // Filter by status dropdown (pending / approved / completed / failed / all)
     if (window.planningStatusFilter && window.planningStatusFilter !== 'all') {
         const sf = window.planningStatusFilter.toLowerCase();
         if (sf === 'pending') {
             allGoals = allGoals.filter(g => {
-                const st = (g.status || '').toLowerCase();
-                return st !== 'approved' && st !== 'completed' && st !== 'failed';
+                const st = (g.status || '').toLowerCase().trim();
+                return st !== 'approved' && st !== 'completed' && st !== 'done' && st !== 'failed';
             });
         } else if (sf === 'approved') {
             allGoals = allGoals.filter(g => (g.status || '').toLowerCase() === 'approved');
         } else if (sf === 'completed') {
-            allGoals = allGoals.filter(g => (g.status || '').toLowerCase() === 'completed');
+            allGoals = allGoals.filter(g => {
+                const st = (g.status || '').toLowerCase().trim();
+                return st === 'completed' || st === 'done';
+            });
         } else if (sf === 'failed') {
             allGoals = allGoals.filter(g => (g.status || '').toLowerCase() === 'failed');
         }
@@ -606,22 +642,32 @@ function renderPlanningRosterTable() {
     const pageGoals = isAll ? allGoals : allGoals.slice(startIdx, startIdx + effectivePageSize);
 
     tbody.innerHTML = pageGoals.map((goal, index) => {
-        let emp = window.perfRoster.find(e => isSameEmployee(e.id, goal.employee_id));
+        let emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, goal.employee_id) || isSameEmployee(e.employee_code, goal.employee_id));
+        if (!emp && window.dbEmployees) {
+            const foundUser = window.dbEmployees.find(u => isSameEmployee(u.id, goal.employee_id) || isSameEmployee(u.employee_code, goal.employee_id));
+            if (foundUser) {
+                emp = {
+                    id: foundUser.id,
+                    employee_code: foundUser.employee_code || foundUser.id,
+                    name: foundUser.full_name || foundUser.name || 'Associate',
+                    position: foundUser.title || foundUser.position || 'Associate',
+                    department: foundUser.department || goal.department || 'Hotel Operations'
+                };
+            }
+        }
         if (!emp) {
-            const isSup = (goal.role === 'Supervisor' || goal.role === 'supervisor');
             emp = {
-                id: goal.employee_id || (isSup ? 'emp-102' : 'emp-101'),
-                name: isSup ? 'Chef Marco Rossi' : 'Maria Santos',
-                position: isSup ? 'Executive Sous Chef' : 'Front Desk Host',
-                department: goal.department || (isSup ? 'Culinary & F&B' : 'Front Office & Guest Experience'),
-                avatar: isSup ? 'CM' : 'MS',
-                avatarBg: isSup ? 'bg-amber-600' : 'bg-primary'
+                id: goal.employee_id,
+                name: goal.employee_name || 'Team Member',
+                position: goal.role || 'Associate',
+                department: goal.department || 'Hotel Operations'
             };
         }
-        const goalStatus = (goal.status || '').toLowerCase();
-        const isCompleted = goalStatus === 'completed';
+        const goalStatus = (goal.status || '').toLowerCase().trim();
+        const isCompleted = goalStatus === 'completed' || goalStatus === 'done';
         const isApproved = goalStatus === 'approved';
         const isFailed = goalStatus === 'failed';
+        const isPending = goalStatus === 'pending approval' || goalStatus === 'pending' || goalStatus === 'draft' || (!isCompleted && !isApproved && !isFailed);
         const isRevised = !!goal.supervisor_notes || (goal.updated_at && goal.created_at && goal.updated_at !== goal.created_at);
 
         const tasks = goal.tasks || [];
@@ -633,7 +679,7 @@ function renderPlanningRosterTable() {
             <tr class="hover:bg-slate-50/80 transition text-xs border-b border-slate-100 ${index === 0 ? 'bg-emerald-50/10' : ''}">
                 <!-- Checkbox Column -->
                 <td class="px-4 py-4 text-center">
-                    <input type="checkbox" class="stage1-goal-checkbox rounded border-slate-300 text-primary focus:ring-primary" value="${goal.id}" onchange="updateStage1BulkDeleteState()">
+                    <input type="checkbox" class="stage1-goal-checkbox rounded border-slate-300 text-primary focus:ring-primary ${!isPending ? 'opacity-30 cursor-not-allowed' : ''}" value="${goal.id}" onchange="updateStage1BulkDeleteState()" ${!isPending ? 'disabled title="Only pending objectives can be deleted"' : ''}>
                 </td>
 
                 <!-- Numbering Column -->
@@ -702,7 +748,7 @@ function renderPlanningRosterTable() {
                         </span>
                     ` : (isCompleted ? `
                         <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 inline-flex items-center space-x-1">
-                            <i class="fas fa-circle-check text-indigo-600 text-[9px]"></i><span>Completed</span>
+                            <i class="fas fa-circle-check text-indigo-600 text-[9px]"></i><span>${(goal.status || '').toLowerCase().trim() === 'done' ? 'Done' : 'Completed'}</span>
                         </span>
                     ` : (isApproved ? `
                         <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 inline-flex items-center space-x-1">
@@ -729,9 +775,15 @@ function renderPlanningRosterTable() {
                             <i class="fas fa-pen-to-square text-xs"></i>
                         </button>
                     `}
-                    <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}', this)" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 inline-flex items-center justify-center transition shadow-2xs" title="Delete Objective">
-                        <i class="fas fa-trash text-xs"></i>
-                    </button>
+                    ${!isPending ? `
+                        <button disabled class="w-7 h-7 rounded-lg bg-slate-100 text-slate-300 inline-flex items-center justify-center cursor-not-allowed opacity-40 shadow-2xs" title="Delete disabled: only pending objectives can be deleted">
+                            <i class="fas fa-trash text-xs"></i>
+                        </button>
+                    ` : `
+                        <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}', this)" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 inline-flex items-center justify-center transition shadow-2xs" title="Delete Objective">
+                            <i class="fas fa-trash text-xs"></i>
+                        </button>
+                    `}
                     ${isFailed ? `
                         <span class="w-7 h-7 rounded-lg text-rose-700 bg-rose-50 border border-rose-200 inline-flex items-center justify-center text-xs" title="Objective Permanently Failed">
                             <i class="fas fa-times"></i>
@@ -770,7 +822,7 @@ window.onPlanningGoalsSearch = function(query) {
 
 // Stage 1 Bulk Delete and Single Delete Handlers
 window.toggleSelectAllStage1 = function(checked) {
-    const checkboxes = document.querySelectorAll('.stage1-goal-checkbox');
+    const checkboxes = document.querySelectorAll('.stage1-goal-checkbox:not(:disabled)');
     checkboxes.forEach(cb => { cb.checked = checked; });
     updateStage1BulkDeleteState();
 };
@@ -789,13 +841,25 @@ window.updateStage1BulkDeleteState = function() {
         }
     }
     const selectAllCb = document.getElementById('stage1-select-all');
-    const allCbs = document.querySelectorAll('.stage1-goal-checkbox');
+    const allCbs = document.querySelectorAll('.stage1-goal-checkbox:not(:disabled)');
     if (selectAllCb) {
         selectAllCb.checked = allCbs.length > 0 && count === allCbs.length;
     }
 };
 
 window.confirmDeleteGoal = function(goalId, goalTitle = 'Objective', btnEl = null) {
+    const goal = (window.dbGoals || []).find(g => String(g.id) === String(goalId));
+    if (goal) {
+        const goalStatus = (goal.status || '').toLowerCase().trim();
+        const isPending = goalStatus === 'pending approval' || goalStatus === 'pending' || goalStatus === 'draft' || (!goalStatus);
+        if (!isPending) {
+            if (typeof showToast === 'function') {
+                showToast(`Cannot delete objective: Only pending objectives can be deleted. (Current status: ${goal.status})`, 'warning');
+            }
+            return;
+        }
+    }
+
     showActionConfirmModal({
         title: 'Delete Performance Objective',
         message: `Are you sure you want to delete "${goalTitle}"? This will permanently remove this goal and its associated tasks.`,
@@ -830,6 +894,22 @@ window.confirmDeleteGoal = function(goalId, goalTitle = 'Objective', btnEl = nul
 window.confirmBulkDeleteStage1 = function() {
     const selected = Array.from(document.querySelectorAll('.stage1-goal-checkbox:checked')).map(cb => cb.value);
     if (selected.length === 0) return;
+
+    // Filter to only pending goals
+    const pendingSelected = selected.filter(id => {
+        const goal = (window.dbGoals || []).find(g => String(g.id) === String(id));
+        if (!goal) return false;
+        const st = (goal.status || '').toLowerCase().trim();
+        return st === 'pending approval' || st === 'pending' || st === 'draft' || (!st);
+    });
+
+    if (pendingSelected.length === 0) {
+        if (typeof showToast === 'function') {
+            showToast('Cannot delete selected objectives: Only pending objectives can be deleted.', 'warning');
+        }
+        return;
+    }
+
     const bulkBtn = document.getElementById('btn-stage1-bulk-delete');
 
     showActionConfirmModal({
@@ -1058,9 +1138,9 @@ function openViewGoalModal(targetId) {
 
     if (!emp) {
         emp = {
-            name: targetGoal?.employee_name || 'Maria Santos',
+            name: targetGoal?.employee_name || 'Team Member',
             position: 'Associate',
-            department: targetGoal?.department || 'Front Office',
+            department: targetGoal?.department || 'Hotel Operations',
             attendance: { present: 22, absent: 1, percentage: '95.6%' },
             managerRating: 4.6,
             customerRating: 4.8,
@@ -1133,13 +1213,20 @@ function openViewGoalModal(targetId) {
                     <div class="space-y-1.5 max-h-56 overflow-y-auto custom-scrollbar pr-0.5">
                         ${tasks.length > 0 ? tasks.map(t => {
                             const isDone = t.status === 'completed';
+                            const isSupervisor = (typeof isCurrentUserSupervisor === 'function') ? isCurrentUserSupervisor() : (window.activePersonaRole === 'Supervisor');
+                            const goalStatus = (g.status || '').toLowerCase().trim();
+                            const isGoalConcluded = goalStatus === 'done' || goalStatus === 'completed' || goalStatus === 'failed';
+                            const cannotEditReason = isSupervisor
+                                ? 'Supervisor cannot edit employee Action Checklist'
+                                : (isGoalConcluded ? `Action Checklist is locked: Objective is ${g.status}` : '');
+                            const isEditDisabled = isSupervisor || isGoalConcluded;
                             const completedDateStr = t.completed_at ? new Date(t.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
                             const lmsInfo = (typeof checkLmsTaskProgress === 'function') ? checkLmsTaskProgress(t, g.employee_id) : { isLmsTask: false };
                             return `
                                 <div class="p-2.5 rounded-xl border ${isDone ? 'bg-emerald-50/60 border-emerald-200/90 text-emerald-950 shadow-2xs' : 'bg-white border-slate-200 text-slate-800 hover:border-primary/30'} text-[11px] space-y-1.5 transition">
                                     <div class="flex items-start justify-between gap-2">
-                                        <label class="flex items-start space-x-2.5 cursor-pointer flex-1 select-none">
-                                            <input type="checkbox" ${isDone ? 'checked disabled' : `onchange="triggerTaskCompletionModal('${t.id}', '${g.id}', this)"`} class="mt-0.5 w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+                                        <label class="flex items-start space-x-2.5 ${isEditDisabled ? 'cursor-not-allowed' : 'cursor-pointer'} flex-1 select-none">
+                                            <input type="checkbox" ${isDone ? 'checked disabled' : (isEditDisabled ? `disabled title="${cannotEditReason}"` : `onchange="triggerTaskCompletionModal('${t.id}', '${g.id}', this)"`)} class="mt-0.5 w-4 h-4 rounded border-slate-300 ${isEditDisabled ? 'opacity-40 cursor-not-allowed text-slate-400' : 'text-emerald-600 focus:ring-emerald-500 cursor-pointer'}">
                                             <div class="space-y-0.5">
                                                 <div class="flex items-center space-x-1.5 flex-wrap">
                                                     <span class="${isDone ? 'line-through text-slate-500 font-medium' : 'font-semibold text-slate-900'} leading-snug">${t.title}</span>
@@ -1168,6 +1255,14 @@ function openViewGoalModal(targetId) {
                                                 <span class="text-[9px] font-mono text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-bold">
                                                     ✓ Done ${completedDateStr ? `(${completedDateStr})` : ''}
                                                 </span>
+                                            ` : (isEditDisabled ? `
+                                                <button disabled class="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60 shadow-none inline-flex items-center space-x-1" title="${cannotEditReason}">
+                                                    <i class="fas fa-lock text-[8px]"></i>
+                                                    <span>${isSupervisor ? 'Employee Task' : 'Locked'}</span>
+                                                </button>
+                                                <span class="text-[9px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                                                    Due: ${t.target_date || 'Q3'}
+                                                </span>
                                             ` : `
                                                 <button type="button" onclick="openCompleteTaskModal('${t.id}', '${g.id}')" class="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition inline-flex items-center space-x-1 shadow-2xs" title="Click to log reflections and complete task">
                                                     <i class="fas fa-feather-pointed text-[8px]"></i>
@@ -1176,7 +1271,7 @@ function openViewGoalModal(targetId) {
                                                 <span class="text-[9px] font-mono text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">
                                                     Due: ${t.target_date || 'Q3'}
                                                 </span>
-                                            `}
+                                            `)}
                                         </div>
                                     </div>
                                     ${t.employee_learnings ? `

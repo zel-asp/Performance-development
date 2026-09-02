@@ -161,7 +161,7 @@ class PerformanceController
         $existingGoals = $this->goalModel->getGoalsByEmployee($employeeId);
         $activeGoals = array_filter($existingGoals, function($g) {
             $status = strtolower(trim($g['status'] ?? ''));
-            return $status !== 'completed';
+            return $status !== 'completed' && $status !== 'done';
         });
 
         if (!empty($activeGoals)) {
@@ -394,6 +394,7 @@ class PerformanceController
                 'goals'          => $enrichedGoals,
                 'general_tasks'  => $generalTasks,
                 'draft_plans'    => $draftSummaries,
+                'employees'      => $this->authModel->all(),
                 'total_goals'    => $activeCount,
                 'approved_count' => $approvedCount,
                 'pending_count'  => $pendingCount,
@@ -534,6 +535,16 @@ class PerformanceController
         }
 
         $goal = $this->goalModel->find((string)$goalId);
+        if ($goal) {
+            $gst = strtolower(trim($goal['status'] ?? ''));
+            if ($gst === 'done' || $gst === 'completed' || $gst === 'failed') {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => "Cannot add task: Objective #{$goalId} is already marked as '{$goal['status']}'."
+                ];
+            }
+        }
         $goalTargetDate = $goal['target_date'] ?? null;
 
         // If multiple tasks submitted as an array
@@ -638,6 +649,19 @@ class PerformanceController
         // Enforce 100% LMS progress check if this task is an LMS module
         $existingTask = $this->taskModel->find($taskId);
         if ($existingTask) {
+            if (!empty($existingTask['goal_id'])) {
+                $parentGoal = $this->goalModel->find((string)$existingTask['goal_id']);
+                if ($parentGoal) {
+                    $pst = strtolower(trim($parentGoal['status'] ?? ''));
+                    if ($pst === 'done' || $pst === 'completed' || $pst === 'failed') {
+                        return [
+                            'success' => false,
+                            'data'    => null,
+                            'message' => "Cannot complete task: Associated objective is already marked as '{$parentGoal['status']}'."
+                        ];
+                    }
+                }
+            }
             $desc = $existingTask['description'] ?? '';
             $title = $existingTask['title'] ?? '';
             $lmsId = null;
@@ -1070,6 +1094,21 @@ class PerformanceController
      */
     public function submitSelfAssessment(array $payload): array
     {
+        $goalId = $payload['goal_id'] ?? null;
+        if (!empty($goalId)) {
+            $goal = $this->goalModel->find((string)$goalId);
+            if ($goal) {
+                $st = strtolower(trim($goal['status'] ?? ''));
+                if ($st === 'done' || $st === 'completed' || $st === 'failed') {
+                    return [
+                        'success' => false,
+                        'data'    => null,
+                        'message' => "Cannot submit self evaluation: Objective is already marked as '{$goal['status']}'."
+                    ];
+                }
+            }
+        }
+
         $empId = $payload['employee_id'] ?? 'emp-101';
         $saved = $this->evaluationModel->saveSelfAssessment($payload);
 
@@ -1400,6 +1439,18 @@ class PerformanceController
             ];
         }
 
+        $existing = $this->goalModel->findById((string)$id);
+        if ($existing) {
+            $st = strtolower(trim($existing['status'] ?? ''));
+            if ($st !== 'pending approval' && $st !== 'pending' && $st !== 'draft' && !empty($st)) {
+                return [
+                    'success' => false,
+                    'data'    => null,
+                    'message' => "Cannot delete objective #{$id}: Only pending objectives can be deleted. Current status is '{$existing['status']}'."
+                ];
+            }
+        }
+
         $deleted = $this->goalModel->deleteGoal((string)$id);
         return [
             'success' => $deleted,
@@ -1422,8 +1473,27 @@ class PerformanceController
             ];
         }
 
-        $deleted = $this->goalModel->bulkDeleteGoals($ids);
-        $count = count($ids);
+        $validIds = [];
+        foreach ($ids as $gid) {
+            $g = $this->goalModel->findById((string)$gid);
+            if ($g) {
+                $st = strtolower(trim($g['status'] ?? ''));
+                if ($st === 'pending approval' || $st === 'pending' || $st === 'draft' || empty($st)) {
+                    $validIds[] = (string)$gid;
+                }
+            }
+        }
+
+        if (empty($validIds)) {
+            return [
+                'success' => false,
+                'data'    => null,
+                'message' => 'Cannot delete selected objectives: Only pending objectives can be deleted.'
+            ];
+        }
+
+        $deleted = $this->goalModel->bulkDeleteGoals($validIds);
+        $count = count($validIds);
         return [
             'success' => $deleted,
             'count'   => $count,

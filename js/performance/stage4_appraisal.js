@@ -118,7 +118,7 @@ function renderEvaluationRosterTable() {
     const searchQuery = ((typeof window.evalSearchQuery !== 'undefined' && window.evalSearchQuery !== null) ? window.evalSearchQuery : (searchInput ? searchInput.value : '')).toLowerCase().trim();
 
     let roster = (window.perfRoster || []).filter(emp => {
-        return (window.dbGoals || []).some(g => g.status === 'Approved' && isSameEmployee(g.employee_id, emp.id));
+        return typeof employeeHasApprovedGoal === 'function' ? employeeHasApprovedGoal(emp) : false;
     });
 
     if (searchQuery) {

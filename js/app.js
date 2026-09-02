@@ -35,22 +35,21 @@ function openModal(id) {
             initKudosRosterModal();
         }
         if (id === 'modal-create-goal') {
-            const scopeContainer = document.getElementById('goal-target-scope')?.closest('.bg-purple-50\\/60, .p-3');
+            const scopeContainer = document.getElementById('goal-assign-employee-container') || document.getElementById('goal-target-scope')?.closest('.p-3');
             const scopeSelect = document.getElementById('goal-target-scope');
-            const currentUserId = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
-            const isAssociate = (window.activePersonaRole === 'Associate' || activePersonaKey === 'associate' || activePersonaKey === 'employee');
-
-            if (scopeSelect) {
-                scopeSelect.value = currentUserId;
-                if (typeof handleGoalScopeChange === 'function') {
-                    handleGoalScopeChange(scopeSelect);
-                }
-            }
+            const userObj = window.currentUser || JSON.parse(localStorage.getItem('oxford_session_user') || '{}');
+            const currentRole = String(window.activePersonaRole || userObj.role || (typeof activePersonaKey !== 'undefined' && activePersonaKey === 'supervisor' ? 'Supervisor' : 'Associate')).toLowerCase().trim();
+            const isAssociate = (currentRole === 'associate' || currentRole === 'employee' || currentRole === 'staff' || (typeof activePersonaKey !== 'undefined' && (activePersonaKey === 'associate' || activePersonaKey === 'employee')));
 
             if (isAssociate) {
                 if (scopeContainer) scopeContainer.classList.add('hidden');
             } else {
                 if (scopeContainer) scopeContainer.classList.remove('hidden');
+                if (typeof populateGoalEmployeeDropdown === 'function') {
+                    populateGoalEmployeeDropdown();
+                } else if (scopeSelect && typeof handleGoalScopeChange === 'function') {
+                    handleGoalScopeChange(scopeSelect);
+                }
             }
         }
     }
@@ -245,8 +244,27 @@ function switchSubTab(pillarPrefix, subKey) {
         }
     });
 
-    if (pillarPrefix === 'dashboard' && subKey === 'pulse') {
-        if (typeof loadAndRenderPlanningGoals === 'function') loadAndRenderPlanningGoals();
+    if (pillarPrefix === 'dashboard') {
+        if (subKey === 'pulse') {
+            if (typeof loadAndRenderPlanningGoals === 'function') loadAndRenderPlanningGoals();
+        } else if (subKey === 'system') {
+            const loadingOverlay = document.getElementById('overview-tab2-loading');
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('hidden', 'opacity-0');
+                loadingOverlay.classList.add('flex');
+            }
+            setTimeout(() => {
+                if (typeof initDashboardCharts === 'function') initDashboardCharts();
+                if (typeof renderOverviewShiftPulse === 'function') renderOverviewShiftPulse();
+                if (loadingOverlay) {
+                    loadingOverlay.classList.add('opacity-0');
+                    setTimeout(() => {
+                        loadingOverlay.classList.add('hidden');
+                        loadingOverlay.classList.remove('flex', 'opacity-0');
+                    }, 250);
+                }
+            }, 350);
+        }
     } else if (pillarPrefix === 'perf') {
         updatePerfStepper(subKey);
         if (typeof updateAllPerfStepperBadges === 'function') updateAllPerfStepperBadges();

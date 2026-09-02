@@ -264,7 +264,21 @@
                             </div>
 
                             <!-- SUB-TAB 2: SYSTEM & PROPERTY ANALYTICS (Organization-Wide Overview) -->
-                            <div id="sub-dashboard-system" class="sub-panel-dashboard space-y-6">
+                            <div id="sub-dashboard-system" class="sub-panel-dashboard space-y-6 relative">
+
+                                <!-- Sub-Tab 2 Loading Shimmer & State -->
+                                <div id="overview-tab2-loading" class="hidden absolute inset-0 z-30 bg-white/80 backdrop-blur-2xs rounded-3xl flex flex-col items-center justify-center space-y-3 transition-opacity duration-300">
+                                    <div class="relative flex items-center justify-center">
+                                        <div class="w-12 h-12 rounded-full border-3 border-primary/20 border-t-primary animate-spin"></div>
+                                        <div class="absolute w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs">
+                                            <i class="fas fa-chart-line text-[10px]"></i>
+                                        </div>
+                                    </div>
+                                    <div class="text-center space-y-0.5">
+                                        <p class="font-bold text-xs text-slate-800 tracking-wide">Syncing Property Telemetry...</p>
+                                        <p class="text-[10px] text-slate-400">Loading live KPIs, Execution Matrix &amp; XP Champions</p>
+                                    </div>
+                                </div>
 
                                 <!-- System Overview Banner -->
                                 <div
