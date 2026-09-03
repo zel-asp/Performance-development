@@ -380,7 +380,7 @@
     </head>
 
     <body class="bg-[#FAF8F7] text-[#211A1A] antialiased h-screen flex flex-col overflow-hidden">
-        <!-- Early Pre-hydration of User Context -->
+        <!-- Early Pre-hydration of User Context & Global Navigation Fallbacks -->
         <script>
             (function() {
                 try {
@@ -391,6 +391,18 @@
                     window.activePersonaKey = role;
                     if (user) window.currentUser = user;
                 } catch(e) {}
+
+                // Resilient early stub for switchPillar to prevent ReferenceError if clicked early
+                if (typeof window.switchPillar !== 'function') {
+                    window.switchPillar = function(pillarKey) {
+                        if (window._realSwitchPillar) {
+                            window._realSwitchPillar(pillarKey);
+                        } else {
+                            window._queuedPillar = pillarKey;
+                            console.log('[Oxford Suites] Navigation queued:', pillarKey);
+                        }
+                    };
+                }
             })();
         </script>
 
@@ -438,6 +450,8 @@
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
         <script src="js/supabase.js"></script>
         <script src="js/charts.js"></script>
+        <!-- Core Application Controller (Foundation Routing, Modals & Pillar Switching) -->
+        <script src="js/app.js"></script>
         <!-- Performance Management Modular Architecture (Stages 1 through 7) -->
         <script src="js/performance/api.js"></script>
         <script src="js/performance/navigation.js"></script>
@@ -464,7 +478,6 @@
         <!-- SheetJS: Real Excel .xlsx export -->
         <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
         <script src="js/reports.js"></script>
-        <script src="js/ai_refiner.js"></script>
-        <script src="js/app.js"></script>
+        <script src="js/ai_refiner.js?v=<?= time() ?>"></script>
     </body>
 </html>

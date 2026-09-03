@@ -45,6 +45,12 @@ try {
             $response = $controller->getDepartmentSentiment($payload);
             break;
 
+        // Realtime Rate Limit Status
+        case 'rate_limit':
+        case 'rate_limit_status':
+            $response = $controller->getRateLimitStatus($payload);
+            break;
+
         // HR Compliance audit trail
         case 'audit_logs':
         case 'ai_logs':

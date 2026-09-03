@@ -149,42 +149,46 @@ function initAllCharts() {
         });
     }
 
-    // Chart 5: Multi-Line (Hourly Sentiment)
+    // Chart 5: Multi-Line (Hourly Sentiment - Pure Dynamic from Supabase shift_sentiments)
     const ctxHourly = document.getElementById('chart-hourly-sentiment');
     if (ctxHourly && !chartHourlySentimentInstance) {
-        chartHourlySentimentInstance = new Chart(ctxHourly, {
-            type: 'line',
-            data: {
-                labels: ['06:00', '08:00 (Breakfast)', '10:00', '12:00 (Lunch)', '15:00 (Check-in)', '18:00 (Dinner)', '21:00', '23:00'],
-                datasets: [
-                    {
-                        label: 'Positive Climate (%)',
-                        data: [88, 72, 85, 69, 64, 76, 82, 89],
-                        borderColor: '#7A9A7E',
-                        backgroundColor: 'rgba(122, 154, 126, 0.08)',
-                        fill: true,
-                        tension: 0.35
-                    },
-                    {
-                        label: 'Friction / Stress Peak (%)',
-                        data: [6, 18, 8, 22, 28, 16, 10, 5],
-                        borderColor: '#C47762',
-                        backgroundColor: 'rgba(196, 119, 98, 0.05)',
-                        fill: true,
-                        tension: 0.35
+        if (typeof updateHourlySentimentChart === 'function') {
+            updateHourlySentimentChart(window.shiftSentimentsState || []);
+        } else {
+            chartHourlySentimentInstance = new Chart(ctxHourly, {
+                type: 'line',
+                data: {
+                    labels: ['06:00', '08:00 (Breakfast)', '10:00', '12:00 (Lunch)', '15:00 (Check-in Rush)', '18:00 (Dinner Rush)', '21:00', '23:00 (Night Audit)'],
+                    datasets: [
+                        {
+                            label: 'Positive Climate (%)',
+                            data: [0, 0, 0, 0, 0, 0, 0, 0],
+                            borderColor: '#7A9A7E',
+                            backgroundColor: 'rgba(122, 154, 126, 0.12)',
+                            fill: true,
+                            tension: 0.35
+                        },
+                        {
+                            label: 'Friction / Stress Peak (%)',
+                            data: [0, 0, 0, 0, 0, 0, 0, 0],
+                            borderColor: '#C47762',
+                            backgroundColor: 'rgba(196, 119, 98, 0.08)',
+                            fill: true,
+                            tension: 0.35
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10, family: 'Inter' } } } },
+                    scales: {
+                        y: { min: 0, max: 100, grid: { color: '#F1E9E7' }, ticks: { font: { size: 10, family: 'Inter' } } },
+                        x: { grid: { display: false }, ticks: { font: { size: 10, family: 'Inter' } } }
                     }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10, family: 'Inter' } } } },
-                scales: {
-                    y: { min: 0, max: 100, grid: { color: '#F1E9E7' }, ticks: { font: { size: 10, family: 'Inter' } } },
-                    x: { grid: { display: false }, ticks: { font: { size: 10, family: 'Inter' } } }
                 }
-            }
-        });
+            });
+        }
     }
 
     // Chart 6: System Dept Multi-Metric Progress Bar Chart

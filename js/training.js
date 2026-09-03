@@ -330,8 +330,9 @@ async function initTrainingManagement() {
     }
 
     // 3. Supabase Realtime Subscription for Competency Gaps
-    if (window.supabase) {
-        window.supabase
+    const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.channel === 'function' ? window.supabase : null);
+    if (sbClient && typeof sbClient.channel === 'function') {
+        sbClient
             .channel('public:competency_assessments')
             .on('postgres_changes', { 
                 event: '*', 

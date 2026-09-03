@@ -309,6 +309,89 @@
                                     </div>
                                 </div>
 
+                                <?php
+                                // Dynamic calculations for System KPIs (Property XP & Succession Bench Depth)
+                                $livePropertyXp = 0;
+                                $liveKudosSent = 0;
+                                $liveBadgesCount = 0;
+                                $liveActiveStaffCount = 100;
+
+                                try {
+                                    $pdoOverview = getSupabaseDb();
+                                    if ($pdoOverview) {
+                                        // 1. Total XP from unified xp_ledger
+                                        $xpStmt = $pdoOverview->query("SELECT COALESCE(SUM(points), 0) AS total_xp, COUNT(DISTINCT employee_id) AS staff_cnt FROM public.xp_ledger");
+                                        $xpRow = $xpStmt ? $xpStmt->fetch(PDO::FETCH_ASSOC) : null;
+                                        if ($xpRow) {
+                                            $livePropertyXp = (int)$xpRow['total_xp'];
+                                            if (!empty($xpRow['staff_cnt'])) {
+                                                $liveActiveStaffCount = (int)$xpRow['staff_cnt'];
+                                            }
+                                        }
+
+                                        // 2. Realtime count of social recognitions
+                                        $kudosStmt = $pdoOverview->query("SELECT COUNT(*) AS kudos_cnt FROM public.social_recognitions");
+                                        $kudosRow = $kudosStmt ? $kudosStmt->fetch(PDO::FETCH_ASSOC) : null;
+                                        if ($kudosRow) {
+                                            $liveKudosSent = (int)$kudosRow['kudos_cnt'];
+                                        }
+
+                                        // 3. Badges / certificate count in ledger
+                                        $badgeStmt = $pdoOverview->query("SELECT COUNT(*) AS badge_cnt FROM public.xp_ledger WHERE source_type IN ('peer_kudos', 'supervisor_kudos', 'training_cert', 'lms_quiz')");
+                                        $bRow = $badgeStmt ? $badgeStmt->fetch(PDO::FETCH_ASSOC) : null;
+                                        if ($bRow) {
+                                            $liveBadgesCount = (int)$bRow['badge_cnt'];
+                                        }
+                                    }
+                                } catch (Throwable $e) {}
+
+                                // Grade & bar calculation
+                                if ($livePropertyXp >= 10000) $liveXpGrade = 'Grade A+';
+                                elseif ($livePropertyXp >= 5000) $liveXpGrade = 'Grade A';
+                                elseif ($livePropertyXp >= 2000) $liveXpGrade = 'Grade B+';
+                                elseif ($livePropertyXp > 0) $liveXpGrade = 'Grade B';
+                                else $liveXpGrade = 'Grade C';
+
+                                $xpBarPct = min(100, max(8, round(($livePropertyXp / 3000) * 100)));
+
+                                // Dynamic Succession Bench Depth
+                                require_once __DIR__ . '/../models/SuccessionModel.php';
+                                $succModel = new SuccessionModel();
+                                $succPositions = $succModel->getPositions();
+                                $totalRolesCount = count($succPositions);
+                                $coveredRolesCount = 0;
+                                $fastTrackCount = 0;
+                                $readinessPctSum = 0;
+
+                                foreach ($succPositions as $pos) {
+                                    if (!empty($pos['primarySuccessorId']) || !empty($pos['primarySuccessor'])) {
+                                        $coveredRolesCount++;
+                                        $fit = (float)($pos['primarySuccessor']['computedReadinessPercent'] ?? 0);
+                                        $readinessPctSum += $fit;
+                                        $flag = $pos['primarySuccessor']['hrReadinessFlag'] ?? '';
+                                        $trans = $pos['plannedTransition'] ?? '';
+                                        if ($flag === 'Ready Now' || strpos($trans, '0–6 Months') !== false) {
+                                            $fastTrackCount++;
+                                        }
+                                    }
+                                }
+
+                                $liveBenchDepthPct = $coveredRolesCount > 0 ? round($readinessPctSum / $coveredRolesCount, 1) : 0.0;
+                                if ($liveBenchDepthPct >= 75) {
+                                    $benchRisk = 'Low Risk';
+                                    $benchRiskClass = 'text-sage-dark';
+                                    $benchBadgeClass = 'badge-dusty';
+                                } elseif ($liveBenchDepthPct >= 50) {
+                                    $benchRisk = 'Moderate Risk';
+                                    $benchRiskClass = 'text-gold-dark';
+                                    $benchBadgeClass = 'badge-gold';
+                                } else {
+                                    $benchRisk = 'Elevated Risk';
+                                    $benchRiskClass = 'text-rose-600';
+                                    $benchBadgeClass = 'badge-terracotta';
+                                }
+                                ?>
+
                                 <!-- 4 Master System-Wide KPI Cards -->
                                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
@@ -335,25 +418,25 @@
                                         </div>
                                     </div>
 
-                                    <!-- System KPI 2: Total Gamified XP -->
+                                    <!-- System KPI 2: Total Gamified XP (100% Dynamic from xp_ledger) -->
                                     <div class="card-clean p-5 space-y-3">
                                         <div
                                             class="flex justify-between items-center text-xs text-slate-500 font-medium">
                                             <span>Total Property XP</span>
-                                            <span class="badge-gold">Grade A+</span>
+                                            <span class="badge-gold" id="sys-kpi-property-xp-grade"><?= htmlspecialchars($liveXpGrade) ?></span>
                                         </div>
                                         <div class="flex items-baseline space-x-2">
-                                            <span class="text-3xl font-heading font-bold text-gold-dark">84,620
+                                            <span class="text-3xl font-heading font-bold text-gold-dark" id="sys-kpi-property-xp-val"><?= number_format($livePropertyXp) ?>
                                                 <span class="text-xs font-normal text-slate-400">XP</span></span>
-                                            <span class="text-xs text-slate-500 font-medium">100 Staff</span>
+                                            <span class="text-xs text-slate-500 font-medium" id="sys-kpi-property-xp-staff"><?= $liveActiveStaffCount ?> Staff</span>
                                         </div>
                                         <div class="w-full bg-[#FAF8F7] h-1.5 rounded-full overflow-hidden border border-[#E8DEDC]/50">
-                                            <div class="bg-gold h-1.5 rounded-full" style="width: 85%">
+                                            <div class="bg-gold h-1.5 rounded-full transition-all duration-500" id="sys-kpi-property-xp-bar" style="width: <?= $xpBarPct ?>%">
                                             </div>
                                         </div>
                                         <div class="flex justify-between items-center text-[11px] text-slate-500">
-                                            <span>842 Kudos Sent</span>
-                                            <span class="text-gold-dark font-medium">1,120 Badges</span>
+                                            <span id="sys-kpi-property-xp-kudos"><?= number_format($liveKudosSent) ?> Kudos Sent</span>
+                                            <span class="text-gold-dark font-medium" id="sys-kpi-property-xp-badges"><?= number_format($liveBadgesCount) ?> Badges</span>
                                         </div>
                                     </div>
 
@@ -378,24 +461,24 @@
                                         </div>
                                     </div>
 
-                                    <!-- System KPI 4: Succession Pipeline Health Rate -->
+                                    <!-- System KPI 4: Succession Pipeline Health Rate (100% Dynamic from succession_candidates) -->
                                     <div class="card-clean p-5 space-y-3">
                                         <div
                                             class="flex justify-between items-center text-xs text-slate-500 font-medium">
                                             <span>Succession Bench Depth</span>
-                                            <span class="badge-dusty">78.5% Ready</span>
+                                            <span class="<?= $benchBadgeClass ?>" id="sys-kpi-succession-badge"><?= $liveBenchDepthPct ?>% Ready</span>
                                         </div>
                                         <div class="flex items-baseline space-x-2">
-                                            <span class="text-3xl font-heading font-bold text-slate-900">78.5%</span>
-                                            <span class="text-xs text-dusty-dark font-semibold">Low Risk</span>
+                                            <span class="text-3xl font-heading font-bold text-slate-900" id="sys-kpi-succession-val"><?= $liveBenchDepthPct ?>%</span>
+                                            <span class="text-xs <?= $benchRiskClass ?> font-semibold" id="sys-kpi-succession-risk"><?= $benchRisk ?></span>
                                         </div>
                                         <div class="w-full bg-[#FAF8F7] h-1.5 rounded-full overflow-hidden border border-[#E8DEDC]/50">
-                                            <div class="bg-dusty h-1.5 rounded-full" style="width: 78.5%">
+                                            <div class="bg-dusty h-1.5 rounded-full transition-all duration-500" id="sys-kpi-succession-bar" style="width: <?= $liveBenchDepthPct ?>%">
                                             </div>
                                         </div>
                                         <div class="flex justify-between items-center text-[11px] text-slate-500">
-                                            <span>14 Key Roles Covered</span>
-                                            <span class="text-slate-400">2 In Fast-Track</span>
+                                            <span id="sys-kpi-succession-roles"><?= $coveredRolesCount ?> / <?= max(1, $totalRolesCount) ?> Key Roles Covered</span>
+                                            <span class="text-slate-400" id="sys-kpi-succession-fasttrack"><?= $fastTrackCount ?> In Fast-Track</span>
                                         </div>
                                     </div>
 

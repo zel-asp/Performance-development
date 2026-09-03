@@ -49,7 +49,8 @@ try {
             $payload = json_decode($raw, true) ?? $_POST;
             $postId = $payload['postId'] ?? ($payload['post_id'] ?? '');
             $reactionType = $payload['reactionType'] ?? ($payload['reaction_type'] ?? 'clap');
-            echo json_encode($controller->addReaction($postId, $reactionType));
+            $userId = $payload['userId'] ?? ($payload['user_id'] ?? ($payload['employeeId'] ?? ($payload['employee_id'] ?? null)));
+            echo json_encode($controller->addReaction($postId, $reactionType, $userId));
             break;
 
         case 'add_comment':

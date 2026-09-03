@@ -7,7 +7,7 @@
 
         <!-- ===== AI COPILOT FLOATING ACTION BUTTON (FAB) ===== -->
         <button onclick="openAIFeedbackModal()" class="fixed bottom-20 right-4 lg:bottom-8 lg:right-8 w-14 h-14 rounded-full bg-gradient-to-br from-amber-500 via-primary to-purple-600 p-0.5 flex items-center justify-center shadow-[0_8px_30px_rgba(15,23,42,0.2)] hover:shadow-[0_10px_40px_rgba(15,23,42,0.3)] hover:-translate-y-1 transition-all z-40 group border border-white/20">
-            <img src="assets/images/ai_copilot_avatar.jpg" alt="AI Copilot" class="w-full h-full rounded-full object-cover group-hover:scale-105 transition-transform">
+            <img src="assets/images/ai_copilot_avatar.jpg" alt="Gemini AI" class="w-full h-full rounded-full object-cover group-hover:scale-105 transition-transform">
             <span class="absolute -top-1 -right-1 flex h-4 w-4 z-50">
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-4 w-4 bg-amber-500 border-2 border-white"></span>

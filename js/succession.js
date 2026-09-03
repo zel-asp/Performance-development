@@ -46,10 +46,11 @@ async function initSuccessionPlanning() {
     renderSuccession9BoxGrid();
 
     // 2. Supabase Realtime Subscription for Succession Recalculations
-    if (window.supabase && !window.successionRealtimeInitialized) {
+    const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.channel === 'function' ? window.supabase : null);
+    if (sbClient && typeof sbClient.channel === 'function' && !window.successionRealtimeInitialized) {
         window.successionRealtimeInitialized = true; // prevent duplicate listeners if init is called again
         
-        const channel = window.supabase.channel('public:succession_recalc');
+        const channel = sbClient.channel('public:succession_recalc');
         
         // Listen to changes in Performance Appraisals that might close a cycle
         channel.on('postgres_changes', { event: '*', schema: 'public', table: 'performance_evaluations' }, (payload) => {

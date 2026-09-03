@@ -9,10 +9,47 @@ const AIRefiner = {
     currentEmployeeName: 'Associate',
     currentDept: 'Front Office',
 
+    getStorageKey() {
+        const uid = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+        return `oxford_ai_chat_history_${uid}`;
+    },
+
+    loadSavedHistory() {
+        try {
+            const raw = localStorage.getItem(this.getStorageKey());
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch (e) {
+            console.warn('[AIRefiner] Error reading chat storage:', e);
+        }
+        return null;
+    },
+
+    saveHistoryToStorage() {
+        try {
+            localStorage.setItem(this.getStorageKey(), JSON.stringify(this.chatHistory));
+        } catch (e) {
+            console.warn('[AIRefiner] Error saving chat storage:', e);
+        }
+    },
+
+    clearHistory() {
+        this.chatHistory = [];
+        try {
+            localStorage.removeItem(this.getStorageKey());
+        } catch (e) {}
+        this.clearChatUI();
+        const welcomeText = `Hello! I am your **AI Leadership Coach** for Oxford Suites Makati.\n\nI can help you structure performance feedback (Situation-Behavior-Impact), de-escalate difficult guest situations, or draft coaching notes for ${this.currentEmployeeName}. How can I help you today?`;
+        this.chatHistory.push({ role: 'model', content: welcomeText });
+        this.saveHistoryToStorage();
+        this.appendMessage('model', welcomeText);
+    },
+
     open(empId = 'emp-101', empName = 'Maria Santos', dept = 'Front Office') {
         this.currentEmployeeName = empName || (window.currentUser?.name || 'Associate');
         this.currentDept = dept || 'Operations';
-        this.chatHistory = [];
 
         const nameEl = document.getElementById('ai-modal-emp-name');
         const deptEl = document.getElementById('ai-modal-emp-dept');
@@ -20,11 +57,35 @@ const AIRefiner = {
         if (deptEl) deptEl.textContent = `${this.currentDept} · Subordinate Coaching`;
 
         this.clearChatUI();
-        this.appendMessage('model', `Hello! I am your **AI Leadership Coach** for Oxford Suites.\n\nI can help you structure performance feedback, de-escalate difficult guest situations, or draft coaching notes for ${this.currentEmployeeName}. How can I help you today?`);
+
+        // Restore chat history if exists, otherwise show greeting
+        const savedHistory = this.loadSavedHistory();
+        if (savedHistory && savedHistory.length > 0) {
+            this.chatHistory = savedHistory;
+            this.renderFullHistoryUI();
+        } else {
+            this.chatHistory = [];
+            const welcomeText = `Hello! I am your **AI Leadership Coach** for Oxford Suites Makati.\n\nI can help you structure performance feedback (Situation-Behavior-Impact), de-escalate difficult guest situations, or draft coaching notes for ${this.currentEmployeeName}. How can I help you today?`;
+            this.chatHistory.push({ role: 'model', content: welcomeText });
+            this.saveHistoryToStorage();
+            this.appendMessage('model', welcomeText);
+        }
+
+        // Fetch real-time rate limit quota status
+        this.fetchCurrentRateLimit();
 
         if (typeof openModal === 'function') {
             openModal('modal-ai-feedback');
         }
+    },
+
+    renderFullHistoryUI() {
+        const historyEl = document.getElementById('ai-chat-history');
+        if (!historyEl) return;
+        historyEl.innerHTML = '';
+        this.chatHistory.forEach(item => {
+            this.appendMessage(item.role, item.content);
+        });
     },
 
     clearChatUI() {
@@ -34,6 +95,33 @@ const AIRefiner = {
         if (inputEl) {
             inputEl.value = '';
             inputEl.style.height = '';
+        }
+    },
+
+    async fetchCurrentRateLimit() {
+        const currentUserId = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+        try {
+            const res = await fetch(`api/ai.php?action=rate_limit&user_id=${encodeURIComponent(currentUserId)}`);
+            const json = await res.json();
+            if (json.success && json.rateLimit) {
+                this.updateRateLimitBadge(json.rateLimit.remaining, json.rateLimit.limit);
+            }
+        } catch (e) {
+            console.warn('[AIRefiner] Rate limit fetch fallback:', e);
+        }
+    },
+
+    updateRateLimitBadge(remaining, limit = 20) {
+        const badge = document.getElementById('ai-rate-limit-badge');
+        if (badge) {
+            badge.innerHTML = `⚡ ${remaining}/${limit} req left`;
+            if (remaining <= 3) {
+                badge.className = 'text-[10px] font-bold text-rose-500 animate-pulse';
+            } else if (remaining <= 8) {
+                badge.className = 'text-[10px] font-bold text-amber-500';
+            } else {
+                badge.className = 'text-[10px] font-bold text-slate-400';
+            }
         }
     },
 
@@ -54,12 +142,13 @@ const AIRefiner = {
 
         this.appendMessage('user', message);
         this.chatHistory.push({ role: 'user', content: message });
+        this.saveHistoryToStorage();
 
         this.setLoadingState(true);
         this.appendTypingIndicator();
 
         const currentRole = window.activePersonaRole || 'Supervisor';
-        const currentUserId = window.currentUser?.id || 'sup-101';
+        const currentUserId = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
 
         try {
             const res = await fetch('api/ai.php?action=chat', {
@@ -76,9 +165,15 @@ const AIRefiner = {
 
             const json = await res.json();
 
+            // Real-time decrement & rate limit update
+            if (json.rateLimit) {
+                this.updateRateLimitBadge(json.rateLimit.remaining, json.rateLimit.limit);
+            }
+
             if (json.success && json.data) {
                 const responseText = json.data.text;
                 this.chatHistory.push({ role: 'model', content: responseText });
+                this.saveHistoryToStorage();
                 this.appendMessage('model', responseText);
             } else {
                 this.appendMessage('model', `⚠️ Error: ${json.message || 'Unable to reach AI Coach.'}`);

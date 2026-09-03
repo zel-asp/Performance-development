@@ -22,6 +22,46 @@ class AIController
 
     /**
      * Handle conversational chat with history
+    /**
+     * Pre-flight Domain Boundary Guardrail
+     * Enforce that the AI only discusses Oxford Suites hotel operations, coaching, and hospitality.
+     */
+    private function checkDomainGuardrail(string $prompt, string $employeeName, string $dept): ?string
+    {
+        $lower = strtolower($prompt);
+
+        // Disallow programming and software coding requests
+        $codingPatterns = [
+            'how to code', 'write code', 'write a program', 'write a function', 'write a script',
+            'python', 'javascript', 'html', 'css', 'react', 'java code', 'c++', 'c#', 'php script',
+            'programming in', 'algorithm', 'sql query to create', 'how do i code',
+            'debug this code', 'write me a script', 'write a class', 'install npm', 'git clone'
+        ];
+
+        foreach ($codingPatterns as $pattern) {
+            if (str_contains($lower, $pattern)) {
+                return "As the Oxford Suites Makati Leadership & Operations AI Copilot, my capabilities are strictly dedicated to our hotel operations, guest service excellence, and staff performance coaching. I cannot assist with computer programming, software coding, or non-hotel technical topics.\n\nHow may I assist you with coaching {$employeeName}, handling shift operations in {$dept}, or structuring SBI feedback today?";
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get real-time rate limit quota status for user
+     */
+    public function getRateLimitStatus(array $payload): array
+    {
+        $userId = trim($payload['user_id'] ?? ($payload['userId'] ?? ''));
+        $status = $this->rateLimitService->getRateLimitStatus($userId ?: 'anonymous-supervisor');
+        return [
+            'success'   => true,
+            'rateLimit' => $status
+        ];
+    }
+
+    /**
+     * Handle conversational chat with history
      */
     public function chat(array $payload): array
     {
@@ -37,6 +77,28 @@ class AIController
                 'success' => false,
                 'code'    => 400,
                 'message' => 'Chat history is required.'
+            ];
+        }
+
+        // Check if user is asking for coding or non-hotel questions
+        $latestUserMsg = '';
+        foreach (array_reverse($chatHistory) as $m) {
+            if (($m['role'] ?? '') === 'user') {
+                $latestUserMsg = $m['content'] ?? '';
+                break;
+            }
+        }
+
+        $guardrailViolation = $this->checkDomainGuardrail($latestUserMsg, $employeeName, $dept);
+        if ($guardrailViolation !== null) {
+            $rateCheck = $this->rateLimitService->getRateLimitStatus($userId ?: 'anonymous-supervisor');
+            return [
+                'success'   => true,
+                'data'      => [
+                    'text'  => $guardrailViolation,
+                    'model' => 'oxford-guardrail'
+                ],
+                'rateLimit' => $rateCheck
             ];
         }
 
@@ -58,7 +120,7 @@ class AIController
             'user_id'         => $userId ?: 'anonymous-supervisor',
             'role'            => $role,
             'feature'         => 'chatbot',
-            'input_reference' => substr(end($chatHistory)['content'] ?? '', 0, 150),
+            'input_reference' => substr($latestUserMsg, 0, 150),
             'tokens_used'     => $result['tokens'] ?? 0,
             'status'          => 'SUCCESS'
         ]);
