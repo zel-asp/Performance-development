@@ -110,7 +110,7 @@ class AIController
                 'success'   => false,
                 'code'      => 429,
                 'rateLimit' => $rateCheck,
-                'message'   => $rateCheck['message'] ?? 'Rate limit exceeded. Please retry later.'
+                'message'   => $rateCheck['message'] ?? 'Rate limit exceeded. Please retry later or use manual entry.'
             ];
         }
 
@@ -226,10 +226,22 @@ class AIController
     {
         $role = trim($payload['role'] ?? ($payload['user_role'] ?? 'Associate'));
         $dept = trim($payload['dept'] ?? ($payload['department'] ?? 'all'));
+        $userId = trim($payload['user_id'] ?? ($payload['userId'] ?? ''));
 
         // Department sentiment is accessible to all team members, scoped to department
         if ($dept === 'all' && (strcasecmp($role, 'Associate') === 0 || strcasecmp($role, 'Employee') === 0)) {
             $dept = 'Front Office'; // Default scope for associate
+        }
+
+        $rateCheck = $this->rateLimitService->checkRateLimit($userId ?: 'anonymous-supervisor');
+        if (!$rateCheck['allowed']) {
+            http_response_code(429);
+            return [
+                'success'   => false,
+                'code'      => 429,
+                'rateLimit' => $rateCheck,
+                'message'   => $rateCheck['message'] ?? 'Rate limit exceeded. Please retry later or use manual entry.'
+            ];
         }
 
         // Aggregate free-text notes from coaching notes and recent activity
@@ -245,9 +257,10 @@ class AIController
         $sentimentResult = $this->geminiService->analyzeSentiment($combinedText, $dept === 'all' ? 'Oxford Suites Makati (Property-wide)' : $dept);
 
         return [
-            'success' => true,
-            'data'    => $sentimentResult,
-            'dept'    => $dept
+            'success'   => true,
+            'data'      => $sentimentResult,
+            'dept'      => $dept,
+            'rateLimit' => $rateCheck
         ];
     }
 

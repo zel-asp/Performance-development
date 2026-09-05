@@ -15,7 +15,7 @@ define('GEMINI_API_KEY', $env['GEMINI_API_KEY'] ?? '');
 define('GEMINI_MODEL', 'gemini-3.5-flash-lite');
 define('GEMINI_ENDPOINT', 'https://generativelanguage.googleapis.com/v1beta/models/' . GEMINI_MODEL . ':generateContent');
 define('GEMINI_TIMEOUT_SECONDS', 4); // Max 4s timeout for floor responsiveness
-define('GEMINI_RATE_LIMIT_HOUR', 20);  // 20 requests per hour per user
+define('GEMINI_RATE_LIMIT_HOUR', 20);  // 20 requests per 5-hour window per user
 define('GEMINI_RATE_LIMIT_DAY', 100);  // 100 requests per day per user
 
 /**

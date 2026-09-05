@@ -69,24 +69,55 @@ const TrainingAPI = {
         }
     },
 
-    bootstrap() { return this.request('bootstrap'); },
-    getNeeds(filters = {}) { return this.request('get_needs', 'GET', filters); },
+    getNeeds(filters = {}) {
+        const currentRole = window.activePersonaRole || 'Associate';
+        const currentUserId = window.currentUser?.id || '';
+        return this.request('get_needs', 'GET', { ...filters, role: currentRole, user_id: currentUserId });
+    },
     createNeed(data) { return this.request('create_need', 'POST', data); },
-    getPrograms(filters = {}) { return this.request('get_programs', 'GET', filters); },
+    getPrograms(filters = {}) {
+        const currentRole = window.activePersonaRole || 'Associate';
+        const currentUserId = window.currentUser?.id || '';
+        return this.request('get_programs', 'GET', { ...filters, role: currentRole, user_id: currentUserId });
+    },
     createProgram(data) { return this.request('create_program', 'POST', data); },
-    getSessions(filters = {}) { return this.request('get_sessions', 'GET', filters); },
+    getSessions(filters = {}) {
+        const currentRole = window.activePersonaRole || 'Associate';
+        const currentUserId = window.currentUser?.id || '';
+        return this.request('get_sessions', 'GET', { ...filters, role: currentRole, user_id: currentUserId });
+    },
     scheduleSession(data) { return this.request('create_session', 'POST', data); },
     updateAttendance(sessionId, associateId, status, checkInTime = null) {
+        const currentRole = window.activePersonaRole || 'Associate';
+        const currentUserId = window.currentUser?.id || '';
         return this.request('update_attendance', 'POST', {
             session_id: sessionId,
             employee_id: associateId,
             attendance_status: status,
-            check_in_time: checkInTime
+            check_in_time: checkInTime,
+            role: currentRole,
+            user_id: currentUserId
         });
     },
-    submitEvaluation(payload) { return this.request('submit_evaluation', 'POST', payload); },
-    getCertificates(filters = {}) { return this.request('get_certificates', 'GET', filters); },
-    getReports(filters = {}) { return this.request('get_reports', 'GET', filters); }
+    submitEvaluation(payload) {
+        const currentRole = window.activePersonaRole || 'Associate';
+        const currentUserId = window.currentUser?.id || '';
+        return this.request('submit_evaluation', 'POST', {
+            ...payload,
+            role: currentRole,
+            user_id: currentUserId
+        });
+    },
+    getCertificates(filters = {}) {
+        const currentRole = window.activePersonaRole || 'Associate';
+        const currentUserId = window.currentUser?.id || '';
+        return this.request('get_certificates', 'GET', { ...filters, role: currentRole, user_id: currentUserId });
+    },
+    getReports(filters = {}) {
+        const currentRole = window.activePersonaRole || 'Associate';
+        const currentUserId = window.currentUser?.id || '';
+        return this.request('get_reports', 'GET', { ...filters, role: currentRole, user_id: currentUserId });
+    }
 };
 
 // =========================================================================
@@ -367,9 +398,12 @@ function getAggregatedCertificates() {
     const list = [];
     const seenAssociates = new Set();
     const seenRefs = new Set();
+    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor');
+    const currentUserDept = window.currentUser?.department || window.currentUser?.dept;
 
     // 1. From trainingResultsState
     trainingResultsState.forEach(r => {
+        if (isSupervisor && currentUserDept && (r.dept || '').toLowerCase() !== currentUserDept.toLowerCase()) return;
         const ref = r.certificateReference || r.certificate_reference;
         const assocKey = String(r.associateId || r.associateName || '').toLowerCase().trim();
         if (ref && assocKey && !seenAssociates.has(assocKey)) {
@@ -391,6 +425,7 @@ function getAggregatedCertificates() {
 
     // 2. From trainingCertificatesState
     trainingCertificatesState.forEach(c => {
+        if (isSupervisor && currentUserDept && (c.dept || c.department || '').toLowerCase() !== currentUserDept.toLowerCase()) return;
         const ref = c.certificateNumber || c.certificate_number;
         const assocKey = String(c.employee_id || c.employeeId || c.associate_name || c.associateName || '').toLowerCase().trim();
         if (ref && assocKey && !seenAssociates.has(assocKey)) {
@@ -412,6 +447,7 @@ function getAggregatedCertificates() {
 
     // 3. From resolved trainingNeedsState with certificate/license
     trainingNeedsState.forEach(n => {
+        if (isSupervisor && currentUserDept && (n.dept || '').toLowerCase() !== currentUserDept.toLowerCase()) return;
         if (n.status === 'Resolved' || n.status === 'Completed') {
             const rawId = String(n.id || '').replace(/\D/g, '') || '9412';
             const ref = n.certificateReference || n.certificate_reference || `OXF-CERT-2026-${rawId.padStart(4, '0')}`;
@@ -518,10 +554,14 @@ function renderTrainingNeeds() {
     let allNormalized = trainingNeedsState.map(normalizeTrainingNeed);
     
     const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
+    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor');
     const currentEmpId = window.currentUser?.id;
+    const currentUserDept = window.currentUser?.department || window.currentUser?.dept;
 
     if (isAssociate && currentEmpId) {
         allNormalized = allNormalized.filter(n => n.employeeId === currentEmpId);
+    } else if (isSupervisor && currentUserDept) {
+        allNormalized = allNormalized.filter(n => (n.dept || '').toLowerCase() === currentUserDept.toLowerCase());
     }
     
     const perfItems = allNormalized.filter(n => n.isPerformanceGoal);
@@ -901,11 +941,18 @@ function renderTrainingSessions() {
     if (!container) return;
 
     const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
+    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor');
     const currentEmpId = window.currentUser?.id;
+    const currentUserDept = window.currentUser?.department || window.currentUser?.dept;
 
     let sessionsToRender = trainingSessionsState;
     if (isAssociate && currentEmpId) {
         sessionsToRender = trainingSessionsState.filter(s => s.roster && s.roster.some(r => r.associateId === currentEmpId || (window.currentUser?.name && String(r.name).toLowerCase().includes(String(window.currentUser.name).toLowerCase()))));
+    } else if (isSupervisor && currentUserDept) {
+        sessionsToRender = trainingSessionsState.filter(s => {
+            const sessDept = (s.dept || '').toLowerCase();
+            return sessDept === currentUserDept.toLowerCase() || sessDept === '';
+        });
     }
 
     if (sessionsToRender.length === 0) {
@@ -973,7 +1020,7 @@ function renderTrainingSessions() {
                             <i class="fas ${isCompleted ? 'fa-eye text-primary' : 'fa-user-check text-sage-dark'}"></i>
                             <span>${isCompleted ? 'View Cohort (Completed)' : 'Track Attendance'}</span>
                         </button>
-                        ${isLive ? `
+                        ${isLive && !isSupervisor ? `
                             <button onclick="startSessionEvaluation('${sess.id}', '${sess.roster[0]?.associateId}')" class="btn-primary px-3.5 py-1.5 text-xs font-bold flex items-center space-x-1.5">
                                 <i class="fas fa-clipboard-question"></i>
                                 <span>Evaluate Participant &rarr;</span>
@@ -995,11 +1042,18 @@ function renderAttendanceConsole() {
     if (!selector) return;
 
     const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
+    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor');
     const currentEmpId = window.currentUser?.id;
+    const currentUserDept = window.currentUser?.department || window.currentUser?.dept;
 
     let filteredSessions = trainingSessionsState;
     if (isAssociate && currentEmpId) {
         filteredSessions = trainingSessionsState.filter(s => s.roster && s.roster.some(r => r.associateId === currentEmpId));
+    } else if (isSupervisor && currentUserDept) {
+        filteredSessions = trainingSessionsState.filter(s => {
+            const sessDept = (s.dept || '').toLowerCase();
+            return sessDept === currentUserDept.toLowerCase() || sessDept === '';
+        });
     }
 
     if (filteredSessions.length === 0) {
@@ -1110,11 +1164,15 @@ function renderAttendanceConsole() {
             `
             : isAttended
                 ? `
-                    <button onclick="startSessionEvaluation('${session.id}', '${member.associateId}')" 
-                        class="btn-primary px-3 py-1.5 text-[11px] font-bold inline-flex items-center space-x-1 shadow-xs">
-                        <i class="fas fa-pen-to-square"></i>
-                        <span>${assocResult ? 'Retake Evaluation Quiz &rarr;' : 'Take Evaluation Quiz &rarr;'}</span>
-                    </button>
+                    ${isSupervisor ? `
+                        <span class="text-slate-400 text-[11px] italic font-medium">Evaluation pending for associate</span>
+                    ` : `
+                        <button onclick="startSessionEvaluation('${session.id}', '${member.associateId}')" 
+                            class="btn-primary px-3 py-1.5 text-[11px] font-bold inline-flex items-center space-x-1 shadow-xs">
+                            <i class="fas fa-pen-to-square"></i>
+                            <span>${assocResult ? 'Retake Evaluation Quiz &rarr;' : 'Take Evaluation Quiz &rarr;'}</span>
+                        </button>
+                    `}
                 `
                 : `
                     <span class="text-slate-400 text-[11px] italic font-medium">Mark Attended First</span>
@@ -1224,6 +1282,12 @@ function openAttendanceForSession(sessionId) {
 // =========================================================================
 
 function startSessionEvaluation(sessionId, associateId) {
+    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor');
+    if (isSupervisor) {
+        showToast('Supervisors cannot submit training evaluations. The assigned associate must complete the evaluation quiz themselves.', 'error');
+        return;
+    }
+
     const session = trainingSessionsState.find(s => s.id === sessionId);
     if (!session) return;
 
@@ -1429,11 +1493,15 @@ function renderTrainingResults() {
     if (!tbody) return;
 
     const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
+    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor');
     const currentEmpId = window.currentUser?.id;
+    const currentUserDept = window.currentUser?.department || window.currentUser?.dept;
 
     let resultsToRender = trainingResultsState;
     if (isAssociate && currentEmpId) {
         resultsToRender = trainingResultsState.filter(r => r.associateId === currentEmpId || (window.currentUser?.name && String(r.associateName).toLowerCase().includes(String(window.currentUser.name).toLowerCase())));
+    } else if (isSupervisor && currentUserDept) {
+        resultsToRender = trainingResultsState.filter(r => (r.dept || '').toLowerCase() === currentUserDept.toLowerCase());
     }
 
     if (resultsToRender.length === 0) {
@@ -1578,6 +1646,13 @@ function renderBasicTrainingReport() {
     const deptSummaryContainer = document.getElementById('report-dept-summary');
     if (!tbody || !deptSummaryContainer) return;
 
+    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor');
+    const currentUserDept = window.currentUser?.department || window.currentUser?.dept;
+
+    if (isSupervisor && currentUserDept) {
+        reportActiveDeptFilter = currentUserDept.toLowerCase();
+    }
+
     // Collect all participants across sessions
     let allParticipants = [];
     trainingSessionsState.forEach(s => {
@@ -1591,6 +1666,10 @@ function renderBasicTrainingReport() {
             });
         });
     });
+
+    if (isSupervisor && currentUserDept) {
+        allParticipants = allParticipants.filter(p => (p.dept || p.sessionDept || '').toLowerCase() === currentUserDept.toLowerCase());
+    }
 
     // Departments list
     const departments = ['Front Office', 'Culinary', 'F&B Service', 'Housekeeping'];

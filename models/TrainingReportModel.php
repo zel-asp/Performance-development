@@ -23,6 +23,13 @@ class TrainingReportModel
         $sessions = $this->sessionModel->getSessions();
         $evaluations = $this->evaluationModel->getEvaluations();
 
+        if ($deptFilter) {
+            $lowerDept = strtolower($deptFilter);
+            $programs = array_values(array_filter($programs, fn($p) => strtolower($p['dept'] ?? '') === $lowerDept));
+            $sessions = array_values(array_filter($sessions, fn($s) => strtolower($s['dept'] ?? '') === $lowerDept));
+            $evaluations = array_values(array_filter($evaluations, fn($e) => strtolower($e['dept'] ?? '') === $lowerDept));
+        }
+
         $departmentStats = [
             'Front Office' => ['enrolled' => 0, 'attended' => 0, 'completed' => 0, 'scores' => []],
             'Culinary'     => ['enrolled' => 0, 'attended' => 0, 'completed' => 0, 'scores' => []],

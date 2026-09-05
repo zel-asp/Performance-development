@@ -22,7 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_coaching_notes_employee ON public.coaching_notes(
 CREATE INDEX IF NOT EXISTS idx_coaching_notes_supervisor ON public.coaching_notes(supervisor_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_coaching_notes_source ON public.coaching_notes(source);
 
--- 2. Per-User Rate Limits Table (Sliding Window / Request Bucket)
+-- 2. Per-User Rate Limits Table (Sliding 5-Hour Window / Request Bucket)
 CREATE TABLE IF NOT EXISTS public.rate_limits (
     id VARCHAR(64) PRIMARY KEY,
     user_id VARCHAR(64) NOT NULL,

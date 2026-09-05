@@ -29,10 +29,45 @@ class TrainingController
         $this->notificationModel = new NotificationModel();
     }
 
+    private function isSupervisor(string $role): bool
+    {
+        $r = strtolower(trim($role));
+        return in_array($r, ['supervisor', 'manager', 'depthead'], true);
+    }
+
+    private function getSupervisorDepartment(string $userId, string $role): ?string
+    {
+        if (empty($userId)) return null;
+        $res = supabaseRequest('users?id=eq.' . urlencode($userId) . '&select=department', 'GET', null, true);
+        if ($res['status'] === 200 && !empty($res['data'][0]['department'])) {
+            return $res['data'][0]['department'];
+        }
+        return null;
+    }
+
+    private function matchesDepartment(array $item, ?string $dept): bool
+    {
+        if (!$dept) return true;
+        $itemDept = strtolower(trim($item['dept'] ?? $item['department'] ?? ''));
+        return $itemDept === strtolower($dept) || $itemDept === '';
+    }
+
+    private function filterForSupervisor(array $items, string $userId, string $role): array
+    {
+        if (!$this->isSupervisor($role)) return $items;
+        $dept = $this->getSupervisorDepartment($userId, $role);
+        if (!$dept) return $items;
+        return array_values(array_filter($items, fn($item) => $this->matchesDepartment($item, $dept)));
+    }
+
     // 1. Training Needs
     public function getNeeds(array $filters = []): array
     {
-        $needs = $this->needModel->getNeeds($filters);
+        $role = strtolower(trim($filters['role'] ?? ($filters['user_role'] ?? 'Associate')));
+        $userId = trim($filters['user_id'] ?? ($filters['userId'] ?? ''));
+        $modelFilters = array_diff_key($filters, array_flip(['role', 'user_role', 'user_id', 'userId', 'action', 'controller', 'csrf_token', '_', 'apiKey']));
+        $needs = $this->needModel->getNeeds($modelFilters);
+        $needs = $this->filterForSupervisor($needs, $userId, $role);
         return [
             'success' => true,
             'data'    => $needs
@@ -90,7 +125,11 @@ class TrainingController
     // 2. Training Programs
     public function getPrograms(array $filters = []): array
     {
-        $programs = $this->programModel->getPrograms($filters);
+        $role = strtolower(trim($filters['role'] ?? ($filters['user_role'] ?? 'Associate')));
+        $userId = trim($filters['user_id'] ?? ($filters['userId'] ?? ''));
+        $modelFilters = array_diff_key($filters, array_flip(['role', 'user_role', 'user_id', 'userId', 'action', 'controller', 'csrf_token', '_', 'apiKey']));
+        $programs = $this->programModel->getPrograms($modelFilters);
+        $programs = $this->filterForSupervisor($programs, $userId, $role);
         return [
             'success' => true,
             'data'    => $programs
@@ -113,7 +152,11 @@ class TrainingController
     // 3. Training Sessions
     public function getSessions(array $filters = []): array
     {
-        $sessions = $this->sessionModel->getSessions($filters);
+        $role = strtolower(trim($filters['role'] ?? ($filters['user_role'] ?? 'Associate')));
+        $userId = trim($filters['user_id'] ?? ($filters['userId'] ?? ''));
+        $modelFilters = array_diff_key($filters, array_flip(['role', 'user_role', 'user_id', 'userId', 'action', 'controller', 'csrf_token', '_', 'apiKey']));
+        $sessions = $this->sessionModel->getSessions($modelFilters);
+        $sessions = $this->filterForSupervisor($sessions, $userId, $role);
         return [
             'success' => true,
             'data'    => $sessions
@@ -164,7 +207,11 @@ class TrainingController
     // 4. Evaluations / Results List
     public function getResults(array $filters = []): array
     {
-        $evaluations = $this->evaluationModel->getEvaluations($filters);
+        $role = strtolower(trim($filters['role'] ?? ($filters['user_role'] ?? 'Associate')));
+        $userId = trim($filters['user_id'] ?? ($filters['userId'] ?? ''));
+        $modelFilters = array_diff_key($filters, array_flip(['role', 'user_role', 'user_id', 'userId', 'action', 'controller', 'csrf_token', '_', 'apiKey']));
+        $evaluations = $this->evaluationModel->getEvaluations($modelFilters);
+        $evaluations = $this->filterForSupervisor($evaluations, $userId, $role);
         return [
             'success' => true,
             'data'    => $evaluations
@@ -174,7 +221,12 @@ class TrainingController
     // 5. Training Reports & Audit Analytics
     public function getReports(array $filters = []): array
     {
+        $role = strtolower(trim($filters['role'] ?? ($filters['user_role'] ?? 'Associate')));
+        $userId = trim($filters['user_id'] ?? ($filters['userId'] ?? ''));
         $dept = $filters['department'] ?? null;
+        if ($this->isSupervisor($role)) {
+            $dept = $dept ?? $this->getSupervisorDepartment($userId, $role);
+        }
         $summary = $this->reportModel->getSummaryAnalytics($dept);
         return [
             'success' => true,
@@ -185,7 +237,11 @@ class TrainingController
     // 6. Digital Certificates
     public function getCertificates(array $filters = []): array
     {
-        $certs = $this->certificateModel->getCertificates($filters);
+        $role = strtolower(trim($filters['role'] ?? ($filters['user_role'] ?? 'Associate')));
+        $userId = trim($filters['user_id'] ?? ($filters['userId'] ?? ''));
+        $modelFilters = array_diff_key($filters, array_flip(['role', 'user_role', 'user_id', 'userId', 'action', 'controller', 'csrf_token', '_', 'apiKey']));
+        $certs = $this->certificateModel->getCertificates($modelFilters);
+        $certs = $this->filterForSupervisor($certs, $userId, $role);
         return [
             'success' => true,
             'data'    => $certs
@@ -193,17 +249,33 @@ class TrainingController
     }
 
     // 7. Master Bootstrap Data (Fetches all states in a single payload)
-    public function getBootstrapData(): array
+    public function getBootstrapData(array $payload = []): array
     {
+        $role = strtolower(trim($payload['role'] ?? ($payload['user_role'] ?? 'Associate')));
+        $userId = trim($payload['user_id'] ?? ($payload['userId'] ?? ''));
+        $modelFilters = array_diff_key($payload, array_flip(['role', 'user_role', 'user_id', 'userId', 'action', 'controller', 'csrf_token', '_', 'apiKey']));
+
+        $needs = $this->needModel->getNeeds($modelFilters);
+        $programs = $this->programModel->getPrograms($modelFilters);
+        $sessions = $this->sessionModel->getSessions($modelFilters);
+        $results = $this->evaluationModel->getEvaluations($modelFilters);
+        $certificates = $this->certificateModel->getCertificates($modelFilters);
+
+        $needs = $this->filterForSupervisor($needs, $userId, $role);
+        $programs = $this->filterForSupervisor($programs, $userId, $role);
+        $sessions = $this->filterForSupervisor($sessions, $userId, $role);
+        $results = $this->filterForSupervisor($results, $userId, $role);
+        $certificates = $this->filterForSupervisor($certificates, $userId, $role);
+
         return [
             'success' => true,
             'data'    => [
-                'needs'        => $this->needModel->getNeeds(),
-                'programs'     => $this->programModel->getPrograms(),
-                'sessions'     => $this->sessionModel->getSessions(),
-                'results'      => $this->evaluationModel->getEvaluations(),
-                'certificates' => $this->certificateModel->getCertificates(),
-                'reports'      => $this->reportModel->getSummaryAnalytics()
+                'needs'        => $needs,
+                'programs'     => $programs,
+                'sessions'     => $sessions,
+                'results'      => $results,
+                'certificates' => $certificates,
+                'reports'      => $this->reportModel->getSummaryAnalytics($this->isSupervisor($role) ? $this->getSupervisorDepartment($userId, $role) : null)
             ]
         ];
     }

@@ -507,12 +507,12 @@ function renderComputedReadinessMatrix() {
                 <!-- 2. Computed Fit % -->
                 <td class="px-5 py-3.5">
                     <div class="flex items-center space-x-2">
-                        <span class="font-bold text-xs ${fitPct >= 90 ? 'text-emerald-700' : 'text-slate-800'}">${fitPct}%</span>
+                        <span class="font-bold text-xs ${fitPct >= 70 ? 'text-emerald-700' : 'text-slate-800'}">${fitPct}%</span>
                         <div class="w-16 bg-slate-200 h-2 rounded-full overflow-hidden">
-                            <div class="${fitPct >= 90 ? 'bg-emerald-600' : 'bg-primary'} h-2 transition-all duration-500" style="width: ${fitPct}%"></div>
+                            <div class="${fitPct >= 70 ? 'bg-emerald-600' : 'bg-primary'} h-2 transition-all duration-500" style="width: ${fitPct}%"></div>
                         </div>
                     </div>
-                    <span class="text-[10px] text-slate-400 font-semibold">${candidate.matchStatus || 'High Match'}</span>
+                    <span class="text-[10px] text-slate-400 font-semibold">${candidate.hrReadinessFlag || candidate.matchStatus || 'Not Ready'}</span>
                 </td>
 
                 <!-- 3 & 4. HR-Only Manual Readiness Flag Selector -->

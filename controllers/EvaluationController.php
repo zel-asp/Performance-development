@@ -28,6 +28,14 @@ class EvaluationController
      */
     public function submitEvaluation(array $payload): array
     {
+        $role = strtolower(trim($payload['role'] ?? ($payload['user_role'] ?? 'Associate')));
+        if (in_array($role, ['supervisor', 'manager', 'depthead'], true)) {
+            return [
+                'success' => false,
+                'message' => 'Access denied: Supervisors cannot submit training evaluations. The assigned associate must complete the evaluation quiz themselves.'
+            ];
+        }
+
         $sessionId = $payload['sessionId'] ?? $payload['session_id'] ?? '';
         $programId = $payload['programId'] ?? $payload['program_id'] ?? '';
         $associateId = $payload['associateId'] ?? $payload['associate_id'] ?? '';

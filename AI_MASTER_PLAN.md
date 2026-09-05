@@ -86,7 +86,7 @@ This is the access boundary for each of the three system roles specifically with
 
 ## 4. Rate Limiting
 
-- Each user (Supervisor or HR) is capped at a fixed number of AI-assisted requests per time window (e.g., 20/hour, 100/day — tune against real shift volume, confirm with adviser rather than guessing a final number).
+- Each user (Supervisor or HR) is capped at a fixed number of AI-assisted requests per time window (e.g., 20 per 5-hour window, 100/day — tune against real shift volume, confirm with adviser rather than guessing a final number).
 - Enforced via a request-count table or cache store keyed by `user_id` + time bucket.
 - On limit reached: reject with a clear message and a retry time; never fail silently.
 - The manual (non-AI) path for every feature always remains available — hitting the rate limit never blocks the underlying workflow (e.g., a supervisor can still type and save a plain coaching note without AI refinement).
@@ -141,7 +141,7 @@ This section defines how to design the *interaction*, not just the backend logic
 ## 7. Open Decisions Requiring Adviser Sign-off
 
 1. **Employee visibility of SBI notes** — read-only access once finalized, or supervisor/HR-facing only? This affects both the database visibility flag design and the UI.
-2. **Exact rate limit numbers** — the figures above (20/hour, 100/day) are placeholders sized for a reasonable hotel property; confirm against expected real usage before hardcoding.
+2. **Exact rate limit numbers** — the figures above (20 per 5-hour window, 100/day) are placeholders sized for a reasonable hotel property; confirm against expected real usage before hardcoding.
 3. **Taglish/code-switched input handling** — decide whether to add a disclaimer in the UI when input appears heavily localized, or leave this as a known limitation documented in Chapter 1 without special UI handling.
 
 ---
