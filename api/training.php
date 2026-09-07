@@ -38,7 +38,7 @@ try {
     switch ($action) {
         // Master initial bootstrap
         case 'bootstrap':
-            $response = $trainingController->getBootstrapData();
+            $response = $trainingController->getBootstrapData($payload);
             break;
 
         // 1. Training Needs

@@ -100,9 +100,9 @@
                             title="AI Feedback &amp; Reflection Copilot">
                             <div class="flex items-center">
                                 <i class="fas fa-wand-magic-sparkles w-5 text-center text-sm text-primary"></i>
-                                <span class="ml-3 font-extrabold text-primary">AI Copilot</span>
+                                <span class="ml-3 font-extrabold text-primary">Gemini AI Coach</span>
                             </div>
-                            <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-primary text-white shadow-2xs">1.5</span>
+                            <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-primary text-white shadow-2xs">Flash</span>
                         </a>
                         <a href="#" onclick="switchPillar('pillar-reports'); toggleMobileSidebar(false); return false;"
                             class="nav-item"
@@ -292,11 +292,11 @@
                             </div>
                         </div>
 
-                        <!-- AI Copilot Trigger -->
-                        <button onclick="if (typeof openAIFeedbackModal === 'function') openAIFeedbackModal(window.selectedEmployeeContext?.id || 'emp-101', window.selectedEmployeeContext?.name || 'Maria Santos', window.selectedEmployeeContext?.dept || 'Front Office');" title="Open AI Feedback Copilot"
+                        <!-- Gemini AI Trigger -->
+                        <button onclick="if (typeof openAIFeedbackModal === 'function') openAIFeedbackModal(window.selectedEmployeeContext?.id || 'emp-101', window.selectedEmployeeContext?.name || 'Maria Santos', window.selectedEmployeeContext?.dept || 'Front Office');" title="Open Gemini AI Feedback Coach"
                             class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 border border-slate-200/80 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition text-xs shadow-2xs">
                             <i class="fas fa-wand-magic-sparkles text-primary"></i>
-                            <span>AI Copilot</span>
+                            <span>Gemini AI</span>
                         </button>
 
                         <!-- Notifications Bell -->

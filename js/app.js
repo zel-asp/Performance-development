@@ -209,6 +209,16 @@ function switchPillar(pillarKey) {
         }
     }, 80);
 }
+window.switchPillar = switchPillar;
+window._realSwitchPillar = switchPillar;
+
+try {
+    if (window._queuedPillar) {
+        const q = window._queuedPillar;
+        window._queuedPillar = null;
+        switchPillar(q);
+    }
+} catch (e) {}
 
 // Sub-Tab Switcher inside Pillar
 function switchSubTab(pillarPrefix, subKey) {
@@ -538,11 +548,26 @@ function switchRole(userRole, silent = false) {
     activePersonaKey = normalizedKey;
     const persona = personaData[normalizedKey] || personaData[userRole] || personaData.associate;
 
+    let storedUser = null;
+    try {
+        const raw = localStorage.getItem('oxford_session_user');
+        if (raw) storedUser = JSON.parse(raw);
+    } catch (e) {}
+
+    const realName = (storedUser && (storedUser.full_name || storedUser.name) && !String(storedUser.full_name || storedUser.name).toLowerCase().includes('elena'))
+        ? (storedUser.full_name || storedUser.name)
+        : persona.name;
+    const realRole = (storedUser && storedUser.role) ? storedUser.role : persona.role;
+    const realId = (storedUser && storedUser.id && storedUser.id !== 'emp-105') ? storedUser.id : persona.id;
+    const realDept = (storedUser && (storedUser.department || storedUser.dept)) ? (storedUser.department || storedUser.dept) : persona.dept;
+
     window.currentUser = {
-        id: persona.id,
-        full_name: persona.name,
-        role: persona.role,
-        department: persona.dept
+        id: realId,
+        full_name: realName,
+        name: realName,
+        role: realRole,
+        department: realDept,
+        dept: realDept
     };
 
     document.querySelectorAll('.sidebar-user-name').forEach(el => el.textContent = persona.name);

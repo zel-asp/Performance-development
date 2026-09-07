@@ -500,7 +500,7 @@
                 <div>
                     <div class="flex items-center space-x-2">
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-primary/10 text-primary border border-primary/20">
-                            ✦ Copilot 1.5
+                            ✦ Gemini AI
                         </span>
                         <span id="ai-rate-limit-badge" class="text-[10px] font-bold text-slate-400">
                             ⚡ 20/20 req left
@@ -509,10 +509,16 @@
                     <h3 class="font-heading font-extrabold text-base text-slate-900 mt-0.5">SBI Feedback Refiner</h3>
                 </div>
             </div>
-            <button onclick="closeModal('modal-ai-feedback')" aria-label="Close modal"
-                class="w-8 h-8 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
-                <i class="fas fa-times text-xs"></i>
-            </button>
+            <div class="flex items-center space-x-1.5">
+                <button onclick="AIRefiner.clearHistory()" title="Reset / Clear Chat History" aria-label="Clear chat history"
+                    class="w-8 h-8 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-400 hover:text-rose-600 flex items-center justify-center transition">
+                    <i class="fas fa-trash-can text-xs"></i>
+                </button>
+                <button onclick="closeModal('modal-ai-feedback')" aria-label="Close modal"
+                    class="w-8 h-8 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
         </div>
 
         <!-- Scrollable Modal Body (Chat History) -->

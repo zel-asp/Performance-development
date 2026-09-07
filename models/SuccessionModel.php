@@ -89,9 +89,8 @@ class SuccessionModel extends BaseModel
                 $fit = (int)round(($pScore / 5.0 * 40) + ($cMatch * 0.60));
                 if ($fit > 100) $fit = 100;
 
-                $cRecord = $candMap[$pId . '_' . $primaryId] ?? null;
                 $primaryEmp['computedReadinessPercent'] = $fit;
-                $primaryEmp['hrReadinessFlag'] = $cRecord['hr_readiness_flag'] ?? 'Pending Calibration';
+                $primaryEmp['hrReadinessFlag'] = $this->getReadinessFlag($fit);
             }
 
             if ($backupEmp && $backupId) {
@@ -105,9 +104,8 @@ class SuccessionModel extends BaseModel
                 $fit = (int)round(($pScore / 5.0 * 40) + ($cMatch * 0.60));
                 if ($fit > 100) $fit = 100;
 
-                $cRecord = $candMap[$pId . '_' . $backupId] ?? null;
                 $backupEmp['computedReadinessPercent'] = $fit;
-                $backupEmp['hrReadinessFlag'] = $cRecord['hr_readiness_flag'] ?? 'Pending Calibration';
+                $backupEmp['hrReadinessFlag'] = $this->getReadinessFlag($fit);
             }
 
             $p['primarySuccessor'] = $primaryEmp;
@@ -260,9 +258,9 @@ class SuccessionModel extends BaseModel
             $computedReadinessPct = (int)round(($perfScore / 5.0 * 40) + ($compMatchPct * 0.60));
             if ($computedReadinessPct > 100) $computedReadinessPct = 100;
 
-            $matchStatus = $computedReadinessPct >= 90 ? 'High Match' : ($computedReadinessPct >= 80 ? 'Strong Match' : 'Emerging');
+            $matchStatus = $computedReadinessPct >= 70 ? 'Ready Now' : ($computedReadinessPct >= 50 ? 'Ready in 1–2 Years' : 'Not Ready');
 
-            $flag = $c['hr_readiness_flag'] ?? 'Pending Calibration';
+            $flag = $this->getReadinessFlag($computedReadinessPct);
             $notes = $c['notes'] ?? 'Awaiting HR calibration based on computed readiness index.';
 
             // Determine 9-Box Placement
@@ -300,6 +298,22 @@ class SuccessionModel extends BaseModel
         }
 
         return $enriched;
+    }
+
+    /**
+     * Classify succession readiness from the computed fit percentage.
+     */
+    private function getReadinessFlag(int $computedReadinessPct): string
+    {
+        if ($computedReadinessPct >= 70) {
+            return 'Ready Now';
+        }
+
+        if ($computedReadinessPct >= 50) {
+            return 'Ready in 1-2 Years';
+        }
+
+        return 'Not Ready';
     }
 
     /**

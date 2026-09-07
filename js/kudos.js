@@ -26,13 +26,49 @@ const RECOGNITION_RULES = {
     }
 };
 
+function getActiveSessionUser() {
+    let sessionUser = null;
+    try {
+        const raw = localStorage.getItem('oxford_session_user');
+        if (raw) sessionUser = JSON.parse(raw);
+    } catch (e) {}
+    if (!sessionUser && window.currentUser) {
+        sessionUser = window.currentUser;
+    }
+    const currentRole = window.activePersonaRole || sessionUser?.role || (typeof activePersonaKey !== 'undefined' && activePersonaKey === 'supervisor' ? 'Supervisor' : 'Employee');
+    const isSupervisor = (currentRole === 'Supervisor' || currentRole === 'supervisor' || currentRole === 'Manager');
+
+    const rawName = sessionUser?.full_name || sessionUser?.name || '';
+    const cleanName = (rawName && !rawName.toLowerCase().includes('elena')) 
+        ? rawName 
+        : (isSupervisor ? 'Chef Marco Rossi' : 'Maria Santos');
+
+    const rawRole = sessionUser?.title || sessionUser?.position || sessionUser?.role || '';
+    const cleanRole = (rawRole && !rawRole.toLowerCase().includes('hr director')) 
+        ? rawRole 
+        : (isSupervisor ? 'Supervisor' : 'Front Desk Host');
+
+    const cleanId = (sessionUser?.id && sessionUser.id !== 'emp-105') 
+        ? sessionUser.id 
+        : (isSupervisor ? 'emp-102' : 'emp-101');
+
+    return {
+        id: cleanId,
+        name: cleanName,
+        role: cleanRole,
+        type: isSupervisor ? 'Supervisor' : 'Peer',
+        avatar: sessionUser?.avatar_url || sessionUser?.avatar || (isSupervisor
+            ? 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150&auto=format&fit=crop&q=80'
+            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80')
+    };
+}
+window.getActiveSessionUser = getActiveSessionUser;
+
 let kudosStaffRosterState = [
     { id: 'emp-101', name: 'Maria Santos', role: 'Front Desk Host', dept: 'Front Office', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80', rating: '4.80' },
-    { id: 'emp-102', name: 'Carlos Gomez', role: 'Concierge Lead', dept: 'Front Office', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80', rating: '4.60' },
-    { id: 'emp-103', name: 'Chef Marco Rossi', role: 'Executive Sous Chef', dept: 'Culinary', avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80', rating: '4.85' },
-    { id: 'emp-104', name: 'Chef Marco S.', role: 'Line Cook Lead', dept: 'Culinary', avatar: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=150&auto=format&fit=crop&q=80', rating: '4.50' },
-    { id: 'emp-106', name: 'David Lee', role: 'F&B Server Lead', dept: 'F&B Service', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80', rating: '4.20' },
-    { id: 'emp-105', name: 'Elena Vance', role: 'HR Director & Master Trainer', dept: 'HR & Admin', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80', rating: '4.95' }
+    { id: 'emp-102', name: 'Chef Marco Rossi', role: 'Kitchen Staff', dept: 'Culinary', avatar: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150&auto=format&fit=crop&q=80', rating: '4.85' },
+    { id: '3bb792e6-b25e-460e-a8fa-712c65c3b2e2', name: 'Janzel', role: 'Housekeeping Supervisor', dept: 'Housekeeping', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80', rating: '4.90' },
+    { id: '3a52667f-53cf-412a-b048-ef96eb407707', name: 'Juan Dela Cruz', role: 'Front Desk Associate', dept: 'Front Office', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80', rating: '4.70' }
 ];
 
 let socialFeedPostsState = [];
@@ -54,8 +90,9 @@ let activeSentimentFilterType = 'today';
 let activeSentimentFilterValue = '';
 
 async function initSocialRecognition() {
-    const currentUserId = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
-    const currentUserName = window.currentUser?.name || (window.activePersonaRole === 'Supervisor' ? 'Chef Marco Rossi' : 'Maria Santos');
+    const activeUser = getActiveSessionUser();
+    const currentUserId = activeUser.id;
+    const currentUserName = activeUser.name;
 
     const accountLabel = document.getElementById('my-ledger-account-label');
     if (accountLabel) {
@@ -136,11 +173,11 @@ function normalizeRecognitionPost(p) {
 
     return {
         id: p.id || ('post-' + Math.random()),
-        senderId: p.sender_id || p.senderId || 'emp-105',
-        senderName: p.sender_name || p.senderName || 'Elena Vance',
-        senderRole: p.sender_role || p.senderRole || 'HR Director & Master Trainer',
+        senderId: p.sender_id || p.senderId || 'emp-102',
+        senderName: (p.sender_name && !p.sender_name.includes('Elena Vance')) ? p.sender_name : (p.senderName || 'Chef Marco Rossi'),
+        senderRole: (p.sender_role && !p.sender_role.includes('HR Director')) ? p.sender_role : (p.senderRole || 'Supervisor'),
         senderType: p.sender_type || p.senderType || 'Supervisor',
-        senderAvatar: p.sender_avatar || p.senderAvatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+        senderAvatar: p.sender_avatar || p.senderAvatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150&auto=format&fit=crop&q=80',
         receiverId: p.receiver_id || p.receiverId || 'emp-101',
         receiverName: p.receiver_name || p.receiverName || 'Maria Santos',
         receiverRole: p.receiver_role || p.receiverRole || 'Front Desk Host',
@@ -156,7 +193,8 @@ function normalizeRecognitionPost(p) {
             clap: parseInt(reactionsObj.clap || 0, 10),
             heart: parseInt(reactionsObj.heart || 0, 10),
             star: parseInt(reactionsObj.star || 0, 10),
-            fire: parseInt(reactionsObj.fire || 0, 10)
+            fire: parseInt(reactionsObj.fire || 0, 10),
+            user_reactions: (typeof reactionsObj.user_reactions === 'object' && reactionsObj.user_reactions !== null) ? reactionsObj.user_reactions : {}
         },
         comments: commentsArr,
         qualitativeInCycle: true
@@ -184,6 +222,31 @@ function updateKPIs(kpis) {
     if (elBadges) elBadges.textContent = kpis.badgesUnlocked !== undefined ? kpis.badgesUnlocked : 0;
     if (elSync) elSync.textContent = (kpis.performanceSyncPct !== undefined ? kpis.performanceSyncPct : 0) + '%';
     if (elAvg && kpis.averageSentiment) elAvg.textContent = `${kpis.averageSentiment} / 5.0`;
+
+    // Realtime sync with Overview Hub Tab 2 Total Property XP card
+    const sysXpVal = document.getElementById('sys-kpi-property-xp-val');
+    const sysKudos = document.getElementById('sys-kpi-property-xp-kudos');
+    const sysBadges = document.getElementById('sys-kpi-property-xp-badges');
+    const sysBar = document.getElementById('sys-kpi-property-xp-bar');
+    const sysGrade = document.getElementById('sys-kpi-property-xp-grade');
+
+    if (sysXpVal && kpis.totalXPAwarded !== undefined) {
+        sysXpVal.innerHTML = `${kpis.totalXPAwarded.toLocaleString()} <span class="text-xs font-normal text-slate-400">XP</span>`;
+    }
+    if (sysKudos && kpis.totalRecognitions !== undefined) {
+        sysKudos.textContent = `${kpis.totalRecognitions.toLocaleString()} Kudos Sent`;
+    }
+    if (sysBadges && kpis.badgesUnlocked !== undefined) {
+        sysBadges.textContent = `${kpis.badgesUnlocked.toLocaleString()} Badges`;
+    }
+    if (sysBar && kpis.totalXPAwarded !== undefined) {
+        const pct = Math.min(100, Math.max(8, Math.round((kpis.totalXPAwarded / 3000) * 100)));
+        sysBar.style.width = `${pct}%`;
+    }
+    if (sysGrade && kpis.totalXPAwarded !== undefined) {
+        const xp = kpis.totalXPAwarded;
+        sysGrade.textContent = xp >= 10000 ? 'Grade A+' : (xp >= 5000 ? 'Grade A' : (xp >= 2000 ? 'Grade B+' : (xp > 0 ? 'Grade B' : 'Grade C')));
+    }
 }
 
 function updateLedgerFromPosts(posts) {
@@ -453,6 +516,15 @@ function renderSocialFeed() {
     const container = document.getElementById('social-feed-container');
     if (!container) return;
 
+    // Deduplicate state by unique ID to guarantee zero UI duplicates
+    const seenIds = new Set();
+    socialFeedPostsState = socialFeedPostsState.filter(p => {
+        if (!p || !p.id) return false;
+        if (seenIds.has(p.id)) return false;
+        seenIds.add(p.id);
+        return true;
+    });
+
     let filtered = socialFeedPostsState;
 
     if (socialActiveDeptFilter !== 'all') {
@@ -489,6 +561,28 @@ function renderSocialFeed() {
         const comments = post.comments || [];
         const hasComments = comments.length > 0;
 
+        const activeUserId = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+        const userReactionsMap = (post.reactions && post.reactions.user_reactions) ? post.reactions.user_reactions : {};
+        const myActiveReaction = userReactionsMap[activeUserId] || null;
+
+        const isClapActive = myActiveReaction === 'clap';
+        const isHeartActive = myActiveReaction === 'heart';
+        const isStarActive = myActiveReaction === 'star';
+        const isFireActive = myActiveReaction === 'fire';
+
+        const clapClass = isClapActive 
+            ? 'bg-amber-100 border-amber-400 text-amber-900 shadow-xs ring-2 ring-amber-400/40 font-extrabold scale-105' 
+            : 'bg-[#FAF8F7] hover:bg-amber-50 hover:border-amber-300 border border-[#E8DEDC] text-slate-600';
+        const heartClass = isHeartActive 
+            ? 'bg-rose-100 border-rose-400 text-rose-900 shadow-xs ring-2 ring-rose-400/40 font-extrabold scale-105' 
+            : 'bg-[#FAF8F7] hover:bg-red-50 hover:border-red-300 border border-[#E8DEDC] text-slate-600';
+        const starClass = isStarActive 
+            ? 'bg-amber-100 border-yellow-400 text-amber-900 shadow-xs ring-2 ring-yellow-400/40 font-extrabold scale-105' 
+            : 'bg-[#FAF8F7] hover:bg-yellow-50 hover:border-yellow-300 border border-[#E8DEDC] text-slate-600';
+        const fireClass = isFireActive 
+            ? 'bg-orange-100 border-orange-400 text-orange-900 shadow-xs ring-2 ring-orange-400/40 font-extrabold scale-105' 
+            : 'bg-[#FAF8F7] hover:bg-orange-50 hover:border-orange-300 border border-[#E8DEDC] text-slate-600';
+
         return `
             <div class="card-clean p-5 hover:shadow-md transition space-y-3.5 border border-[#E8DEDC] bg-white rounded-2xl">
                 <!-- Header: Sender & Receiver Details -->
@@ -523,19 +617,19 @@ function renderSocialFeed() {
                 <!-- Footer: Reactions & Performance Input Badge -->
                 <div class="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs text-slate-500">
                     <div class="flex items-center space-x-1.5">
-                        <button onclick="reactToPost('${post.id}', 'clap')" class="px-2.5 py-1 rounded-xl bg-[#FAF8F7] hover:bg-amber-50 hover:border-amber-300 border border-[#E8DEDC] text-[11px] font-bold flex items-center space-x-1.5 transition">
+                        <button id="btn-react-clap-${post.id}" onclick="reactToPost('${post.id}', 'clap')" title="${isClapActive ? 'Click to remove cheer' : 'Cheer with Clap'}" class="px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center space-x-1.5 transition duration-150 ${clapClass}">
                             <i class="fas fa-hands-clapping text-amber-500"></i>
                             <span id="react-clap-${post.id}">${post.reactions.clap}</span>
                         </button>
-                        <button onclick="reactToPost('${post.id}', 'heart')" class="px-2.5 py-1 rounded-xl bg-[#FAF8F7] hover:bg-red-50 hover:border-red-300 border border-[#E8DEDC] text-[11px] font-bold flex items-center space-x-1.5 transition">
+                        <button id="btn-react-heart-${post.id}" onclick="reactToPost('${post.id}', 'heart')" title="${isHeartActive ? 'Click to remove cheer' : 'Cheer with Heart'}" class="px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center space-x-1.5 transition duration-150 ${heartClass}">
                             <i class="fas fa-heart text-rose-500"></i>
                             <span id="react-heart-${post.id}">${post.reactions.heart}</span>
                         </button>
-                        <button onclick="reactToPost('${post.id}', 'star')" class="px-2.5 py-1 rounded-xl bg-[#FAF8F7] hover:bg-yellow-50 hover:border-yellow-300 border border-[#E8DEDC] text-[11px] font-bold flex items-center space-x-1.5 transition">
+                        <button id="btn-react-star-${post.id}" onclick="reactToPost('${post.id}', 'star')" title="${isStarActive ? 'Click to remove cheer' : 'Cheer with Star'}" class="px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center space-x-1.5 transition duration-150 ${starClass}">
                             <i class="fas fa-star text-amber-400"></i>
                             <span id="react-star-${post.id}">${post.reactions.star}</span>
                         </button>
-                        <button onclick="reactToPost('${post.id}', 'fire')" class="px-2.5 py-1 rounded-xl bg-[#FAF8F7] hover:bg-orange-50 hover:border-orange-300 border border-[#E8DEDC] text-[11px] font-bold flex items-center space-x-1.5 transition">
+                        <button id="btn-react-fire-${post.id}" onclick="reactToPost('${post.id}', 'fire')" title="${isFireActive ? 'Click to remove cheer' : 'Cheer with Fire'}" class="px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center space-x-1.5 transition duration-150 ${fireClass}">
                             <i class="fas fa-fire text-orange-500"></i>
                             <span id="react-fire-${post.id}">${post.reactions.fire}</span>
                         </button>
@@ -558,10 +652,10 @@ function renderSocialFeed() {
                     <div id="comments-list-${post.id}" class="space-y-1.5">
                         ${comments.map(c => `
                             <div class="p-2.5 rounded-xl bg-[#FAF8F7] border border-[#E8DEDC] flex items-start space-x-2.5 text-xs">
-                                <img src="${c.author_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}" class="w-6 h-6 rounded-full object-cover border border-[#E8DEDC] mt-0.5">
+                                <img src="${c.author_avatar || c.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}" class="w-6 h-6 rounded-full object-cover border border-[#E8DEDC] mt-0.5">
                                 <div class="flex-1">
                                     <div class="flex items-center justify-between">
-                                        <span class="font-bold text-slate-800 text-[11px]">${c.author_name}</span>
+                                        <span class="font-bold text-slate-800 text-[11px]">${c.author_name || c.authorName || 'Colleague'}</span>
                                         <span class="text-[9px] text-slate-400">${c.created_at ? formatRelativeTime(new Date(c.created_at)) : 'Just now'}</span>
                                     </div>
                                     <p class="text-slate-600 text-[11px] mt-0.5">${c.text}</p>
@@ -586,28 +680,205 @@ function renderSocialFeed() {
     }).join('');
 }
 
+let isReactingState = {};
+
 async function reactToPost(postId, reactionType) {
+    if (isReactingState[postId]) {
+        // Prevent rapid spammed clicks while request is in-flight
+        return;
+    }
+
     const post = socialFeedPostsState.find(p => p.id === postId);
     if (!post) return;
 
-    post.reactions[reactionType] = (post.reactions[reactionType] || 0) + 1;
-    const countEl = document.getElementById(`react-${reactionType}-${postId}`);
-    if (countEl) countEl.textContent = post.reactions[reactionType];
-
-    if (typeof showToast === 'function') {
-        showToast(`Cheered ${post.receiverName}'s recognition!`, 'success');
+    const currentUserId = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+    if (!post.reactions.user_reactions) {
+        post.reactions.user_reactions = {};
     }
 
+    const existingReaction = post.reactions.user_reactions[currentUserId] || null;
+
+    // Optimistically update in-memory state (strictly 1 reaction per user!)
+    if (existingReaction === reactionType) {
+        // 1. Same reaction clicked -> Toggle off (remove cheer)
+        delete post.reactions.user_reactions[currentUserId];
+        post.reactions[reactionType] = Math.max(0, (post.reactions[reactionType] || 0) - 1);
+        if (typeof showToast === 'function') {
+            showToast('Cheer removed', 'info');
+        }
+    } else {
+        // 2. Different or new reaction -> Switch or Add
+        if (existingReaction && post.reactions[existingReaction]) {
+            post.reactions[existingReaction] = Math.max(0, post.reactions[existingReaction] - 1);
+        }
+        post.reactions[reactionType] = (post.reactions[reactionType] || 0) + 1;
+        post.reactions.user_reactions[currentUserId] = reactionType;
+        if (typeof showToast === 'function') {
+            showToast(`Cheered ${post.receiverName}'s recognition!`, 'success');
+        }
+    }
+
+    // Immediately reflect optimistic update in DOM
+    updatePostReactionsUI(postId);
+
+    isReactingState[postId] = true;
     try {
-        await fetch('api/social.php?action=react', {
+        const res = await fetch('api/social.php?action=react', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ postId, reactionType })
+            body: JSON.stringify({ postId, reactionType, userId: currentUserId })
         });
+        const json = await res.json();
+        if (json && json.success && json.data && json.data.reactions) {
+            post.reactions = {
+                clap: parseInt(json.data.reactions.clap || 0, 10),
+                heart: parseInt(json.data.reactions.heart || 0, 10),
+                star: parseInt(json.data.reactions.star || 0, 10),
+                fire: parseInt(json.data.reactions.fire || 0, 10),
+                user_reactions: json.data.reactions.user_reactions || {}
+            };
+            updatePostReactionsUI(postId);
+        }
     } catch (e) {
         console.warn('Reaction saved locally:', e);
+    } finally {
+        setTimeout(() => {
+            isReactingState[postId] = false;
+        }, 250);
     }
 }
+
+/**
+ * Update reaction buttons styling and counts without redrawing entire card
+ */
+function updatePostReactionsUI(postId) {
+    const post = socialFeedPostsState.find(p => p.id === postId);
+    if (!post) return;
+
+    const activeUserId = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+    const myReaction = (post.reactions && post.reactions.user_reactions && post.reactions.user_reactions[activeUserId]) || null;
+
+    const types = ['clap', 'heart', 'star', 'fire'];
+    const activeClasses = {
+        clap: 'bg-amber-100 border-amber-400 text-amber-900 shadow-xs ring-2 ring-amber-400/40 font-extrabold scale-105',
+        heart: 'bg-rose-100 border-rose-400 text-rose-900 shadow-xs ring-2 ring-rose-400/40 font-extrabold scale-105',
+        star: 'bg-amber-100 border-yellow-400 text-amber-900 shadow-xs ring-2 ring-yellow-400/40 font-extrabold scale-105',
+        fire: 'bg-orange-100 border-orange-400 text-orange-900 shadow-xs ring-2 ring-orange-400/40 font-extrabold scale-105'
+    };
+    const defaultClasses = 'bg-[#FAF8F7] hover:bg-slate-100 border border-[#E8DEDC] text-slate-600';
+    const baseBtnClass = 'px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center space-x-1.5 transition duration-150';
+
+    types.forEach(t => {
+        const countEl = document.getElementById(`react-${t}-${postId}`);
+        if (countEl) {
+            countEl.textContent = post.reactions[t] || 0;
+        }
+
+        const btnEl = document.getElementById(`btn-react-${t}-${postId}`);
+        if (btnEl) {
+            const isActive = (myReaction === t);
+            btnEl.className = `${baseBtnClass} ${isActive ? activeClasses[t] : defaultClasses}`;
+            btnEl.title = isActive ? 'Click to remove cheer' : `Cheer with ${t.charAt(0).toUpperCase() + t.slice(1)}`;
+        }
+    });
+}
+window.updatePostReactionsUI = updatePostReactionsUI;
+
+/**
+ * Handle Supabase Realtime update for a post in 0ms
+ */
+window.updatePostFromRealtime = function(newRow) {
+    if (!newRow || !newRow.id) return;
+    const post = socialFeedPostsState.find(p => p.id === newRow.id);
+    if (!post) {
+        if (typeof loadSocialOverview === 'function') {
+            loadSocialOverview();
+        }
+        return;
+    }
+
+    let rx = newRow.reactions || {};
+    if (typeof rx === 'string') {
+        try { rx = JSON.parse(rx); } catch (e) { rx = {}; }
+    }
+
+    post.reactions = {
+        clap: parseInt(rx.clap || 0, 10),
+        heart: parseInt(rx.heart || 0, 10),
+        star: parseInt(rx.star || 0, 10),
+        fire: parseInt(rx.fire || 0, 10),
+        user_reactions: rx.user_reactions || rx.users || {}
+    };
+
+    if (newRow.comments) {
+        let cm = newRow.comments;
+        if (typeof cm === 'string') {
+            try { cm = JSON.parse(cm); } catch (e) { cm = []; }
+        }
+        post.comments = Array.isArray(cm) ? cm : [];
+    }
+
+    // 1. Update reaction counters & active highlight states live in 0ms
+    updatePostReactionsUI(post.id);
+
+    // 2. Update comments list and cheers badge live in 0ms
+    const commentsListEl = document.getElementById(`comments-list-${post.id}`);
+    if (commentsListEl && Array.isArray(post.comments)) {
+        commentsListEl.innerHTML = post.comments.map(c => `
+            <div class="p-2.5 rounded-xl bg-[#FAF8F7] border border-[#E8DEDC] flex items-start space-x-2.5 text-xs">
+                <img src="${c.author_avatar || c.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}" class="w-6 h-6 rounded-full object-cover border border-[#E8DEDC] mt-0.5">
+                <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-800 text-[11px]">${c.author_name || c.authorName || 'Colleague'}</span>
+                        <span class="text-[9px] text-slate-400">${c.created_at ? formatRelativeTime(new Date(c.created_at)) : 'Just now'}</span>
+                    </div>
+                    <p class="text-slate-600 text-[11px] mt-0.5">${c.text}</p>
+                </div>
+            </div>
+        `).join('');
+
+        const cheersCountEl = document.querySelector(`button[onclick="togglePostComments('${post.id}')"] span`);
+        if (cheersCountEl) {
+            cheersCountEl.textContent = `${post.comments.length} Cheers`;
+        }
+    }
+};
+
+/**
+ * Handle Supabase Realtime insert of a new recognition post in 0ms (deduplicating against optimistic UI post)
+ */
+window.addRealtimeRecognitionPost = function(newRow) {
+    if (!newRow || !newRow.id) return;
+    const normalized = normalizeRecognitionPost(newRow);
+
+    // 1. Check if post already exists by exact ID
+    const existingIndex = socialFeedPostsState.findIndex(p => p.id === newRow.id);
+    if (existingIndex !== -1) {
+        socialFeedPostsState[existingIndex] = {
+            ...socialFeedPostsState[existingIndex],
+            ...normalized
+        };
+        renderSocialFeed();
+        return;
+    }
+
+    // 2. Check if an optimistic post with matching text, sender, and receiver exists
+    const optimisticIndex = socialFeedPostsState.findIndex(p => 
+        p.senderName === normalized.senderName &&
+        p.receiverName === normalized.receiverName &&
+        p.text === normalized.text
+    );
+    if (optimisticIndex !== -1) {
+        // Replace optimistic placeholder with real confirmed record from Supabase
+        socialFeedPostsState[optimisticIndex] = normalized;
+        renderSocialFeed();
+        return;
+    }
+
+    // 3. Truly new broadcasted post from another connected user
+    socialFeedPostsState.unshift(normalized);
+    renderSocialFeed();
+};
 
 function togglePostComments(postId) {
     const sec = document.getElementById(`comments-section-${postId}`);
@@ -626,10 +897,18 @@ async function submitPostComment(postId) {
     const post = socialFeedPostsState.find(p => p.id === postId);
     if (!post) return;
 
+    const sessionUser = getActiveSessionUser();
+    const authorName = sessionUser.name;
+    const authorRole = sessionUser.role;
+    const authorAvatar = sessionUser.avatar;
+
     const commentPayload = {
-        authorName: 'Elena Vance',
-        authorRole: 'HR Director',
-        authorAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+        author_name: authorName,
+        author_role: authorRole,
+        author_avatar: authorAvatar,
+        authorName: authorName,
+        authorRole: authorRole,
+        authorAvatar: authorAvatar,
         text: text
     };
 
@@ -820,6 +1099,9 @@ function setSentimentTimeFilter(timeframeType, value = '') {
     }
 
     applySentimentFiltering();
+    if (typeof initSocialRecognition === 'function') {
+        initSocialRecognition();
+    }
 }
 
 function applySentimentFiltering() {
@@ -869,11 +1151,11 @@ function applySentimentFiltering() {
     const dispatchStatEl = document.getElementById('sentiment-dispatch-status');
 
     if (filtered.length === 0) {
-        if (avgEl) avgEl.textContent = '4.3 / 5.0';
-        if (moodEl) { moodEl.textContent = 'Positive'; moodEl.className = 'text-[10px] font-bold text-emerald-600'; }
-        if (peakWinEl) peakWinEl.textContent = '15:00 - 16:30';
-        if (peakLblEl) { peakLblEl.textContent = 'Flight Arrivals'; peakLblEl.className = 'text-[10px] font-bold text-amber-600'; }
-        if (dispatchEl) dispatchEl.textContent = '1 Concierge Floater';
+        if (avgEl) avgEl.textContent = '0.0 / 5.0';
+        if (moodEl) { moodEl.textContent = 'No Pulses'; moodEl.className = 'text-[10px] font-bold text-slate-400'; }
+        if (peakWinEl) peakWinEl.textContent = 'No Friction Rush';
+        if (peakLblEl) { peakLblEl.textContent = 'Smooth Operations'; peakLblEl.className = 'text-[10px] font-bold text-emerald-600'; }
+        if (dispatchEl) dispatchEl.textContent = 'Normal Operations';
         if (dispatchStatEl) { dispatchStatEl.textContent = 'On Duty'; dispatchStatEl.className = 'text-[10px] font-bold text-slate-500'; }
     } else {
         const total = filtered.reduce((sum, s) => sum + (parseFloat(s.sentiment_score || s.sentimentScore || 4)), 0);
@@ -892,34 +1174,6 @@ function applySentimentFiltering() {
                 moodEl.className = 'text-[10px] font-bold text-terracotta-dark';
             }
         }
-
-        // Check stressful pulses for peak friction detection
-        const stressPulses = filtered.filter(s => (s.sentiment_score <= 2 || s.sentiment_type === 'Stressful'));
-        if (peakWinEl) {
-            if (stressPulses.length > 0) {
-                peakWinEl.textContent = '15:00 - 16:30';
-                if (peakLblEl) {
-                    peakLblEl.textContent = 'Peak Rush Friction';
-                    peakLblEl.className = 'text-[10px] font-bold text-terracotta-dark';
-                }
-                if (dispatchEl) dispatchEl.textContent = '1 Floater Dispatched';
-                if (dispatchStatEl) {
-                    dispatchStatEl.textContent = 'Active Support';
-                    dispatchStatEl.className = 'text-[10px] font-bold text-primary';
-                }
-            } else {
-                peakWinEl.textContent = 'No Friction Rush';
-                if (peakLblEl) {
-                    peakLblEl.textContent = 'Smooth Operations';
-                    peakLblEl.className = 'text-[10px] font-bold text-emerald-600';
-                }
-                if (dispatchEl) dispatchEl.textContent = 'Normal Operations';
-                if (dispatchStatEl) {
-                    dispatchStatEl.textContent = 'On Duty';
-                    dispatchStatEl.className = 'text-[10px] font-bold text-slate-500';
-                }
-            }
-        }
     }
 
     updateHourlySentimentChart(filtered);
@@ -931,26 +1185,113 @@ function updateHourlySentimentChart(sentiments = []) {
     const ctxHourly = document.getElementById('chart-hourly-sentiment');
     if (!ctxHourly) return;
 
-    // Calculate hourly distribution based on filtered sentiments
-    let positiveData = [90, 85, 88, 75, 70, 80, 85, 92];
-    let frictionData = [5, 10, 8, 20, 25, 15, 10, 4];
+    const RUSH_INTERVALS = [
+        { label: '06:00', start: 5, end: 7, name: 'Shift Handover' },
+        { label: '08:00 (Breakfast)', start: 7, end: 10, name: 'Breakfast Rush' },
+        { label: '10:00', start: 10, end: 12, name: 'Mid-Morning Operations' },
+        { label: '12:00 (Lunch)', start: 12, end: 14, name: 'Lunch Rush' },
+        { label: '15:00 (Check-in Rush)', start: 14, end: 17, name: 'Check-in Rush' },
+        { label: '18:00 (Dinner Rush)', start: 17, end: 20, name: 'Dinner Rush' },
+        { label: '21:00', start: 20, end: 22, name: 'Late Shift Wind Down' },
+        { label: '23:00 (Night Audit)', start: 22, end: 29, name: 'Night Operations' }
+    ];
 
-    if (sentiments.length > 0) {
-        const positiveCount = sentiments.filter(s => (s.sentiment_score >= 4) || s.sentiment_type === 'Positive').length;
-        const frictionCount = sentiments.filter(s => (s.sentiment_score <= 2) || s.sentiment_type === 'Stressful').length;
-        const total = sentiments.length;
+    const positiveData = [];
+    const frictionData = [];
+    let peakSlot = null;
+    let maxFrictionPct = 0;
 
-        if (total > 0) {
-            const posPct = Math.min(100, Math.max(20, Math.round((positiveCount / total) * 100)));
-            const frictPct = Math.min(100, Math.max(5, Math.round((frictionCount / total) * 100)));
-            positiveData[4] = posPct;
-            frictionData[4] = frictPct;
-            positiveData[3] = Math.max(50, posPct - 5);
-            frictionData[3] = Math.min(40, frictPct + 5);
+    const overallPos = sentiments.length > 0
+        ? Math.round((sentiments.filter(s => {
+            const score = parseFloat(s.sentiment_score ?? s.sentimentScore ?? 4);
+            const type = s.sentiment_type ?? s.sentimentType ?? '';
+            return score >= 4 || type === 'Positive';
+        }).length / sentiments.length) * 100)
+        : 0;
+
+    const overallFrict = sentiments.length > 0
+        ? Math.round((sentiments.filter(s => {
+            const score = parseFloat(s.sentiment_score ?? s.sentimentScore ?? 4);
+            const type = s.sentiment_type ?? s.sentimentType ?? '';
+            return score <= 2 || type === 'Stressful';
+        }).length / sentiments.length) * 100)
+        : 0;
+
+    RUSH_INTERVALS.forEach(interval => {
+        const inSlot = sentiments.filter(s => {
+            const raw = s.created_at || s.timestamp || '';
+            if (!raw) return false;
+            const d = new Date(raw);
+            if (isNaN(d.getTime())) return false;
+            const hr = d.getHours();
+            if (interval.start === 22) {
+                return hr >= 22 || hr < 5;
+            }
+            return hr >= interval.start && hr < interval.end;
+        });
+
+        if (inSlot.length > 0) {
+            const pos = inSlot.filter(s => {
+                const score = parseFloat(s.sentiment_score ?? s.sentimentScore ?? 4);
+                const type = s.sentiment_type ?? s.sentimentType ?? '';
+                return score >= 4 || type === 'Positive';
+            }).length;
+            const frict = inSlot.filter(s => {
+                const score = parseFloat(s.sentiment_score ?? s.sentimentScore ?? 4);
+                const type = s.sentiment_type ?? s.sentimentType ?? '';
+                return score <= 2 || type === 'Stressful';
+            }).length;
+            const posPct = Math.round((pos / inSlot.length) * 100);
+            const frictPct = Math.round((frict / inSlot.length) * 100);
+            positiveData.push(posPct);
+            frictionData.push(frictPct);
+
+            if (frictPct > maxFrictionPct && frict > 0) {
+                maxFrictionPct = frictPct;
+                peakSlot = interval;
+            }
+        } else {
+            positiveData.push(overallPos);
+            frictionData.push(overallFrict);
+        }
+    });
+
+    // Dynamically update peak rush cards based on calculated database metrics
+    const peakWinEl = document.getElementById('sentiment-peak-window');
+    const peakLblEl = document.getElementById('sentiment-peak-label');
+    const dispatchEl = document.getElementById('sentiment-dispatch-count');
+    const dispatchStatEl = document.getElementById('sentiment-dispatch-status');
+
+    if (peakWinEl) {
+        if (peakSlot && maxFrictionPct >= 20) {
+            peakWinEl.textContent = peakSlot.label;
+            if (peakLblEl) {
+                peakLblEl.textContent = `${peakSlot.name} (${maxFrictionPct}% Friction)`;
+                peakLblEl.className = 'text-[10px] font-bold text-terracotta-dark';
+            }
+            if (dispatchEl) dispatchEl.textContent = '1 Floater Dispatched';
+            if (dispatchStatEl) {
+                dispatchStatEl.textContent = 'Active Support';
+                dispatchStatEl.className = 'text-[10px] font-bold text-primary';
+            }
+        } else {
+            peakWinEl.textContent = 'No Friction Rush';
+            if (peakLblEl) {
+                peakLblEl.textContent = 'Smooth Operations';
+                peakLblEl.className = 'text-[10px] font-bold text-emerald-600';
+            }
+            if (dispatchEl) dispatchEl.textContent = 'Normal Operations';
+            if (dispatchStatEl) {
+                dispatchStatEl.textContent = 'On Duty';
+                dispatchStatEl.className = 'text-[10px] font-bold text-slate-500';
+            }
         }
     }
 
+    const labels = RUSH_INTERVALS.map(i => i.label);
+
     if (window.chartHourlySentimentInstance) {
+        window.chartHourlySentimentInstance.data.labels = labels;
         window.chartHourlySentimentInstance.data.datasets[0].data = positiveData;
         window.chartHourlySentimentInstance.data.datasets[1].data = frictionData;
         window.chartHourlySentimentInstance.update();
@@ -958,7 +1299,7 @@ function updateHourlySentimentChart(sentiments = []) {
         window.chartHourlySentimentInstance = new Chart(ctxHourly, {
             type: 'line',
             data: {
-                labels: ['06:00', '08:00 (Breakfast)', '10:00', '12:00 (Lunch)', '15:00 (Check-in Rush)', '18:00 (Dinner Rush)', '21:00', '23:00'],
+                labels: labels,
                 datasets: [
                     {
                         label: 'Positive Climate (%)',
@@ -998,11 +1339,15 @@ async function submitSentimentRating(moodType) {
     const score = scoreMap[moodType] || 4;
     const note = document.getElementById('sentiment-note-input')?.value?.trim() || '';
 
-    const currentUserId = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
-    const currentUserName = window.currentUser?.name || (window.activePersonaRole === 'Supervisor' ? 'Chef Marco Rossi' : 'Maria Santos');
-    const currentDept = window.currentUser?.department || (window.activePersonaRole === 'Supervisor' ? 'Culinary' : 'Front Office');
+    const sessionUser = getActiveSessionUser();
+    const currentUserId = sessionUser.id;
+    const currentUserName = sessionUser.name;
+    const currentDept = sessionUser.dept || (sessionUser.type === 'Supervisor' ? 'Culinary' : 'Front Office');
+
+    const sentimentId = `sent-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     const payload = {
+        id: sentimentId,
         employeeId: currentUserId,
         employeeName: currentUserName,
         department: currentDept,
@@ -1016,36 +1361,46 @@ async function submitSentimentRating(moodType) {
         closeModal('modal-sentiment-pulse');
     }
 
-    shiftSentimentsState.unshift({
+    const localItem = {
         ...payload,
-        id: 'sent-' + Date.now(),
+        id: sentimentId,
+        sentiment_score: score,
+        shift_period: 'Peak Rush Window',
+        sentiment_type: moodType,
         created_at: new Date().toISOString()
-    });
+    };
 
-    applySentimentFiltering();
+    if (!shiftSentimentsState.some(s => s.id === sentimentId)) {
+        shiftSentimentsState.unshift(localItem);
+        applySentimentFiltering();
+    }
 
     if (typeof showToast === 'function') {
         showToast(`Shift sentiment logged (${moodType}) & synced to Supabase!`, 'success');
     }
 
     try {
-        const res = await fetch('api/social.php?action=log_sentiment', {
+        await fetch('api/social.php?action=log_sentiment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        const resJson = await res.json();
-        if (resJson.success && resJson.data) {
-            // Update the state item with true Supabase ID
-            const idx = shiftSentimentsState.findIndex(s => s.id === 'sent-' + Date.now());
-            if (idx !== -1) {
-                shiftSentimentsState[idx] = { ...shiftSentimentsState[idx], ...resJson.data };
-            }
-        }
     } catch (e) {
         console.warn('Sentiment saved locally:', e);
     }
 }
+
+/**
+ * Handle Supabase Realtime insert of a new shift sentiment pulse in 0ms
+ */
+window.addRealtimeShiftSentiment = function(newRow) {
+    if (!newRow || !newRow.id) return;
+    const exists = shiftSentimentsState.some(s => s.id === newRow.id);
+    if (!exists) {
+        shiftSentimentsState.unshift(newRow);
+        applySentimentFiltering();
+    }
+};
 
 // =========================================================================
 // QUALITATIVE APPRAISAL REVIEW INTEGRATION
@@ -1105,6 +1460,18 @@ function initKudosRosterModal() {
     if (search) search.value = '';
     kudosSearchQuery = '';
     kudosActiveDeptFilter = 'all';
+
+    // Auto-select Supervisor tier if active session user is a Supervisor
+    const sessionUser = getActiveSessionUser();
+    const isSup = (sessionUser.type === 'Supervisor' || window.activePersonaRole === 'Supervisor');
+    const supRadio = document.querySelector('input[name="kudos_sender_tier"][value="Supervisor"]');
+    const peerRadio = document.querySelector('input[name="kudos_sender_tier"][value="Peer"]');
+    if (isSup && supRadio) {
+        supRadio.checked = true;
+    } else if (!isSup && peerRadio) {
+        peerRadio.checked = true;
+    }
+
     renderKudosRoster();
     updateKudosXPPreview();
 }
@@ -1241,15 +1608,29 @@ async function dispatchRecognition() {
         toastId = showToast('Dispatching recognition & recording XP ledger...', 'loading');
     }
 
+    const sessionUser = getActiveSessionUser();
+    const effectiveSenderName = (senderTier === 'Supervisor')
+        ? (sessionUser.type === 'Supervisor' ? sessionUser.name : 'Chef Marco Rossi')
+        : (senderTier === 'Executive' ? 'General Manager' : sessionUser.name);
+    const effectiveSenderRole = (senderTier === 'Supervisor')
+        ? (sessionUser.type === 'Supervisor' ? sessionUser.role : 'Supervisor')
+        : (senderTier === 'Executive' ? 'General Manager' : sessionUser.role);
+    const effectiveSenderId = (senderTier === 'Supervisor')
+        ? (sessionUser.type === 'Supervisor' ? sessionUser.id : 'emp-102')
+        : (senderTier === 'Executive' ? 'emp-gm' : sessionUser.id);
+    const effectiveSenderAvatar = sessionUser.avatar || (senderTier === 'Supervisor'
+        ? 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150&auto=format&fit=crop&q=80'
+        : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80');
+
     for (const r of recipients) {
+        const postId = `post-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const payload = {
-            senderId: 'emp-105',
-            senderName: senderTier === 'Supervisor' ? 'Elena Vance' : (senderTier === 'Executive' ? 'General Manager' : 'Maria Santos'),
+            id: postId,
+            senderId: effectiveSenderId,
+            senderName: effectiveSenderName,
             senderType: senderTier,
-            senderRole: senderTier === 'Supervisor' ? 'HR Director' : (senderTier === 'Executive' ? 'General Manager' : 'Front Desk Host'),
-            senderAvatar: senderTier === 'Supervisor'
-                ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
-                : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+            senderRole: effectiveSenderRole,
+            senderAvatar: effectiveSenderAvatar,
             receiverId: r.id,
             receiverName: r.name,
             receiverRole: r.role,
@@ -1261,11 +1642,13 @@ async function dispatchRecognition() {
         };
 
         const localPost = {
-            id: `post-${Date.now()}-${Math.floor(Math.random() * 100)}`,
+            id: postId,
+            senderId: payload.senderId,
             senderName: payload.senderName,
             senderRole: payload.senderRole,
             senderType: payload.senderType,
             senderAvatar: payload.senderAvatar,
+            receiverId: r.id,
             receiverName: r.name,
             receiverRole: r.role,
             receiverDept: payload.receiverDept,
@@ -1274,18 +1657,22 @@ async function dispatchRecognition() {
             categoryLabel: catConfig.label,
             pointsAwarded: pts,
             timestamp: 'Just now',
-            date: 'Aug 2026',
+            date: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
             text: message,
-            reactions: { clap: 1, heart: 1, star: 1, fire: 0 },
+            reactions: { clap: 0, heart: 0, star: 0, fire: 0, user_reactions: {} },
             comments: []
         };
 
-        socialFeedPostsState.unshift(localPost);
+        // Insert optimistic post once and render
+        if (!socialFeedPostsState.some(p => p.id === postId)) {
+            socialFeedPostsState.unshift(localPost);
+            renderSocialFeed();
+        }
 
         // Update Ledger locally
         pointsLedgerState.unshift({
             id: `TXN-${Math.floor(Math.random() * 1000) + 8800}`,
-            date: 'Aug 24, 2026',
+            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             recipient: r.name,
             sender: `${payload.senderName} (${senderTier})`,
             rule: senderTier === 'Supervisor' ? 'SUPERVISOR_COMMENDATION' : (senderTier === 'Executive' ? 'GM_EXECUTIVE_CITATION' : 'PEER_TO_PEER_RECOGNITION'),

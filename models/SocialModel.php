@@ -23,9 +23,23 @@ class SocialModel extends BaseModel
             if ($dId) $deptMap[$dId] = $d['name'] ?? 'Operations';
         }
 
-        // 2. Fetch employees from Supabase
-        $empRes = supabaseRequest('employees?order=full_name.asc', 'GET', null, true);
-        $employees = (is_array($empRes['data'] ?? null) && !isset($empRes['data']['code'])) ? $empRes['data'] : [];
+        // 2. Fetch employees from Supabase (PDO direct database query first, then REST API fallback)
+        $employees = [];
+        try {
+            $pdo = getSupabaseDb();
+            if ($pdo) {
+                $stmt = $pdo->query("SELECT id, full_name, email, role, title, department_id, avatar_url, performance_rating FROM public.employees ORDER BY full_name ASC");
+                $dbEmployees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                if (!empty($dbEmployees)) {
+                    $employees = $dbEmployees;
+                }
+            }
+        } catch (Throwable $e) {}
+
+        if (empty($employees)) {
+            $empRes = supabaseRequest('employees?order=full_name.asc', 'GET', null, true);
+            $employees = (is_array($empRes['data'] ?? null) && !isset($empRes['data']['code'])) ? $empRes['data'] : [];
+        }
 
         if (empty($employees)) {
             return $this->getBaselineRoster();
@@ -81,13 +95,28 @@ class SocialModel extends BaseModel
      */
     public function createRecognition(array $data): bool
     {
+        $senderName = $data['sender_name'] ?? ($_SESSION['full_name'] ?? 'Chef Marco Rossi');
+        if (stripos($senderName, 'Elena Vance') !== false) {
+            $senderName = $_SESSION['full_name'] ?? 'Chef Marco Rossi';
+        }
+
+        $senderRole = $data['sender_role'] ?? 'Supervisor';
+        if (stripos($senderRole, 'HR Director') !== false) {
+            $senderRole = 'Supervisor';
+        }
+
+        $senderId = $data['sender_id'] ?? ($_SESSION['user_id'] ?? 'emp-102');
+        if ($senderId === 'emp-105') {
+            $senderId = $_SESSION['user_id'] ?? 'emp-102';
+        }
+
         $cleanData = [
             'id'             => $data['id'] ?? ('post-' . time() . '-' . rand(100, 999)),
-            'sender_id'      => $data['sender_id'] ?? 'emp-105',
-            'sender_name'    => $data['sender_name'] ?? 'Elena Vance',
-            'sender_role'    => $data['sender_role'] ?? 'HR Director & Master Trainer',
+            'sender_id'      => $senderId,
+            'sender_name'    => $senderName,
+            'sender_role'    => $senderRole,
             'sender_type'    => $data['sender_type'] ?? 'Supervisor',
-            'sender_avatar'  => $data['sender_avatar'] ?? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+            'sender_avatar'  => $data['sender_avatar'] ?? 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150&auto=format&fit=crop&q=80',
             'receiver_id'    => $data['receiver_id'] ?? 'emp-101',
             'receiver_name'  => $data['receiver_name'] ?? 'Maria Santos',
             'receiver_role'  => $data['receiver_role'] ?? 'Front Desk Host',
@@ -208,34 +237,120 @@ class SocialModel extends BaseModel
     }
 
     /**
-     * Add or increment emoji cheer reaction
+     * Add, toggle, or switch emoji cheer reaction (enforcing 1 reaction per user, anti-spam)
+     * Persists immediately to Supabase and broadcasts to Supabase Realtime
      */
-    public function addReaction(string $postId, string $reactionType): bool
+    public function addReaction(string $postId, string $reactionType, ?string $userId = null): array
     {
-        $res = supabaseRequest('social_recognitions?id=eq.' . urlencode($postId), 'GET', null, true);
-        if (!empty($res['data'][0])) {
-            $post = $res['data'][0];
-            $reactions = $post['reactions'] ?? ['clap' => 0, 'heart' => 0, 'star' => 0, 'fire' => 0];
-            if (is_string($reactions)) {
-                $reactions = json_decode($reactions, true) ?: ['clap' => 0, 'heart' => 0, 'star' => 0, 'fire' => 0];
+        $validTypes = ['clap', 'heart', 'star', 'fire'];
+        if (!in_array($reactionType, $validTypes)) {
+            $reactionType = 'clap';
+        }
+
+        $userId = !empty($userId) ? trim($userId) : ($_SESSION['user']['id'] ?? 'emp-101');
+
+        // Fetch latest post reactions from database
+        $post = null;
+        $pdo = null;
+        try {
+            $pdo = getSupabaseDb();
+            if ($pdo) {
+                $stmt = $pdo->prepare("SELECT id, reactions FROM public.social_recognitions WHERE id = :id");
+                $stmt->execute([':id' => $postId]);
+                $post = $stmt->fetch(PDO::FETCH_ASSOC);
             }
+        } catch (Throwable $e) {
+            error_log('[SocialModel::addReaction] DB fetch error: ' . $e->getMessage());
+        }
 
-            if (isset($reactions[$reactionType])) {
-                $reactions[$reactionType]++;
-            } else {
-                $reactions[$reactionType] = 1;
-            }
-
-            $updateRes = supabaseRequest('social_recognitions?id=eq.' . urlencode($postId), 'PATCH', [
-                'reactions' => $reactions
-            ], true);
-
-            if (isset($updateRes['status']) && ($updateRes['status'] >= 200 && $updateRes['status'] < 300)) {
-                return true;
+        if (!$post) {
+            $res = supabaseRequest('social_recognitions?id=eq.' . urlencode($postId), 'GET', null, true);
+            if (!empty($res['data'][0])) {
+                $post = $res['data'][0];
             }
         }
 
-        return true;
+        if (!$post) {
+            return [
+                'success' => false,
+                'message' => 'Recognition post not found.'
+            ];
+        }
+
+        $reactions = $post['reactions'] ?? ['clap' => 0, 'heart' => 0, 'star' => 0, 'fire' => 0, 'user_reactions' => []];
+        if (is_string($reactions)) {
+            $reactions = json_decode($reactions, true) ?: ['clap' => 0, 'heart' => 0, 'star' => 0, 'fire' => 0, 'user_reactions' => []];
+        }
+
+        // Initialize reaction counts ensuring non-negative integers
+        foreach ($validTypes as $t) {
+            $reactions[$t] = max(0, (int)($reactions[$t] ?? 0));
+        }
+
+        // Initialize user-level tracking: user_id => reaction_type
+        $userReactions = isset($reactions['user_reactions']) && is_array($reactions['user_reactions'])
+            ? $reactions['user_reactions']
+            : [];
+
+        $currentReaction = $userReactions[$userId] ?? null;
+        $actionTaken = '';
+        $userActiveReaction = null;
+
+        if ($currentReaction === $reactionType) {
+            // 1. Same reaction clicked again -> TOGGLE OFF (Unlike)
+            unset($userReactions[$userId]);
+            $reactions[$reactionType] = max(0, $reactions[$reactionType] - 1);
+            $actionTaken = 'removed';
+            $userActiveReaction = null;
+        } elseif (!empty($currentReaction)) {
+            // 2. Different reaction clicked -> SWITCH reaction (Enforces 1 reaction per user!)
+            $reactions[$currentReaction] = max(0, $reactions[$currentReaction] - 1);
+            $reactions[$reactionType] = $reactions[$reactionType] + 1;
+            $userReactions[$userId] = $reactionType;
+            $actionTaken = 'switched';
+            $userActiveReaction = $reactionType;
+        } else {
+            // 3. First reaction -> ADD reaction (1 only per user)
+            $reactions[$reactionType] = $reactions[$reactionType] + 1;
+            $userReactions[$userId] = $reactionType;
+            $actionTaken = 'added';
+            $userActiveReaction = $reactionType;
+        }
+
+        $reactions['user_reactions'] = $userReactions;
+
+        // Persist to Supabase Database (triggers Realtime logical replication broadcast)
+        $saved = false;
+        if ($pdo) {
+            try {
+                $updateStmt = $pdo->prepare("UPDATE public.social_recognitions SET reactions = :reactions WHERE id = :id");
+                $saved = $updateStmt->execute([
+                    ':reactions' => json_encode($reactions),
+                    ':id'        => $postId
+                ]);
+            } catch (Throwable $e) {
+                error_log('[SocialModel::addReaction] PDO update error: ' . $e->getMessage());
+            }
+        }
+
+        if (!$saved) {
+            $updateRes = supabaseRequest('social_recognitions?id=eq.' . urlencode($postId), 'PATCH', [
+                'reactions' => $reactions
+            ], true);
+            $saved = isset($updateRes['status']) && ($updateRes['status'] >= 200 && $updateRes['status'] < 300);
+        }
+
+        return [
+            'success' => true,
+            'message' => $actionTaken === 'removed' ? 'Reaction removed.' : 'Reaction recorded!',
+            'data'    => [
+                'postId'         => $postId,
+                'reactionType'   => $reactionType,
+                'action'         => $actionTaken,
+                'userActive'     => $userActiveReaction,
+                'reactions'      => $reactions
+            ]
+        ];
     }
 
     /**
@@ -243,9 +358,27 @@ class SocialModel extends BaseModel
      */
     public function addComment(string $postId, array $comment): bool
     {
-        $res = supabaseRequest('social_recognitions?id=eq.' . urlencode($postId), 'GET', null, true);
-        if (!empty($res['data'][0])) {
-            $post = $res['data'][0];
+        $post = null;
+        $pdo = null;
+        try {
+            $pdo = getSupabaseDb();
+            if ($pdo) {
+                $stmt = $pdo->prepare("SELECT id, comments FROM public.social_recognitions WHERE id = :id");
+                $stmt->execute([':id' => $postId]);
+                $post = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+        } catch (Throwable $e) {
+            error_log('[SocialModel::addComment] DB fetch error: ' . $e->getMessage());
+        }
+
+        if (!$post) {
+            $res = supabaseRequest('social_recognitions?id=eq.' . urlencode($postId), 'GET', null, true);
+            if (!empty($res['data'][0])) {
+                $post = $res['data'][0];
+            }
+        }
+
+        if ($post) {
             $comments = $post['comments'] ?? [];
             if (is_string($comments)) {
                 $comments = json_decode($comments, true) ?: [];
@@ -256,16 +389,30 @@ class SocialModel extends BaseModel
                 'created_at' => date('c')
             ], $comment);
 
-            $updateRes = supabaseRequest('social_recognitions?id=eq.' . urlencode($postId), 'PATCH', [
-                'comments' => $comments
-            ], true);
-
-            if (isset($updateRes['status']) && ($updateRes['status'] >= 200 && $updateRes['status'] < 300)) {
-                return true;
+            $saved = false;
+            if ($pdo) {
+                try {
+                    $updateStmt = $pdo->prepare("UPDATE public.social_recognitions SET comments = :comments WHERE id = :id");
+                    $saved = $updateStmt->execute([
+                        ':comments' => json_encode($comments),
+                        ':id'       => $postId
+                    ]);
+                } catch (Throwable $e) {
+                    error_log('[SocialModel::addComment] PDO update error: ' . $e->getMessage());
+                }
             }
+
+            if (!$saved) {
+                $updateRes = supabaseRequest('social_recognitions?id=eq.' . urlencode($postId), 'PATCH', [
+                    'comments' => $comments
+                ], true);
+                $saved = isset($updateRes['status']) && ($updateRes['status'] >= 200 && $updateRes['status'] < 300);
+            }
+
+            return $saved;
         }
 
-        return true;
+        return false;
     }
 
     /**
@@ -273,8 +420,22 @@ class SocialModel extends BaseModel
      */
     public function getShiftSentiments(?string $filterType = null, ?string $filterValue = null): array
     {
-        $res = supabaseRequest('shift_sentiments?order=created_at.desc&limit=500', 'GET', null, true);
-        $sentiments = (is_array($res['data'] ?? null) && !isset($res['data']['code'])) ? $res['data'] : [];
+        $sentiments = [];
+        try {
+            $pdo = getSupabaseDb();
+            if ($pdo) {
+                $stmt = $pdo->query("SELECT id, employee_id, employee_name, sentiment_score, shift_period, note, created_at FROM public.shift_sentiments ORDER BY created_at DESC LIMIT 500");
+                $dbSentiments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                if (!empty($dbSentiments)) {
+                    $sentiments = $dbSentiments;
+                }
+            }
+        } catch (Throwable $e) {}
+
+        if (empty($sentiments)) {
+            $res = supabaseRequest('shift_sentiments?order=created_at.desc&limit=500', 'GET', null, true);
+            $sentiments = (is_array($res['data'] ?? null) && !isset($res['data']['code'])) ? $res['data'] : [];
+        }
 
         if (empty($sentiments)) {
             return [];
@@ -328,17 +489,34 @@ class SocialModel extends BaseModel
      */
     public function logShiftSentiment(array $data): bool
     {
-        // Only include columns that exist in the shift_sentiments table:
-        // id, employee_id, employee_name, sentiment_score, shift_period, note, created_at
         $clean = [
-            'id'             => (!empty($data['id']) ? $data['id'] : ('sentiment-' . time() . '-' . rand(100, 999))),
+            'id'             => (!empty($data['id']) ? $data['id'] : ('sent-' . time() . '-' . rand(100, 999))),
             'employee_id'    => $data['employee_id']   ?? ($data['employeeId']   ?? 'emp-101'),
             'employee_name'  => $data['employee_name'] ?? ($data['employeeName'] ?? 'Associate'),
             'sentiment_score'=> (int)($data['sentiment_score'] ?? ($data['sentimentScore'] ?? 4)),
-            'shift_period'   => $data['shift_period']  ?? ($data['shiftPeriod']  ?? 'General Shift'),
+            'shift_period'   => $data['shift_period']  ?? ($data['shiftPeriod']  ?? 'Peak Rush Window'),
             'note'           => $data['note']          ?? '',
             'created_at'     => gmdate('Y-m-d\TH:i:s\Z'),
         ];
+
+        try {
+            $pdo = getSupabaseDb();
+            if ($pdo) {
+                $stmt = $pdo->prepare("INSERT INTO public.shift_sentiments (id, employee_id, employee_name, sentiment_score, shift_period, note, created_at) VALUES (:id, :employee_id, :employee_name, :sentiment_score, :shift_period, :note, :created_at)");
+                $ok = $stmt->execute([
+                    ':id'              => $clean['id'],
+                    ':employee_id'     => $clean['employee_id'],
+                    ':employee_name'   => $clean['employee_name'],
+                    ':sentiment_score' => $clean['sentiment_score'],
+                    ':shift_period'    => $clean['shift_period'],
+                    ':note'            => $clean['note'],
+                    ':created_at'      => $clean['created_at']
+                ]);
+                if ($ok) return true;
+            }
+        } catch (Throwable $e) {
+            error_log('[SocialModel] PDO logShiftSentiment fallback: ' . $e->getMessage());
+        }
 
         $res = supabaseRequest('shift_sentiments', 'POST', $clean, true);
 
@@ -533,11 +711,9 @@ class SocialModel extends BaseModel
     {
         return [
             ['id' => 'emp-101', 'name' => 'Maria Santos', 'role' => 'Front Desk Host', 'dept' => 'Front Office', 'department' => 'Front Office', 'avatar' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80', 'rating' => '4.80'],
-            ['id' => 'emp-102', 'name' => 'Carlos Gomez', 'role' => 'Concierge Lead', 'dept' => 'Front Office', 'department' => 'Front Office', 'avatar' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80', 'rating' => '4.60'],
-            ['id' => 'emp-103', 'name' => 'Chef Marco Rossi', 'role' => 'Executive Sous Chef', 'dept' => 'Culinary', 'department' => 'Culinary', 'avatar' => 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80', 'rating' => '4.85'],
-            ['id' => 'emp-104', 'name' => 'Chef Marco S.', 'role' => 'Line Cook Lead', 'dept' => 'Culinary', 'department' => 'Culinary', 'avatar' => 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=150&auto=format&fit=crop&q=80', 'rating' => '4.50'],
-            ['id' => 'emp-106', 'name' => 'David Lee', 'role' => 'F&B Server Lead', 'dept' => 'F&B Service', 'department' => 'F&B Service', 'avatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80', 'rating' => '4.20'],
-            ['id' => 'emp-105', 'name' => 'Elena Vance', 'role' => 'HR Director & Master Trainer', 'dept' => 'HR & Admin', 'department' => 'HR & Admin', 'avatar' => 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80', 'rating' => '4.95']
+            ['id' => 'emp-102', 'name' => 'Chef Marco Rossi', 'role' => 'Kitchen Staff', 'dept' => 'Culinary', 'department' => 'Culinary', 'avatar' => 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150&auto=format&fit=crop&q=80', 'rating' => '4.85'],
+            ['id' => '3bb792e6-b25e-460e-a8fa-712c65c3b2e2', 'name' => 'Janzel', 'role' => 'Housekeeping Supervisor', 'dept' => 'Housekeeping', 'department' => 'Housekeeping', 'avatar' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80', 'rating' => '4.90'],
+            ['id' => '3a52667f-53cf-412a-b048-ef96eb407707', 'name' => 'Juan Dela Cruz', 'role' => 'Front Desk Associate', 'dept' => 'Front Office', 'department' => 'Front Office', 'avatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80', 'rating' => '4.70']
         ];
     }
 

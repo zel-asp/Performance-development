@@ -22,6 +22,46 @@ class AIController
 
     /**
      * Handle conversational chat with history
+    /**
+     * Pre-flight Domain Boundary Guardrail
+     * Enforce that the AI only discusses Oxford Suites hotel operations, coaching, and hospitality.
+     */
+    private function checkDomainGuardrail(string $prompt, string $employeeName, string $dept): ?string
+    {
+        $lower = strtolower($prompt);
+
+        // Disallow programming and software coding requests
+        $codingPatterns = [
+            'how to code', 'write code', 'write a program', 'write a function', 'write a script',
+            'python', 'javascript', 'html', 'css', 'react', 'java code', 'c++', 'c#', 'php script',
+            'programming in', 'algorithm', 'sql query to create', 'how do i code',
+            'debug this code', 'write me a script', 'write a class', 'install npm', 'git clone'
+        ];
+
+        foreach ($codingPatterns as $pattern) {
+            if (str_contains($lower, $pattern)) {
+                return "As the Oxford Suites Makati Leadership & Operations AI Copilot, my capabilities are strictly dedicated to our hotel operations, guest service excellence, and staff performance coaching. I cannot assist with computer programming, software coding, or non-hotel technical topics.\n\nHow may I assist you with coaching {$employeeName}, handling shift operations in {$dept}, or structuring SBI feedback today?";
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get real-time rate limit quota status for user
+     */
+    public function getRateLimitStatus(array $payload): array
+    {
+        $userId = trim($payload['user_id'] ?? ($payload['userId'] ?? ''));
+        $status = $this->rateLimitService->getRateLimitStatus($userId ?: 'anonymous-supervisor');
+        return [
+            'success'   => true,
+            'rateLimit' => $status
+        ];
+    }
+
+    /**
+     * Handle conversational chat with history
      */
     public function chat(array $payload): array
     {
@@ -40,6 +80,28 @@ class AIController
             ];
         }
 
+        // Check if user is asking for coding or non-hotel questions
+        $latestUserMsg = '';
+        foreach (array_reverse($chatHistory) as $m) {
+            if (($m['role'] ?? '') === 'user') {
+                $latestUserMsg = $m['content'] ?? '';
+                break;
+            }
+        }
+
+        $guardrailViolation = $this->checkDomainGuardrail($latestUserMsg, $employeeName, $dept);
+        if ($guardrailViolation !== null) {
+            $rateCheck = $this->rateLimitService->getRateLimitStatus($userId ?: 'anonymous-supervisor');
+            return [
+                'success'   => true,
+                'data'      => [
+                    'text'  => $guardrailViolation,
+                    'model' => 'oxford-guardrail'
+                ],
+                'rateLimit' => $rateCheck
+            ];
+        }
+
         // Sliding Window Rate Limiting (Per-User)
         $rateCheck = $this->rateLimitService->checkRateLimit($userId ?: 'anonymous-supervisor');
         if (!$rateCheck['allowed']) {
@@ -48,7 +110,7 @@ class AIController
                 'success'   => false,
                 'code'      => 429,
                 'rateLimit' => $rateCheck,
-                'message'   => $rateCheck['message'] ?? 'Rate limit exceeded. Please retry later.'
+                'message'   => $rateCheck['message'] ?? 'Rate limit exceeded. Please retry later or use manual entry.'
             ];
         }
 
@@ -58,7 +120,7 @@ class AIController
             'user_id'         => $userId ?: 'anonymous-supervisor',
             'role'            => $role,
             'feature'         => 'chatbot',
-            'input_reference' => substr(end($chatHistory)['content'] ?? '', 0, 150),
+            'input_reference' => substr($latestUserMsg, 0, 150),
             'tokens_used'     => $result['tokens'] ?? 0,
             'status'          => 'SUCCESS'
         ]);
@@ -164,10 +226,22 @@ class AIController
     {
         $role = trim($payload['role'] ?? ($payload['user_role'] ?? 'Associate'));
         $dept = trim($payload['dept'] ?? ($payload['department'] ?? 'all'));
+        $userId = trim($payload['user_id'] ?? ($payload['userId'] ?? ''));
 
         // Department sentiment is accessible to all team members, scoped to department
         if ($dept === 'all' && (strcasecmp($role, 'Associate') === 0 || strcasecmp($role, 'Employee') === 0)) {
             $dept = 'Front Office'; // Default scope for associate
+        }
+
+        $rateCheck = $this->rateLimitService->checkRateLimit($userId ?: 'anonymous-supervisor');
+        if (!$rateCheck['allowed']) {
+            http_response_code(429);
+            return [
+                'success'   => false,
+                'code'      => 429,
+                'rateLimit' => $rateCheck,
+                'message'   => $rateCheck['message'] ?? 'Rate limit exceeded. Please retry later or use manual entry.'
+            ];
         }
 
         // Aggregate free-text notes from coaching notes and recent activity
@@ -183,9 +257,10 @@ class AIController
         $sentimentResult = $this->geminiService->analyzeSentiment($combinedText, $dept === 'all' ? 'Oxford Suites Makati (Property-wide)' : $dept);
 
         return [
-            'success' => true,
-            'data'    => $sentimentResult,
-            'dept'    => $dept
+            'success'   => true,
+            'data'      => $sentimentResult,
+            'dept'      => $dept,
+            'rateLimit' => $rateCheck
         ];
     }
 

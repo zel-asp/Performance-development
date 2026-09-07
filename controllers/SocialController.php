@@ -21,11 +21,25 @@ class SocialController
         $ledger = $this->model->getLedger($employeeId);
         $badges = $this->model->getMilestoneBadges($employeeId);
 
-        // Calculate Gamified Live Metrics
+        // Calculate Gamified Live Metrics from unified ledger
         $totalRecognitions = count($recognitions);
-        $totalXPAwarded = array_reduce($recognitions, function ($sum, $r) {
-            return $sum + (int)($r['points_awarded'] ?? 50);
-        }, 0);
+        $totalXPAwarded = 0;
+        try {
+            $pdoSc = getSupabaseDb();
+            if ($pdoSc) {
+                $stmtXp = $pdoSc->query("SELECT COALESCE(SUM(points), 0) AS total_xp FROM public.xp_ledger");
+                $rXp = $stmtXp ? $stmtXp->fetch(PDO::FETCH_ASSOC) : null;
+                if ($rXp && isset($rXp['total_xp'])) {
+                    $totalXPAwarded = (int)$rXp['total_xp'];
+                }
+            }
+        } catch (Throwable $e) {}
+
+        if ($totalXPAwarded === 0) {
+            $totalXPAwarded = array_reduce($recognitions, function ($sum, $r) {
+                return $sum + (int)($r['points_awarded'] ?? 50);
+            }, 0);
+        }
 
         // Compute unlocked badges count
         $unlockedBadges = count(array_filter($badges, function($b) {
@@ -110,22 +124,39 @@ class SocialController
      */
     public function giveRecognition(array $payload): array
     {
-        $senderId = $payload['senderId'] ?? 'emp-105';
-        $senderName = $payload['senderName'] ?? 'Elena Vance';
-        $senderType = $payload['senderType'] ?? 'Supervisor';
-        $senderRole = $payload['senderRole'] ?? ($senderType === 'Supervisor' ? 'HR Director & Master Trainer' : 'Front Desk Host');
-        $senderAvatar = $payload['senderAvatar'] ?? ($senderType === 'Supervisor' 
-            ? 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80' 
-            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80');
+        $senderType = $payload['senderType'] ?? ($payload['sender_type'] ?? ($_SESSION['role'] ?? 'Supervisor'));
+        $defaultSenderName = ($senderType === 'Supervisor') ? ($_SESSION['full_name'] ?? 'Chef Marco Rossi') : ($_SESSION['full_name'] ?? 'Maria Santos');
+        $defaultSenderRole = ($senderType === 'Supervisor') ? 'Supervisor' : 'Front Desk Host';
+        $defaultSenderId = ($senderType === 'Supervisor') ? ($_SESSION['user_id'] ?? ($_SESSION['employee_id'] ?? 'emp-102')) : ($_SESSION['user_id'] ?? ($_SESSION['employee_id'] ?? 'emp-101'));
+        $defaultSenderAvatar = ($senderType === 'Supervisor')
+            ? 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150&auto=format&fit=crop&q=80'
+            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
 
-        $receiverId = $payload['receiverId'] ?? 'emp-101';
-        $receiverName = $payload['receiverName'] ?? 'Maria Santos';
-        $receiverRole = $payload['receiverRole'] ?? 'Front Desk Host';
-        $receiverDept = $payload['receiverDept'] ?? ($payload['receiverDepartment'] ?? 'Front Office');
-        $receiverAvatar = $payload['receiverAvatar'] ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+        $senderName = $payload['senderName'] ?? ($payload['sender_name'] ?? $defaultSenderName);
+        if (stripos($senderName, 'Elena Vance') !== false) {
+            $senderName = $defaultSenderName;
+        }
 
-        $categoryKey = $payload['categoryKey'] ?? 'guest_service';
-        $categoryLabel = $payload['categoryLabel'] ?? 'Great Guest Service';
+        $senderRole = $payload['senderRole'] ?? ($payload['sender_role'] ?? $defaultSenderRole);
+        if (stripos($senderRole, 'HR Director') !== false) {
+            $senderRole = $defaultSenderRole;
+        }
+
+        $senderId = $payload['senderId'] ?? ($payload['sender_id'] ?? $defaultSenderId);
+        if ($senderId === 'emp-105') {
+            $senderId = $defaultSenderId;
+        }
+
+        $senderAvatar = $payload['senderAvatar'] ?? ($payload['sender_avatar'] ?? $defaultSenderAvatar);
+
+        $receiverId = $payload['receiverId'] ?? ($payload['receiver_id'] ?? 'emp-101');
+        $receiverName = $payload['receiverName'] ?? ($payload['receiver_name'] ?? 'Maria Santos');
+        $receiverRole = $payload['receiverRole'] ?? ($payload['receiver_role'] ?? 'Front Desk Host');
+        $receiverDept = $payload['receiverDept'] ?? ($payload['receiver_dept'] ?? ($payload['receiverDepartment'] ?? 'Front Office'));
+        $receiverAvatar = $payload['receiverAvatar'] ?? ($payload['receiver_avatar'] ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80');
+
+        $categoryKey = $payload['categoryKey'] ?? ($payload['category_key'] ?? 'guest_service');
+        $categoryLabel = $payload['categoryLabel'] ?? ($payload['category_label'] ?? 'Great Guest Service');
         $textContent = trim($payload['textContent'] ?? ($payload['text'] ?? ($payload['message'] ?? '')));
 
         if (empty($textContent)) {
@@ -142,7 +173,7 @@ class SocialController
         }
 
         $data = [
-            'id'             => 'post-' . time() . '-' . rand(100, 999),
+            'id'             => !empty($payload['id']) ? trim($payload['id']) : ('post-' . time() . '-' . rand(100, 999)),
             'sender_id'      => $senderId,
             'sender_name'    => $senderName,
             'sender_role'    => $senderRole,
@@ -157,7 +188,7 @@ class SocialController
             'category_label' => $categoryLabel,
             'points_awarded' => $points,
             'text_content'   => $textContent,
-            'reactions'      => ['clap' => 1, 'heart' => 1, 'star' => 1, 'fire' => 0],
+            'reactions'      => ['clap' => 0, 'heart' => 0, 'star' => 0, 'fire' => 0, 'user_reactions' => []],
             'comments'       => [],
             'created_at'     => date('c')
         ];
@@ -199,15 +230,11 @@ class SocialController
     }
 
     /**
-     * Increment Reaction Emoji
+     * Add, toggle, or switch reaction emoji (1 only per user, anti-spam)
      */
-    public function addReaction(string $postId, string $reactionType): array
+    public function addReaction(string $postId, string $reactionType, ?string $userId = null): array
     {
-        $ok = $this->model->addReaction($postId, $reactionType);
-        return [
-            'success' => $ok,
-            'message' => $ok ? 'Reaction updated!' : 'Failed to update reaction.'
-        ];
+        return $this->model->addReaction($postId, $reactionType, $userId);
     }
 
     /**
@@ -215,9 +242,15 @@ class SocialController
      */
     public function addComment(string $postId, array $payload): array
     {
-        $authorName = $payload['authorName'] ?? 'Hospitality Colleague';
-        $authorRole = $payload['authorRole'] ?? 'Team Associate';
-        $authorAvatar = $payload['authorAvatar'] ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+        $rawName = $payload['author_name'] ?? ($payload['authorName'] ?? ($_SESSION['full_name'] ?? 'Hospitality Colleague'));
+        $authorName = (stripos($rawName, 'Elena Vance') !== false) ? ($_SESSION['full_name'] ?? 'Chef Marco Rossi') : $rawName;
+
+        $rawRole = $payload['author_role'] ?? ($payload['authorRole'] ?? ($_SESSION['role'] ?? 'Team Associate'));
+        $authorRole = (stripos($rawRole, 'HR Director') !== false) ? 'Supervisor' : $rawRole;
+
+        $authorAvatar = $payload['author_avatar'] ?? ($payload['authorAvatar'] ?? ($authorRole === 'Supervisor' 
+            ? 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=150&auto=format&fit=crop&q=80'
+            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'));
         $text = trim($payload['text'] ?? '');
 
         if (empty($text)) {
@@ -228,6 +261,9 @@ class SocialController
             'author_name'   => $authorName,
             'author_role'   => $authorRole,
             'author_avatar' => $authorAvatar,
+            'authorName'    => $authorName,
+            'authorRole'    => $authorRole,
+            'authorAvatar'  => $authorAvatar,
             'text'          => $text
         ];
 

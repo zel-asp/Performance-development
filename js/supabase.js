@@ -305,16 +305,58 @@ function initSupabaseRealtime() {
                 .subscribe();
         }
 
-        // 4. Social Recognition Feed Channel
-        if (!realtimeChannels.xp_transactions) {
-            realtimeChannels.xp_transactions = supabaseClient
-                .channel('realtime_xp_transactions')
+        // 4. Social Recognition Feed Channel (Live Instant Updates for Feed, Reactions & Cheers)
+        if (!realtimeChannels.social_recognitions) {
+            realtimeChannels.social_recognitions = supabaseClient
+                .channel('realtime_social_recognitions')
                 .on(
                     'postgres_changes',
-                    { event: '*', schema: 'public', table: 'xp_transactions' },
+                    { event: '*', schema: 'public', table: 'social_recognitions' },
                     (payload) => {
-                        if (typeof renderRecognitionFeed === 'function') {
-                            renderRecognitionFeed();
+                        const newRow = payload.new || {};
+                        const oldRow = payload.old || {};
+                        const postId = newRow.id || oldRow.id;
+                        if (!postId) return;
+
+                        if (payload.eventType === 'UPDATE' && newRow.id) {
+                            if (typeof window.updatePostFromRealtime === 'function') {
+                                window.updatePostFromRealtime(newRow);
+                            } else if (typeof renderSocialFeed === 'function') {
+                                renderSocialFeed();
+                            }
+                        } else if (payload.eventType === 'INSERT' && newRow.id) {
+                            if (typeof window.addRealtimeRecognitionPost === 'function') {
+                                window.addRealtimeRecognitionPost(newRow);
+                            } else if (typeof loadSocialOverview === 'function') {
+                                loadSocialOverview();
+                            }
+                        } else if (payload.eventType === 'DELETE' && oldRow.id) {
+                            if (Array.isArray(window.socialFeedPostsState)) {
+                                window.socialFeedPostsState = window.socialFeedPostsState.filter(p => p.id !== oldRow.id);
+                                if (typeof renderSocialFeed === 'function') renderSocialFeed();
+                            }
+                        }
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'xp_ledger' },
+                    (payload) => {
+                        const currentUserId = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+                        if (typeof updateXpTrajectoryFromLedger === 'function') {
+                            updateXpTrajectoryFromLedger(currentUserId);
+                        }
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'shift_sentiments' },
+                    (payload) => {
+                        const newRow = payload.new || {};
+                        if (newRow && newRow.id) {
+                            if (typeof window.addRealtimeShiftSentiment === 'function') {
+                                window.addRealtimeShiftSentiment(newRow);
+                            }
                         }
                     }
                 )

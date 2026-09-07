@@ -46,10 +46,11 @@ async function initSuccessionPlanning() {
     renderSuccession9BoxGrid();
 
     // 2. Supabase Realtime Subscription for Succession Recalculations
-    if (window.supabase && !window.successionRealtimeInitialized) {
+    const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.channel === 'function' ? window.supabase : null);
+    if (sbClient && typeof sbClient.channel === 'function' && !window.successionRealtimeInitialized) {
         window.successionRealtimeInitialized = true; // prevent duplicate listeners if init is called again
         
-        const channel = window.supabase.channel('public:succession_recalc');
+        const channel = sbClient.channel('public:succession_recalc');
         
         // Listen to changes in Performance Appraisals that might close a cycle
         channel.on('postgres_changes', { event: '*', schema: 'public', table: 'performance_evaluations' }, (payload) => {
@@ -506,12 +507,12 @@ function renderComputedReadinessMatrix() {
                 <!-- 2. Computed Fit % -->
                 <td class="px-5 py-3.5">
                     <div class="flex items-center space-x-2">
-                        <span class="font-bold text-xs ${fitPct >= 90 ? 'text-emerald-700' : 'text-slate-800'}">${fitPct}%</span>
+                        <span class="font-bold text-xs ${fitPct >= 70 ? 'text-emerald-700' : 'text-slate-800'}">${fitPct}%</span>
                         <div class="w-16 bg-slate-200 h-2 rounded-full overflow-hidden">
-                            <div class="${fitPct >= 90 ? 'bg-emerald-600' : 'bg-primary'} h-2 transition-all duration-500" style="width: ${fitPct}%"></div>
+                            <div class="${fitPct >= 70 ? 'bg-emerald-600' : 'bg-primary'} h-2 transition-all duration-500" style="width: ${fitPct}%"></div>
                         </div>
                     </div>
-                    <span class="text-[10px] text-slate-400 font-semibold">${candidate.matchStatus || 'High Match'}</span>
+                    <span class="text-[10px] text-slate-400 font-semibold">${candidate.hrReadinessFlag || candidate.matchStatus || 'Not Ready'}</span>
                 </td>
 
                 <!-- 3 & 4. HR-Only Manual Readiness Flag Selector -->
