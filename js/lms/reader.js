@@ -27,7 +27,7 @@ window.switchReaderTab = switchReaderTab;
  * Open Document in Reader Modal with Live Supabase File Link & Actual Content
  */
 function openBookReader(docId) {
-    const doc = (window.dynamicLmsState.documents || []).find(d => d.id === docId);
+    const doc = (window.dynamicLmsState?.documents || []).find(d => d.id === docId);
     if (!doc) return;
 
     currentReadingBookId = doc.id;
@@ -179,20 +179,20 @@ function openBookReader(docId) {
 
     openModal('modal-book-reader');
 }
+window.openBookReader = openBookReader;
 
 /**
  * Launch Quiz from Reader
  */
 function launchQuizFromReader() {
     if (currentReadingBookId) {
-        const doc = (window.dynamicLmsState.documents || []).find(d => d.id === currentReadingBookId);
+        const doc = (window.dynamicLmsState?.documents || []).find(d => d.id === currentReadingBookId);
         closeModal('modal-book-reader');
-        if (doc) {
-            launchInteractiveQuiz(doc.title);
+        if (doc && typeof startQuizPrompt === 'function') {
+            startQuizPrompt(doc.id, doc.title, doc.department_name, doc.category);
+        } else if (doc) {
+            launchInteractiveQuiz(doc.title, doc.id);
         }
     }
 }
-
-/**
- * Handle File Selection in Upload Modal
- */
+window.launchQuizFromReader = launchQuizFromReader;

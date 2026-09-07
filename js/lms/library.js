@@ -18,6 +18,56 @@ window.dynamicLmsState = {
 let lmsActiveDeptFilter = 'all';
 let currentReadingBookId = null;
 
+// Unified Quiz Completion Detector
+if (typeof window.getCompletedQuizRecord !== 'function') {
+    window.getCompletedQuizRecord = function (bookId) {
+        if (!bookId) return null;
+        const currentUserId = (window.currentUser?.id || window.activePersonaId || 'emp-101').toLowerCase();
+        try {
+            const keyUser = 'oxford_lms_completed_quiz_' + bookId + '_' + currentUserId;
+            const itemUser = localStorage.getItem(keyUser);
+            if (itemUser) {
+                const parsed = JSON.parse(itemUser);
+                if (parsed && parsed.taken) return parsed;
+            }
+            const keyGen = 'oxford_lms_completed_quiz_' + bookId;
+            const itemGen = localStorage.getItem(keyGen);
+            if (itemGen) {
+                const parsedGen = JSON.parse(itemGen);
+                if (parsedGen && parsedGen.taken) return parsedGen;
+            }
+        } catch (e) {}
+
+        if (window.dynamicLmsState && Array.isArray(window.dynamicLmsState.prescribed)) {
+            const match = window.dynamicLmsState.prescribed.find(p => {
+                const pBookId = p.lms_id || p.book_id || p.id;
+                if (String(pBookId) !== String(bookId)) return false;
+                const empId = (p.employee || p.employee_id || '').toLowerCase();
+                const empName = (p.employee_name || '').toLowerCase();
+                return empId === currentUserId ||
+                    (currentUserId === 'emp-101' && (empId.includes('101') || empId.includes('maria') || empName.includes('maria'))) ||
+                    (currentUserId === 'emp-102' && (empId.includes('102') || empId.includes('antonio') || empName.includes('antonio')));
+            });
+
+            if (match) {
+                const score = Number(match.scores ?? match.score ?? 0);
+                const status = String(match.status || '').toLowerCase();
+                const hasAttempt = Boolean(match.last_attempt || match.scores !== null || status === 'passed' || status === 'completed');
+                if (hasAttempt || status === 'passed' || status === 'completed' || score > 0) {
+                    return {
+                        taken: true,
+                        passed: status === 'passed' || score >= 80,
+                        score: score,
+                        status: match.status || (score >= 80 ? 'Passed' : 'Completed'),
+                        completedAt: match.last_attempt || null
+                    };
+                }
+            }
+        }
+        return null;
+    };
+}
+
 // Load initial cache from sessionStorage for 0ms startup
 try {
     const cachedDocs = sessionStorage.getItem('lms_documents_cache');
@@ -83,6 +133,9 @@ async function fetchDynamicLmsDocuments(deptFilter = null, searchVal = null) {
     } finally {
         window.dynamicLmsState.loading = false;
         renderLmsBooks();
+        if (typeof fetchPrescribedLms === 'function' && (!window.dynamicLmsState.prescribed || window.dynamicLmsState.prescribed.length === 0)) {
+            fetchPrescribedLms().then(() => renderLmsBooks()).catch(() => {});
+        }
     }
 }
 
@@ -247,7 +300,11 @@ function renderLmsBooks() {
                 <div class="pt-4 mt-3 border-t border-[#F2EBE9] flex items-center justify-between gap-2">
                     <button onclick="openBookReader('${docId}')" class="btn-primary flex-1 py-2 text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 shadow-2xs">
                         <i class="fas fa-book-open text-xs"></i>
-                        <span>Read Handbook</span>
+                        <span>Read</span>
+                    </button>
+                    <button onclick="startQuizPrompt('${docId}', '${safeTitle}', '${deptName}', '${category}')" class="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-xl font-bold text-xs flex items-center space-x-1.5 transition shadow-2xs" title="Take 10-item Knowledge Quiz">
+                        <i class="fas fa-graduation-cap text-gold-dark"></i>
+                        <span>Quiz</span>
                     </button>
                     ${isSupervisorOrManager ? `
                         <button onclick="deleteLmsDocument('${docId}', '${safeTitle}', this)" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition border border-transparent hover:border-red-200" title="Delete document">

@@ -154,7 +154,7 @@
                                                     class="pl-8 pr-3 py-1.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary w-36 sm:w-44">
                                             </div>
 
-                                            <button onclick="openRemedialBooksModal()"
+                                            <button id="btn-lms-prescribe-book" onclick="openRemedialBooksModal()"
                                                 class="px-3.5 py-1.5 bg-gold hover:bg-gold-dark text-white rounded-xl text-xs font-semibold shadow-xs transition flex items-center space-x-1.5">
                                                 <i class="fas fa-book-medical"></i>
                                                 <span>Prescribe Book</span>

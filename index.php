@@ -456,6 +456,7 @@
         <script src="js/lms/upload.js"></script>
         <script src="js/lms/remedial.js"></script>
         <script src="js/lms/tna.js"></script>
+        <script src="js/lms/quiz.js"></script>
         <script src="js/lms/index.js"></script>
         <script src="js/training.js"></script>
         <script src="js/succession.js"></script>

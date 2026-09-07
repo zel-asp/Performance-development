@@ -1,0 +1,134 @@
+Introduction
+Modern university operations depend on a web of specialized information systems that were, in most cases, built independently, by different vendors, on different platforms, and at different points in an institution's history. The Enrollment System, the Payment/Cashier System, the Registrar System, and the Learning Management System (LMS) each perform a distinct and essential function, yet a student's actual journey from choosing a class to attending it cuts directly across all four. Without a deliberate integration strategy, this journey is prone to delay, duplicated data entry, and inconsistent records, since staff are often left to manually reconcile information that should flow automatically between systems.
+This document presents a simplified, end-to-end integration design intended to connect these four core university systems into a single, coherent workflow. The purpose of the design is not merely technical; it is also operational and administrative. A well-integrated system reduces the burden on registrar and cashier staff, minimizes the risk of students being granted access to course content before payment has cleared, and provides administrators with a clearer, more auditable picture of where a given student stands in the enrollment pipeline at any point in time.
+To achieve this, the document identifies the systems involved and the role each one plays; selects an appropriate integration pattern capable of supporting a strict, ordered sequence of steps while remaining resilient to individual component failures; outlines, in detail, the data and events exchanged between systems, including the payloads and the intended recipients of each event; and defines the security controls and failure-handling strategies required to operate the integration reliably in a production environment, including authentication, encryption, role-based access, retry logic, and circuit-breaker protections.
+Taken together, these elements form a blueprint that balances simplicity with the operational rigor a university environment demands. The sections that follow walk through each of these components in turn, beginning with an overview of the four systems themselves before moving into the architectural pattern that ties them together.
+Four University Systems
+The integration involves the following four core systems, each responsible for a distinct stage of the student enrollment process. Although these systems are administered separately and, in many institutions, maintained by different departments or outside vendors, they must nonetheless behave as a single, coordinated pipeline from the student's point of view. The table below summarizes each system's primary function before a more detailed discussion of each one follows.
+#
+System
+Function
+
+1
+Enrollment System
+Enables new and returning students to register for classes
+
+2
+Payment/Cashier System
+Processes tuition payment for the classes selected
+
+3
+Registrar System
+Confirms official registration and maintains academic records
+
+4
+LMS (Learning Management System)
+Hosts class content, assignments, and grades (e.g., Canvas or Moodle)
+
+2.1 Enrollment System
+The Enrollment System is the student-facing entry point into the process. It is responsible for presenting the course catalog, validating prerequisites and seat availability, and allowing both new and returning students to select the classes they intend to take in a given term. Because this system initiates the entire downstream workflow, the accuracy and timeliness of the data it produces, such as student identifiers, selected course sections, and the academic term, is critical to every system that follows.
+2.2 Payment/Cashier System
+The Payment/Cashier System handles the financial side of enrollment. Once a student has selected classes, this system calculates the tuition and fees owed, processes payment through the institution's approved payment channels, and records the outcome of that transaction. Given that this system handles sensitive financial data, including payment card information in some cases, it carries a heightened set of security obligations relative to the other three systems.
+2.3 Registrar System
+The Registrar System serves as the institution's authoritative source of academic record. It does not process payment itself, but it depends on confirmation from the Payment System before it will finalize a student's registration. Once registration is finalized, the Registrar System becomes responsible for maintaining the permanent academic record associated with that enrollment, including, later in the term, the grades posted by the LMS.
+2.4 Learning Management System (LMS)
+The LMS, such as Canvas or Moodle, is the last stop in the enrollment pipeline and the first system with which most students will interact on an ongoing, day-to-day basis. It hosts the actual class content, assignments, discussion forums, and gradebooks. Because access to this content represents real academic and financial value, the LMS must never grant access to a class before it has received explicit confirmation that the student's registration has been completed and paid for.
+Process Overview
+The four systems operate in the following sequence to complete the enrollment process. This sequence is intentionally linear and dependency-driven: each stage both consumes the output of the stage before it and produces the trigger for the stage that follows, which is the underlying reason the integration pattern described in Section 3 was chosen.
+The student selects classes through the Enrollment System.
+The student submits tuition payment through the Payment System.
+Once payment is confirmed, the Registrar System finalizes the official registration.
+The LMS then grants the student access to the corresponding class content.
+Integration Patterns: Publish/Subscribe with a Sequential Workflow
+Selecting the right integration pattern is arguably the most consequential architectural decision in this design, since it determines how tightly or loosely the four systems are coupled to one another, how the workflow behaves under partial failure, and how easily new systems can be introduced in the future. Several alternative patterns were considered before settling on the approach described below, including direct point-to-point integration, in which each system calls every other system's API directly, and a centralized orchestration pattern, in which a single controller service explicitly directs each step of the process.
+Point-to-point integration was ultimately rejected because, with four systems that must communicate in a strict sequence, the number of direct connections required grows quickly and becomes difficult to maintain; every time a new system is added, existing systems must be modified to accommodate it. A centralized orchestrator was also considered, but it introduces a single, heavily-dependent component that every step of the workflow relies on, increasing the operational risk associated with that one service.
+The proposed design instead uses a "Publish and Subscribe" (Pub/Sub) pattern, in which a central message broker relays events between systems rather than requiring each system to connect directly with every other system. In this model, each system is only aware of the events it needs to publish and the events it needs to subscribe to; it has no direct knowledge of the other systems' internal implementations, network addresses, or availability. Because this workflow must follow a strict order, enroll, then pay, then confirm, then grant class access, each system proceeds only after receiving the relevant event from the preceding step, effectively turning the sequence of business steps into a corresponding sequence of published and consumed events.
+The Enrollment System publishes the event "Student Selected Classes."
+The Payment System processes payment and publishes "Payment Received."
+The Registrar System finalizes registration and publishes "Registration Confirmed."
+The LMS subscribes to this event and unlocks class access for the student.
+It is worth noting that this pattern also naturally accommodates the exception path: if payment fails rather than succeeds, the Payment System publishes a separate "Payment Failed" event rather than "Payment Received," which the Enrollment System subscribes to so that the student can be notified and given the opportunity to retry, without any other system in the chain ever being triggered prematurely.
+Rationale
+Enforces process integrity: each system acts only after the preceding step is complete, preventing skipped steps such as granting class access before payment is received.
+Scalable: additional systems, such as a financial-aid disbursement system or an alumni-services platform, can be incorporated later by subscribing to existing events, without disrupting existing connections between the four current systems.
+Resilient: if one system experiences downtime, the workflow pauses safely rather than failing outright, since the message broker retains the relevant event until the affected system is able to consume it.
+Decoupled and maintainable: because systems communicate only through published events rather than direct calls, individual systems can be upgraded, replaced, or temporarily taken offline for maintenance with minimal impact on the rest of the integration.
+Enrollment System → Payment System → Registrar System → LMS, with all events routed through the central Message Broker.
+
+Data and Events Exchanged
+Source System
+
+Event
+
+Data Exchanged
+
+Receiving System
+
+Purpose
+
+Enrollment System
+StudentSelectedClasses
+StudentID, selected classes, course sections, academic term
+Payment System
+
+Triggers tuition and fee calculation
+
+Payment System
+
+PaymentReceived
+
+Student ID, transaction ID, amount paid, payment status, selected classes
+Registrar System
+Confirms successful payment and allows official registration
+
+Payment System
+PaymentFailed
+Student ID, transaction ID, payment status, failure reason
+Enrollment System
+Notifies the student that payment was unsuccessful
+
+Registrar System
+RegistrationConfirmed
+Student ID, registration ID, confirmed classes, academic term, registration status
+LMS
+Unlocks student access to enrolled courses
+
+LMS
+GradePosted
+
+Student ID, course ID, final grade, academic term
+
+Registrar System
+
+Updates the student's official academic record
+
+The data and events flowing between the university systems are listed in the following table. Each system only sends the required data to the following system. The Enrollment System for example sends the selected class information to the Payment System. Upon successful payment the Registrar is notified for the confirmation of the registration of the student. Upon confirmation by the Registrar the LMS grants access to the enrolled courses of the student. In the case of a failed payment the process stops and the student is informed about the failure.
+
+Security Control
+The integration architecture for the proposed workflow of the university enrollment process will have multiple security features in place to ensure the security of information and communication between Enrollment System, Payment System, Registrar System and Learning Management System. API authentication using OAuth tokens or API credentials will be used to authorize systems to publish and consume integration events. All information exchanged between systems will be over HTTPS/TLS to ensure that information is kept confidential and remains unaltered while in transit. The role-based and scoped access control will also be implemented to limit each system to data and actions required for the system’s purpose. For example, Enrollment System will publish class selection information, Payment System will process and confirm payment transactions, Registrar System will complete the official registration, and LMS will only access confirmed information from Enrollment System. Complete card information for payment will be kept in the Payment System and will not be shared with other systems. Data minimization will also be implemented to limit information that is exchanged between systems, and audit logging for critical actions such as payment confirmation, registration approval and LMS access will be implemented. Overall, the security features will enable confidentiality, integrity and accountability of information and secure integration of systems.
+
+Failure-handling Strategies 
+To ensure system stability, resilience, and a seamless user experience, the university system implements a two-tiered failure-handling architecture:
+
+Retry Logic with Timeout 
+To absorb temporary network blips or short service disruptions (e.g., brief Registrar API downtime), the calling system automatically retries failed requests a set number of times with short delay intervals before failing outright, preventing unnecessary instant error messages for students and faculty.
+
+Circuit Breaker + Fallback Queue 
+To prevent cascading failures when a downstream system experiences prolonged downtime, repeated calls are temporarily paused to avoid overloading the struggling service. Failed requests are safely routed to a queue and automatically re-processed once health checks confirm the service has recovered.
+
+Example Scenario: Student Enrollment
+A student begins the enrollment process by logging into the Enrollment System and selecting the courses they want to take for the academic term. The system checks the student's eligibility, prerequisites, and available slots. Once the student confirms the selected classes, the Enrollment System sends a StudentSelectedClasses event containing the student ID, selected classes, course sections, and academic term to the Payment System through the message broker.
+The Payment System then calculates the required tuition and fees and processes the student's payment. If the payment is successful, it publishes a PaymentReceived event containing the student ID, transaction ID, amount paid, payment status, and selected classes. The Registrar System receives this event and finalizes the student's official registration.
+After successful registration, the Registrar System publishes a RegistrationConfirmed event containing the student ID, registration ID, confirmed classes, academic term, and registration status. The LMS receives this event and grants the student access to the corresponding enrolled courses.
+If the payment fails, the Payment System instead publishes a PaymentFailed event. The Enrollment System receives the event and informs the student that the payment was unsuccessful, allowing the student to retry the payment. This prevents the Registrar and LMS from processing an enrollment that has not been successfully paid.
+
+Summary
+The proposed University System Integration connects four essential university systems: Enrollment, Payment/Cashier, Registrar, and LMS into one coordinated enrollment workflow.
+The integration uses a Publish/Subscribe (Pub/Sub) pattern with a sequential workflow, where systems communicate through a central message broker and proceed only when the required event from the previous step has been received.
+The design also defines the important data and events exchanged, including StudentSelectedClasses, PaymentReceived, PaymentFailed, RegistrationConfirmed, and GradePosted. Security is maintained through API authentication, OAuth tokens or API credentials, HTTPS/TLS, scoped access permissions, data minimization, and audit logging.
+To improve reliability, the system uses retry logic, timeouts, circuit breakers, and a fallback queue to handle temporary system failures. Overall, the integration provides a secure, scalable, maintainable, and resilient way of connecting university systems while ensuring that students receive access to their courses only after successful payment and registration.
+
+Conclusion
+The University System Integration provides a structured way to connect the Enrollment, Payment, Registrar, and LMS systems into a single and reliable student enrollment process. By allowing information and events to move automatically between systems, the design reduces manual work, prevents inconsistent records, and ensures that each step is completed in the correct order.
+The combination of event-based communication, security controls, and failure-handling strategies allows the university to maintain the confidentiality, integrity, and availability of important student and payment information. The example enrollment scenario demonstrates how the systems work together from course selection to LMS access, while also showing how failed payments can be handled safely.
+Overall, the proposed integration creates a more efficient, secure, and dependable enrollment experience for both students and university staff

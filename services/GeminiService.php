@@ -260,9 +260,61 @@ USER_PROMPT;
     }
 
     /**
+     * Generate an interactive 10-item knowledge quiz grounded in document text
+     */
+    public function generateQuizFromDocument(string $title, string $dept, string $category, string $documentText): ?array
+    {
+        $documentText = trim($documentText);
+        $snippet = mb_substr($documentText, 0, 7000);
+
+        $systemInstruction = "You are an expert assessment and instructional designer. "
+            . "Analyze the attached handbook/document file and create an interactive 10-item multiple-choice quiz based directly on its content.\n"
+            . "Rules:\n"
+            . "1. Always output VALID JSON ONLY as an array of exactly 10 objects. Do not wrap in markdown code blocks or backticks.\n"
+            . "2. Each object must contain:\n"
+            . "   - 'id': integer from 1 to 10\n"
+            . "   - 'question': scenario-based or procedural question testing key principles, systems, workflows, or rules explicitly mentioned in the document\n"
+            . "   - 'options': array of 4 distinct string choices\n"
+            . "   - 'correct': integer (0, 1, 2, or 3) indicating the zero-based index of the correct answer\n"
+            . "   - 'explanation': 1 concise sentence explaining the correct answer referencing the document\n"
+            . "3. Ground every question, option, and answer directly in the provided document text.";
+
+        $prompt = "Document Title: {$title}\nDepartment/Domain: {$dept}\nCategory: {$category}\n\n"
+            . "Document Content:\n\"\"\"\n{$snippet}\n\"\"\"\n\n"
+            . "Analyze the document text above and generate exactly 10 scenario-based multiple-choice questions grounded in this file.";
+
+        $payload = [
+            'systemInstruction' => [
+                'role' => 'system',
+                'parts' => [['text' => $systemInstruction]]
+            ],
+            'contents' => [
+                ['role' => 'user', 'parts' => [['text' => $prompt]]]
+            ],
+            'generationConfig' => [
+                'temperature'     => 0.2,
+                'maxOutputTokens' => 2500,
+                'responseMimeType'=> 'application/json'
+            ]
+        ];
+
+        $response = $this->callGeminiApi($payload, 12);
+        if (!$response['success'] || empty($response['text'])) {
+            return null;
+        }
+
+        $parsed = $this->extractJson($response['text']);
+        if (!is_array($parsed) || count($parsed) < 10) {
+            return null;
+        }
+
+        return array_slice($parsed, 0, 10);
+    }
+
+    /**
      * Send cURL request to Gemini API endpoint with strict timeout and fallback models
      */
-    private function callGeminiApi(array $payload): array
+    public function callGeminiApi(array $payload, ?int $customTimeout = null): array
     {
         if (empty($this->apiKey)) {
             return ['success' => false, 'error' => 'GEMINI_API_KEY is not configured.'];
@@ -274,6 +326,7 @@ USER_PROMPT;
         ];
 
         $jsonPayload = json_encode($payload);
+        $timeout = $customTimeout !== null ? $customTimeout : $this->timeout;
 
         foreach ($models as $modelName) {
             $endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' . $modelName . ':generateContent';
@@ -288,7 +341,7 @@ USER_PROMPT;
                     'Content-Type: application/json',
                     'Content-Length: ' . strlen($jsonPayload)
                 ],
-                CURLOPT_TIMEOUT        => $this->timeout,
+                CURLOPT_TIMEOUT        => $timeout,
                 CURLOPT_CONNECTTIMEOUT => 2,
                 CURLOPT_SSL_VERIFYPEER => false
             ]);
@@ -319,7 +372,7 @@ USER_PROMPT;
     /**
      * Helper to clean and extract JSON object from Gemini response
      */
-    private function extractJson(string $raw): ?array
+    public function extractJson(string $raw): ?array
     {
         $clean = trim($raw);
         // Remove markdown code blocks if any
@@ -330,3 +383,4 @@ USER_PROMPT;
         return is_array($data) ? $data : null;
     }
 }
+

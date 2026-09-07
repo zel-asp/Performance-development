@@ -963,16 +963,409 @@ class LmsController
     }
 
     /**
-     * Get Badge Class for Category
+     * Extract plain text content from an attached LMS handbook/book file
      */
-    private function getCategoryBadge(string $category): string
+    public function extractTextFromBookFile(?string $filePath, ?string $fileName = '', ?string $fileType = ''): string
     {
-        $cat = strtolower($category);
-        if (strpos($cat, 'compliance') !== false) return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
-        if (strpos($cat, 'masterclass') !== false) return 'bg-amber-100 text-amber-800 border border-amber-200';
-        if (strpos($cat, 'safety') !== false) return 'bg-rose-100 text-rose-800 border border-rose-200';
-        return 'bg-gold-50 text-gold-dark border border-gold-200';
+        $filePath = trim((string)$filePath);
+        if (empty($filePath)) {
+            return '';
+        }
+
+        $cacheDir = __DIR__ . '/../storage/lms_extracted';
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0777, true);
+        }
+
+        $cacheFile = $cacheDir . '/' . md5($filePath) . '.txt';
+        if (file_exists($cacheFile) && filesize($cacheFile) > 40) {
+            return (string)@file_get_contents($cacheFile);
+        }
+
+        $rawContent = '';
+        if (preg_match('#^https?://#i', $filePath)) {
+            $ctx = stream_context_create([
+                'http' => ['timeout' => 12],
+                'ssl'  => ['verify_peer' => false, 'verify_peer_name' => false]
+            ]);
+            $rawContent = @file_get_contents($filePath, false, $ctx);
+            if (!$rawContent && function_exists('curl_init')) {
+                $ch = curl_init($filePath);
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_TIMEOUT        => 12,
+                    CURLOPT_SSL_VERIFYPEER => false
+                ]);
+                $rawContent = curl_exec($ch);
+                curl_close($ch);
+            }
+        } elseif (file_exists($filePath)) {
+            $rawContent = @file_get_contents($filePath);
+        }
+
+        if (empty($rawContent)) {
+            return '';
+        }
+
+        $extractedText = '';
+        $isDocx = preg_match('/\.docx$/i', $filePath) || preg_match('/\.docx$/i', $fileName) || stripos((string)$fileType, 'wordprocessingml') !== false;
+        $isPdf  = preg_match('/\.pdf$/i', $filePath)  || preg_match('/\.pdf$/i', $fileName)  || stripos((string)$fileType, 'pdf') !== false;
+
+        if ($isDocx) {
+            $tempFile = sys_get_temp_dir() . '/lms_extract_' . uniqid() . '.docx';
+            file_put_contents($tempFile, $rawContent);
+
+            try {
+                if (class_exists('PharData')) {
+                    $phar = new PharData($tempFile);
+                    if (isset($phar['word/document.xml'])) {
+                        $xml = $phar['word/document.xml']->getContent();
+                        $extractedText = strip_tags(str_replace(['</w:p>', '<w:br/>', '</w:tr>'], ["\n", "\n", "\n"], $xml));
+                    }
+                }
+            } catch (Throwable $e) {}
+
+            // Fallback for Windows environments without zip phar
+            if (empty($extractedText) && DIRECTORY_SEPARATOR === '\\') {
+                $cmd = 'powershell -NoProfile -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; $z = [System.IO.Compression.ZipFile]::OpenRead(\'' . addslashes($tempFile) . '\'); $e = $z.GetEntry(\'word/document.xml\'); if ($e) { $s = $e.Open(); $r = New-Object System.IO.StreamReader($s); $t = $r.ReadToEnd(); $r.Close(); $s.Close(); Write-Output $t }; $z.Dispose()"';
+                $xmlOut = @shell_exec($cmd);
+                if (!empty($xmlOut)) {
+                    $extractedText = strip_tags(str_replace(['</w:p>', '<w:br/>', '</w:tr>'], ["\n", "\n", "\n"], $xmlOut));
+                }
+            }
+            @unlink($tempFile);
+        } elseif ($isPdf) {
+            // PDF text extraction regex for text streams
+            if (preg_match_all('#BT(.*?)ET#s', $rawContent, $matches)) {
+                $pdfLines = [];
+                foreach ($matches[1] as $block) {
+                    if (preg_match_all('#\((.*?)\)\s*Tj#s', $block, $tjMatches)) {
+                        $pdfLines[] = implode(' ', $tjMatches[1]);
+                    } elseif (preg_match_all('#\[(.*?)\]\s*TJ#s', $block, $tjMatches)) {
+                        $parts = [];
+                        foreach ($tjMatches[1] as $inner) {
+                            if (preg_match_all('#\((.*?)\)#s', $inner, $partMatches)) {
+                                $parts[] = implode('', $partMatches[1]);
+                            }
+                        }
+                        $pdfLines[] = implode(' ', $parts);
+                    }
+                }
+                $extractedText = implode("\n", $pdfLines);
+            }
+        } else {
+            // Plain text or markdown
+            $extractedText = $rawContent;
+        }
+
+        $cleanText = preg_replace('/[ \t]+/', ' ', (string)$extractedText);
+        $cleanText = preg_replace("/\n{3,}/", "\n\n", trim($cleanText));
+
+        if (mb_strlen($cleanText) > 40) {
+            @file_put_contents($cacheFile, $cleanText);
+            return $cleanText;
+        }
+
+        return '';
+    }
+
+    /**
+     * Deterministic question generator directly analyzing document text when Gemini is offline
+     */
+    public function generateQuestionsFromDocumentText(string $title, string $dept, string $category, string $docText): array
+    {
+        $cleanText = trim($docText);
+        $paragraphs = array_filter(array_map('trim', explode("\n", $cleanText)), function($p) {
+            return strlen($p) >= 35 && !preg_match('/^(page \d+|chapter \d+|section \d+|\d+\.|\d+)$/i', $p);
+        });
+        $paragraphs = array_values($paragraphs);
+
+        if (count($paragraphs) < 10) {
+            // Split by sentence boundaries if paragraphs are fewer than 10
+            $allSentences = preg_split('/(?<=[.?!])\s+/', $cleanText, -1, PREG_SPLIT_NO_EMPTY);
+            $paragraphs = array_values(array_filter($allSentences, function($s) {
+                return strlen(trim($s)) >= 35;
+            }));
+        }
+
+        $questions = [];
+        $totalNeeded = 10;
+        $count = count($paragraphs);
+
+        if ($count >= 10) {
+            $step = max(1, (int)floor($count / $totalNeeded));
+            for ($i = 0; $i < $totalNeeded; $i++) {
+                $pIdx = min($count - 1, $i * $step);
+                $p = $paragraphs[$pIdx];
+
+                $sentences = preg_split('/(?<=[.?!])\s+/', $p, -1, PREG_SPLIT_NO_EMPTY);
+                $mainSentence = $sentences[0] ?? $p;
+                if (strlen($mainSentence) < 30 && isset($sentences[1])) {
+                    $mainSentence .= ' ' . $sentences[1];
+                }
+
+                $words = explode(' ', $mainSentence);
+                $firstWords = implode(' ', array_slice($words, 0, 7));
+                $qText = "According to the \"{$title}\" document, what is the core requirement regarding: \"{$firstWords}...\"?";
+
+                $correctOption = mb_substr($mainSentence, 0, 135);
+                $distractors = [
+                    "Bypass this standard during peak operational hours to prioritize turnaround speed",
+                    "Execute the procedure verbally without logging verifiable transactional audit records",
+                    "Escalate immediately to external third-party vendors before initiating internal verification steps"
+                ];
+
+                $options = array_merge([$correctOption], $distractors);
+                $targetPos = ($i * 2 + 1) % 4;
+                $temp = $options[0];
+                $options[0] = $options[$targetPos];
+                $options[$targetPos] = $temp;
+
+                $questions[] = [
+                    'id' => $i + 1,
+                    'question' => $qText,
+                    'options' => $options,
+                    'correct' => $targetPos,
+                    'explanation' => "Verified handbook standard: \"{$correctOption}\""
+                ];
+            }
+        }
+
+        return $questions;
+    }
+
+    /**
+     * Generate 10-item Knowledge Quiz for LMS Document (Analyzing attached book file)
+     */
+    public function generateQuiz(array $params): array
+    {
+        $bookId = trim($params['book_id'] ?? $params['id'] ?? $params['lms_id'] ?? '');
+        if (empty($bookId)) {
+            return ['success' => false, 'message' => 'Book/Document ID is required.'];
+        }
+
+        $forceRefresh = !empty($params['refresh']) || !empty($params['force']);
+        $cacheKey = 'lms_quiz_dyn_v5_' . md5($bookId);
+        if (!$forceRefresh) {
+            $cached = self::getCache($cacheKey, 7200); // 2-hour cache
+            if ($cached !== null && !empty($cached['questions']) && count($cached['questions']) === 10 && !empty($cached['grounded_in_file'])) {
+                return $cached;
+            }
+        }
+
+        // Fetch document metadata from database
+        $doc = null;
+        $res = supabaseRequest('lms_documents?id=eq.' . urlencode($bookId), 'GET', null, true);
+        if (!empty($res['data']) && is_array($res['data']) && count($res['data']) > 0) {
+            $doc = $res['data'][0];
+        }
+
+        // Fallback search by title or file name if bookId was a title or slug
+        if (!$doc) {
+            $titleSearch = supabaseRequest('lms_documents?title=ilike.' . urlencode('%' . $bookId . '%') . '&limit=1', 'GET', null, true);
+            if (!empty($titleSearch['data'][0])) {
+                $doc = $titleSearch['data'][0];
+            } else {
+                $fileSearch = supabaseRequest('lms_documents?file_name=ilike.' . urlencode('%' . $bookId . '%') . '&limit=1', 'GET', null, true);
+                if (!empty($fileSearch['data'][0])) {
+                    $doc = $fileSearch['data'][0];
+                }
+            }
+        }
+
+        $title = $doc['title'] ?? 'LMS Handbook';
+        $dept = $doc['department_name'] ?? 'Hotel Operations';
+        $category = $doc['category'] ?? 'SOP Manual';
+        $filePath = $doc['file_path'] ?? '';
+        $fileName = $doc['file_name'] ?? '';
+        $fileType = $doc['file_type'] ?? '';
+
+        // Strict requirement: must have a file attached
+        if (empty($filePath)) {
+            return [
+                'success' => false,
+                'message' => "No attached document file was found for '{$title}'. Please attach a valid handbook file (.docx, .pdf, or .txt) to take this quiz."
+            ];
+        }
+
+        // 1. Extract plain text directly from the attached book file
+        $documentText = $this->extractTextFromBookFile($filePath, $fileName, $fileType);
+        if (empty($documentText) || mb_strlen($documentText) < 50) {
+            return [
+                'success' => false,
+                'message' => "Unable to extract readable text content from '{$fileName}'. Please verify that the file contains valid text and is not corrupted."
+            ];
+        }
+
+        $questions = [];
+
+        // 2. Attempt Gemini dynamic question generation grounded strictly in the file content
+        try {
+            require_once __DIR__ . '/../services/GeminiService.php';
+            $gemini = new GeminiService();
+            $aiQuestions = $gemini->generateQuizFromDocument($title, $dept, $category, $documentText);
+            if (is_array($aiQuestions) && count($aiQuestions) >= 10) {
+                $questions = array_slice($aiQuestions, 0, 10);
+            }
+        } catch (Throwable $e) {
+            error_log("Gemini Quiz Generation from book file failed: " . $e->getMessage());
+        }
+
+        // 3. Fallback to dynamic document text analysis if Gemini timed out or failed
+        if (empty($questions) || count($questions) < 10) {
+            $questions = $this->generateQuestionsFromDocumentText($title, $dept, $category, $documentText);
+        }
+
+        // 4. If questions could still not be generated from file, return error message (NO hardcoded domain bank)
+        if (empty($questions) || count($questions) < 10) {
+            return [
+                'success' => false,
+                'message' => "Failed to generate dynamic questions from the content of '{$title}'. Please verify the file content."
+            ];
+        }
+
+        // Ensure exactly 1-10 IDs and uniform 4-option structure
+        $finalQuestions = [];
+        foreach (array_values($questions) as $idx => $q) {
+            $options = is_array($q['options'] ?? null) && count($q['options']) === 4 ? array_values($q['options']) : [
+                'Standard operating protocol as outlined in handbook',
+                'Escalate immediately to floor supervisor',
+                'Document transactional outcome in daily shift log',
+                'Refer to departmental operational guide'
+            ];
+            $correctIdx = isset($q['correct']) && is_numeric($q['correct']) ? (int)$q['correct'] : 0;
+            if ($correctIdx < 0 || $correctIdx > 3) $correctIdx = 0;
+
+            $finalQuestions[] = [
+                'id' => $idx + 1,
+                'question' => $q['question'] ?? ($q['q'] ?? "Handbook Question #" . ($idx + 1)),
+                'options' => $options,
+                'correct' => $correctIdx,
+                'correct_index' => $correctIdx,
+                'explanation' => $q['explanation'] ?? ($q['handbook_reference'] ?? 'This adheres to verified operational standards.'),
+                'handbook_reference' => $q['handbook_reference'] ?? ($q['explanation'] ?? 'Document Content Reference')
+            ];
+        }
+
+        $result = [
+            'success' => true,
+            'book_id' => $bookId,
+            'book_title' => $title,
+            'department' => $dept,
+            'category' => $category,
+            'has_file' => true,
+            'grounded_in_file' => true,
+            'duration_minutes' => 10,
+            'passing_score' => 80,
+            'exp_reward' => 100,
+            'questions' => $finalQuestions,
+            'total_items' => count($finalQuestions)
+        ];
+
+        self::setCache($cacheKey, $result);
+        return $result;
+    }
+
+    /**
+     * Submit Quiz Results & Record in lms_prescribed + xp_transactions
+     */
+    public function submitQuizResult(array $payload): array
+    {
+        $employee = trim($payload['employee'] ?? $payload['employee_id'] ?? '');
+        if (empty($employee)) {
+            $employee = 'emp-101';
+        }
+
+        $lmsId = trim($payload['lms_id'] ?? $payload['book_id'] ?? '');
+        if (empty($lmsId)) {
+            return ['success' => false, 'message' => 'LMS document ID is required.'];
+        }
+
+        $score = isset($payload['score']) ? (float)$payload['score'] : (isset($payload['scores']) ? (float)$payload['scores'] : 0.0);
+        $score = max(0.0, min(100.0, $score));
+        $passed = $score >= 80.0;
+        $status = $passed ? 'Passed' : 'Needs Retake';
+        $progress = $passed ? 100 : (int)max($score, 50);
+        $timeConsumed = isset($payload['time_consumed']) ? (int)$payload['time_consumed'] : 300; // seconds
+        $timeConsumedMin = max(1, (int)round($timeConsumed / 60));
+        $bookTitle = trim($payload['book_title'] ?? 'LMS SOP Handbook');
+        $now = date('c');
+
+        // Check if employee has existing enrollment in lms_prescribed
+        $query = 'lms_prescribed?employee=eq.' . urlencode($employee) . '&lms_id=eq.' . urlencode($lmsId);
+        $checkRes = supabaseRequest($query, 'GET', null, true);
+
+        $savedRow = null;
+        if (!empty($checkRes['data']) && is_array($checkRes['data']) && count($checkRes['data']) > 0) {
+            // Update existing prescription record
+            $recId = $checkRes['data'][0]['id'];
+            $updateData = [
+                'scores' => $score,
+                'ratings' => $passed ? 4.50 : 2.50,
+                'progress' => $progress,
+                'status' => $status,
+                'last_attempt' => $now,
+                'time_consumed' => $timeConsumedMin,
+                'updated_at' => $now
+            ];
+            $patchRes = supabaseRequest('lms_prescribed?id=eq.' . urlencode($recId), 'PATCH', $updateData, true);
+            $savedRow = array_merge($checkRes['data'][0], $updateData);
+        } else {
+            // Insert new prescription record
+            $goalId = null;
+            $goalRes = supabaseRequest('performance_goals?employee_id=eq.' . urlencode($employee) . '&order=created_at.desc&limit=1', 'GET', null, true);
+            if (!empty($goalRes['data'][0]['id'])) {
+                $goalId = (int)$goalRes['data'][0]['id'];
+            }
+
+            $insertData = [
+                'employee' => $employee,
+                'lms_id' => $lmsId,
+                'goal_id' => $goalId,
+                'scores' => $score,
+                'ratings' => $passed ? 4.50 : 2.50,
+                'progress' => $progress,
+                'status' => $status,
+                'for' => 'both',
+                'last_attempt' => $now,
+                'time_consumed' => $timeConsumedMin,
+                'created_at' => $now,
+                'updated_at' => $now
+            ];
+            $postRes = supabaseRequest('lms_prescribed', 'POST', $insertData, true);
+            $savedRow = (!empty($postRes['data'][0])) ? $postRes['data'][0] : $insertData;
+        }
+
+        // Award XP on pass (+100 XP per Section 0.5/3.1)
+        $xpAwarded = 0;
+        if ($passed) {
+            try {
+                require_once __DIR__ . '/../models/SocialModel.php';
+                $socialModel = new SocialModel();
+                $ok = $socialModel->createLmsGrant($employee, 100, $bookTitle);
+                if ($ok) {
+                    $xpAwarded = 100;
+                }
+            } catch (Throwable $e) {
+                error_log("Failed to award LMS Quiz XP grant: " . $e->getMessage());
+            }
+        }
+
+        self::clearCache();
+
+        return [
+            'success' => true,
+            'message' => $passed ? "Congratulations! Scored {$score}% - Passed (+{$xpAwarded} XP)!" : "Scored {$score}%. Benchmark is 80%. Review and retake.",
+            'passed' => $passed,
+            'score' => $score,
+            'xp_awarded' => $xpAwarded,
+            'status' => $status,
+            'progress' => $progress,
+            'data' => $savedRow
+        ];
     }
 }
+
 
 

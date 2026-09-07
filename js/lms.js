@@ -20,6 +20,7 @@
             'js/lms/upload.js',
             'js/lms/tna.js',
             'js/lms/remedial.js',
+            'js/lms/quiz.js',
             'js/lms/index.js'
         ];
         scripts.forEach(src => {

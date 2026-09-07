@@ -1044,61 +1044,314 @@
     </div>
 </div>
 
-<!-- 7. Modal: Interactive LMS Quiz -->
-<div id="modal-lms-quiz" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-    <div class="modal-card max-w-lg w-full overflow-hidden flex flex-col">
+<!-- 7. Modal: Interactive LMS AI Knowledge Quiz (10 Items, Confirmation, 10-min Timer, 1-10 Navigation, Auto-Grading) -->
+<div id="modal-lms-quiz" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-3 sm:p-4">
+    <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
 
-        <div
-            class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
-            <div class="flex items-center space-x-3">
-                <div
-                    class="w-11 h-11 rounded-full bg-sage-50 text-sage-dark flex items-center justify-center text-lg font-bold border border-sage-100">
-                    <i class="fas fa-graduation-cap"></i>
+        <!-- SCREEN 1: PRE-QUIZ CONFIRMATION MODAL -->
+        <div id="quiz-screen-confirm" class="p-6 sm:p-8 space-y-6 flex flex-col justify-between">
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-50 text-gold-dark flex items-center justify-center text-xl font-bold border border-amber-200 shadow-2xs">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <button onclick="closeQuizModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
                 </div>
+
                 <div>
-                    <span class="badge-sage">Knowledge Check · +100 XP</span>
-                    <h3 id="quiz-modal-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">Hospitality Standard Quiz</h3>
+                    <div class="flex items-center space-x-2">
+                        <span id="quiz-confirm-badge" class="badge-gold text-[10px] px-2 py-0.5 font-bold">10-Item Knowledge Check</span>
+                        <span class="badge-sage text-[10px] px-2 py-0.5 font-bold">+100 XP Pass Reward</span>
+                    </div>
+                    <h3 id="quiz-confirm-title" class="font-heading font-extrabold text-xl text-slate-900 mt-2">Are you sure you want to take this quiz?</h3>
+                    <p id="quiz-confirm-desc" class="text-xs text-slate-500 mt-1 leading-relaxed">
+                        You are about to begin the associate knowledge check for <strong id="quiz-confirm-book-title" class="text-slate-800">Handbook</strong>.
+                    </p>
+                </div>
+
+                <!-- Parameters Box -->
+                <div class="p-4 rounded-2xl bg-[#FAF8F7] border border-[#E8DEDC] space-y-3">
+                    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
+                        <i class="fas fa-clipboard-check text-primary"></i>
+                        <span>Quiz Parameters &amp; Ground Rules</span>
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                        <div class="p-2.5 bg-white rounded-xl border border-slate-200/80 flex items-center space-x-2.5">
+                            <i class="fas fa-stopwatch text-amber-600 text-sm"></i>
+                            <div>
+                                <span class="font-bold text-slate-800 block text-[11px]">10 Minutes Live Timer</span>
+                                <span class="text-[10px] text-slate-400">Begins immediately upon confirmation</span>
+                            </div>
+                        </div>
+                        <div class="p-2.5 bg-white rounded-xl border border-slate-200/80 flex items-center space-x-2.5">
+                            <i class="fas fa-list-ol text-primary text-sm"></i>
+                            <div>
+                                <span class="font-bold text-slate-800 block text-[11px]">10 AI-Generated Questions</span>
+                                <span class="text-[10px] text-slate-400">Scenario questions from this handbook</span>
+                            </div>
+                        </div>
+                        <div class="p-2.5 bg-white rounded-xl border border-slate-200/80 flex items-center space-x-2.5">
+                            <i class="fas fa-floppy-disk text-emerald-600 text-sm"></i>
+                            <div>
+                                <span class="font-bold text-slate-800 block text-[11px]">LocalStorage Saved</span>
+                                <span class="text-[10px] text-slate-400">Answers preserved if refreshed</span>
+                            </div>
+                        </div>
+                        <div class="p-2.5 bg-white rounded-xl border border-slate-200/80 flex items-center space-x-2.5">
+                            <i class="fas fa-award text-gold-dark text-sm"></i>
+                            <div>
+                                <span class="font-bold text-slate-800 block text-[11px]">Passing Score: 80%</span>
+                                <span class="text-[10px] text-slate-400">Updates LMS Prescribed Progress</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Existing Saved Attempt Banner (dynamically shown if in progress) -->
+                <div id="quiz-resume-banner" class="hidden p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-2 text-emerald-800 font-semibold">
+                        <i class="fas fa-rotate-left text-emerald-600"></i>
+                        <span>An in-progress attempt is saved in local storage (<span id="quiz-resume-timer" class="font-mono font-bold">--:--</span> remaining).</span>
+                    </div>
+                    <button onclick="resumeQuizFromLocalStorage()" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-bold text-[11px] hover:bg-emerald-700 transition">
+                        Resume Attempt
+                    </button>
                 </div>
             </div>
-            <button onclick="closeModal('modal-lms-quiz')"
-                class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
-                <i class="fas fa-times text-xs"></i>
-            </button>
+
+            <!-- Confirmation Actions -->
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-3">
+                <button onclick="closeQuizModal()" class="btn-secondary px-5 py-2.5 text-xs font-semibold">Cancel</button>
+                <button id="btn-quiz-start-confirm" onclick="confirmAndBeginQuiz()" class="btn-primary px-6 py-2.5 text-xs font-bold flex items-center space-x-2 shadow-xs bg-gold hover:bg-gold-dark text-white border-0">
+                    <i class="fas fa-play text-xs"></i>
+                    <span>Yes, Start Quiz</span>
+                </button>
+                <button id="btn-quiz-resume-confirm" onclick="resumeQuizFromLocalStorage()" class="hidden btn-primary px-6 py-2.5 text-xs font-bold flex items-center space-x-2 shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white border-0">
+                    <i class="fas fa-rotate-left text-xs"></i>
+                    <span>Resume In-Progress Quiz</span>
+                </button>
+            </div>
         </div>
 
-        <div class="p-6 space-y-4 text-xs bg-white">
-            <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-3">
-                <div class="flex justify-between items-center font-bold text-slate-700 text-xs">
-                    <span>Question 1 of 3</span>
-                    <span class="text-primary font-bold">Single Choice</span>
+        <!-- SCREEN 2: LOADING / AI GENERATION STATE -->
+        <div id="quiz-screen-loading" class="hidden p-12 text-center space-y-4 my-auto">
+            <div class="relative w-16 h-16 mx-auto">
+                <div class="w-16 h-16 rounded-full border-4 border-slate-200 border-t-gold animate-spin"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-gold-dark text-lg">
+                    <i class="fas fa-wand-magic-sparkles animate-pulse"></i>
                 </div>
-                <p class="text-slate-800 font-semibold text-xs leading-relaxed">When a VIP guest arrives with an unconfirmed suite upgrade request during peak check-in, what is the approved FIRST step according to Oxford Suites, Makati service standards?</p>
+            </div>
+            <div class="space-y-1">
+                <h4 class="font-heading font-bold text-base text-slate-900">Generating 10-Item Knowledge Assessment...</h4>
+                <p id="quiz-loading-sub" class="text-xs text-slate-500">AI is tailoring scenario-based operational questions from this handbook.</p>
+            </div>
+        </div>
 
-                <div class="space-y-2 pt-1">
-                    <label
-                        class="flex items-center space-x-3 p-3 rounded-xl border border-[#E8DEDC] bg-white hover:bg-primary-50/30 hover:border-primary/40 cursor-pointer transition">
-                        <input type="radio" name="quiz_opt" checked class="accent-[#9E1B20]">
-                        <span class="text-slate-700 font-medium">Warmly offer welcome beverage, verify PMS room availability, and discreetly notify Front Office Manager.</span>
-                    </label>
-                    <label
-                        class="flex items-center space-x-3 p-3 rounded-xl border border-[#E8DEDC] bg-white hover:bg-primary-50/30 hover:border-primary/40 cursor-pointer transition">
-                        <input type="radio" name="quiz_opt" class="accent-[#9E1B20]">
-                        <span class="text-slate-700 font-medium">Immediately inform the guest that upgrades are not possible without written approval.</span>
-                    </label>
+        <!-- SCREEN 3: ACTIVE QUIZ WORKFLOW -->
+        <div id="quiz-screen-active" class="hidden flex-col h-full overflow-hidden">
+            <!-- Header with Title & Live Timer -->
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-[#FAF8F7] text-primary border border-[#E8DEDC] flex items-center justify-center text-sm font-bold shadow-2xs">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400" id="quiz-header-dept">Hotel Operations</span>
+                            <span class="text-[10px] font-bold text-gold-dark">• +100 XP Benchmark</span>
+                        </div>
+                        <h3 id="quiz-active-title" class="font-heading font-bold text-sm sm:text-base text-slate-900 truncate max-w-xs sm:max-w-md">Handbook Knowledge Quiz</h3>
+                    </div>
+                </div>
+
+                <!-- 10-Minute Countdown Timer Widget -->
+                <div class="flex items-center space-x-3">
+                    <div id="quiz-timer-pill" class="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 font-mono font-bold text-xs shadow-2xs transition">
+                        <i id="quiz-timer-icon" class="fas fa-stopwatch text-amber-600 animate-pulse"></i>
+                        <span id="quiz-timer-clock">10:00</span>
+                    </div>
+                    <button onclick="promptCloseQuiz()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition" title="Save & Exit">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Question Navigator Strip: 1 to 10 Palette -->
+            <div class="px-5 py-3 bg-[#FAF8F7] border-b border-[#E8DEDC] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 flex-shrink-0">
+                <div class="flex items-center space-x-2">
+                    <span class="text-[11px] font-bold text-slate-600">Question Navigator:</span>
+                    <span id="quiz-progress-counter" class="text-[11px] font-medium text-slate-400">0 of 10 Answered</span>
+                </div>
+                <!-- 10 Clickable Number Badges -->
+                <div id="quiz-nav-strip" class="flex items-center space-x-1.5 overflow-x-auto custom-scrollbar py-0.5">
+                    <!-- Dynamic buttons 1 to 10 rendered via JS -->
+                </div>
+            </div>
+
+            <!-- Question Card Body (Scrollable) -->
+            <div class="p-5 sm:p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 bg-white text-xs">
+                <div class="p-4 sm:p-5 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-3">
+                    <div class="flex justify-between items-center text-xs">
+                        <span id="quiz-q-num-badge" class="font-extrabold text-primary uppercase tracking-wider text-[11px]">Question 1 of 10</span>
+                        <span id="quiz-q-status-badge" class="badge-dusty text-[10px]">Unanswered</span>
+                    </div>
+                    <p id="quiz-q-text" class="text-slate-900 font-semibold text-sm leading-relaxed">
+                        Loading question...
+                    </p>
+                </div>
+
+                <!-- 4 Options Container -->
+                <div class="space-y-2.5 pt-1" id="quiz-options-container">
+                    <!-- Dynamic Options rendered via JS -->
+                </div>
+            </div>
+
+            <!-- Footer Navigation Controls -->
+            <div class="p-4 sm:px-6 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-between flex-shrink-0 text-xs">
+                <button id="btn-quiz-prev" onclick="prevQuizQuestion()"
+                    class="btn-secondary px-4 py-2 text-xs font-semibold flex items-center space-x-1.5 transition disabled:opacity-40 disabled:pointer-events-none">
+                    <i class="fas fa-arrow-left text-[10px]"></i>
+                    <span>Previous</span>
+                </button>
+
+                <div class="flex items-center space-x-2">
+                    <span id="quiz-page-indicator" class="font-bold text-slate-600 text-xs">Page 1 of 10</span>
+                </div>
+
+                <!-- Next button transforms to Submit on Question 10 -->
+                <div class="flex items-center space-x-2">
+                    <button id="btn-quiz-next" onclick="nextQuizQuestion()"
+                        class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-2xs">
+                        <span>Next Question</span>
+                        <i class="fas fa-arrow-right text-[10px]"></i>
+                    </button>
+                    <button id="btn-quiz-submit" onclick="showQuizReviewScreen()"
+                        class="hidden px-5 py-2 text-xs font-bold text-white bg-gold hover:bg-gold-dark rounded-xl shadow-xs flex items-center space-x-1.5 transition">
+                        <i class="fas fa-check-double"></i>
+                        <span>Review &amp; Submit</span>
+                    </button>
                 </div>
             </div>
         </div>
 
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex justify-between items-center">
-            <span class="text-[11px] text-slate-500 font-semibold"><i
-                    class="fas fa-trophy text-gold-dark mr-1"></i> Pass: 80% (+100 XP)</span>
-            <div class="space-x-2">
-                <button onclick="closeModal('modal-lms-quiz')"
-                    class="btn-secondary px-3.5 py-2 text-xs font-semibold">Cancel</button>
-                <button onclick="submitQuizSuccess()"
-                    class="btn-primary px-5 py-2 text-xs font-bold">Submit Answers</button>
+        <!-- SCREEN 4: REVIEW & CONFIRM SUBMISSION SCREEN -->
+        <div id="quiz-screen-review" class="hidden flex-col h-full overflow-hidden">
+            <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-amber-50 text-gold-dark flex items-center justify-center text-sm font-bold border border-amber-200">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-heading font-bold text-base text-slate-900">Review Answers Before Submitting</h3>
+                        <p class="text-xs text-slate-400">Verify your responses across all 10 items. You can jump back to any item.</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span id="quiz-review-timer-badge" class="font-mono text-xs font-bold px-2.5 py-1 bg-slate-100 rounded-lg text-slate-700">10:00</span>
+                </div>
+            </div>
+
+            <!-- Review Checklist Body -->
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs bg-white">
+                <!-- Status Alert Box -->
+                <div id="quiz-review-alert" class="p-4 rounded-2xl border flex items-center justify-between gap-3 text-xs">
+                    <!-- Populated dynamically: all answered or remaining items -->
+                </div>
+
+                <!-- 10-Item Review Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="quiz-review-items-grid">
+                    <!-- Dynamic review cards rendered via JS -->
+                </div>
+            </div>
+
+            <!-- Review Footer -->
+            <div class="p-4 sm:px-6 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-between flex-shrink-0 text-xs">
+                <button onclick="backToActiveQuiz()" class="btn-secondary px-4 py-2 font-semibold flex items-center space-x-1.5">
+                    <i class="fas fa-arrow-left text-[10px]"></i>
+                    <span>Back to Questions</span>
+                </button>
+                <button onclick="finalizeAndGradeQuiz()" class="btn-primary px-6 py-2.5 font-bold flex items-center space-x-2 shadow-xs bg-gold hover:bg-gold-dark text-white border-0">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Submit &amp; Grade Answers</span>
+                </button>
             </div>
         </div>
+
+        <!-- SCREEN 5: RESULTS & SCORE BREAKDOWN -->
+        <div id="quiz-screen-results" class="hidden flex-col h-full overflow-hidden">
+            <!-- Results Header -->
+            <div class="px-6 py-5 border-b border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center space-x-3">
+                    <div id="quiz-result-icon-box" class="w-11 h-11 rounded-2xl flex items-center justify-center text-lg font-bold shadow-2xs">
+                        <i id="quiz-result-icon" class="fas fa-trophy"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span id="quiz-result-status-badge" class="badge-gold text-[10px]">Passed</span>
+                            <span id="quiz-result-xp-badge" class="badge-sage text-[10px] font-bold">+100 XP Awarded</span>
+                        </div>
+                        <h3 id="quiz-result-title" class="font-heading font-extrabold text-lg text-slate-900 mt-0.5">Quiz Completed!</h3>
+                    </div>
+                </div>
+                <button onclick="closeQuizModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Results Scrollable Body -->
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-5 bg-white text-xs">
+                <!-- Score Card -->
+                <div id="quiz-result-card" class="p-5 rounded-3xl border flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="space-y-1 text-center sm:text-left">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Final Assessment Score</span>
+                        <div class="flex items-baseline space-x-2 justify-center sm:justify-start">
+                            <span id="quiz-result-score-num" class="text-3xl sm:text-4xl font-black font-heading text-slate-900">90%</span>
+                            <span id="quiz-result-score-ratio" class="text-xs font-bold text-slate-500">(9 of 10 Correct)</span>
+                        </div>
+                        <p id="quiz-result-feedback" class="text-xs text-slate-600 mt-1">Excellent performance! Standard operating protocol fully mastered.</p>
+                    </div>
+
+                    <!-- Prescribed Update Badge -->
+                    <div class="p-3 bg-white/90 rounded-2xl border border-slate-200/80 space-y-1 text-center sm:text-right flex-shrink-0">
+                        <div class="text-[10px] font-bold uppercase text-slate-400">LMS Audit Action Recorded</div>
+                        <div class="text-xs font-extrabold text-slate-800 flex items-center space-x-1 justify-center sm:justify-end">
+                            <i class="fas fa-check text-emerald-600"></i>
+                            <span>Updated in Associate Progress</span>
+                        </div>
+                        <div id="quiz-result-time-taken" class="text-[10px] font-mono text-slate-400">Completed in 4m 12s</div>
+                    </div>
+                </div>
+
+                <!-- Answer Key Review Section -->
+                <div class="space-y-3">
+                    <h4 class="font-heading font-bold text-sm text-slate-900 flex items-center justify-between">
+                        <span>Answer Key &amp; Standards Review (10 Items)</span>
+                        <span class="text-xs font-normal text-slate-400">Review learning rationale below</span>
+                    </h4>
+                    <div id="quiz-result-review-list" class="space-y-2.5">
+                        <!-- Dynamic items 1 to 10 rendered via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Footer -->
+            <div class="p-4 sm:px-6 border-t border-slate-100 bg-[#FAF8F7] flex items-center justify-between flex-shrink-0 text-xs">
+                <button id="btn-quiz-retake" onclick="restartQuiz()" class="btn-secondary px-4 py-2 font-bold flex items-center space-x-1.5">
+                    <i class="fas fa-rotate-right text-xs"></i>
+                    <span>Retake Quiz</span>
+                </button>
+                <div class="flex items-center space-x-2">
+                    <button onclick="closeQuizModal(); if (typeof switchSubTab === 'function') switchSubTab('lms', 'tna');"
+                        class="btn-primary px-5 py-2 font-bold flex items-center space-x-1.5 bg-primary text-white">
+                        <span>View in Associate Progress</span>
+                        <i class="fas fa-arrow-right text-[10px]"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 

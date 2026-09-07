@@ -638,6 +638,16 @@ function applyRoleVisibility(userRole) {
         }
     }
 
+    // LMS Prescribe Book button visibility: remove in Employee view in LMS Handbook Enrollments & Associate Progress
+    const lmsPrescribeBtn = document.getElementById('btn-lms-prescribe-book');
+    if (lmsPrescribeBtn) {
+        if (isAssociate) {
+            lmsPrescribeBtn.classList.add('hidden');
+        } else {
+            lmsPrescribeBtn.classList.remove('hidden');
+        }
+    }
+
     // In Overview Hub sub-navigation:
     // For Associate / Employee: Show "1. Shift Focus & My Pulse", Hide "2. System & Property Analytics"
     // For Supervisor / Manager / HR / GM (not employee): Hide "1. Shift Focus & My Pulse", Show "2. System & Property Analytics"
@@ -1155,15 +1165,23 @@ function addGapToIDP(skillName, recommendedModule) {
     switchSubTab('comp', 'idp');
 }
 
-function launchInteractiveQuiz(moduleName) {
-    document.getElementById('quiz-modal-title').textContent = `Quiz: ${moduleName}`;
-    openModal('modal-lms-quiz');
+function launchInteractiveQuiz(moduleName, bookId) {
+    if (typeof startQuizPrompt === 'function') {
+        const id = bookId || 'book_frontdesk';
+        startQuizPrompt(id, moduleName);
+    } else {
+        openModal('modal-lms-quiz');
+    }
 }
 
 function submitQuizSuccess() {
-    closeModal('modal-lms-quiz');
-    awardXP(100);
-    showToast('Congratulations! Scored 100% on the quiz! +100 XP awarded!', 'success');
+    if (typeof finalizeAndGradeQuiz === 'function') {
+        finalizeAndGradeQuiz();
+    } else {
+        closeModal('modal-lms-quiz');
+        awardXP(100);
+        showToast('Congratulations! Scored 100% on the quiz! +100 XP awarded!', 'success');
+    }
 }
 
 function logQuickSentiment(sentimentType) {

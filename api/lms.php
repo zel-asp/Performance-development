@@ -81,6 +81,19 @@ try {
             $response = $controller->deleteDocument($id);
             break;
 
+        // 6. AI Knowledge Quiz Generation (10 items with Gemini & fallback)
+        case 'generate_quiz':
+        case 'get_quiz':
+        case 'quiz':
+            $response = $controller->generateQuiz($payload);
+            break;
+
+        // 7. Submit Quiz Result, Grade & Record to lms_prescribed
+        case 'submit_quiz_result':
+        case 'grade_quiz':
+            $response = $controller->submitQuizResult($payload);
+            break;
+
         default:
             $response = [
                 'success' => false,
