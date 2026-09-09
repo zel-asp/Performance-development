@@ -213,10 +213,13 @@ function initAllCharts() {
                 },
                 scales: {
                     y: {
-                        min: 60,
+                        min: 0,
                         max: 100,
                         grid: { color: '#F1E9E7' },
-                        ticks: { font: { size: 10, family: 'Inter' } }
+                        ticks: {
+                            font: { size: 10, family: 'Inter' },
+                            callback: function(val) { return val + '%'; }
+                        }
                     },
                     x: {
                         grid: { display: false },
@@ -229,6 +232,9 @@ function initAllCharts() {
 
     // Populate XP Trajectory chart from xp_ledger
     updateXpTrajectoryFromLedger();
+
+    // Populate Department Execution Matrix from live Supabase data
+    fetchAndRenderDepartmentExecutionMatrix();
 }
 
 window._cachedXpLedger = window._cachedXpLedger || {};
@@ -551,8 +557,248 @@ async function updateShiftClimatePulseFromSupabase(sentimentsInput) {
 }
 window.updateShiftClimatePulseFromSupabase = updateShiftClimatePulseFromSupabase;
 
+/**
+ * Department Execution Matrix - Live Supabase Data Engine & Dynamic Chart Renderer
+ */
+window._cachedDeptMatrix = window._cachedDeptMatrix || null;
+
+function renderDepartmentExecutionMatrix(matrixData) {
+    if (!Array.isArray(matrixData) || matrixData.length === 0) return;
+
+    const tbody = document.getElementById('table-dept-execution-matrix-body');
+    const labels = [];
+    const goalsData = [];
+    const lmsData = [];
+    const succData = [];
+
+    let tableHtml = '';
+
+    matrixData.forEach(row => {
+        const dept = row.department || 'Department';
+        const staff = row.staff_count ?? 0;
+        const goalsPct = parseFloat(row.goals_approved_pct ?? 0);
+        const lmsPct = parseFloat(row.lms_rate_pct ?? 0);
+        const succPct = parseFloat(row.succession_ready_pct ?? 0);
+        const status = row.status || 'Pending';
+        const badgeClass = row.badge_class || 'bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-semibold px-2 py-0.5 rounded-full';
+
+        labels.push(dept);
+        goalsData.push(goalsPct);
+        lmsData.push(lmsPct);
+        succData.push(succPct);
+
+        const goalsColor = goalsPct > 0 ? 'text-sage-dark font-bold' : 'text-slate-400 font-medium';
+        const lmsColor = lmsPct > 0 ? 'text-primary font-bold' : 'text-slate-400 font-medium';
+        const succColor = succPct > 0 ? 'text-dusty-dark font-bold' : 'text-slate-400 font-medium';
+
+        tableHtml += `
+            <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="py-2.5 font-bold text-slate-800">${escapeMatrixText(dept)}</td>
+                <td class="py-2.5 text-center text-slate-500 font-medium">${staff}</td>
+                <td class="py-2.5 text-center ${goalsColor}">${goalsPct.toFixed(1)}%</td>
+                <td class="py-2.5 text-center ${lmsColor}">${lmsPct.toFixed(1)}%</td>
+                <td class="py-2.5 text-center ${succColor}">${succPct.toFixed(1)}%</td>
+                <td class="py-2.5 text-right"><span class="${badgeClass}">${escapeMatrixText(status)}</span></td>
+            </tr>
+        `;
+    });
+
+    if (tbody) {
+        tbody.innerHTML = tableHtml;
+    }
+
+    // Update Chart
+    if (chartSystemDeptProgressInstance) {
+        chartSystemDeptProgressInstance.data.labels = labels;
+        chartSystemDeptProgressInstance.data.datasets[0].data = goalsData;
+        chartSystemDeptProgressInstance.data.datasets[1].data = lmsData;
+        chartSystemDeptProgressInstance.data.datasets[2].data = succData;
+        chartSystemDeptProgressInstance.update();
+    }
+}
+
+function escapeMatrixText(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+let _deptMatrixFetchInProgress = false;
+async function fetchAndRenderDepartmentExecutionMatrix(forceRefresh = false) {
+    const overlay = document.getElementById('dept-matrix-loading-overlay');
+    const badge = document.getElementById('dept-matrix-realtime-badge');
+
+    // 1. Instant 0ms cache rendering from memory or sessionStorage
+    let hasRenderedCache = false;
+    if (!forceRefresh) {
+        if (window._cachedDeptMatrix && Array.isArray(window._cachedDeptMatrix)) {
+            renderDepartmentExecutionMatrix(window._cachedDeptMatrix);
+            hasRenderedCache = true;
+        } else {
+            try {
+                const stored = sessionStorage.getItem('dept_matrix_cache');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        window._cachedDeptMatrix = parsed;
+                        renderDepartmentExecutionMatrix(parsed);
+                        hasRenderedCache = true;
+                    }
+                }
+            } catch (e) {}
+        }
+    }
+
+    if (_deptMatrixFetchInProgress) return;
+    _deptMatrixFetchInProgress = true;
+
+    // Show loading overlay only if no cache is shown
+    if (!hasRenderedCache && overlay) {
+        overlay.classList.remove('hidden');
+    }
+
+    try {
+        const cacheBuster = forceRefresh ? `&_t=${Date.now()}` : '';
+        const res = await fetch(`api/reports.php?action=get_dept_execution_matrix${cacheBuster}`);
+        const json = await res.json();
+
+        if (json && json.success && Array.isArray(json.matrix)) {
+            window._cachedDeptMatrix = json.matrix;
+            try {
+                sessionStorage.setItem('dept_matrix_cache', JSON.stringify(json.matrix));
+            } catch (e) {}
+
+            renderDepartmentExecutionMatrix(json.matrix);
+
+            // Subtle Realtime pulse animation on live badge
+            if (badge) {
+                badge.classList.add('ring-2', 'ring-emerald-400', 'bg-emerald-100');
+                setTimeout(() => {
+                    badge.classList.remove('ring-2', 'ring-emerald-400', 'bg-emerald-100');
+                }, 1000);
+            }
+        }
+    } catch (err) {
+        console.warn('[Department Execution Matrix] Error querying api/reports.php, attempting direct Supabase fallback:', err);
+        // Direct client-side fallback via fetchSupabase if API is unreachable
+        if (typeof fetchSupabase === 'function') {
+            try {
+                const [depts, emps, goals, lms, succ] = await Promise.all([
+                    fetchSupabase('departments?select=id,name').catch(() => []),
+                    fetchSupabase('employees?select=id,full_name,department_id,title,status').catch(() => []),
+                    fetchSupabase('performance_goals?select=id,employee_id,department,status,weight').catch(() => []),
+                    fetchSupabase('lms_prescribed?select=id,employee,status,progress').catch(() => []),
+                    fetchSupabase('succession_candidates?select=*').catch(() => [])
+                ]);
+
+                if (Array.isArray(depts) && depts.length > 0) {
+                    const matrix = computeClientDeptMatrix(depts, emps, goals, lms, succ);
+                    window._cachedDeptMatrix = matrix;
+                    renderDepartmentExecutionMatrix(matrix);
+                }
+            } catch (fallbackErr) {
+                console.warn('[Department Execution Matrix] Fallback failed:', fallbackErr);
+            }
+        }
+    } finally {
+        _deptMatrixFetchInProgress = false;
+        if (overlay) overlay.classList.add('hidden');
+    }
+}
+
+function computeClientDeptMatrix(allDepts, allEmps, allGoals, allLms, allSucc) {
+    const canonical = ['Front Office', 'Food & Beverage', 'Kitchen & Culinary', 'Banquet & Events', 'Housekeeping'];
+    const deptIdMap = {};
+    (allDepts || []).forEach(d => { if (d.id && d.name) deptIdMap[d.id] = d.name; });
+
+    const norm = (str) => {
+        const s = (str || '').toLowerCase();
+        if (s.includes('front')) return 'Front Office';
+        if (s.includes('culinary') || s.includes('kitchen') || s.includes('chef')) return 'Kitchen & Culinary';
+        if (s.includes('food') || s.includes('beverage') || s.includes('f&b') || s.includes('dining')) return 'Food & Beverage';
+        if (s.includes('banquet') || s.includes('event')) return 'Banquet & Events';
+        if (s.includes('housekeep')) return 'Housekeeping';
+        return 'Front Office';
+    };
+
+    const buckets = {};
+    canonical.forEach(c => {
+        buckets[c] = { department: c, staff_count: 0, goals_total: 0, goals_approved: 0, lms_total: 0, lms_progress_sum: 0, succ_candidates: 0, succ_ready: 0 };
+    });
+
+    const empDeptMap = {};
+    (allEmps || []).forEach(emp => {
+        let d = emp.department_id ? deptIdMap[emp.department_id] : null;
+        if (!d) d = norm((emp.title || '') + ' ' + (emp.full_name || ''));
+        else d = norm(d);
+        empDeptMap[emp.id] = d;
+        if (buckets[d]) buckets[d].staff_count++;
+    });
+
+    (allGoals || []).forEach(g => {
+        let d = g.department ? norm(g.department) : (empDeptMap[g.employee_id] || 'Front Office');
+        if (!buckets[d]) d = 'Front Office';
+        buckets[d].goals_total++;
+        const st = (g.status || '').toLowerCase();
+        if (['approved', 'done', 'completed', 'active', 'endorsed', 'calibrated'].includes(st)) {
+            buckets[d].goals_approved++;
+        }
+    });
+
+    (allLms || []).forEach(l => {
+        let d = empDeptMap[l.employee] || 'Front Office';
+        if (!buckets[d]) d = 'Front Office';
+        buckets[d].lms_total++;
+        const prog = parseFloat(l.progress || 0);
+        buckets[d].lms_progress_sum += prog;
+    });
+
+    (allSucc || []).forEach(s => {
+        let d = s.pos_dept ? norm(s.pos_dept) : (empDeptMap[s.employee_id] || 'Front Office');
+        if (!buckets[d]) d = 'Front Office';
+        buckets[d].succ_candidates++;
+        const fl = (s.hr_readiness_flag || '').toLowerCase();
+        if (fl.includes('ready now') || fl.includes('ready in')) {
+            buckets[d].succ_ready++;
+        }
+    });
+
+    return canonical.map(c => {
+        const b = buckets[c];
+        const goalsPct = b.goals_total > 0 ? parseFloat(((b.goals_approved / b.goals_total) * 100).toFixed(1)) : 0;
+        const lmsPct = b.lms_total > 0 ? parseFloat((b.lms_progress_sum / b.lms_total).toFixed(1)) : 0;
+        const succPct = b.succ_candidates > 0 ? parseFloat(((b.succ_ready / b.succ_candidates) * 100).toFixed(1)) : 0;
+        const comp = parseFloat(((goalsPct * 0.35) + (lmsPct * 0.35) + (succPct * 0.30)).toFixed(1));
+
+        let status = 'Pending';
+        let badgeClass = 'bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-semibold px-2 py-0.5 rounded-full';
+        if (comp >= 80) { status = 'Optimal'; badgeClass = 'badge-sage'; }
+        else if (comp >= 50) { status = 'Good'; badgeClass = 'badge-dusty'; }
+        else if (comp > 0 || b.staff_count > 0) { status = 'Developing'; badgeClass = 'badge-terracotta'; }
+
+        return {
+            department: c,
+            staff_count: b.staff_count,
+            goals_approved_pct: goalsPct,
+            lms_rate_pct: lmsPct,
+            succession_ready_pct: succPct,
+            composite_score: comp,
+            status,
+            badge_class: badgeClass
+        };
+    });
+}
+
+window.renderDepartmentExecutionMatrix = renderDepartmentExecutionMatrix;
+window.fetchAndRenderDepartmentExecutionMatrix = fetchAndRenderDepartmentExecutionMatrix;
+
 window.addEventListener('DOMContentLoaded', () => {
     initAllCharts();
     if (typeof renderLmsBooks === 'function') renderLmsBooks();
     if (typeof renderTnaEnrollments === 'function') renderTnaEnrollments();
+    if (typeof fetchAndRenderDepartmentExecutionMatrix === 'function') fetchAndRenderDepartmentExecutionMatrix();
 });

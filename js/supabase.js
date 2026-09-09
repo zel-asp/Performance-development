@@ -156,6 +156,11 @@ function triggerPerformanceRealtimeSync(sourceTable, empId = null) {
         if (typeof loadAndRenderPlanningGoals === 'function') {
             loadAndRenderPlanningGoals(true).catch(() => {});
         }
+
+        // 10. Live sync Department Execution Matrix on Goals/Tasks/Evals updates
+        if (typeof fetchAndRenderDepartmentExecutionMatrix === 'function') {
+            fetchAndRenderDepartmentExecutionMatrix(true);
+        }
     }, 100);
 }
 window.triggerPerformanceRealtimeSync = triggerPerformanceRealtimeSync;
@@ -765,9 +770,64 @@ function initSupabaseRealtime() {
                         if (typeof fetchNeedsAnalysisData === 'function') {
                             fetchNeedsAnalysisData();
                         }
+
+                        // Re-render Department Execution Matrix when LMS prescription changes
+                        if (typeof fetchAndRenderDepartmentExecutionMatrix === 'function') {
+                            fetchAndRenderDepartmentExecutionMatrix(true);
+                        }
                     }
                 )
                 .subscribe();
+        }
+
+        // 6. Succession Planning & Department Execution Matrix Realtime Channel
+        if (!realtimeChannels.succession_and_matrix) {
+            realtimeChannels.succession_and_matrix = supabaseClient
+                .channel('realtime_succession_and_matrix_hub')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'succession_candidates' },
+                    (payload) => {
+                        if (typeof fetchAndRenderDepartmentExecutionMatrix === 'function') {
+                            fetchAndRenderDepartmentExecutionMatrix(true);
+                        }
+                        if (typeof loadSuccessionOverview === 'function') {
+                            loadSuccessionOverview();
+                        }
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'succession_positions' },
+                    (payload) => {
+                        if (typeof fetchAndRenderDepartmentExecutionMatrix === 'function') {
+                            fetchAndRenderDepartmentExecutionMatrix(true);
+                        }
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'employees' },
+                    (payload) => {
+                        if (typeof fetchAndRenderDepartmentExecutionMatrix === 'function') {
+                            fetchAndRenderDepartmentExecutionMatrix(true);
+                        }
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'departments' },
+                    (payload) => {
+                        if (typeof fetchAndRenderDepartmentExecutionMatrix === 'function') {
+                            fetchAndRenderDepartmentExecutionMatrix(true);
+                        }
+                    }
+                )
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log('[Supabase Realtime] Succession & Department Matrix channel active');
+                    }
+                });
         }
 
     } catch (e) {

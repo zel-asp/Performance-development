@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@source "../**/*.php";
+@source "../**/*.js";
+@source "../**/*.html";
 
 @theme {
   /* Brand Primary: Oxford Suites Signature Burgundy */
@@ -19,10 +22,35 @@
   --color-sage-50: #F4F7F4;
   --color-sage-100: #E5EDE6;
   --color-sage-200: #C9DBCB;
+  --color-sage-500: #7A9A7E;
+  --color-sage-600: #607C64;
 
   /* Accent: Gold / Champagne (Distinction & Honors) */
   --color-gold: #C89B3C;
   --color-gold-dark: #A57C28;
+  --color-gold-light: #F5EBD2;
+  --color-gold-50: #FDFBF7;
+  --color-gold-100: #F7EED9;
+  --color-gold-200: #EEDBB3;
+  --color-gold-500: #C89B3C;
+
+  /* Terracotta */
+  --color-terracotta: #C47762;
+  --color-terracotta-dark: #A85D49;
+  --color-terracotta-light: #F8EAE5;
+  --color-terracotta-50: #FCF5F3;
+  --color-terracotta-100: #F7E4DE;
+  --color-terracotta-200: #ECC8BE;
+  --color-terracotta-500: #C47762;
+
+  /* Brand Palette */
+  --color-brand-canvas: #FAF8F7;
+  --color-brand-surface: #FFFFFF;
+  --color-brand-border: #E8DEDC;
+  --color-brand-border-light: #F1E9E7;
+  --color-brand-text-main: #211A1A;
+  --color-brand-text-muted: #6F6261;
+  --color-brand-text-subtle: #9C8F8D;
   --color-gold-light: #F5EBD2;
   --color-gold-50: #FDFBF7;
   --color-gold-100: #F7EED9;

@@ -273,6 +273,233 @@ try {
             ];
             break;
 
+        // ─── Department Execution Matrix (Supabase live data) ───────────────
+        case 'get_dept_execution_matrix':
+            try {
+                $pdo = getSupabaseDb();
+                $allDepts = $pdo->query("SELECT id, name FROM departments ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+                $allEmps  = $pdo->query("SELECT id, full_name, department_id, title, status FROM employees")->fetchAll(PDO::FETCH_ASSOC);
+                $allGoals = $pdo->query("SELECT id, employee_id, department, status, weight FROM performance_goals")->fetchAll(PDO::FETCH_ASSOC);
+                $allLms   = $pdo->query("SELECT id, employee, status, progress FROM lms_prescribed")->fetchAll(PDO::FETCH_ASSOC);
+                $allSucc  = $pdo->query("SELECT sc.*, sp.dept as pos_dept FROM succession_candidates sc LEFT JOIN succession_positions sp ON sc.position_id = sp.id")->fetchAll(PDO::FETCH_ASSOC);
+            } catch (\Throwable $dbErr) {
+                // Fallback to Supabase REST if PDO pool is unavailable
+                $deptsRes = supabaseRequest('departments?select=id,name&order=name');
+                $allDepts = is_array($deptsRes['data'] ?? null) ? $deptsRes['data'] : [];
+
+                $empsRes = supabaseRequest('employees?select=id,full_name,department_id,title,status');
+                $allEmps = is_array($empsRes['data'] ?? null) ? $empsRes['data'] : [];
+
+                $goalsRes = supabaseRequest('performance_goals?select=id,employee_id,department,status,weight');
+                $allGoals = is_array($goalsRes['data'] ?? null) ? $goalsRes['data'] : [];
+
+                $lmsRes = supabaseRequest('lms_prescribed?select=id,employee,status,progress');
+                $allLms = is_array($lmsRes['data'] ?? null) ? $lmsRes['data'] : [];
+
+                $succRes = supabaseRequest('succession_candidates?select=*');
+                $allSucc = is_array($succRes['data'] ?? null) ? $succRes['data'] : [];
+            }
+
+            // Department ID to Name map
+            $deptIdMap = [];
+            foreach ($allDepts as $d) {
+                if (!empty($d['id']) && !empty($d['name'])) {
+                    $deptIdMap[$d['id']] = $d['name'];
+                }
+            }
+
+            // Standardize department names for hotel operations
+            $normalizeDept = function($name) {
+                $lower = strtolower(trim((string)$name));
+                if (strpos($lower, 'front') !== false) return 'Front Office';
+                if (strpos($lower, 'culinary') !== false || strpos($lower, 'kitchen') !== false || strpos($lower, 'chef') !== false) return 'Kitchen & Culinary';
+                if (strpos($lower, 'food') !== false || strpos($lower, 'beverage') !== false || strpos($lower, 'f&b') !== false || strpos($lower, 'dining') !== false) return 'Food & Beverage';
+                if (strpos($lower, 'banquet') !== false || strpos($lower, 'event') !== false) return 'Banquet & Events';
+                if (strpos($lower, 'housekeep') !== false) return 'Housekeeping';
+                if (strpos($lower, 'human') !== false || strpos($lower, 'hr') !== false) return 'Human Resources';
+                if (strpos($lower, 'finance') !== false || strpos($lower, 'account') !== false) return 'Finance';
+                if (strpos($lower, 'engineer') !== false) return 'Engineering';
+                if (strpos($lower, 'security') !== false) return 'Security';
+                return ucwords($name ?: 'Front Office');
+            };
+
+            // Associate employee to department
+            $empDeptMap = [];
+            foreach ($allEmps as $emp) {
+                $dName = '';
+                if (!empty($emp['department_id']) && isset($deptIdMap[$emp['department_id']])) {
+                    $dName = $deptIdMap[$emp['department_id']];
+                } else {
+                    $haystack = ($emp['title'] ?? '') . ' ' . ($emp['full_name'] ?? '');
+                    $dName = $normalizeDept($haystack);
+                }
+                $empDeptMap[$emp['id']] = $normalizeDept($dName);
+            }
+
+            // Define display departments (Top operational hotel pillars)
+            $canonicalDepts = [
+                'Front Office',
+                'Food & Beverage',
+                'Kitchen & Culinary',
+                'Banquet & Events',
+                'Housekeeping'
+            ];
+
+            // Initialize department statistics buckets
+            $deptBuckets = [];
+            foreach ($canonicalDepts as $cDept) {
+                $deptBuckets[$cDept] = [
+                    'department'       => $cDept,
+                    'staff_count'      => 0,
+                    'staff_ids'        => [],
+                    'goals_total'      => 0,
+                    'goals_approved'   => 0,
+                    'lms_total'        => 0,
+                    'lms_progress_sum' => 0,
+                    'lms_passed'       => 0,
+                    'succ_candidates'  => 0,
+                    'succ_ready'       => 0
+                ];
+            }
+
+            // 1. Bucket employees
+            foreach ($allEmps as $emp) {
+                $d = $empDeptMap[$emp['id']] ?? 'Front Office';
+                if (!isset($deptBuckets[$d])) {
+                    $deptBuckets[$d] = [
+                        'department'       => $d,
+                        'staff_count'      => 0,
+                        'staff_ids'        => [],
+                        'goals_total'      => 0,
+                        'goals_approved'   => 0,
+                        'lms_total'        => 0,
+                        'lms_progress_sum' => 0,
+                        'lms_passed'       => 0,
+                        'succ_candidates'  => 0,
+                        'succ_ready'       => 0
+                    ];
+                }
+                $deptBuckets[$d]['staff_count']++;
+                $deptBuckets[$d]['staff_ids'][] = $emp['id'];
+            }
+
+            // 2. Bucket performance goals
+            foreach ($allGoals as $g) {
+                $gDept = '';
+                if (!empty($g['department'])) {
+                    $gDept = $normalizeDept($g['department']);
+                }
+                if (empty($gDept) && !empty($g['employee_id'])) {
+                    $gDept = $empDeptMap[$g['employee_id']] ?? 'Front Office';
+                }
+                if (!isset($deptBuckets[$gDept])) {
+                    $gDept = 'Front Office';
+                }
+
+                $deptBuckets[$gDept]['goals_total']++;
+                $st = strtolower(trim((string)($g['status'] ?? '')));
+                if (in_array($st, ['approved', 'done', 'completed', 'active', 'endorsed', 'calibrated'])) {
+                    $deptBuckets[$gDept]['goals_approved']++;
+                }
+            }
+
+            // 3. Bucket LMS prescriptions
+            foreach ($allLms as $l) {
+                $eId = $l['employee'] ?? '';
+                $d = $empDeptMap[$eId] ?? 'Front Office';
+                if (!isset($deptBuckets[$d])) {
+                    $d = 'Front Office';
+                }
+
+                $deptBuckets[$d]['lms_total']++;
+                $prog = (float)($l['progress'] ?? 0);
+                $deptBuckets[$d]['lms_progress_sum'] += $prog;
+                $st = strtolower(trim((string)($l['status'] ?? '')));
+                if ($st === 'passed' || $st === 'completed' || $prog >= 80) {
+                    $deptBuckets[$d]['lms_passed']++;
+                }
+            }
+
+            // 4. Bucket succession candidates
+            foreach ($allSucc as $s) {
+                $d = '';
+                if (!empty($s['pos_dept'])) {
+                    $d = $normalizeDept($s['pos_dept']);
+                } elseif (!empty($s['employee_id'])) {
+                    $d = $empDeptMap[$s['employee_id']] ?? 'Front Office';
+                }
+                if (empty($d) || !isset($deptBuckets[$d])) {
+                    $d = 'Front Office';
+                }
+
+                $deptBuckets[$d]['succ_candidates']++;
+                $flag = strtolower(trim((string)($s['hr_readiness_flag'] ?? '')));
+                if (strpos($flag, 'ready now') !== false || strpos($flag, 'ready in') !== false) {
+                    $deptBuckets[$d]['succ_ready']++;
+                }
+            }
+
+            // 5. Finalize percentages & execution status
+            $matrixRows = [];
+            foreach ($canonicalDepts as $cDept) {
+                $b = $deptBuckets[$cDept];
+
+                // Goals Approved %
+                $goalsPct = $b['goals_total'] > 0 
+                    ? round(($b['goals_approved'] / $b['goals_total']) * 100, 1) 
+                    : ($b['staff_count'] > 0 ? 0.0 : 0.0);
+
+                // LMS Completion % (average progress or passed percentage)
+                $lmsPct = $b['lms_total'] > 0 
+                    ? round($b['lms_progress_sum'] / $b['lms_total'], 1) 
+                    : 0.0;
+
+                // Succession Ready %
+                $succPct = $b['succ_candidates'] > 0 
+                    ? round(($b['succ_ready'] / $b['succ_candidates']) * 100, 1) 
+                    : 0.0;
+
+                // Composite Health Score: 35% Goals + 35% LMS + 30% Succession
+                $composite = round(($goalsPct * 0.35) + ($lmsPct * 0.35) + ($succPct * 0.30), 1);
+
+                if ($composite >= 80) {
+                    $status = 'Optimal';
+                    $badgeClass = 'badge-sage';
+                } elseif ($composite >= 50) {
+                    $status = 'Good';
+                    $badgeClass = 'badge-dusty';
+                } elseif ($composite > 0 || $b['staff_count'] > 0) {
+                    $status = 'Developing';
+                    $badgeClass = 'badge-terracotta';
+                } else {
+                    $status = 'Pending';
+                    $badgeClass = 'bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-semibold px-2 py-0.5 rounded-full';
+                }
+
+                $matrixRows[] = [
+                    'department'           => $cDept,
+                    'staff_count'          => $b['staff_count'],
+                    'goals_approved_pct'   => $goalsPct,
+                    'lms_rate_pct'         => $lmsPct,
+                    'succession_ready_pct' => $succPct,
+                    'composite_score'      => $composite,
+                    'status'               => $status,
+                    'badge_class'          => $badgeClass,
+                    'goals_total'          => $b['goals_total'],
+                    'goals_approved'       => $b['goals_approved'],
+                    'lms_total'            => $b['lms_total'],
+                    'succ_candidates'      => $b['succ_candidates']
+                ];
+            }
+
+            $response = [
+                'success' => true,
+                'matrix'  => $matrixRows,
+                'updated' => date('c'),
+                'source'  => 'supabase'
+            ];
+            break;
+
         // ─── Department summary only ──────────────────────────────────────────
         case 'get_dept_summary':
             $reportModel = new TrainingReportModel();

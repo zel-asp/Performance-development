@@ -15,10 +15,10 @@ require_once 'config/config.php';
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-        <!-- Tailwind CSS CDN -->
-        <script src="https://cdn.tailwindcss.com"></script>
-        <!-- Font Awesome Icons -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <!-- Compiled Local Tailwind CSS -->
+        <link rel="stylesheet" href="dist/output.css">
+        <!-- Font Awesome Free (Local) -->
+        <link rel="stylesheet" href="public/vendor/fontawesome/css/all.min.css">
         <!-- Sonner Toast (vanilla) CSS -->
         <link href="https://cdn.jsdelivr.net/npm/vanilla-sonner@latest/dist/vanilla-sonner.min.css" rel="stylesheet" />
 
@@ -101,30 +101,6 @@ require_once 'config/config.php';
             }
         </script>
 
-        <!-- Tailwind Theme Configuration -->
-        <!-- Tailwind Theme Configuration -->
-        <script>
-            tailwind.config = {
-                theme: {
-                    extend: {
-                        colors: {
-                            primary: {
-                                DEFAULT: '#9E1B20',
-                                dark: '#7A1519',
-                                light: '#B9363B',
-                                50: '#FFF5F5',
-                                100: '#FDE8E8',
-                                200: '#F9CACA'
-                            }
-                        },
-                        fontFamily: {
-                            sans: ['Inter', 'system-ui', 'sans-serif'],
-                            heading: ['Outfit', 'Inter', 'system-ui', 'sans-serif'],
-                        }
-                    }
-                }
-            }
-        </script>
 
         <style>
             .emp-card {

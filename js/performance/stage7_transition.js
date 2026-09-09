@@ -893,11 +893,150 @@ async function toggleNeedsTrainingFlag(empId, needsTraining) {
 }
 window.toggleNeedsTrainingFlag = toggleNeedsTrainingFlag;
 
-async function openReviewTasksModal(empId) {
+function renderReviewModalDevPlan(emp, draftSummary, isObj100, taskCheck) {
+    const devPlanContainer = document.getElementById('review-plan-dev-plan-container');
+    if (!devPlanContainer) return;
+
+    const draftTasks = draftSummary?.tasks || [];
+    const draftBooks = draftSummary?.lms_books || [];
+    const hasDraft = (draftTasks.length + draftBooks.length) > 0;
+
+    if (hasDraft) {
+        devPlanContainer.innerHTML = `
+            <div class="p-4 bg-indigo-50/70 rounded-2xl border border-indigo-200/80 space-y-3">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <div>
+                            <h5 class="font-bold text-slate-900 text-xs">Stage 6 Performance Development Plan (Draft Staged)</h5>
+                            <p class="text-[10px] text-slate-500">Staged during Phase 6 IDP planning. Ready to deploy into active execution.</p>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                        ${draftTasks.length} Draft Task(s) · ${draftBooks.length} LMS Book(s)
+                    </span>
+                </div>
+
+                <!-- Draft Tasks & Books Cards -->
+                <div class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                    ${draftTasks.map(t => `
+                        <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between gap-2">
+                            <div class="space-y-0.5 min-w-0">
+                                <div class="flex items-center space-x-1.5">
+                                    <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Draft Action Task</span>
+                                    <span class="text-[10px] text-slate-400 font-mono">${t.target_date || 'Due in 2 wks'}</span>
+                                </div>
+                                <p class="font-bold text-slate-900 text-xs truncate">${t.title}</p>
+                                <p class="text-[10px] text-slate-500 truncate">${t.description || 'Action item to be deployed to performance_tasks'}</p>
+                            </div>
+                            <span class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-lg font-bold flex-shrink-0">
+                                Pending Deploy
+                            </span>
+                        </div>
+                    `).join('')}
+
+                    ${draftBooks.map(b => `
+                        <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between gap-2">
+                            <div class="space-y-0.5 min-w-0">
+                                <div class="flex items-center space-x-1.5">
+                                    <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Draft LMS Handbook</span>
+                                    <span class="text-[10px] text-slate-400 font-mono">10% Formal LMS</span>
+                                </div>
+                                <p class="font-bold text-slate-900 text-xs truncate">${b.title || 'LMS Training Manual'}</p>
+                                <p class="text-[10px] text-slate-500 truncate">Doc ID: ${b.lms_document_id || 'N/A'} · Status: Needs Retake on deploy</p>
+                            </div>
+                            <span class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-lg font-bold flex-shrink-0">
+                                Pending Enroll
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="pt-2 border-t border-indigo-100 flex items-center justify-between text-[11px]">
+                    <span class="text-indigo-900 font-medium"><i class="fas fa-circle-info mr-1 text-indigo-600"></i> Deploying copies tasks to <code>performance_tasks</code> &amp; handbooks to <code>lms_prescribed</code>.</span>
+                    ${!isObj100 ? `
+                        <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed flex items-center space-x-1" title="Objectives Progress is not 100% (${taskCheck.progressPct}%). Deploy locked.">
+                            <i class="fas fa-lock text-[10px]"></i>
+                            <span>Deploy Draft Plan (Locked)</span>
+                        </button>
+                    ` : `
+                        <button onclick="deployDraftPlanFromModal('${emp.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1">
+                            <i class="fas fa-rocket text-[10px]"></i>
+                            <span>Deploy Draft Plan Now</span>
+                        </button>
+                    `}
+                </div>
+            </div>
+        `;
+    } else {
+        devPlanContainer.innerHTML = `
+            <div class="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between text-xs text-slate-500">
+                <span class="flex items-center space-x-2">
+                    <i class="fas fa-clipboard-check text-slate-400"></i>
+                    <span>No uncommitted Stage 6 development plan drafts staged for this associate.</span>
+                </span>
+                <button onclick="closeModal('modal-review-tasks'); if(typeof switchSubTab==='function') switchSubTab('perf', 'idp'); if(typeof showIDPDetail==='function') showIDPDetail('${emp.id}', true);" class="text-indigo-600 hover:text-indigo-800 font-bold hover:underline flex items-center space-x-1">
+                    <span>+ Open Stage 6 IDP Planner</span>
+                    <i class="fas fa-arrow-right text-[10px]"></i>
+                </button>
+            </div>
+        `;
+    }
+}
+
+function renderReviewModalFooterActions(emp, draftSummary, isObj100, needsTraining, taskCheck) {
+    const footerActions = document.getElementById('review-tasks-footer-actions');
+    if (!footerActions) return;
+
+    const draftTasks = draftSummary?.tasks || [];
+    const draftBooks = draftSummary?.lms_books || [];
+    const hasDraft = (draftTasks.length + draftBooks.length) > 0;
+
+    if (!isObj100) {
+        footerActions.innerHTML = `
+            <div class="flex items-center space-x-2">
+                <span class="text-xs text-amber-700 font-semibold flex items-center">
+                    <i class="fas fa-lock text-[10px] mr-1.5"></i>Objectives Progress is ${taskCheck.progressPct}% (${taskCheck.completedTasks}/${taskCheck.totalTasks} Tasks). Actions locked.
+                </span>
+                <button onclick="closeModal('modal-review-tasks')" class="px-4 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition">
+                    Close
+                </button>
+            </div>
+        `;
+    } else if (needsTraining) {
+        footerActions.innerHTML = `
+            <button onclick="closeModal('modal-review-tasks'); openRemedialBooksModal('${emp.id}');" class="btn-primary px-5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 border-rose-600 shadow-xs flex items-center space-x-2">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Need Training &rarr; Assign Formal Program</span>
+            </button>
+        `;
+    } else if (hasDraft) {
+        footerActions.innerHTML = `
+            <button onclick="deployAndProceedToMonitoring('${emp.id}')" class="btn-primary px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 border-emerald-600 shadow-xs flex items-center space-x-2">
+                <i class="fas fa-rocket"></i>
+                <span>Deploy Plan &amp; Proceed to Monitoring (Stage 3)</span>
+            </button>
+        `;
+    } else {
+        footerActions.innerHTML = `
+            <button id="btn-proceed-to-monitoring" onclick="proceedFromTasksToMonitoring()" class="btn-primary px-5 py-2 text-xs font-bold bg-teal-600 hover:bg-teal-700 border-teal-600 shadow-xs flex items-center space-x-2">
+                <span>Proceed to Continuous Monitoring (Stage 3)</span>
+                <i class="fas fa-arrow-right text-[10px]"></i>
+            </button>
+        `;
+    }
+}
+
+function openReviewTasksModal(empId) {
     const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || (window.perfRoster || [])[0];
     if (!emp) return;
 
     window.selectedEvalEmpId = emp.id;
+
+    // 1. OPEN MODAL INSTANTLY (0ms perceived delay)
+    openModal('modal-review-tasks');
 
     const evalRec = getDbEvaluations().find(ev => isSameEmployee(ev.employee_id, emp.id)) || emp.evaluationRecord;
     const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
@@ -917,9 +1056,8 @@ async function openReviewTasksModal(empId) {
     const scorePillEl = document.getElementById('review-tasks-score-pill');
     const devPlanContainer = document.getElementById('review-plan-dev-plan-container');
     const listEl = document.getElementById('review-tasks-list-container') || document.getElementById('review-tasks-modal-list');
-    const footerActions = document.getElementById('review-tasks-footer-actions');
 
-    // Populate Associate Header Card
+    // 2. Populate Associate Header Card Immediately
     if (titleEl) {
         titleEl.innerHTML = `Review Plan &amp; Tasks: ${emp.name} <span class="ml-2 text-xs font-mono font-normal px-2 py-0.5 rounded-full ${needsTraining ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}">Retry: ${retryCount} · Needs Training: ${needsTraining ? 'True' : 'False'}</span>`;
     }
@@ -934,103 +1072,7 @@ async function openReviewTasksModal(empId) {
         scorePillEl.className = `px-2.5 py-1 rounded-full text-[10px] font-bold border font-mono ${score >= 3.0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}`;
     }
 
-    // Load Development Plan Drafts (Stage 6)
-    let draftSummary = window.dbDraftPlans?.[emp.id];
-    if (!draftSummary && typeof loadDraftSummary === 'function') {
-        draftSummary = await loadDraftSummary(emp.id);
-    }
-    const draftTasks = draftSummary?.tasks || [];
-    const draftBooks = draftSummary?.lms_books || [];
-    const hasDraft = (draftTasks.length + draftBooks.length) > 0;
-
-    // Render Staged Performance Development Plan
-    if (devPlanContainer) {
-        if (hasDraft) {
-            devPlanContainer.innerHTML = `
-                <div class="p-4 bg-indigo-50/70 rounded-2xl border border-indigo-200/80 space-y-3">
-                    <div class="flex items-center justify-between flex-wrap gap-2">
-                        <div class="flex items-center space-x-2">
-                            <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
-                                <i class="fas fa-clipboard-list"></i>
-                            </div>
-                            <div>
-                                <h5 class="font-bold text-slate-900 text-xs">Stage 6 Performance Development Plan (Draft Staged)</h5>
-                                <p class="text-[10px] text-slate-500">Staged during Phase 6 IDP planning. Ready to deploy into active execution.</p>
-                            </div>
-                        </div>
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
-                            ${draftTasks.length} Draft Task(s) · ${draftBooks.length} LMS Book(s)
-                        </span>
-                    </div>
-
-                    <!-- Draft Tasks & Books Cards -->
-                    <div class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
-                        ${draftTasks.map(t => `
-                            <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between gap-2">
-                                <div class="space-y-0.5 min-w-0">
-                                    <div class="flex items-center space-x-1.5">
-                                        <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Draft Action Task</span>
-                                        <span class="text-[10px] text-slate-400 font-mono">${t.target_date || 'Due in 2 wks'}</span>
-                                    </div>
-                                    <p class="font-bold text-slate-900 text-xs truncate">${t.title}</p>
-                                    <p class="text-[10px] text-slate-500 truncate">${t.description || 'Action item to be deployed to performance_tasks'}</p>
-                                </div>
-                                <span class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-lg font-bold flex-shrink-0">
-                                    Pending Deploy
-                                </span>
-                            </div>
-                        `).join('')}
-
-                        ${draftBooks.map(b => `
-                            <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between gap-2">
-                                <div class="space-y-0.5 min-w-0">
-                                    <div class="flex items-center space-x-1.5">
-                                        <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Draft LMS Handbook</span>
-                                        <span class="text-[10px] text-slate-400 font-mono">10% Formal LMS</span>
-                                    </div>
-                                    <p class="font-bold text-slate-900 text-xs truncate">${b.title || 'LMS Training Manual'}</p>
-                                    <p class="text-[10px] text-slate-500 truncate">Doc ID: ${b.lms_document_id || 'N/A'} · Status: Needs Retake on deploy</p>
-                                </div>
-                                <span class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-lg font-bold flex-shrink-0">
-                                    Pending Enroll
-                                </span>
-                            </div>
-                        `).join('')}
-                    </div>
-
-                    <div class="pt-2 border-t border-indigo-100 flex items-center justify-between text-[11px]">
-                        <span class="text-indigo-900 font-medium"><i class="fas fa-circle-info mr-1 text-indigo-600"></i> Deploying copies tasks to <code>performance_tasks</code> &amp; handbooks to <code>lms_prescribed</code>.</span>
-                        ${!isObj100 ? `
-                            <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed flex items-center space-x-1" title="Objectives Progress is not 100% (${taskCheck.progressPct}%). Deploy locked.">
-                                <i class="fas fa-lock text-[10px]"></i>
-                                <span>Deploy Draft Plan (Locked)</span>
-                            </button>
-                        ` : `
-                            <button onclick="deployDraftPlanFromModal('${emp.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1">
-                                <i class="fas fa-rocket text-[10px]"></i>
-                                <span>Deploy Draft Plan Now</span>
-                            </button>
-                        `}
-                    </div>
-                </div>
-            `;
-        } else {
-            devPlanContainer.innerHTML = `
-                <div class="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between text-xs text-slate-500">
-                    <span class="flex items-center space-x-2">
-                        <i class="fas fa-clipboard-check text-slate-400"></i>
-                        <span>No uncommitted Stage 6 development plan drafts staged for this associate.</span>
-                    </span>
-                    <button onclick="closeModal('modal-review-tasks'); if(typeof switchSubTab==='function') switchSubTab('perf', 'idp'); if(typeof showIDPDetail==='function') showIDPDetail('${emp.id}', true);" class="text-indigo-600 hover:text-indigo-800 font-bold hover:underline flex items-center space-x-1">
-                        <span>+ Open Stage 6 IDP Planner</span>
-                        <i class="fas fa-arrow-right text-[10px]"></i>
-                    </button>
-                </div>
-            `;
-        }
-    }
-
-    // Render Active Goal Tasks
+    // 3. Render Active Goal Tasks Immediately
     const allTasks = [];
     empGoals.forEach(g => {
         (g.tasks || []).forEach(t => {
@@ -1086,45 +1128,43 @@ async function openReviewTasksModal(empId) {
         }
     }
 
-    if (footerActions) {
-        if (!isObj100) {
-            footerActions.innerHTML = `
-                <div class="flex items-center space-x-2">
-                    <span class="text-xs text-amber-700 font-semibold flex items-center">
-                        <i class="fas fa-lock text-[10px] mr-1.5"></i>Objectives Progress is ${taskCheck.progressPct}% (${taskCheck.completedTasks}/${taskCheck.totalTasks} Tasks). Actions locked.
-                    </span>
-                    <button onclick="closeModal('modal-review-tasks')" class="px-4 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition">
-                        Close
-                    </button>
+    // 4. Render Development Plan Drafts (Instant if in memory, or stream via background promise)
+    const existingDraft = window.dbDraftPlans?.[emp.id];
+    if (existingDraft) {
+        renderReviewModalDevPlan(emp, existingDraft, isObj100, taskCheck);
+        renderReviewModalFooterActions(emp, existingDraft, isObj100, needsTraining, taskCheck);
+    } else {
+        if (devPlanContainer) {
+            devPlanContainer.innerHTML = `
+                <div class="p-3.5 bg-indigo-50/70 rounded-2xl border border-indigo-200/80 flex items-center justify-between text-xs text-indigo-800 animate-pulse">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-spinner fa-spin text-indigo-600"></i>
+                        <span>Loading Stage 6 Performance Development Plan drafts...</span>
+                    </div>
+                    <span class="text-[10px] text-indigo-500 font-mono">Syncing</span>
                 </div>
             `;
-        } else if (needsTraining) {
-            footerActions.innerHTML = `
-                <button onclick="closeModal('modal-review-tasks'); openRemedialBooksModal('${emp.id}');" class="btn-primary px-5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 border-rose-600 shadow-xs flex items-center space-x-2">
-                    <i class="fas fa-graduation-cap"></i>
-                    <span>Need Training &rarr; Assign Formal Program</span>
-                </button>
-            `;
-        } else if (hasDraft) {
-            footerActions.innerHTML = `
-                <button onclick="deployAndProceedToMonitoring('${emp.id}')" class="btn-primary px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 border-emerald-600 shadow-xs flex items-center space-x-2">
-                    <i class="fas fa-rocket"></i>
-                    <span>Deploy Plan &amp; Proceed to Monitoring (Stage 3)</span>
-                </button>
-            `;
-        } else {
-            footerActions.innerHTML = `
-                <button id="btn-proceed-to-monitoring" onclick="proceedFromTasksToMonitoring()" class="btn-primary px-5 py-2 text-xs font-bold bg-teal-600 hover:bg-teal-700 border-teal-600 shadow-xs flex items-center space-x-2">
-                    <span>Proceed to Continuous Monitoring (Stage 3)</span>
-                    <i class="fas fa-arrow-right text-[10px]"></i>
-                </button>
-            `;
+        }
+        renderReviewModalFooterActions(emp, null, isObj100, needsTraining, taskCheck);
+
+        if (typeof loadDraftSummary === 'function') {
+            loadDraftSummary(emp.id).then(summary => {
+                if (window.selectedEvalEmpId === emp.id) {
+                    renderReviewModalDevPlan(emp, summary, isObj100, taskCheck);
+                    renderReviewModalFooterActions(emp, summary, isObj100, needsTraining, taskCheck);
+                }
+            }).catch(err => {
+                console.error('Error loading draft plan summary:', err);
+                if (devPlanContainer && window.selectedEvalEmpId === emp.id) {
+                    renderReviewModalDevPlan(emp, { tasks: [], lms_books: [] }, isObj100, taskCheck);
+                }
+            });
         }
     }
-
-    openModal('modal-review-tasks');
 }
 window.openReviewTasksModal = openReviewTasksModal;
+window.renderReviewModalDevPlan = renderReviewModalDevPlan;
+window.renderReviewModalFooterActions = renderReviewModalFooterActions;
 
 /**
  * Deploy draft plan directly from within Review Tasks modal and refresh modal

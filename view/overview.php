@@ -16,9 +16,6 @@
                                         <span>2. System &amp; Property Analytics</span>
                                     </button>
                                 </div>
-                                <div class="flex items-center space-x-2 flex-shrink-0">
-                                    <span class="text-[11px] font-semibold text-slate-500 hidden sm:inline">Oxford Suites Makati · Live Workplace</span>
-                                </div>
                             </div>
 
                             <!-- SUB-TAB 1: INDIVIDUAL SHIFT FOCUS & MY PULSE -->

@@ -6,6 +6,7 @@
   "scripts": {
     "build:css": "npx @tailwindcss/cli -i ./src/input.css -o ./dist/output.css --minify",
     "watch:css": "npx @tailwindcss/cli -i ./src/input.css -o ./dist/output.css --watch",
+    "copy:vendor": "node -e \"const fs=require('fs'); fs.mkdirSync('public/vendor/fontawesome/css',{recursive:true}); fs.mkdirSync('public/vendor/fontawesome/webfonts',{recursive:true}); fs.mkdirSync('public/vendor/chartjs',{recursive:true}); fs.copyFileSync('node_modules/@fortawesome/fontawesome-free/css/all.min.css','public/vendor/fontawesome/css/all.min.css'); fs.cpSync('node_modules/@fortawesome/fontawesome-free/webfonts','public/vendor/fontawesome/webfonts',{recursive:true}); fs.copyFileSync('node_modules/chart.js/dist/chart.umd.min.js','public/vendor/chartjs/chart.umd.min.js'); console.log('Vendor assets copied to public/vendor');\"",
     "dev": "php -S localhost:8080"
   },
   "repository": {
@@ -24,6 +25,7 @@
     "tailwindcss": "^4.3.3"
   },
   "dependencies": {
-    "@fortawesome/fontawesome-free": "^7.3.1"
+    "@fortawesome/fontawesome-free": "^7.3.1",
+    "chart.js": "^4.5.1"
   }
 }

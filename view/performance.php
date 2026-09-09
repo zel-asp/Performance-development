@@ -41,10 +41,6 @@
                                         <span>7. Next Cycle</span>
                                     </button>
                                 </div>
-                                <div class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold shadow-2xs flex-shrink-0" title="Supabase Realtime is active across all 7 Performance lifecycle stages">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                    <span>Live Realtime Sync</span>
-                                </div>
                             </div>
 
                             <!-- 7-Stage Continuous Cycle Interactive Stepper -->
