@@ -508,6 +508,8 @@ class LmsController
             return ['success' => false, 'message' => 'Document ID is required.'];
         }
 
+        self::clearCache();
+
         // 1. Fetch document record first to extract the storage file path
         $getRes = supabaseRequest('lms_documents?id=eq.' . urlencode($id), 'GET', null, true);
         $doc = is_array($getRes['data']) && !empty($getRes['data']) ? $getRes['data'][0] : null;
@@ -521,18 +523,23 @@ class LmsController
             $storagePath = '';
             // Match various Supabase storage URL patterns
             if (preg_match('#/storage/v1/object/(?:public/|authenticated/)?documents/(.+)$#i', $cleanUrl, $matches)) {
-                $storagePath = urldecode($matches[1]);
+                $storagePath = $matches[1];
             } elseif (preg_match('#^documents/(.+)$#i', $cleanUrl, $matches)) {
-                $storagePath = urldecode($matches[1]);
+                $storagePath = $matches[1];
             } elseif (strpos($cleanUrl, 'lms/') === 0) {
-                $storagePath = urldecode($cleanUrl);
+                $storagePath = $cleanUrl;
             } elseif (!empty($cleanUrl) && !preg_match('#^https?://#i', $cleanUrl)) {
-                $storagePath = urldecode(ltrim($cleanUrl, '/'));
+                $storagePath = ltrim($cleanUrl, '/');
             }
 
             // 2. Delete file from Supabase Storage bucket 'documents'
             if (!empty($storagePath)) {
-                deleteFromSupabaseStorage('documents', $storagePath);
+                $pathsToDelete = array_unique(array_filter([
+                    $storagePath,
+                    urldecode($storagePath),
+                    rawurldecode($storagePath)
+                ]));
+                deleteFromSupabaseStorage('documents', $pathsToDelete);
             }
 
             // Also check local uploads fallback if file exists locally
@@ -540,6 +547,14 @@ class LmsController
                 $localPath = __DIR__ . '/../' . ltrim($cleanUrl, '/');
                 if (file_exists($localPath) && is_file($localPath)) {
                     @unlink($localPath);
+                }
+            }
+
+            // Clean up any local extracted text cache for this document
+            if (!empty($filePath)) {
+                $cacheFile = __DIR__ . '/../storage/lms_extracted/' . md5($filePath) . '.txt';
+                if (file_exists($cacheFile) && is_file($cacheFile)) {
+                    @unlink($cacheFile);
                 }
             }
         }
