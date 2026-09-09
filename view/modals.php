@@ -2851,7 +2851,54 @@
 
         <!-- 15. Modal: Official Printable Executive PDF Audit Preview -->
         <div id="modal-report-print-preview" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-            <div class="modal-card max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-[#E8DEDC]">
+            <style>
+                @media print {
+                    body {
+                        background: #ffffff !important;
+                        color: #0f172a !important;
+                    }
+                    /* Hide everything outside the report modal card */
+                    body > *:not(#modal-report-print-preview) {
+                        display: none !important;
+                    }
+                    #modal-report-print-preview {
+                        position: static !important;
+                        display: block !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        background: transparent !important;
+                        z-index: 99999 !important;
+                    }
+                    #modal-report-print-preview .modal-card {
+                        box-shadow: none !important;
+                        border: none !important;
+                        max-height: none !important;
+                        max-width: 100% !important;
+                        width: 100% !important;
+                        overflow: visible !important;
+                        border-radius: 0 !important;
+                        padding: 0 !important;
+                    }
+                    #modal-report-print-preview .overflow-y-auto {
+                        overflow: visible !important;
+                        max-height: none !important;
+                        padding: 0 !important;
+                    }
+                    /* Hide top modal header actions and bottom dismiss footer during print */
+                    #modal-report-print-preview .flex-shrink-0:first-child,
+                    #modal-report-print-preview .p-4.border-t:last-child,
+                    #modal-report-print-preview button {
+                        display: none !important;
+                    }
+                    /* Ensure canvases and charts render with exact colors */
+                    canvas {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                        max-width: 100% !important;
+                    }
+                }
+            </style>
+            <div class="modal-card max-w-4xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-[#E8DEDC]">
                 
                 <!-- Modal Top Header -->
                 <div class="p-5 border-b border-[#E8DEDC] flex items-center justify-between bg-white flex-shrink-0">

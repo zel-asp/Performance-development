@@ -492,9 +492,66 @@ try {
                 ];
             }
 
+            // System-wide Master KPIs for Top Cards
+            $sysTotalGoals = count($allGoals);
+            $sysApprovedGoals = 0;
+            $sysReviewGoals = 0;
+            $sysReviseGoals = 0;
+            foreach ($allGoals as $g) {
+                $st = strtolower(trim((string)($g['status'] ?? '')));
+                if (in_array($st, ['approved', 'done', 'completed', 'active', 'endorsed', 'calibrated'])) $sysApprovedGoals++;
+                elseif (in_array($st, ['pending', 'pending approval', 'in review', 'submitted'])) $sysReviewGoals++;
+                elseif (in_array($st, ['needs revision', 'revise', 'revision', 'rejected'])) $sysReviseGoals++;
+            }
+            $sysGoalsRate = $sysTotalGoals > 0 ? round(($sysApprovedGoals / $sysTotalGoals) * 100, 1) : 0.0;
+
+            $sysTotalLms = count($allLms);
+            $sysPassedLms = 0;
+            $sysLmsProgSum = 0;
+            foreach ($allLms as $l) {
+                $st = strtolower(trim((string)($l['status'] ?? '')));
+                $prog = (float)($l['progress'] ?? 0);
+                $sysLmsProgSum += $prog;
+                if ($st === 'passed' || $st === 'completed' || $prog >= 80) $sysPassedLms++;
+            }
+            $sysLmsRate = $sysTotalLms > 0 ? round(($sysPassedLms / $sysTotalLms) * 100, 1) : 0.0;
+            $sysLmsAvgScore = $sysTotalLms > 0 ? round($sysLmsProgSum / $sysTotalLms, 1) : 0.0;
+
+            $sysSuccPositionsCount = count($allSucc);
+            $sysSuccCoveredCount = 0;
+            $sysSuccFastTrack = 0;
+            foreach ($allSucc as $s) {
+                $fl = strtolower(trim((string)($s['hr_readiness_flag'] ?? '')));
+                if (strpos($fl, 'ready now') !== false) $sysSuccFastTrack++;
+                if (strpos($fl, 'ready now') !== false || strpos($fl, 'ready in') !== false) $sysSuccCoveredCount++;
+            }
+            $sysSuccRate = $sysSuccPositionsCount > 0 ? round(($sysSuccCoveredCount / $sysSuccPositionsCount) * 100, 1) : 0.0;
+
             $response = [
                 'success' => true,
                 'matrix'  => $matrixRows,
+                'kpis'    => [
+                    'goals' => [
+                        'total'     => $sysTotalGoals,
+                        'approved'  => $sysApprovedGoals,
+                        'review'    => $sysReviewGoals,
+                        'revise'    => $sysReviseGoals,
+                        'rate_pct'  => $sysGoalsRate
+                    ],
+                    'lms' => [
+                        'total'     => $sysTotalLms,
+                        'passed'    => $sysPassedLms,
+                        'rate_pct'  => $sysLmsRate,
+                        'avg_score' => $sysLmsAvgScore
+                    ],
+                    'succession' => [
+                        'total'      => $sysSuccPositionsCount,
+                        'covered'    => $sysSuccCoveredCount,
+                        'rate_pct'   => $sysSuccRate,
+                        'fast_track' => $sysSuccFastTrack
+                    ],
+                    'staff_count' => count($allEmps)
+                ],
                 'updated' => date('c'),
                 'source'  => 'supabase'
             ];

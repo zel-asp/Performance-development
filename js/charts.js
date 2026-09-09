@@ -177,26 +177,38 @@ function initAllCharts() {
     // Chart 6: System Dept Multi-Metric Progress Bar Chart
     const ctxDeptProgress = document.getElementById('chart-system-dept-progress');
     if (ctxDeptProgress && !chartSystemDeptProgressInstance) {
+        let initLabels = ['Front Office', 'Food & Beverage', 'Kitchen & Culinary', 'Banquet & Events', 'Housekeeping'];
+        let initGoals = [0, 0, 0, 0, 0];
+        let initLms = [0, 0, 0, 0, 0];
+        let initSucc = [0, 0, 0, 0, 0];
+
+        if (Array.isArray(window.initialDeptMatrixData) && window.initialDeptMatrixData.length > 0) {
+            initLabels = window.initialDeptMatrixData.map(r => r.department || '');
+            initGoals = window.initialDeptMatrixData.map(r => parseFloat(r.goals_approved_pct || 0));
+            initLms = window.initialDeptMatrixData.map(r => parseFloat(r.lms_rate_pct || 0));
+            initSucc = window.initialDeptMatrixData.map(r => parseFloat(r.succession_ready_pct || 0));
+        }
+
         chartSystemDeptProgressInstance = new Chart(ctxDeptProgress, {
             type: 'bar',
             data: {
-                labels: ['Front Office', 'F&B Service', 'Culinary', 'Banquets', 'Housekeeping'],
+                labels: initLabels,
                 datasets: [
                     {
                         label: 'Goals Approved (%)',
-                        data: [96.2, 95.0, 94.0, 93.0, 90.5],
+                        data: initGoals,
                         backgroundColor: '#7A9A7E',
                         borderRadius: 4
                     },
                     {
                         label: 'LMS Completion (%)',
-                        data: [98.0, 96.5, 92.0, 94.0, 91.0],
+                        data: initLms,
                         backgroundColor: '#9E1B20',
                         borderRadius: 4
                     },
                     {
                         label: 'Succession Ready (%)',
-                        data: [85.0, 80.0, 78.0, 76.0, 72.5],
+                        data: initSucc,
                         backgroundColor: '#6B8FA3',
                         borderRadius: 4
                     }
@@ -674,6 +686,11 @@ async function fetchAndRenderDepartmentExecutionMatrix(forceRefresh = false) {
 
             renderDepartmentExecutionMatrix(json.matrix);
 
+            // Update top system KPI cards if KPI payload is present
+            if (json.kpis) {
+                updateOverviewSystemKpis(json.kpis);
+            }
+
             // Subtle Realtime pulse animation on live badge
             if (badge) {
                 badge.classList.add('ring-2', 'ring-emerald-400', 'bg-emerald-100');
@@ -793,8 +810,133 @@ function computeClientDeptMatrix(allDepts, allEmps, allGoals, allLms, allSucc) {
     });
 }
 
+function updateOverviewSystemKpis(kpis) {
+    if (!kpis) return;
+
+    // 1. Goal Approval Rate
+    if (kpis.goals) {
+        const gRate = parseFloat(kpis.goals.rate_pct || 0);
+        const gTotal = parseInt(kpis.goals.total || 0, 10);
+        const gApproved = parseInt(kpis.goals.approved || 0, 10);
+        const gReview = parseInt(kpis.goals.review || 0, 10);
+        const gRevise = parseInt(kpis.goals.revise || 0, 10);
+
+        const ratioEl = document.getElementById('sys-kpi-goals-ratio');
+        if (ratioEl) ratioEl.innerHTML = `${gApproved} <span class="text-sm font-normal text-slate-400">/ ${gTotal}</span>`;
+
+        const badgeEl = document.getElementById('sys-kpi-goals-rate-badge');
+        if (badgeEl) {
+            badgeEl.textContent = `${gRate.toFixed(1)}% Approved`;
+            badgeEl.className = gRate >= 80 ? 'badge-sage' : (gRate > 0 ? 'badge-dusty' : 'bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-semibold px-2 py-0.5 rounded-full');
+        }
+
+        const barEl = document.getElementById('sys-kpi-goals-bar');
+        if (barEl) barEl.style.width = `${Math.min(100, Math.max(0, gRate))}%`;
+
+        const subEl = document.getElementById('sys-kpi-goals-subtext');
+        if (subEl) subEl.textContent = gTotal > 0 ? 'Live Database' : 'No Goals Set';
+
+        const breakEl = document.getElementById('sys-kpi-goals-breakdown');
+        if (breakEl) {
+            breakEl.innerHTML = `
+                <span>${gApproved} Approved</span>
+                <span class="text-gold-dark font-medium">${gReview} In Review</span>
+                <span class="text-slate-400">${gRevise} Revise</span>
+            `;
+        }
+    }
+
+    // 2. Active Staff Count
+    if (typeof kpis.staff_count !== 'undefined') {
+        const staffEl = document.getElementById('sys-kpi-property-xp-staff');
+        if (staffEl) staffEl.textContent = `${kpis.staff_count} Staff`;
+    }
+
+    // 3. LMS Course Completion
+    if (kpis.lms) {
+        const lRate = parseFloat(kpis.lms.rate_pct || 0);
+        const lTotal = parseInt(kpis.lms.total || 0, 10);
+        const lPassed = parseInt(kpis.lms.passed || 0, 10);
+        const lAvg = parseFloat(kpis.lms.avg_score || 0);
+
+        const valEl = document.getElementById('sys-kpi-lms-rate-val');
+        if (valEl) valEl.textContent = `${lRate.toFixed(1)}%`;
+
+        const badgeEl = document.getElementById('sys-kpi-lms-rate-badge');
+        if (badgeEl) {
+            badgeEl.textContent = `${lRate.toFixed(1)}% Rate`;
+            badgeEl.className = lRate >= 80 ? 'badge-primary' : (lRate > 0 ? 'badge-dusty' : 'bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-semibold px-2 py-0.5 rounded-full');
+        }
+
+        const barEl = document.getElementById('sys-kpi-lms-bar');
+        if (barEl) barEl.style.width = `${Math.min(100, Math.max(0, lRate))}%`;
+
+        const targetEl = document.getElementById('sys-kpi-lms-target');
+        if (targetEl) targetEl.textContent = lTotal > 0 ? 'Target: 80.0%' : 'No Courses';
+
+        const breakEl = document.getElementById('sys-kpi-lms-breakdown');
+        if (breakEl) {
+            breakEl.innerHTML = `
+                <span>${lPassed} / ${lTotal} Modules</span>
+                <span class="text-sage-dark font-medium">${lAvg.toFixed(1)}% Avg Score</span>
+            `;
+        }
+    }
+
+    // 4. Succession Bench Depth
+    if (kpis.succession) {
+        const sRate = parseFloat(kpis.succession.rate_pct || 0);
+        const sTotal = parseInt(kpis.succession.total || 0, 10);
+        const sCovered = parseInt(kpis.succession.covered || 0, 10);
+        const sFastTrack = parseInt(kpis.succession.fast_track || 0, 10);
+
+        const valEl = document.getElementById('sys-kpi-succession-val');
+        if (valEl) valEl.textContent = `${sRate.toFixed(1)}%`;
+
+        let riskLabel = 'Pipeline Empty';
+        let riskClass = 'text-slate-400';
+        let badgeClass = 'bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-semibold px-2 py-0.5 rounded-full';
+
+        if (sRate >= 75) {
+            riskLabel = 'Low Risk';
+            riskClass = 'text-sage-dark';
+            badgeClass = 'badge-dusty';
+        } else if (sRate >= 50) {
+            riskLabel = 'Moderate Risk';
+            riskClass = 'text-gold-dark';
+            badgeClass = 'badge-gold';
+        } else if (sRate > 0) {
+            riskLabel = 'Elevated Risk';
+            riskClass = 'text-rose-600';
+            badgeClass = 'badge-terracotta';
+        }
+
+        const badgeEl = document.getElementById('sys-kpi-succession-badge');
+        if (badgeEl) {
+            badgeEl.textContent = `${sRate.toFixed(1)}% Ready`;
+            badgeEl.className = badgeClass;
+        }
+
+        const riskEl = document.getElementById('sys-kpi-succession-risk');
+        if (riskEl) {
+            riskEl.textContent = riskLabel;
+            riskEl.className = `text-xs ${riskClass} font-semibold`;
+        }
+
+        const barEl = document.getElementById('sys-kpi-succession-bar');
+        if (barEl) barEl.style.width = `${Math.min(100, Math.max(0, sRate))}%`;
+
+        const rolesEl = document.getElementById('sys-kpi-succession-roles');
+        if (rolesEl) rolesEl.textContent = `${sCovered} / ${Math.max(1, sTotal)} Key Roles Covered`;
+
+        const ftEl = document.getElementById('sys-kpi-succession-fasttrack');
+        if (ftEl) ftEl.textContent = `${sFastTrack} In Fast-Track`;
+    }
+}
+
 window.renderDepartmentExecutionMatrix = renderDepartmentExecutionMatrix;
 window.fetchAndRenderDepartmentExecutionMatrix = fetchAndRenderDepartmentExecutionMatrix;
+window.updateOverviewSystemKpis = updateOverviewSystemKpis;
 
 window.addEventListener('DOMContentLoaded', () => {
     initAllCharts();

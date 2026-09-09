@@ -320,37 +320,205 @@
                                 </div>
 
                                 <?php
-                                // Dynamic calculations for System KPIs (Property XP & Succession Bench Depth)
+                                // Dynamic calculations for System KPIs and Department Execution Matrix from Database
                                 $livePropertyXp = 0;
                                 $liveKudosSent = 0;
                                 $liveBadgesCount = 0;
-                                $liveActiveStaffCount = 100;
+                                $liveActiveStaffCount = 0;
+
+                                $liveTotalGoals = 0;
+                                $liveApprovedGoals = 0;
+                                $liveReviewGoals = 0;
+                                $liveReviseGoals = 0;
+                                $liveGoalsApprovalRate = 0.0;
+
+                                $liveTotalPrescribed = 0;
+                                $livePassedPrescribed = 0;
+                                $liveLmsAvgScore = 0.0;
+                                $liveLmsRate = 0.0;
+
+                                $totalRolesCount = 0;
+                                $coveredRolesCount = 0;
+                                $fastTrackCount = 0;
+                                $liveBenchDepthPct = 0.0;
+
+                                $canonicalDepts = [
+                                    'Front Office',
+                                    'Food & Beverage',
+                                    'Kitchen & Culinary',
+                                    'Banquet & Events',
+                                    'Housekeeping'
+                                ];
+
+                                $normalizeDept = function($name) {
+                                    $lower = strtolower(trim((string)$name));
+                                    if (strpos($lower, 'front') !== false) return 'Front Office';
+                                    if (strpos($lower, 'culinary') !== false || strpos($lower, 'kitchen') !== false || strpos($lower, 'chef') !== false) return 'Kitchen & Culinary';
+                                    if (strpos($lower, 'food') !== false || strpos($lower, 'beverage') !== false || strpos($lower, 'f&b') !== false || strpos($lower, 'dining') !== false) return 'Food & Beverage';
+                                    if (strpos($lower, 'banquet') !== false || strpos($lower, 'event') !== false) return 'Banquet & Events';
+                                    if (strpos($lower, 'housekeep') !== false) return 'Housekeeping';
+                                    if (strpos($lower, 'human') !== false || strpos($lower, 'hr') !== false) return 'Human Resources';
+                                    if (strpos($lower, 'finance') !== false || strpos($lower, 'account') !== false) return 'Finance';
+                                    if (strpos($lower, 'engineer') !== false) return 'Engineering';
+                                    if (strpos($lower, 'security') !== false) return 'Security';
+                                    return 'Front Office';
+                                };
+
+                                $deptBuckets = [];
+                                foreach ($canonicalDepts as $cDept) {
+                                    $deptBuckets[$cDept] = [
+                                        'department'       => $cDept,
+                                        'staff_count'      => 0,
+                                        'goals_total'      => 0,
+                                        'goals_approved'   => 0,
+                                        'lms_total'        => 0,
+                                        'lms_progress_sum' => 0,
+                                        'succ_candidates'  => 0,
+                                        'succ_ready'       => 0
+                                    ];
+                                }
 
                                 try {
                                     $pdoOverview = getSupabaseDb();
                                     if ($pdoOverview) {
-                                        // 1. Total XP from unified xp_ledger
-                                        $xpStmt = $pdoOverview->query("SELECT COALESCE(SUM(points), 0) AS total_xp, COUNT(DISTINCT employee_id) AS staff_cnt FROM public.xp_ledger");
+                                        // Staff count strictly from employees table
+                                        $empCntStmt = $pdoOverview->query("SELECT COUNT(*) FROM public.employees");
+                                        $liveActiveStaffCount = $empCntStmt ? (int)$empCntStmt->fetchColumn() : 0;
+
+                                        // Total XP from unified xp_ledger
+                                        $xpStmt = $pdoOverview->query("SELECT COALESCE(SUM(points), 0) AS total_xp FROM public.xp_ledger");
                                         $xpRow = $xpStmt ? $xpStmt->fetch(PDO::FETCH_ASSOC) : null;
-                                        if ($xpRow) {
-                                            $livePropertyXp = (int)$xpRow['total_xp'];
-                                            if (!empty($xpRow['staff_cnt'])) {
-                                                $liveActiveStaffCount = (int)$xpRow['staff_cnt'];
+                                        if ($xpRow) $livePropertyXp = (int)$xpRow['total_xp'];
+
+                                        // Kudos count
+                                        $kudosStmt = $pdoOverview->query("SELECT COUNT(*) AS kudos_cnt FROM public.social_recognitions");
+                                        $kudosRow = $kudosStmt ? $kudosStmt->fetch(PDO::FETCH_ASSOC) : null;
+                                        if ($kudosRow) $liveKudosSent = (int)$kudosRow['kudos_cnt'];
+
+                                        // Badges count
+                                        $badgeStmt = $pdoOverview->query("SELECT COUNT(*) AS badge_cnt FROM public.xp_ledger WHERE source_type IN ('peer_kudos', 'supervisor_kudos', 'training_cert', 'lms_quiz')");
+                                        $bRow = $badgeStmt ? $badgeStmt->fetch(PDO::FETCH_ASSOC) : null;
+                                        if ($bRow) $liveBadgesCount = (int)$bRow['badge_cnt'];
+
+                                        // Goal Approval Rate strictly from performance_goals table
+                                        $goalsStmt = $pdoOverview->query("SELECT 
+                                            COUNT(*) AS total_goals,
+                                            COUNT(*) FILTER (WHERE LOWER(status::text) IN ('approved', 'done', 'completed', 'active', 'endorsed', 'calibrated')) AS approved_goals,
+                                            COUNT(*) FILTER (WHERE LOWER(status::text) IN ('pending', 'pending approval', 'in review', 'submitted')) AS review_goals,
+                                            COUNT(*) FILTER (WHERE LOWER(status::text) IN ('needs revision', 'revise', 'revision', 'rejected')) AS revise_goals
+                                        FROM public.performance_goals");
+                                        $goalsRow = $goalsStmt ? $goalsStmt->fetch(PDO::FETCH_ASSOC) : null;
+                                        if ($goalsRow) {
+                                            $liveTotalGoals = (int)($goalsRow['total_goals'] ?? 0);
+                                            $liveApprovedGoals = (int)($goalsRow['approved_goals'] ?? 0);
+                                            $liveReviewGoals = (int)($goalsRow['review_goals'] ?? 0);
+                                            $liveReviseGoals = (int)($goalsRow['revise_goals'] ?? 0);
+                                            $liveGoalsApprovalRate = $liveTotalGoals > 0 ? round(($liveApprovedGoals / $liveTotalGoals) * 100, 1) : 0.0;
+                                        }
+
+                                        // LMS Course Completion strictly from lms_prescribed table
+                                        $lmsStmt = $pdoOverview->query("SELECT 
+                                            COUNT(*) AS total_prescribed,
+                                            COUNT(*) FILTER (WHERE LOWER(status::text) IN ('passed', 'completed') OR progress >= 80) AS passed_prescribed,
+                                            COALESCE(AVG(progress), 0) AS avg_progress
+                                        FROM public.lms_prescribed");
+                                        $lmsRow = $lmsStmt ? $lmsStmt->fetch(PDO::FETCH_ASSOC) : null;
+                                        if ($lmsRow) {
+                                            $liveTotalPrescribed = (int)($lmsRow['total_prescribed'] ?? 0);
+                                            $livePassedPrescribed = (int)($lmsRow['passed_prescribed'] ?? 0);
+                                            $liveLmsAvgScore = round((float)($lmsRow['avg_progress'] ?? 0), 1);
+                                            $liveLmsRate = $liveTotalPrescribed > 0 ? round(($livePassedPrescribed / $liveTotalPrescribed) * 100, 1) : 0.0;
+                                        }
+
+                                        // Succession Bench Depth strictly from succession_positions & succession_candidates
+                                        $posStmt = $pdoOverview->query("SELECT COUNT(*) AS total_roles, COUNT(*) FILTER (WHERE primary_successor_id IS NOT NULL AND primary_successor_id != '') AS covered_roles FROM public.succession_positions");
+                                        $posRow = $posStmt ? $posStmt->fetch(PDO::FETCH_ASSOC) : null;
+                                        if ($posRow) {
+                                            $totalRolesCount = (int)($posRow['total_roles'] ?? 0);
+                                            $coveredRolesCount = (int)($posRow['covered_roles'] ?? 0);
+                                        }
+
+                                        $candStmt = $pdoOverview->query("SELECT COUNT(*) AS total_cands, COUNT(*) FILTER (WHERE LOWER(hr_readiness_flag::text) LIKE '%ready now%') AS fast_track FROM public.succession_candidates");
+                                        $candRow = $candStmt ? $candStmt->fetch(PDO::FETCH_ASSOC) : null;
+                                        if ($candRow) {
+                                            $fastTrackCount = (int)($candRow['fast_track'] ?? 0);
+                                        }
+                                        $liveBenchDepthPct = $totalRolesCount > 0 ? round(($coveredRolesCount / $totalRolesCount) * 100, 1) : 0.0;
+
+                                        // Department Execution Matrix aggregation
+                                        $deptsStmt = $pdoOverview->query("SELECT id, name FROM public.departments ORDER BY name");
+                                        $allDepts = $deptsStmt ? $deptsStmt->fetchAll(PDO::FETCH_ASSOC) : [];
+                                        $deptIdMap = [];
+                                        foreach ($allDepts as $d) {
+                                            if (!empty($d['id']) && !empty($d['name'])) $deptIdMap[$d['id']] = $d['name'];
+                                        }
+
+                                        $empsStmt = $pdoOverview->query("SELECT id, full_name, department_id, title, status FROM public.employees");
+                                        $allEmps = $empsStmt ? $empsStmt->fetchAll(PDO::FETCH_ASSOC) : [];
+
+                                        $allGoals = $pdoOverview->query("SELECT id, employee_id, department, status::text AS status, weight FROM public.performance_goals")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                                        $allLms = $pdoOverview->query("SELECT id, employee, status::text AS status, progress FROM public.lms_prescribed")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                                        $allSucc = $pdoOverview->query("SELECT sc.id, sc.employee_id, sc.position_id, sc.hr_readiness_flag::text AS hr_readiness_flag, sp.dept as pos_dept 
+                                            FROM public.succession_candidates sc 
+                                            LEFT JOIN public.succession_positions sp ON sc.position_id = sp.id")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+                                        $empDeptMap = [];
+                                        foreach ($allEmps as $emp) {
+                                            $dName = '';
+                                            if (!empty($emp['department_id']) && isset($deptIdMap[$emp['department_id']])) {
+                                                $dName = $deptIdMap[$emp['department_id']];
+                                            } else {
+                                                $haystack = ($emp['title'] ?? '') . ' ' . ($emp['full_name'] ?? '');
+                                                $dName = $normalizeDept($haystack);
+                                            }
+                                            $empDeptMap[$emp['id']] = $normalizeDept($dName);
+                                        }
+
+                                        foreach ($allEmps as $emp) {
+                                            $d = $empDeptMap[$emp['id']] ?? 'Front Office';
+                                            if (isset($deptBuckets[$d])) {
+                                                $deptBuckets[$d]['staff_count']++;
                                             }
                                         }
 
-                                        // 2. Realtime count of social recognitions
-                                        $kudosStmt = $pdoOverview->query("SELECT COUNT(*) AS kudos_cnt FROM public.social_recognitions");
-                                        $kudosRow = $kudosStmt ? $kudosStmt->fetch(PDO::FETCH_ASSOC) : null;
-                                        if ($kudosRow) {
-                                            $liveKudosSent = (int)$kudosRow['kudos_cnt'];
+                                        foreach ($allGoals as $g) {
+                                            $gDept = '';
+                                            if (!empty($g['department'])) {
+                                                $gDept = $normalizeDept($g['department']);
+                                            }
+                                            if (empty($gDept) && !empty($g['employee_id'])) {
+                                                $gDept = $empDeptMap[$g['employee_id']] ?? 'Front Office';
+                                            }
+                                            if (!isset($deptBuckets[$gDept])) $gDept = 'Front Office';
+                                            $deptBuckets[$gDept]['goals_total']++;
+                                            $st = strtolower(trim((string)($g['status'] ?? '')));
+                                            if (in_array($st, ['approved', 'done', 'completed', 'active', 'endorsed', 'calibrated'])) {
+                                                $deptBuckets[$gDept]['goals_approved']++;
+                                            }
                                         }
 
-                                        // 3. Badges / certificate count in ledger
-                                        $badgeStmt = $pdoOverview->query("SELECT COUNT(*) AS badge_cnt FROM public.xp_ledger WHERE source_type IN ('peer_kudos', 'supervisor_kudos', 'training_cert', 'lms_quiz')");
-                                        $bRow = $badgeStmt ? $badgeStmt->fetch(PDO::FETCH_ASSOC) : null;
-                                        if ($bRow) {
-                                            $liveBadgesCount = (int)$bRow['badge_cnt'];
+                                        foreach ($allLms as $l) {
+                                            $eId = $l['employee'] ?? '';
+                                            $d = $empDeptMap[$eId] ?? 'Front Office';
+                                            if (!isset($deptBuckets[$d])) $d = 'Front Office';
+                                            $deptBuckets[$d]['lms_total']++;
+                                            $prog = (float)($l['progress'] ?? 0);
+                                            $deptBuckets[$d]['lms_progress_sum'] += $prog;
+                                        }
+
+                                        foreach ($allSucc as $s) {
+                                            $d = '';
+                                            if (!empty($s['pos_dept'])) {
+                                                $d = $normalizeDept($s['pos_dept']);
+                                            } elseif (!empty($s['employee_id'])) {
+                                                $d = $empDeptMap[$s['employee_id']] ?? 'Front Office';
+                                            }
+                                            if (empty($d) || !isset($deptBuckets[$d])) $d = 'Front Office';
+                                            $deptBuckets[$d]['succ_candidates']++;
+                                            $flag = strtolower(trim((string)($s['hr_readiness_flag'] ?? '')));
+                                            if (strpos($flag, 'ready now') !== false || strpos($flag, 'ready in') !== false) {
+                                                $deptBuckets[$d]['succ_ready']++;
+                                            }
                                         }
                                     }
                                 } catch (Throwable $e) {}
@@ -362,31 +530,8 @@
                                 elseif ($livePropertyXp > 0) $liveXpGrade = 'Grade B';
                                 else $liveXpGrade = 'Grade C';
 
-                                $xpBarPct = min(100, max(8, round(($livePropertyXp / 3000) * 100)));
+                                $xpBarPct = min(100, max(0, round(($livePropertyXp / 3000) * 100)));
 
-                                // Dynamic Succession Bench Depth
-                                require_once __DIR__ . '/../models/SuccessionModel.php';
-                                $succModel = new SuccessionModel();
-                                $succPositions = $succModel->getPositions();
-                                $totalRolesCount = count($succPositions);
-                                $coveredRolesCount = 0;
-                                $fastTrackCount = 0;
-                                $readinessPctSum = 0;
-
-                                foreach ($succPositions as $pos) {
-                                    if (!empty($pos['primarySuccessorId']) || !empty($pos['primarySuccessor'])) {
-                                        $coveredRolesCount++;
-                                        $fit = (float)($pos['primarySuccessor']['computedReadinessPercent'] ?? 0);
-                                        $readinessPctSum += $fit;
-                                        $flag = $pos['primarySuccessor']['hrReadinessFlag'] ?? '';
-                                        $trans = $pos['plannedTransition'] ?? '';
-                                        if ($flag === 'Ready Now' || strpos($trans, '0–6 Months') !== false) {
-                                            $fastTrackCount++;
-                                        }
-                                    }
-                                }
-
-                                $liveBenchDepthPct = $coveredRolesCount > 0 ? round($readinessPctSum / $coveredRolesCount, 1) : 0.0;
                                 if ($liveBenchDepthPct >= 75) {
                                     $benchRisk = 'Low Risk';
                                     $benchRiskClass = 'text-sage-dark';
@@ -395,36 +540,74 @@
                                     $benchRisk = 'Moderate Risk';
                                     $benchRiskClass = 'text-gold-dark';
                                     $benchBadgeClass = 'badge-gold';
-                                } else {
+                                } elseif ($liveBenchDepthPct > 0) {
                                     $benchRisk = 'Elevated Risk';
                                     $benchRiskClass = 'text-rose-600';
                                     $benchBadgeClass = 'badge-terracotta';
+                                } else {
+                                    $benchRisk = 'Pipeline Empty';
+                                    $benchRiskClass = 'text-slate-400';
+                                    $benchBadgeClass = 'bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-semibold px-2 py-0.5 rounded-full';
+                                }
+
+                                $deptMatrixRows = [];
+                                foreach ($canonicalDepts as $cDept) {
+                                    $b = $deptBuckets[$cDept];
+                                    $goalsPct = $b['goals_total'] > 0 ? round(($b['goals_approved'] / $b['goals_total']) * 100, 1) : 0.0;
+                                    $lmsPct = $b['lms_total'] > 0 ? round($b['lms_progress_sum'] / $b['lms_total'], 1) : 0.0;
+                                    $succPct = $b['succ_candidates'] > 0 ? round(($b['succ_ready'] / $b['succ_candidates']) * 100, 1) : 0.0;
+                                    $composite = round(($goalsPct * 0.35) + ($lmsPct * 0.35) + ($succPct * 0.30), 1);
+
+                                    if ($composite >= 80) {
+                                        $status = 'Optimal';
+                                        $badgeClass = 'badge-sage';
+                                    } elseif ($composite >= 50) {
+                                        $status = 'Good';
+                                        $badgeClass = 'badge-dusty';
+                                    } elseif ($composite > 0 || $b['staff_count'] > 0) {
+                                        $status = 'Developing';
+                                        $badgeClass = 'badge-terracotta';
+                                    } else {
+                                        $status = 'Pending';
+                                        $badgeClass = 'bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-semibold px-2 py-0.5 rounded-full';
+                                    }
+
+                                    $deptMatrixRows[] = [
+                                        'department'           => $cDept,
+                                        'staff_count'          => $b['staff_count'],
+                                        'goals_approved_pct'   => $goalsPct,
+                                        'lms_rate_pct'         => $lmsPct,
+                                        'succession_ready_pct' => $succPct,
+                                        'composite_score'      => $composite,
+                                        'status'               => $status,
+                                        'badge_class'          => $badgeClass
+                                    ];
                                 }
                                 ?>
 
                                 <!-- 4 Master System-Wide KPI Cards -->
                                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-                                    <!-- System KPI 1: Approved Goals Count -->
+                                    <!-- System KPI 1: Approved Goals Count (100% Dynamic from performance_goals) -->
                                     <div class="card-clean p-5 space-y-3">
                                         <div
                                             class="flex justify-between items-center text-xs text-slate-500 font-medium">
                                             <span>Goal Approval Rate</span>
-                                            <span class="badge-sage">93.6% Approved</span>
+                                            <span class="<?= $liveGoalsApprovalRate >= 80 ? 'badge-sage' : ($liveGoalsApprovalRate > 0 ? 'badge-dusty' : 'bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-semibold px-2 py-0.5 rounded-full') ?>" id="sys-kpi-goals-rate-badge"><?= $liveGoalsApprovalRate ?>% Approved</span>
                                         </div>
                                         <div class="flex items-baseline space-x-2">
-                                            <span class="text-3xl font-heading font-bold text-slate-900">248
-                                                <span class="text-sm font-normal text-slate-400">/ 265</span></span>
-                                            <span class="text-xs text-sage-dark font-semibold">+8.4% YoY</span>
+                                            <span class="text-3xl font-heading font-bold text-slate-900" id="sys-kpi-goals-ratio"><?= $liveApprovedGoals ?>
+                                                <span class="text-sm font-normal text-slate-400">/ <?= $liveTotalGoals ?></span></span>
+                                            <span class="text-xs text-slate-400 font-medium" id="sys-kpi-goals-subtext"><?= $liveTotalGoals > 0 ? 'Live Database' : 'No Goals Set' ?></span>
                                         </div>
                                         <div class="w-full bg-[#FAF8F7] h-1.5 rounded-full overflow-hidden border border-[#E8DEDC]/50">
-                                            <div class="bg-sage h-1.5 rounded-full" style="width: 93.6%">
+                                            <div class="bg-sage h-1.5 rounded-full transition-all duration-500" id="sys-kpi-goals-bar" style="width: <?= $liveGoalsApprovalRate ?>%">
                                             </div>
                                         </div>
-                                        <div class="flex justify-between items-center text-[11px] text-slate-500">
-                                            <span>248 Approved</span>
-                                            <span class="text-gold-dark font-medium">12 In Review</span>
-                                            <span class="text-slate-400">5 Revise</span>
+                                        <div class="flex justify-between items-center text-[11px] text-slate-500" id="sys-kpi-goals-breakdown">
+                                            <span><?= $liveApprovedGoals ?> Approved</span>
+                                            <span class="text-gold-dark font-medium"><?= $liveReviewGoals ?> In Review</span>
+                                            <span class="text-slate-400"><?= $liveReviseGoals ?> Revise</span>
                                         </div>
                                     </div>
 
@@ -450,28 +633,28 @@
                                         </div>
                                     </div>
 
-                                    <!-- System KPI 3: Average LMS Completion Rate -->
+                                    <!-- System KPI 3: Average LMS Completion Rate (100% Dynamic from lms_prescribed) -->
                                     <div class="card-clean p-5 space-y-3">
                                         <div
                                             class="flex justify-between items-center text-xs text-slate-500 font-medium">
                                             <span>LMS Course Completion</span>
-                                            <span class="badge-primary">94.2% Rate</span>
+                                            <span class="<?= $liveLmsRate >= 80 ? 'badge-primary' : ($liveLmsRate > 0 ? 'badge-dusty' : 'bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-semibold px-2 py-0.5 rounded-full') ?>" id="sys-kpi-lms-rate-badge"><?= $liveLmsRate ?>% Rate</span>
                                         </div>
                                         <div class="flex items-baseline space-x-2">
-                                            <span class="text-3xl font-heading font-bold text-slate-900">94.2%</span>
-                                            <span class="text-xs text-slate-400">Target: 90.0%</span>
+                                            <span class="text-3xl font-heading font-bold text-slate-900" id="sys-kpi-lms-rate-val"><?= $liveLmsRate ?>%</span>
+                                            <span class="text-xs text-slate-400" id="sys-kpi-lms-target"><?= $liveTotalPrescribed > 0 ? 'Target: 80.0%' : 'No Courses' ?></span>
                                         </div>
                                         <div class="w-full bg-[#FAF8F7] h-1.5 rounded-full overflow-hidden border border-[#E8DEDC]/50">
-                                            <div class="bg-primary h-1.5 rounded-full" style="width: 94.2%">
+                                            <div class="bg-primary h-1.5 rounded-full transition-all duration-500" id="sys-kpi-lms-bar" style="width: <?= $liveLmsRate ?>%">
                                             </div>
                                         </div>
-                                        <div class="flex justify-between items-center text-[11px] text-slate-500">
-                                            <span>471 / 500 Modules</span>
-                                            <span class="text-sage-dark font-medium">92.4% Avg Score</span>
+                                        <div class="flex justify-between items-center text-[11px] text-slate-500" id="sys-kpi-lms-breakdown">
+                                            <span><?= $livePassedPrescribed ?> / <?= $liveTotalPrescribed ?> Modules</span>
+                                            <span class="text-sage-dark font-medium"><?= $liveLmsAvgScore ?>% Avg Score</span>
                                         </div>
                                     </div>
 
-                                    <!-- System KPI 4: Succession Pipeline Health Rate (100% Dynamic from succession_candidates) -->
+                                    <!-- System KPI 4: Succession Pipeline Health Rate (100% Dynamic from succession tables) -->
                                     <div class="card-clean p-5 space-y-3">
                                         <div
                                             class="flex justify-between items-center text-xs text-slate-500 font-medium">
@@ -668,12 +851,24 @@
                                                 <h3 class="font-heading font-bold text-base text-slate-900">Department Execution Matrix</h3>
                                                 <p class="text-xs text-slate-500">Goal Approval %, LMS Completion %, and Succession Depth by Department</p>
                                             </div>
-                                            <span class="badge-primary">Q3 Cycle</span>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="badge-primary">Q3 Cycle</span>
+                                                <span class="inline-flex items-center space-x-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold px-2 py-0.5 rounded-full transition-all duration-300" id="dept-matrix-realtime-badge" title="Connected to Supabase Realtime Telemetry">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                    <span>Live Telemetry</span>
+                                                </span>
+                                            </div>
                                         </div>
 
                                         <!-- Department Comparison Horizontal Bar Chart -->
-                                        <div class="h-44 w-full">
+                                        <div class="h-44 w-full relative">
                                             <canvas id="chart-system-dept-progress"></canvas>
+                                            <div id="dept-matrix-loading-overlay" class="absolute inset-0 bg-white/60 backdrop-blur-[1px] rounded-lg hidden flex items-center justify-center transition-opacity">
+                                                <div class="flex items-center space-x-2 text-xs font-semibold text-slate-600 bg-white/90 shadow-sm px-3 py-1.5 rounded-full border border-slate-200">
+                                                    <i class="fas fa-circle-notch fa-spin text-primary"></i>
+                                                    <span>Syncing with Database...</span>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <!-- Department Breakdown Mini Table -->
@@ -689,49 +884,26 @@
                                                         <th class="pb-2 font-medium text-right">Status</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody class="divide-y divide-[#E8DEDC]">
-                                                    <tr>
-                                                        <td class="py-2.5 font-bold text-slate-800">Front Office</td>
-                                                        <td class="py-2.5 text-center text-slate-500">12</td>
-                                                        <td class="py-2.5 text-center font-bold text-sage-dark">96.2%</td>
-                                                        <td class="py-2.5 text-center font-bold text-primary">98.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">85.0%</td>
-                                                        <td class="py-2.5 text-right"><span class="badge-sage">Optimal</span></td>
+                                                <tbody id="table-dept-execution-matrix-body" class="divide-y divide-[#E8DEDC]">
+                                                    <?php foreach ($deptMatrixRows as $dRow): 
+                                                        $gColor = $dRow['goals_approved_pct'] > 0 ? 'text-sage-dark font-bold' : 'text-slate-400 font-medium';
+                                                        $lColor = $dRow['lms_rate_pct'] > 0 ? 'text-primary font-bold' : 'text-slate-400 font-medium';
+                                                        $sColor = $dRow['succession_ready_pct'] > 0 ? 'text-dusty-dark font-bold' : 'text-slate-400 font-medium';
+                                                    ?>
+                                                    <tr class="hover:bg-slate-50/50 transition-colors">
+                                                        <td class="py-2.5 font-bold text-slate-800"><?= htmlspecialchars($dRow['department']) ?></td>
+                                                        <td class="py-2.5 text-center text-slate-500 font-medium"><?= (int)$dRow['staff_count'] ?></td>
+                                                        <td class="py-2.5 text-center <?= $gColor ?>"><?= number_format($dRow['goals_approved_pct'], 1) ?>%</td>
+                                                        <td class="py-2.5 text-center <?= $lColor ?>"><?= number_format($dRow['lms_rate_pct'], 1) ?>%</td>
+                                                        <td class="py-2.5 text-center <?= $sColor ?>"><?= number_format($dRow['succession_ready_pct'], 1) ?>%</td>
+                                                        <td class="py-2.5 text-right"><span class="<?= $dRow['badge_class'] ?>"><?= htmlspecialchars($dRow['status']) ?></span></td>
                                                     </tr>
-                                                    <tr>
-                                                        <td class="py-2.5 font-bold text-slate-800">Food &amp; Beverage</td>
-                                                        <td class="py-2.5 text-center text-slate-500">24</td>
-                                                        <td class="py-2.5 text-center font-bold text-sage-dark">95.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-primary">96.5%</td>
-                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">80.0%</td>
-                                                        <td class="py-2.5 text-right"><span class="badge-sage">Optimal</span></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="py-2.5 font-bold text-slate-800">Kitchen &amp; Culinary</td>
-                                                        <td class="py-2.5 text-center text-slate-500">18</td>
-                                                        <td class="py-2.5 text-center font-bold text-sage-dark">94.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-primary">92.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">78.0%</td>
-                                                        <td class="py-2.5 text-right"><span class="badge-dusty">Good</span></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="py-2.5 font-bold text-slate-800">Banquet &amp; Events</td>
-                                                        <td class="py-2.5 text-center text-slate-500">18</td>
-                                                        <td class="py-2.5 text-center font-bold text-sage-dark">93.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-primary">94.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">76.0%</td>
-                                                        <td class="py-2.5 text-right"><span class="badge-dusty">Good</span></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="py-2.5 font-bold text-slate-800">Housekeeping</td>
-                                                        <td class="py-2.5 text-center text-slate-500">28</td>
-                                                        <td class="py-2.5 text-center font-bold text-sage-dark">90.5%</td>
-                                                        <td class="py-2.5 text-center font-bold text-primary">91.0%</td>
-                                                        <td class="py-2.5 text-center font-bold text-dusty-dark">72.5%</td>
-                                                        <td class="py-2.5 text-right"><span class="badge-dusty">Good</span></td>
-                                                    </tr>
+                                                    <?php endforeach; ?>
                                                 </tbody>
                                             </table>
+                                            <script>
+                                                window.initialDeptMatrixData = <?= json_encode($deptMatrixRows) ?>;
+                                            </script>
                                         </div>
                                     </div>
 
