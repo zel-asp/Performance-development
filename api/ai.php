@@ -43,6 +43,12 @@ try {
             $response = $controller->refineSBI($payload);
             break;
 
+        // Tailored AI Operational Summary & Coaching for an Active Performance Objective
+        case 'goal_coaching':
+        case 'goal_insight':
+            $response = $controller->getGoalCoaching($payload);
+            break;
+
         // Passive department workplace sentiment diagnostics
         case 'department_sentiment':
         case 'sentiment_pulse':

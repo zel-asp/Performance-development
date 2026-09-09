@@ -316,4 +316,45 @@ class AIController
             'count'   => count($logs)
         ];
     }
+
+    /**
+     * Generate tailored AI operational summary and coaching tip for a performance objective
+     */
+    public function getGoalCoaching(array $payload): array
+    {
+        $goalId = trim($payload['goal_id'] ?? ($payload['goalId'] ?? ''));
+        $title = trim($payload['title'] ?? 'Performance Objective');
+        $metric = trim($payload['target_metric'] ?? ($payload['metric'] ?? 'Target execution'));
+        $dept = trim($payload['department'] ?? ($payload['dept'] ?? 'Front Office'));
+        $status = trim($payload['status'] ?? 'Active');
+        $progressPct = (int)($payload['progress_pct'] ?? ($payload['progress'] ?? 0));
+        $tasks = is_array($payload['tasks'] ?? null) ? $payload['tasks'] : [];
+        $employeeName = trim($payload['employee_name'] ?? ($payload['employeeName'] ?? 'Associate'));
+        $userId = trim($payload['user_id'] ?? ($payload['userId'] ?? ''));
+
+        $result = $this->geminiService->generateGoalCoaching(
+            $title,
+            $metric,
+            $dept,
+            $status,
+            $progressPct,
+            $tasks,
+            $employeeName
+        );
+
+        $this->aiLogModel->logRequest([
+            'user_id'         => $userId ?: 'associate',
+            'role'            => $payload['role'] ?? 'Associate',
+            'feature'         => 'goal_coaching',
+            'input_reference' => substr("Goal: {$title} ({$metric})", 0, 150),
+            'tokens_used'     => $result['tokens'] ?? 0,
+            'status'          => ($result['is_fallback'] ?? false) ? 'FALLBACK' : 'SUCCESS'
+        ]);
+
+        return [
+            'success'   => true,
+            'data'      => $result,
+            'goal_id'   => $goalId
+        ];
+    }
 }

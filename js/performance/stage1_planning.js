@@ -178,6 +178,131 @@ async function loadAndRenderPlanningGoals(silent = false) {
 }
 
 /**
+ * AI Objective Summary & Coaching Helpers (Oxford Suites GenUI)
+ */
+function getInitialGoalCoaching(goal) {
+    if (!goal) {
+        return {
+            summary: "Deliver consistent hospitality service excellence aligned with Oxford Suites operational standards.",
+            coaching_tip: "Break milestones into shift routines and consult your supervisor during floor touchpoints.",
+            key_focus: "Goal Delivery"
+        };
+    }
+
+    try {
+        const cached = localStorage.getItem('oxford_ai_goal_coaching_' + goal.id);
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.summary && parsed.coaching_tip) return parsed;
+        }
+    } catch (e) {}
+
+    const lower = ((goal.title || '') + ' ' + (goal.target_metric || '')).toLowerCase();
+    if (lower.includes('check-in') || lower.includes('front desk') || lower.includes('pms') || lower.includes('reception')) {
+        return {
+            summary: "Prioritize swift, warm guest arrivals by maintaining check-in processing under 3 minutes with zero PMS billing errors.",
+            coaching_tip: "Pre-key room access cards during peak arrival windows and apply the LAST recovery model if delays occur.",
+            key_focus: "Check-in Speed"
+        };
+    } else if (lower.includes('turnover') || lower.includes('housekeeping') || lower.includes('inspection') || lower.includes('suite')) {
+        return {
+            summary: "Ensure complete 18-point suite cleanliness and fixture inspection standards within target room turnover turnaround.",
+            coaching_tip: "Double-check bathroom sanitation and linen alignment before updating room status to inspected in PMS.",
+            key_focus: "Room Readiness"
+        };
+    } else if (lower.includes('haccp') || lower.includes('food') || lower.includes('culinary') || lower.includes('kitchen') || lower.includes('sanitation')) {
+        return {
+            summary: "Adhere strictly to Oxford Suites culinary food safety and sanitation benchmarks across all preparation lines.",
+            coaching_tip: "Monitor walk-in chiller logs twice daily and maintain strict FIFO rotation for all prepped items.",
+            key_focus: "HACCP Safety"
+        };
+    } else if (lower.includes('table') || lower.includes('dining') || lower.includes('f&b') || lower.includes('beverage') || lower.includes('server')) {
+        return {
+            summary: "Deliver seamless dining service by adhering to 2-minute greeting and 3-minute beverage service standards.",
+            coaching_tip: "Coordinate closely with the expeditor during dinner rush to ensure smooth table turnovers without rushing guests.",
+            key_focus: "Service Pacing"
+        };
+    } else {
+        return {
+            summary: `Drive consistent operational standards towards your target metric of ${goal.target_metric || 'departmental excellence'}.`,
+            coaching_tip: "Break milestones down into daily shift routines and verify progress with your supervisor during shift huddles.",
+            key_focus: "Goal Delivery"
+        };
+    }
+}
+
+async function fetchDynamicGoalCoaching(goal, force = false) {
+    if (!goal || !goal.id) return;
+
+    if (!window._aiGoalFetching) window._aiGoalFetching = {};
+    if (window._aiGoalFetching[goal.id]) return;
+
+    if (!force) {
+        try {
+            const cached = localStorage.getItem('oxford_ai_goal_coaching_' + goal.id);
+            if (cached) return;
+        } catch (e) {}
+    }
+
+    window._aiGoalFetching[goal.id] = true;
+
+    const tipEl = document.getElementById(`ai-coaching-tip-${goal.id}`);
+    const summaryEl = document.getElementById(`ai-summary-text-${goal.id}`);
+    const focusEl = document.getElementById(`ai-focus-tag-${goal.id}`);
+
+    try {
+        const res = await fetch('api/ai.php?action=goal_coaching', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                goal_id: goal.id,
+                title: goal.title,
+                target_metric: goal.target_metric,
+                department: goal.department,
+                status: goal.status,
+                progress_pct: goal.progress_pct || 0,
+                tasks: goal.tasks || [],
+                employee_name: window.currentUser?.name || (window.activePersonaRole === 'Supervisor' ? 'Marco Rossi' : 'Maria Santos'),
+                user_id: window.currentUser?.id || 'emp-101'
+            })
+        });
+
+        const json = await res.json();
+        if (json.success && json.data) {
+            const coaching = json.data;
+            try {
+                localStorage.setItem('oxford_ai_goal_coaching_' + goal.id, JSON.stringify(coaching));
+            } catch (e) {}
+
+            if (summaryEl && coaching.summary) summaryEl.textContent = coaching.summary;
+            if (tipEl && coaching.coaching_tip) tipEl.textContent = coaching.coaching_tip;
+            if (focusEl && coaching.key_focus) focusEl.textContent = coaching.key_focus;
+        }
+    } catch (e) {
+        console.warn(`[AI Coaching] Dynamic fetch fallback for goal ${goal.id}:`, e);
+    } finally {
+        window._aiGoalFetching[goal.id] = false;
+    }
+}
+
+function refreshGoalAiCoaching(goalId) {
+    const goals = window.dbGoals || [];
+    const goal = goals.find(g => String(g.id) === String(goalId));
+    if (!goal) return;
+
+    const tipEl = document.getElementById(`ai-coaching-tip-${goalId}`);
+    if (tipEl) {
+        tipEl.innerHTML = '<span class="inline-flex items-center text-primary"><i class="fas fa-circle-notch fa-spin text-xs mr-1.5"></i>Consulting Gemini AI Coach...</span>';
+    }
+
+    try {
+        localStorage.removeItem('oxford_ai_goal_coaching_' + goalId);
+    } catch (e) {}
+
+    fetchDynamicGoalCoaching(goal, true);
+}
+
+/**
  * Render Employee's self-set objectives in "Shift Focus & My Pulse" with Task Checklists
  */
 function renderEmployeePulseGoals(goals) {
@@ -317,14 +442,6 @@ function renderEmployeePulseGoals(goals) {
         return;
     }
 
-    const evalRec = getDbEvaluations().find(ev => {
-        const evEmpId = (ev.employee_id || '').toLowerCase().trim();
-        return evEmpId === currentUserId ||
-            (currentUserId === 'emp-101' && (evEmpId === 'emp-1' || evEmpId.includes('101') || evEmpId.includes('maria'))) ||
-            (currentUserId === 'emp-102' && (evEmpId === 'emp-2' || evEmpId.includes('102') || evEmpId.includes('antonio') || evEmpId.includes('marco')));
-    });
-
-
     container.innerHTML = empGoals.map((g, idx) => {
         const statusLower = (g.status || '').toLowerCase();
         const isFailed = statusLower.includes('fail') || statusLower.includes('retake') || statusLower.includes('remediat') || statusLower.includes('disapprov') || statusLower.includes('not met');
@@ -383,9 +500,12 @@ function renderEmployeePulseGoals(goals) {
         });
         const lmsTitle = matchedLms ? (matchedLms.document_title || matchedLms.title) : (g.lms_title || g.lms_doc_title || g.prescribed_lms);
 
+        // Instant & Tailored AI Coaching
+        const initialCoaching = getInitialGoalCoaching(g);
+
         return `
             <div class="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3 flex flex-col justify-between hover:border-primary/40 transition">
-                <div class="space-y-2.5">
+                <div class="space-y-3">
                     <div class="flex items-center justify-between gap-2 flex-wrap">
                         <div class="flex items-center space-x-1.5">
                             ${statusBadgeHtml}
@@ -413,6 +533,52 @@ function renderEmployeePulseGoals(goals) {
                         </div>
                         <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                             <div class="${progressPct >= 100 ? 'bg-emerald-500' : (isFailed ? 'bg-rose-500' : 'bg-primary')} h-1.5 rounded-full transition-all duration-500" style="width: ${progressPct}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- AI Objective Summary & Coaching Section -->
+                    <div id="ai-coaching-box-${g.id}" class="p-3 bg-gradient-to-br from-amber-500/5 via-primary/5 to-purple-500/5 rounded-xl border border-primary/20 shadow-2xs space-y-2 relative overflow-hidden transition-all">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-1.5">
+                                <span class="w-5 h-5 rounded-md bg-primary/10 text-primary flex items-center justify-center text-[10px] shadow-2xs">
+                                    <i class="fas fa-sparkles"></i>
+                                </span>
+                                <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-800 flex items-center space-x-1">
+                                    <span>AI Objective Coaching</span>
+                                    <span class="text-[8px] font-normal text-slate-400">· Gemini</span>
+                                </span>
+                            </div>
+                            <span id="ai-focus-tag-${g.id}" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-white/90 border border-slate-200 text-slate-700 shadow-2xs">
+                                ${initialCoaching.key_focus}
+                            </span>
+                        </div>
+
+                        <!-- Summary & Floor Tip -->
+                        <div class="space-y-1.5 text-[11px]">
+                            <p id="ai-summary-text-${g.id}" class="text-slate-700 font-medium leading-relaxed">
+                                ${initialCoaching.summary}
+                            </p>
+                            <div class="p-2 bg-white/95 rounded-lg border border-primary/15 shadow-2xs flex items-start space-x-2 text-slate-600">
+                                <i class="fas fa-lightbulb text-amber-500 text-xs mt-0.5 flex-shrink-0"></i>
+                                <div class="leading-relaxed">
+                                    <span class="font-bold text-slate-800 text-[10px] uppercase tracking-wide mr-1">Shift Coaching:</span>
+                                    <span id="ai-coaching-tip-${g.id}">${initialCoaching.coaching_tip}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-100/80 text-[10px]">
+                            <button type="button" onclick="refreshGoalAiCoaching('${g.id}')" class="text-slate-400 hover:text-primary transition inline-flex items-center space-x-1 font-medium" title="Re-evaluate with Gemini AI">
+                                <i class="fas fa-arrows-rotate text-[9px]"></i>
+                                <span>Refresh AI Tip</span>
+                            </button>
+                            <button type="button" onclick="AIRefiner.askAboutGoal('${g.id}', '${encodeURIComponent(g.title)}', '${encodeURIComponent(g.target_metric || '')}', '${encodeURIComponent(g.department || '')}')"
+                                class="text-primary hover:text-primary-dark font-bold inline-flex items-center space-x-1 transition hover:underline">
+                                <i class="fas fa-comments text-[9px]"></i>
+                                <span>Deepen Coaching</span>
+                                <i class="fas fa-chevron-right text-[8px]"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -448,8 +614,18 @@ function renderEmployeePulseGoals(goals) {
             </div>
         `;
     }).join('');
+
+    // Asynchronously enrich with dynamic Gemini AI coaching
+    empGoals.forEach(g => {
+        setTimeout(() => {
+            fetchDynamicGoalCoaching(g);
+        }, 150);
+    });
 }
 window.renderEmployeePulseGoals = renderEmployeePulseGoals;
+window.getInitialGoalCoaching = getInitialGoalCoaching;
+window.fetchDynamicGoalCoaching = fetchDynamicGoalCoaching;
+window.refreshGoalAiCoaching = refreshGoalAiCoaching;
 
 function openEmployeeSelfEvalModal(goalId, empId) {
     const goal = (window.dbGoals || []).find(g => String(g.id) === String(goalId));

@@ -286,6 +286,22 @@ const AIRefiner = {
         } catch (e) {
             console.warn('[AIRefiner] Sentiment pulse fetch fallback:', e);
         }
+    },
+
+    askAboutGoal(goalId, goalTitle, metric, dept) {
+        const title = decodeURIComponent(goalTitle || 'Performance Objective');
+        const met = decodeURIComponent(metric || '');
+        const department = decodeURIComponent(dept || this.currentDept || 'Front Office');
+        const empName = window.currentUser?.name || (window.activePersonaRole === 'Supervisor' ? 'Marco Rossi' : 'Maria Santos');
+        const empId = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+
+        this.open(empId, empName, department);
+
+        const prompt = `As my Oxford Suites Leadership & System AI Copilot, please provide a coaching breakdown for my performance objective: "${title}" with target metric "${met}". What daily shift habits, PMS/floor practices, and guest recovery steps (LAST model) will help me hit this target?`;
+
+        setTimeout(() => {
+            this.sendChat(prompt);
+        }, 200);
     }
 };
 

@@ -323,6 +323,108 @@ USER_PROMPT;
     }
 
     /**
+     * Generate concise operational summary and actionable coaching for a performance objective
+     */
+    public function generateGoalCoaching(
+        string $title,
+        string $targetMetric,
+        string $dept = 'Front Office',
+        string $status = 'Active',
+        int $progressPct = 0,
+        array $tasks = [],
+        string $employeeName = 'Associate'
+    ): array {
+        $taskSummary = !empty($tasks) ? implode('; ', array_map(function($t) {
+            return ($t['title'] ?? '') . ' (' . ($t['status'] ?? 'pending') . ')';
+        }, array_slice($tasks, 0, 4))) : 'Standard milestone tasks';
+
+        $prompt = <<<PROMPT
+Associate: {$employeeName}
+Department: {$dept}
+Performance Objective: "{$title}"
+Target Metric: "{$targetMetric}"
+Current Status: {$status} ({$progressPct}% completed)
+Key Tasks: {$taskSummary}
+
+Analyze this hotel performance objective for Oxford Suites Makati.
+Return VALID JSON ONLY with exactly these keys:
+{
+  "summary": "1 clear, professional sentence summarizing the performance deliverable and standard expected.",
+  "coaching_tip": "1 practical, actionable floor coaching recommendation for the associate to excel in this shift.",
+  "key_focus": "Short 2-3 word focus tag (e.g. 'Check-in Speed', 'HACCP Safety', 'Guest CSAT', 'Room Readiness')"
+}
+PROMPT;
+
+        $systemInstruction = "You are the official Oxford Suites Makati Leadership & Performance AI Copilot. "
+            . "Generate concise, constructive operational performance summaries and coaching tips tailored specifically to this hospitality objective. "
+            . "Always return valid JSON only without codeblocks.";
+
+        $payload = [
+            'systemInstruction' => [
+                'role' => 'system',
+                'parts' => [['text' => $systemInstruction]]
+            ],
+            'contents' => [
+                ['role' => 'user', 'parts' => [['text' => $prompt]]]
+            ],
+            'generationConfig' => [
+                'temperature'     => 0.3,
+                'maxOutputTokens' => 350,
+                'responseMimeType'=> 'application/json'
+            ]
+        ];
+
+        $response = $this->callGeminiApi($payload, 12);
+
+        if ($response['success'] && !empty($response['text'])) {
+            $parsed = $this->extractJson($response['text']);
+            if ($parsed && !empty($parsed['summary']) && !empty($parsed['coaching_tip'])) {
+                return [
+                    'success'      => true,
+                    'summary'      => trim($parsed['summary']),
+                    'coaching_tip' => trim($parsed['coaching_tip']),
+                    'key_focus'    => trim($parsed['key_focus'] ?? 'Operational Focus'),
+                    'is_fallback'  => false,
+                    'model'        => $response['model'] ?? GEMINI_MODEL
+                ];
+            }
+        }
+
+        // Smart operational fallback tailored to the objective
+        $lowerTitle = strtolower($title . ' ' . $targetMetric);
+        if (str_contains($lowerTitle, 'check-in') || str_contains($lowerTitle, 'front desk') || str_contains($lowerTitle, 'pms')) {
+            $summary = "Maintain front desk flow by keeping guest check-in processing under 3 minutes with zero PMS billing errors.";
+            $tip = "Pre-key room access cards during peak arrival windows and apply the LAST recovery model if any delay occurs.";
+            $focus = "Check-in Speed";
+        } elseif (str_contains($lowerTitle, 'turnover') || str_contains($lowerTitle, 'housekeeping') || str_contains($lowerTitle, 'inspection')) {
+            $summary = "Ensure complete 18-point suite cleanliness and fixture inspection standards within target room turnover turnaround.";
+            $tip = "Double-check bathroom sanitation and linen alignment before updating room status to inspected in PMS.";
+            $focus = "Room Turnover";
+        } elseif (str_contains($lowerTitle, 'haccp') || str_contains($lowerTitle, 'food') || str_contains($lowerTitle, 'culinary') || str_contains($lowerTitle, 'kitchen')) {
+            $summary = "Adhere strictly to Oxford Suites culinary food safety and sanitation benchmarks across all preparation lines.";
+            $tip = "Monitor walk-in chiller logs twice daily and maintain strict FIFO rotation for all prepped items.";
+            $focus = "HACCP Safety";
+        } elseif (str_contains($lowerTitle, 'table') || str_contains($lowerTitle, 'dining') || str_contains($lowerTitle, 'f&b') || str_contains($lowerTitle, 'beverage')) {
+            $summary = "Deliver seamless dining service by adhering to 2-minute greeting and 3-minute beverage service standards.";
+            $tip = "Coordinate closely with the expeditor during dinner rush to ensure smooth table turnovers without rushing guests.";
+            $focus = "Service Pacing";
+        } else {
+            $summary = "Drive consistent operational excellence towards your target metric of {$targetMetric}.";
+            $tip = "Break milestones down into daily shift routines and verify progress with your supervisor during shift huddles.";
+            $focus = "Goal Delivery";
+        }
+
+        return [
+            'success'      => true,
+            'summary'      => $summary,
+            'coaching_tip' => $tip,
+            'key_focus'    => $focus,
+            'is_fallback'  => true,
+            'model'        => 'oxford-rules'
+        ];
+    }
+
+    /**
      * Send cURL request to Gemini API endpoint with strict timeout and fallback models
      */
     public function callGeminiApi(array $payload, ?int $customTimeout = null): array
