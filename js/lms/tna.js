@@ -224,10 +224,12 @@ function renderTnaEnrollmentsTableRows() {
                 </td>
                 <td class="py-3 px-3 text-right">
                     <div class="flex items-center justify-end space-x-1.5">
+                        ${!isSupervisorOrManager ? `
                         <button onclick="startQuizPrompt('${row.bookId}', '${row.bookTitle.replace(/'/g, "\\'")}', '${row.bookDept}', 'SOP Manual')" class="px-2 py-1 text-[11px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-xl transition border border-amber-200 flex items-center space-x-1" title="Take Knowledge Quiz">
                             <i class="fas fa-graduation-cap text-gold-dark text-[10px]"></i>
                             <span>Quiz</span>
                         </button>
+                        ` : ''}
                         <button onclick="openBookReader('${row.bookId}')" class="px-2.5 py-1 text-[11px] font-bold text-primary bg-primary/5 hover:bg-primary/10 rounded-xl transition border border-primary/20">
                             Launch SOP
                         </button>

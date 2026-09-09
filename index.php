@@ -390,6 +390,11 @@
                     window.activePersonaRole = role === 'supervisor' ? 'Supervisor' : (role === 'hradmin' ? 'HRAdmin' : (role === 'generalmanager' ? 'GeneralManager' : 'Associate'));
                     window.activePersonaKey = role;
                     if (user) window.currentUser = user;
+                    var empId = user?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+                    var cachedXp = localStorage.getItem('oxford_cached_total_xp_' + empId);
+                    if (cachedXp !== null) {
+                        window._initialCachedXp = parseInt(cachedXp, 10) || 0;
+                    }
                 } catch(e) {}
 
                 // Resilient early stub for switchPillar to prevent ReferenceError if clicked early
@@ -401,6 +406,12 @@
                             window._queuedPillar = pillarKey;
                             console.log('[Oxford Suites] Navigation queued:', pillarKey);
                         }
+                    };
+                }
+
+                if (typeof window.openExportSummaryModal !== 'function') {
+                    window.openExportSummaryModal = function() {
+                        if (typeof openModal === 'function') openModal('modal-export-summary');
                     };
                 }
             })();

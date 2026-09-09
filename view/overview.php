@@ -118,6 +118,19 @@
                                             <div id="kpi-xp-bar" class="bg-gold h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
                                         </div>
                                         <p id="kpi-xp-subtitle" class="text-[11px] text-slate-400">250 XP to Bronze Tier</p>
+                                        <script>
+                                            (function() {
+                                                try {
+                                                    var activeId = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+                                                    var rawCached = localStorage.getItem('oxford_cached_total_xp_' + activeId);
+                                                    if (rawCached !== null) {
+                                                        var xp = parseInt(rawCached, 10) || 0;
+                                                        var elVal = document.getElementById('kpi-xp-val');
+                                                        if (elVal) elVal.innerHTML = xp.toLocaleString() + ' <span class="text-xs font-normal text-slate-400">XP</span>';
+                                                    }
+                                                } catch(e) {}
+                                            })();
+                                        </script>
                                     </div>
 
                                 </div>
@@ -208,21 +221,21 @@
                                                     My Shift Climate &amp; Well-being</h3>
                                                 <p class="text-xs text-slate-500">Your personal shift sentiment and mood log</p>
                                             </div>
-                                            <button onclick="openModal('modal-sentiment-pulse')"
-                                                class="text-xs font-bold text-primary hover:underline flex items-center space-x-1">
+                                            <button id="btn-log-checkin-modal" onclick="openModal('modal-sentiment-pulse')"
+                                                class="text-xs font-bold text-primary hover:underline flex items-center space-x-1 transition">
                                                 <i class="fas fa-pen text-[10px]"></i>
-                                                <span>Log Check-In</span>
+                                                <span id="btn-log-checkin-text">Log Check-In</span>
                                             </button>
                                         </div>
 
                                         <!-- Active Personal Status Banner -->
-                                        <div id="my-shift-sentiment-banner" class="p-4 rounded-2xl bg-sage-50/70 border border-sage-200/80 flex items-center justify-between gap-3">
+                                        <div id="my-shift-sentiment-banner" class="p-4 rounded-2xl bg-sage-50/70 border border-sage-200/80 flex items-center justify-between gap-3 transition-all">
                                             <div class="flex items-center space-x-3">
-                                                <div id="my-shift-sentiment-emoji" class="w-12 h-12 rounded-2xl bg-sage-dark text-white flex items-center justify-center text-2xl shadow-xs">
+                                                <div id="my-shift-sentiment-emoji" class="w-12 h-12 rounded-2xl bg-sage-dark text-white flex items-center justify-center text-2xl shadow-xs transition-all">
                                                     😊
                                                 </div>
                                                 <div>
-                                                    <span class="text-[10px] font-bold uppercase tracking-wider text-sage-dark">Today's Check-in</span>
+                                                    <span id="my-shift-sentiment-tag" class="text-[10px] font-bold uppercase tracking-wider text-sage-dark">Today's Check-in</span>
                                                     <h4 id="my-shift-sentiment-title" class="font-heading font-bold text-slate-900 text-sm">Smooth &amp; Energized</h4>
                                                     <p id="my-shift-sentiment-desc" class="text-[11px] text-slate-500">Front Desk shift operating on schedule with zero blockers.</p>
                                                 </div>
@@ -232,19 +245,24 @@
 
                                         <!-- Quick Sentiment Logger Buttons -->
                                         <div class="space-y-1.5">
-                                            <span class="text-[11px] font-bold text-slate-600 block">Quick Shift Mood Update:</span>
-                                            <div class="grid grid-cols-3 gap-2">
-                                                <button type="button" onclick="logQuickSentiment('smooth')" class="p-2.5 rounded-xl border border-sage-200 bg-white hover:bg-sage-50 text-slate-800 flex flex-col items-center justify-center space-y-1 transition group">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-[11px] font-bold text-slate-600 block">Quick Shift Mood Update:</span>
+                                                <span id="my-shift-already-logged-hint" class="hidden text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                                    <i class="fas fa-check-circle mr-1 text-emerald-600"></i>Logged for Today
+                                                </span>
+                                            </div>
+                                            <div class="grid grid-cols-3 gap-2" id="quick-mood-btn-group">
+                                                <button id="quick-mood-btn-smooth" type="button" onclick="logQuickSentiment('smooth')" class="quick-sentiment-btn p-2.5 rounded-xl border border-sage-200 bg-white hover:bg-sage-50 text-slate-800 flex flex-col items-center justify-center space-y-1 transition group">
                                                     <span class="text-lg group-hover:scale-110 transition-transform">😊</span>
                                                     <span class="text-[11px] font-bold text-sage-dark">Smooth</span>
                                                     <span class="text-[9px] text-slate-400">Clear focus</span>
                                                 </button>
-                                                <button type="button" onclick="logQuickSentiment('manageable')" class="p-2.5 rounded-xl border border-dusty-200 bg-white hover:bg-dusty-50 text-slate-800 flex flex-col items-center justify-center space-y-1 transition group">
+                                                <button id="quick-mood-btn-manageable" type="button" onclick="logQuickSentiment('manageable')" class="quick-sentiment-btn p-2.5 rounded-xl border border-dusty-200 bg-white hover:bg-dusty-50 text-slate-800 flex flex-col items-center justify-center space-y-1 transition group">
                                                     <span class="text-lg group-hover:scale-110 transition-transform">😐</span>
                                                     <span class="text-[11px] font-bold text-dusty-dark">Manageable</span>
                                                     <span class="text-[9px] text-slate-400">Steady load</span>
                                                 </button>
-                                                <button type="button" onclick="logQuickSentiment('friction')" class="p-2.5 rounded-xl border border-terracotta-200 bg-white hover:bg-terracotta-50 text-slate-800 flex flex-col items-center justify-center space-y-1 transition group">
+                                                <button id="quick-mood-btn-friction" type="button" onclick="logQuickSentiment('friction')" class="quick-sentiment-btn p-2.5 rounded-xl border border-terracotta-200 bg-white hover:bg-terracotta-50 text-slate-800 flex flex-col items-center justify-center space-y-1 transition group">
                                                     <span class="text-lg group-hover:scale-110 transition-transform">😟</span>
                                                     <span class="text-[11px] font-bold text-terracotta-dark">Friction</span>
                                                     <span class="text-[9px] text-slate-400">Need support</span>
@@ -296,15 +314,10 @@
                                     </div>
                                     <div class="flex items-center space-x-2 self-start md:self-auto flex-shrink-0">
                                         <button
-                                            onclick="showToast('System metrics report exported successfully.', 'success')"
-                                            class="btn-secondary px-4 py-2 text-xs font-semibold">
-                                            <i class="fas fa-file-export text-xs text-slate-500"></i>
+                                            onclick="openExportSummaryModal()"
+                                            class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-2 shadow-xs hover:shadow-md transition">
+                                            <i class="fas fa-file-export text-xs"></i>
                                             <span>Export Summary</span>
-                                        </button>
-                                        <button onclick="openModal('modal-sentiment-pulse')"
-                                            class="btn-primary px-4 py-2 text-xs font-bold">
-                                            <i class="fas fa-bolt text-xs"></i>
-                                            <span>Property Audit</span>
                                         </button>
                                     </div>
                                 </div>
@@ -736,26 +749,33 @@
                                             <div>
                                                 <h3 class="font-heading font-bold text-base text-slate-900">
                                                     Shift Climate Pulse</h3>
-                                                <p class="text-xs text-slate-500">Aggregated Employee Sentiment (All 100 Staff)</p>
+                                                <p id="pulse-total-staff-subtitle" class="text-xs text-slate-500">Aggregated Employee Sentiment (Live Supabase Telemetry)</p>
                                             </div>
-                                            <button onclick="openModal('modal-sentiment-pulse')"
-                                                class="text-xs font-bold text-primary hover:underline">+ Property Audit</button>
                                         </div>
-                                        <div class="h-48 w-full flex items-center justify-center">
+                                        <div class="h-48 w-full flex items-center justify-center relative">
                                             <canvas id="chart-sentiment-doughnut"></canvas>
+                                            
+                                            <!-- Empty State for Shift Climate Pulse -->
+                                            <div id="chart-sentiment-empty-state" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-slate-50/90 rounded-2xl border border-dashed border-slate-200">
+                                                <div class="w-11 h-11 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-lg mb-2 shadow-2xs">
+                                                    <i class="fas fa-heart-pulse text-primary/60"></i>
+                                                </div>
+                                                <p class="font-bold text-xs text-slate-700">No Shift Climate Data</p>
+                                                <p class="text-[10px] text-slate-400 mt-0.5 max-w-[210px] leading-tight">No employee shift sentiments recorded yet in Supabase. Check in above to start tracking live team pulse.</p>
+                                            </div>
                                         </div>
                                         <div
                                             class="flex justify-around text-center text-xs pt-3 border-t border-[#E8DEDC]">
                                             <div>
-                                                <p class="font-bold text-sage-dark">68.5%</p>
+                                                <p id="pulse-smooth-pct" class="font-bold text-sage-dark">0.0%</p>
                                                 <p class="text-[10px] text-slate-500">Smooth</p>
                                             </div>
                                             <div>
-                                                <p class="font-bold text-dusty-dark">23.0%</p>
+                                                <p id="pulse-manageable-pct" class="font-bold text-dusty-dark">0.0%</p>
                                                 <p class="text-[10px] text-slate-500">Manageable</p>
                                             </div>
                                             <div>
-                                                <p class="font-bold text-terracotta-dark">8.5%</p>
+                                                <p id="pulse-friction-pct" class="font-bold text-terracotta-dark">0.0%</p>
                                                 <p class="text-[10px] text-slate-500">Friction</p>
                                             </div>
                                         </div>

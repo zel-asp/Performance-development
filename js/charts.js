@@ -60,27 +60,10 @@ function initAllCharts() {
         });
     }
 
-    // Chart 2: Doughnut (Sentiment)
+    // Chart 2: Doughnut (Sentiment) - Pure Dynamic from Supabase shift_sentiments
     const ctxSentiment = document.getElementById('chart-sentiment-doughnut');
-    if (ctxSentiment && !chartSentimentDoughnutInstance) {
-        chartSentimentDoughnutInstance = new Chart(ctxSentiment, {
-            type: 'doughnut',
-            data: {
-                labels: ['Smooth (68.5%)', 'Manageable (23%)', 'Friction (8.5%)'],
-                datasets: [{
-                    data: [68.5, 23.0, 8.5],
-                    backgroundColor: ['#7A9A7E', '#6B8FA3', '#C47762'],
-                    borderWidth: 2,
-                    borderColor: '#FFFFFF'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                cutout: '72%'
-            }
-        });
+    if (ctxSentiment) {
+        updateShiftClimatePulseFromSupabase(window.shiftSentimentsState || null);
     }
 
     // Chart 3: Radar (Competency Matrix)
@@ -248,87 +231,136 @@ function initAllCharts() {
     updateXpTrajectoryFromLedger();
 }
 
-/**
- * Update XP Received & Rewards Trajectory strictly from xp_ledger database records
- */
-async function updateXpTrajectoryFromLedger(employeeId) {
-    const ctxPerf = document.getElementById('chart-performance-trend');
-    if (!ctxPerf) return;
+window._cachedXpLedger = window._cachedXpLedger || {};
 
-    const empId = employeeId || window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
-    const loadingOverlay = document.getElementById('xp-trajectory-loading');
+function renderXpTrajectoryAndKpi(ledger, empId) {
     const emptyOverlay = document.getElementById('xp-trajectory-empty');
     const xpBadge = document.getElementById('xp-trajectory-badge');
 
-    const xpKpiLoading = document.getElementById('kpi-xp-loading');
+    // Calculate last 6 months buckets
+    const months = [];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        months.push({
+            key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+            label: monthNames[d.getMonth()],
+            points: 0
+        });
+    }
 
-    // Display Loading State
-    if (loadingOverlay) loadingOverlay.classList.remove('hidden');
-    if (xpKpiLoading) xpKpiLoading.classList.remove('hidden');
-    if (emptyOverlay) emptyOverlay.classList.add('hidden');
-    if (xpBadge) xpBadge.textContent = 'Loading...';
+    // Aggregate points strictly from database xp_ledger rows
+    let totalLedgerPoints = 0;
+    (ledger || []).forEach(item => {
+        const rawDate = item.raw_date || item.created_at;
+        const pts = Number(item.amount || item.points || 0);
+        totalLedgerPoints += pts;
+
+        if (rawDate) {
+            const itemDate = new Date(rawDate);
+            const itemKey = `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}`;
+            const mBucket = months.find(m => m.key === itemKey);
+            if (mBucket) {
+                mBucket.points += pts;
+            }
+        }
+    });
+
+    const labels = months.map(m => m.label);
+    const monthlyData = months.map(m => m.points);
+
+    if (totalLedgerPoints === 0 || !ledger || ledger.length === 0) {
+        if (emptyOverlay) emptyOverlay.classList.remove('hidden');
+        if (xpBadge) xpBadge.textContent = '0 XP';
+    } else {
+        if (emptyOverlay) emptyOverlay.classList.add('hidden');
+        if (xpBadge) xpBadge.textContent = `${totalLedgerPoints.toLocaleString()} XP`;
+    }
+
+    // Save cached total XP for instant 0ms pre-hydration
+    try {
+        localStorage.setItem(`oxford_cached_total_xp_${empId}`, totalLedgerPoints);
+    } catch (e) {}
+
+    // Update Gamified XP KPI Card in Dashboard Overview
+    updateGamifiedXpKpiCard(totalLedgerPoints);
+
+    if (chartPerfTrendInstance) {
+        chartPerfTrendInstance.data.labels = labels;
+        chartPerfTrendInstance.data.datasets[0].data = monthlyData;
+        chartPerfTrendInstance.update();
+    }
+}
+
+/**
+ * Update XP Received & Rewards Trajectory strictly from xp_ledger database records with 0ms Cache Support
+ */
+async function updateXpTrajectoryFromLedger(employeeId, forceRefresh = false) {
+    const ctxPerf = document.getElementById('chart-performance-trend');
+    if (!ctxPerf) return;
+
+    const activeUser = (typeof getActiveSessionUser === 'function') ? getActiveSessionUser() : null;
+    const empId = employeeId || activeUser?.id || window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+    const loadingOverlay = document.getElementById('xp-trajectory-loading');
+    const emptyOverlay = document.getElementById('xp-trajectory-empty');
+    const xpBadge = document.getElementById('xp-trajectory-badge');
+    const xpKpiLoading = document.getElementById('kpi-xp-loading');
+    const cacheKey = `xp_ledger_cache_${empId}`;
+
+    // 1. Instant 0ms render from memory or sessionStorage cache
+    let hasRenderedFromCache = false;
+    if (!forceRefresh) {
+        if (window._cachedXpLedger && window._cachedXpLedger[empId]) {
+            renderXpTrajectoryAndKpi(window._cachedXpLedger[empId], empId);
+            hasRenderedFromCache = true;
+        } else {
+            try {
+                const stored = sessionStorage.getItem(cacheKey);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    window._cachedXpLedger[empId] = parsed;
+                    renderXpTrajectoryAndKpi(parsed, empId);
+                    hasRenderedFromCache = true;
+                }
+            } catch (e) {}
+        }
+    }
+
+    if (!hasRenderedFromCache) {
+        // If we have cached total XP, render that immediately
+        try {
+            const cachedXp = localStorage.getItem(`oxford_cached_total_xp_${empId}`);
+            if (cachedXp !== null) {
+                updateGamifiedXpKpiCard(parseInt(cachedXp, 10) || 0);
+            }
+        } catch(e) {}
+
+        if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+        if (xpKpiLoading) xpKpiLoading.classList.remove('hidden');
+        if (emptyOverlay) emptyOverlay.classList.add('hidden');
+        if (xpBadge) xpBadge.textContent = 'Loading...';
+    }
 
     try {
         const res = await fetch(`api/social.php?action=get_ledger&employeeId=${encodeURIComponent(empId)}`);
         const json = await res.json();
         const ledger = (json && Array.isArray(json.data)) ? json.data : (Array.isArray(json) ? json : []);
 
-        // Calculate last 6 months buckets
-        const months = [];
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const now = new Date();
-        for (let i = 5; i >= 0; i--) {
-            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            months.push({
-                key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-                label: monthNames[d.getMonth()],
-                points: 0
-            });
-        }
+        // Update memory & session cache
+        window._cachedXpLedger[empId] = ledger;
+        try {
+            sessionStorage.setItem(cacheKey, JSON.stringify(ledger));
+        } catch (e) {}
 
-        // Aggregate points strictly from database xp_ledger rows
-        let totalLedgerPoints = 0;
-        ledger.forEach(item => {
-            const rawDate = item.raw_date || item.created_at;
-            const pts = Number(item.amount || item.points || 0);
-            totalLedgerPoints += pts;
-
-            if (rawDate) {
-                const itemDate = new Date(rawDate);
-                const itemKey = `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}`;
-                const mBucket = months.find(m => m.key === itemKey);
-                if (mBucket) {
-                    mBucket.points += pts;
-                }
-            }
-        });
-
-        const labels = months.map(m => m.label);
-        const monthlyData = months.map(m => m.points);
-
-        if (totalLedgerPoints === 0 || ledger.length === 0) {
-            // No database records found for this employee
-            if (emptyOverlay) emptyOverlay.classList.remove('hidden');
-            if (xpBadge) xpBadge.textContent = '0 XP';
-        } else {
-            // Real database records exist
-            if (emptyOverlay) emptyOverlay.classList.add('hidden');
-            if (xpBadge) xpBadge.textContent = `${totalLedgerPoints.toLocaleString()} XP`;
-        }
-
-        // Update Gamified XP KPI Card in Dashboard Overview
-        updateGamifiedXpKpiCard(totalLedgerPoints);
-
-        if (chartPerfTrendInstance) {
-            chartPerfTrendInstance.data.labels = labels;
-            chartPerfTrendInstance.data.datasets[0].data = monthlyData;
-            chartPerfTrendInstance.update();
-        }
+        renderXpTrajectoryAndKpi(ledger, empId);
     } catch (err) {
         console.warn('Could not query database xp_ledger for chart:', err);
-        if (emptyOverlay) emptyOverlay.classList.remove('hidden');
-        if (xpBadge) xpBadge.textContent = '0 XP';
-        updateGamifiedXpKpiCard(0);
+        if (!hasRenderedFromCache) {
+            if (emptyOverlay) emptyOverlay.classList.remove('hidden');
+            if (xpBadge) xpBadge.textContent = '0 XP';
+            updateGamifiedXpKpiCard(0);
+        }
     } finally {
         if (loadingOverlay) loadingOverlay.classList.add('hidden');
         if (xpKpiLoading) xpKpiLoading.classList.add('hidden');
@@ -336,6 +368,11 @@ async function updateXpTrajectoryFromLedger(employeeId) {
 }
 
 function updateGamifiedXpKpiCard(totalPoints) {
+    if (typeof window.syncOverviewGamifiedXP === 'function') {
+        window.syncOverviewGamifiedXP(totalPoints);
+        return;
+    }
+
     const kpiLvl = document.getElementById('kpi-xp-level-badge');
     const kpiVal = document.getElementById('kpi-xp-val');
     const kpiTitle = document.getElementById('kpi-xp-title');
@@ -343,17 +380,35 @@ function updateGamifiedXpKpiCard(totalPoints) {
     const kpiSub = document.getElementById('kpi-xp-subtitle');
 
     let level = 1;
-    let title = 'Novice Associate';
+    let title = 'Associate';
     let nextTier = 'Bronze Tier';
     let tierMax = 250;
     let tierMin = 0;
 
-    if (totalPoints >= 1000) {
-        level = 5;
-        title = 'Gold Master Champion';
-        nextTier = 'Diamond Tier';
-        tierMin = 1000;
+    if (totalPoints >= 2500) {
+        level = 8;
+        title = 'Oxford Ambassador';
+        nextTier = 'Max Rank';
+        tierMin = 2500;
+        tierMax = 5000;
+    } else if (totalPoints >= 2000) {
+        level = 7;
+        title = 'Diamond Master';
+        nextTier = 'Fellow Tier';
+        tierMin = 2000;
         tierMax = 2500;
+    } else if (totalPoints >= 1500) {
+        level = 6;
+        title = 'Platinum Lead';
+        nextTier = 'Diamond Tier';
+        tierMin = 1500;
+        tierMax = 2000;
+    } else if (totalPoints >= 1000) {
+        level = 5;
+        title = 'Gold Ambassador';
+        nextTier = 'Platinum Tier';
+        tierMin = 1000;
+        tierMax = 1500;
     } else if (totalPoints >= 750) {
         level = 4;
         title = 'Senior Specialist';
@@ -362,7 +417,7 @@ function updateGamifiedXpKpiCard(totalPoints) {
         tierMax = 1000;
     } else if (totalPoints >= 500) {
         level = 3;
-        title = 'Silver Professional';
+        title = 'Silver Specialist';
         nextTier = 'Senior Tier';
         tierMin = 500;
         tierMax = 750;
@@ -376,17 +431,125 @@ function updateGamifiedXpKpiCard(totalPoints) {
 
     const xpInLevel = totalPoints - tierMin;
     const levelSpan = tierMax - tierMin;
-    const barWidth = Math.min(100, Math.max(0, Math.round((xpInLevel / levelSpan) * 100)));
+    const barWidth = Math.min(100, Math.max(5, Math.round((xpInLevel / levelSpan) * 100)));
     const xpToNext = Math.max(0, tierMax - totalPoints);
 
     if (kpiLvl) kpiLvl.textContent = `Level ${level}`;
     if (kpiVal) kpiVal.innerHTML = `${totalPoints.toLocaleString()} <span class="text-xs font-normal text-slate-400">XP</span>`;
     if (kpiTitle) kpiTitle.textContent = title;
     if (kpiBar) kpiBar.style.width = `${barWidth}%`;
-    if (kpiSub) kpiSub.textContent = totalPoints === 0 ? '250 XP to Bronze Tier' : `${xpToNext} XP to ${nextTier}`;
+    if (kpiSub) kpiSub.textContent = xpToNext > 0 ? `${xpToNext.toLocaleString()} XP to ${nextTier}` : 'Max Prestige Rank reached';
 }
 window.updateGamifiedXpKpiCard = updateGamifiedXpKpiCard;
 window.updateXpTrajectoryFromLedger = updateXpTrajectoryFromLedger;
+
+/**
+ * Dynamic Shift Climate Pulse Doughnut & Metrics from Supabase shift_sentiments
+ */
+async function updateShiftClimatePulseFromSupabase(sentimentsInput) {
+    const ctxSentiment = document.getElementById('chart-sentiment-doughnut');
+    const emptyState = document.getElementById('chart-sentiment-empty-state');
+    const smoothEl = document.getElementById('pulse-smooth-pct');
+    const manageableEl = document.getElementById('pulse-manageable-pct');
+    const frictionEl = document.getElementById('pulse-friction-pct');
+    const subtitleEl = document.getElementById('pulse-total-staff-subtitle');
+
+    let list = sentimentsInput;
+    if (!Array.isArray(list)) {
+        if (window.shiftSentimentsState && Array.isArray(window.shiftSentimentsState) && window.shiftSentimentsState.length > 0) {
+            list = window.shiftSentimentsState;
+        } else {
+            try {
+                const res = await fetch('api/social.php?action=get_sentiments');
+                const json = await res.json();
+                if (json && Array.isArray(json.data)) {
+                    list = json.data;
+                    window.shiftSentimentsState = list;
+                }
+            } catch (e) {
+                console.warn('Could not fetch shift sentiments:', e);
+                list = [];
+            }
+        }
+    }
+
+    if (!Array.isArray(list) || list.length === 0) {
+        // EMPTY STATE
+        if (emptyState) emptyState.classList.remove('hidden');
+        if (ctxSentiment) ctxSentiment.classList.add('opacity-0');
+        if (smoothEl) smoothEl.textContent = '0.0%';
+        if (manageableEl) manageableEl.textContent = '0.0%';
+        if (frictionEl) frictionEl.textContent = '0.0%';
+        if (subtitleEl) subtitleEl.textContent = 'Aggregated Employee Sentiment (0 Records in Supabase)';
+
+        if (chartSentimentDoughnutInstance) {
+            chartSentimentDoughnutInstance.data.datasets[0].data = [0, 0, 0];
+            chartSentimentDoughnutInstance.update();
+        }
+        return;
+    }
+
+    // HAS DATA
+    if (emptyState) emptyState.classList.add('hidden');
+    if (ctxSentiment) ctxSentiment.classList.remove('opacity-0');
+
+    const total = list.length;
+    let smoothCount = 0;
+    let manageableCount = 0;
+    let frictionCount = 0;
+
+    list.forEach(item => {
+        const score = Number(item.sentiment_score ?? item.sentimentScore ?? 4);
+        const type = String(item.sentiment_type ?? item.sentimentType ?? '').toLowerCase();
+        if (score >= 4 || type.includes('pos') || type.includes('smooth')) {
+            smoothCount++;
+        } else if (score === 3 || type.includes('neu') || type.includes('manageable')) {
+            manageableCount++;
+        } else {
+            frictionCount++;
+        }
+    });
+
+    const smoothPct = ((smoothCount / total) * 100).toFixed(1);
+    const manageablePct = ((manageableCount / total) * 100).toFixed(1);
+    const frictionPct = ((frictionCount / total) * 100).toFixed(1);
+
+    if (smoothEl) smoothEl.textContent = `${smoothPct}%`;
+    if (manageableEl) manageableEl.textContent = `${manageablePct}%`;
+    if (frictionEl) frictionEl.textContent = `${frictionPct}%`;
+    if (subtitleEl) subtitleEl.textContent = `Aggregated Employee Sentiment (${total} Live Supabase Pulse${total === 1 ? '' : 's'})`;
+
+    const chartData = [parseFloat(smoothPct), parseFloat(manageablePct), parseFloat(frictionPct)];
+    const chartLabels = [`Smooth (${smoothPct}%)`, `Manageable (${manageablePct}%)`, `Friction (${frictionPct}%)`];
+
+    if (ctxSentiment && typeof Chart !== 'undefined') {
+        if (!chartSentimentDoughnutInstance) {
+            chartSentimentDoughnutInstance = new Chart(ctxSentiment, {
+                type: 'doughnut',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        data: chartData,
+                        backgroundColor: ['#7A9A7E', '#6B8FA3', '#C47762'],
+                        borderWidth: 2,
+                        borderColor: '#FFFFFF'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    cutout: '72%'
+                }
+            });
+        } else {
+            chartSentimentDoughnutInstance.data.labels = chartLabels;
+            chartSentimentDoughnutInstance.data.datasets[0].data = chartData;
+            chartSentimentDoughnutInstance.update();
+        }
+    }
+}
+window.updateShiftClimatePulseFromSupabase = updateShiftClimatePulseFromSupabase;
 
 window.addEventListener('DOMContentLoaded', () => {
     initAllCharts();

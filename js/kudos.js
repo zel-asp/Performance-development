@@ -99,6 +99,22 @@ async function initSocialRecognition() {
         accountLabel.innerHTML = `<i class="fas fa-user-shield mr-1"></i> ${currentUserName} · Personal Ledger`;
     }
 
+    // 0ms instant pre-hydration from memory or localStorage/sessionStorage cache
+    try {
+        const cachedXp = localStorage.getItem(`oxford_cached_total_xp_${currentUserId}`);
+        if (cachedXp !== null) {
+            syncOverviewGamifiedXP(parseInt(cachedXp, 10) || 0);
+        }
+        const cachedLedger = sessionStorage.getItem(`xp_ledger_cache_${currentUserId}`);
+        if (cachedLedger) {
+            const parsed = JSON.parse(cachedLedger);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                pointsLedgerState = parsed;
+                renderPointLedger();
+            }
+        }
+    } catch(e) {}
+
     try {
         let url = `api/social.php?action=get_overview&employeeId=${encodeURIComponent(currentUserId)}`;
         if (activeSentimentFilterType) {
@@ -121,6 +137,9 @@ async function initSocialRecognition() {
             }
             if (Array.isArray(d.ledger)) {
                 pointsLedgerState = d.ledger;
+                try {
+                    sessionStorage.setItem(`xp_ledger_cache_${currentUserId}`, JSON.stringify(d.ledger));
+                } catch(e) {}
             } else if (socialFeedPostsState.length > 0) {
                 updateLedgerFromPosts(socialFeedPostsState);
             } else {
@@ -145,14 +164,23 @@ async function initSocialRecognition() {
     renderMilestoneBadges();
     renderQualitativePerformanceFeed();
     applySentimentFiltering();
+    if (typeof checkAndRefreshShiftSentimentStatus === 'function') {
+        checkAndRefreshShiftSentimentStatus(shiftSentimentsState);
+    }
+    if (typeof updateShiftClimatePulseFromSupabase === 'function') {
+        updateShiftClimatePulseFromSupabase(shiftSentimentsState);
+    }
 
     // Dynamically synchronize live XP with Overview Gamified XP card & Leaderboards
     let currentTotalXp = 0;
     if (pointsLedgerState && pointsLedgerState.length > 0) {
-        const rawBal = pointsLedgerState[0].balance || '';
-        const parsed = parseInt(String(rawBal).replace(/[^0-9]/g, ''), 10);
-        currentTotalXp = !isNaN(parsed) ? parsed : pointsLedgerState.reduce((sum, t) => sum + (parseInt(String(t.xpChange).replace(/[^0-9]/g, ''), 10) || 0), 0);
+        const rawBal = pointsLedgerState[0].balance_num !== undefined ? pointsLedgerState[0].balance_num : (pointsLedgerState[0].balance || '');
+        const parsed = typeof rawBal === 'number' ? rawBal : parseInt(String(rawBal).replace(/[^0-9]/g, ''), 10);
+        currentTotalXp = !isNaN(parsed) ? parsed : pointsLedgerState.reduce((sum, t) => sum + (parseInt(String(t.points || t.amount || t.xpChange).replace(/[^0-9]/g, ''), 10) || 0), 0);
     }
+    try {
+        localStorage.setItem(`oxford_cached_total_xp_${currentUserId}`, currentTotalXp);
+    } catch (e) {}
     syncOverviewGamifiedXP(currentTotalXp);
     if (typeof updateXpTrajectoryFromLedger === 'function') {
         updateXpTrajectoryFromLedger(currentUserId);
@@ -1375,6 +1403,13 @@ async function submitSentimentRating(moodType) {
         applySentimentFiltering();
     }
 
+    if (typeof checkAndRefreshShiftSentimentStatus === 'function') {
+        checkAndRefreshShiftSentimentStatus(shiftSentimentsState);
+    }
+    if (typeof updateShiftClimatePulseFromSupabase === 'function') {
+        updateShiftClimatePulseFromSupabase(shiftSentimentsState);
+    }
+
     if (typeof showToast === 'function') {
         showToast(`Shift sentiment logged (${moodType}) & synced to Supabase!`, 'success');
     }
@@ -1399,6 +1434,12 @@ window.addRealtimeShiftSentiment = function(newRow) {
     if (!exists) {
         shiftSentimentsState.unshift(newRow);
         applySentimentFiltering();
+        if (typeof checkAndRefreshShiftSentimentStatus === 'function') {
+            checkAndRefreshShiftSentimentStatus(shiftSentimentsState);
+        }
+        if (typeof updateShiftClimatePulseFromSupabase === 'function') {
+            updateShiftClimatePulseFromSupabase(shiftSentimentsState);
+        }
     }
 };
 

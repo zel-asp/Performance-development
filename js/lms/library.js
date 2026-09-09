@@ -90,6 +90,9 @@ async function fetchDynamicLmsDocuments(deptFilter = null, searchVal = null) {
     if (deptFilter !== null) window.dynamicLmsState.activeDept = deptFilter;
     if (searchVal !== null) window.dynamicLmsState.search = searchVal;
 
+    const userRole = (window.currentUser?.role || window.activePersonaRole || '').toLowerCase();
+    const currentUserId = (window.currentUser?.id || window.activePersonaId || (userRole.includes('supervisor') ? 'emp-102' : 'emp-101')).toLowerCase();
+
     // 1. Instant 0ms render if cache available
     if (window.dynamicLmsState.documents && window.dynamicLmsState.documents.length > 0) {
         renderLmsBooks();
@@ -108,7 +111,9 @@ async function fetchDynamicLmsDocuments(deptFilter = null, searchVal = null) {
     // 2. Fresh background data synchronization
     try {
         const params = new URLSearchParams({
-            action: 'get_documents'
+            action: 'get_documents',
+            user_id: currentUserId,
+            role: userRole
         });
         if (window.dynamicLmsState.activeDept && window.dynamicLmsState.activeDept !== 'all') {
             params.append('department_id', window.dynamicLmsState.activeDept);
@@ -186,7 +191,7 @@ function renderLmsBooks() {
     if (!container) return;
 
     const userRole = (window.currentUser?.role || window.activePersonaRole || '').toLowerCase();
-    const currentUserId = (window.currentUser?.id || 'emp-101').toLowerCase();
+    const currentUserId = (window.currentUser?.id || window.activePersonaId || (userRole.includes('supervisor') ? 'emp-102' : 'emp-101')).toLowerCase();
     const isSupervisorOrManager = userRole.includes('supervisor') || userRole.includes('manager') || userRole.includes('admin') || userRole.includes('hr') || userRole.includes('executive');
 
     // Toggle Upload Action visibility based on user role
@@ -203,22 +208,27 @@ function renderLmsBooks() {
 
     let docs = window.dynamicLmsState.documents || [];
 
-    // Regular employee sees prescribed books + all property-wide/null department LMS handbooks
-    if (!isSupervisorOrManager) {
-        const prescribedList = window.dynamicLmsState.prescribed || [];
-        const myPrescribedLmsIds = prescribedList.filter(p => {
-            const empId = (p.employee || p.employee_id || '').toLowerCase();
-            const empName = (p.employee_name || '').toLowerCase();
-            return empId === currentUserId ||
-                (currentUserId === 'emp-101' && (empId.includes('101') || empId.includes('maria') || empName.includes('maria'))) ||
-                (currentUserId === 'emp-102' && (empId.includes('102') || empId.includes('antonio') || empName.includes('antonio')));
-        }).map(p => p.lms_id || p.id);
+    const prescribedList = window.dynamicLmsState.prescribed || [];
+    const myPrescribedLmsIds = prescribedList.filter(p => {
+        const empId = (p.employee || p.employee_id || '').toLowerCase();
+        const empName = (p.employee_name || '').toLowerCase();
+        return empId === currentUserId ||
+            (currentUserId === 'emp-101' && (empId.includes('101') || empId.includes('maria') || empName.includes('maria'))) ||
+            (currentUserId === 'emp-102' && (empId.includes('102') || empId.includes('antonio') || empName.includes('antonio')));
+    }).map(p => String(p.lms_id || p.book_id || p.id));
 
+    // Visibility Rule:
+    // If mandatory is false: do not show to anyone except supervisors unless it is in lms_prescribed
+    // If mandatory is true: show to anyone
+    if (!isSupervisorOrManager) {
         docs = docs.filter(doc => {
-            const dId = doc.department_id;
-            const dName = doc.department_name;
-            const isNullOrPropertyWide = !dId || dId === 'null' || dId === 'all' || dName === 'Property-Wide' || String(dId).trim() === '';
-            return isNullOrPropertyWide || myPrescribedLmsIds.includes(doc.id);
+            const isMandatory = Boolean(
+                doc.manatory === true || doc.manatory === 1 || doc.manatory === '1' || doc.manatory === 'true' || doc.manatory === 't' ||
+                doc.mandatory === true || doc.mandatory === 1 || doc.mandatory === '1' || doc.mandatory === 'true' || doc.mandatory === 't' ||
+                doc.is_mandatory === true || doc.is_mandatory === 1
+            );
+            if (isMandatory) return true;
+            return myPrescribedLmsIds.includes(String(doc.id));
         });
     }
 
@@ -232,12 +242,12 @@ function renderLmsBooks() {
         return;
     }
 
-    if (!isSupervisorOrManager && docs.length === 0) {
+    if (docs.length === 0) {
         container.innerHTML = `
             <div class="col-span-full py-16 text-center text-slate-400">
                 <i class="fas fa-book-open text-3xl text-slate-300 mb-3 block"></i>
-                <p class="text-sm font-semibold text-slate-700">No Prescribed or Property-Wide Handbooks Available</p>
-                <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 leading-relaxed">You currently have no training handbooks or SOP documents assigned. Once assigned or published property-wide, your documents will appear here.</p>
+                <p class="text-sm font-semibold text-slate-700">No SOP Manuals Found</p>
+                <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 leading-relaxed">No digital SOP manuals match the current department or search filter.</p>
             </div>
         `;
         return;
@@ -257,6 +267,8 @@ function renderLmsBooks() {
         const isPdf = (doc.file_type || '').toLowerCase().includes('pdf') || filePath.toLowerCase().endsWith('.pdf');
         const safeTitle = title.replace(/'/g, "\\'");
 
+        const isPrescribed = myPrescribedLmsIds.includes(doc.id);
+
         return `
             <!-- Minimalist Clean Book Card with Supabase Data -->
             <div class="card-clean p-5 flex flex-col justify-between h-full group bg-white border border-[#E8DEDC] hover:border-[#D8CECB] transition shadow-2xs hover:shadow-xs rounded-2xl relative">
@@ -267,6 +279,7 @@ function renderLmsBooks() {
                             <i class="fas ${icon}"></i>
                         </div>
                         <div class="flex items-center space-x-1.5">
+                            ${isPrescribed ? '<span class="badge-gold text-[10px] px-2 py-0.5 font-bold"><i class="fas fa-star mr-1"></i>Prescribed</span>' : ''}
                             <span class="badge-secondary text-[10px] px-2 py-0.5">${deptName}</span>
                             <span class="badge-gold text-[10px] px-2 py-0.5 font-bold">+${xp} XP</span>
                         </div>
@@ -302,10 +315,12 @@ function renderLmsBooks() {
                         <i class="fas fa-book-open text-xs"></i>
                         <span>Read</span>
                     </button>
+                    ${!isSupervisorOrManager ? `
                     <button onclick="startQuizPrompt('${docId}', '${safeTitle}', '${deptName}', '${category}')" class="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-xl font-bold text-xs flex items-center space-x-1.5 transition shadow-2xs" title="Take 10-item Knowledge Quiz">
                         <i class="fas fa-graduation-cap text-gold-dark"></i>
                         <span>Quiz</span>
                     </button>
+                    ` : ''}
                     ${isSupervisorOrManager ? `
                         <button onclick="deleteLmsDocument('${docId}', '${safeTitle}', this)" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition border border-transparent hover:border-red-200" title="Delete document">
                             <i class="fas fa-trash-can text-xs"></i>

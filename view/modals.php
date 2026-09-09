@@ -2926,6 +2926,195 @@
             </div>
         </div>
 
+        <!-- 15B. Modal: Export Executive Summary & Custom Options -->
+        <div id="modal-export-summary" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+                
+                <!-- Modal Header -->
+                <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white flex-shrink-0">
+                    <div class="flex items-center space-x-3.5">
+                        <div class="w-11 h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-xl font-bold border border-primary/20 shadow-2xs">
+                            <i class="fas fa-file-export"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary uppercase tracking-wider">Executive BI</span>
+                                <span class="text-[10px] text-slate-400 font-medium">Hotel-Wide Telemetry</span>
+                            </div>
+                            <h3 class="font-heading font-bold text-lg text-slate-900 mt-0.5">Export Executive Summary</h3>
+                            <p class="text-xs text-slate-500">Configure file format and presentation mode before generating report.</p>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('modal-export-summary')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- Modal Form Body -->
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6 bg-white text-xs">
+
+                    <!-- 1. Format Selection -->
+                    <div class="space-y-2.5">
+                        <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                            1. Select Download &amp; Export Format
+                        </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="export-summary-format-group">
+                            
+                            <!-- Option A: Excel -->
+                            <div onclick="setExportSummaryFormat('excel')" 
+                                 id="export-fmt-card-excel"
+                                 class="export-fmt-card cursor-pointer p-4 rounded-2xl border-2 border-primary bg-primary/5 transition hover:shadow-xs flex flex-col justify-between space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-base font-bold">
+                                        <i class="fas fa-file-excel"></i>
+                                    </div>
+                                    <span class="w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center">
+                                        <span class="w-2 h-2 rounded-full bg-primary export-fmt-dot"></span>
+                                    </span>
+                                </div>
+                                <div>
+                                    <span class="font-bold text-slate-900 block text-sm">Excel (.xlsx)</span>
+                                    <span class="text-[11px] text-slate-500 block mt-0.5 leading-tight">Multi-sheet workbook with KPI data and department tables</span>
+                                </div>
+                            </div>
+
+                            <!-- Option B: PDF -->
+                            <div onclick="setExportSummaryFormat('pdf')" 
+                                 id="export-fmt-card-pdf"
+                                 class="export-fmt-card cursor-pointer p-4 rounded-2xl border-2 border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-xs flex flex-col justify-between space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-base font-bold">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </div>
+                                    <span class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center">
+                                        <span class="w-2 h-2 rounded-full bg-transparent export-fmt-dot"></span>
+                                    </span>
+                                </div>
+                                <div>
+                                    <span class="font-bold text-slate-900 block text-sm">PDF Document</span>
+                                    <span class="text-[11px] text-slate-500 block mt-0.5 leading-tight">Formal executive report deck with branded header</span>
+                                </div>
+                            </div>
+
+                            <!-- Option C: Print -->
+                            <div onclick="setExportSummaryFormat('print')" 
+                                 id="export-fmt-card-print"
+                                 class="export-fmt-card cursor-pointer p-4 rounded-2xl border-2 border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-xs flex flex-col justify-between space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <div class="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-base font-bold">
+                                        <i class="fas fa-print"></i>
+                                    </div>
+                                    <span class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center">
+                                        <span class="w-2 h-2 rounded-full bg-transparent export-fmt-dot"></span>
+                                    </span>
+                                </div>
+                                <div>
+                                    <span class="font-bold text-slate-900 block text-sm">Print Preview</span>
+                                    <span class="text-[11px] text-slate-500 block mt-0.5 leading-tight">Instant browser print dialog &amp; print-friendly preview</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- 2. Content Presentation Mode -->
+                    <div class="space-y-2.5">
+                        <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                            2. Select Content Presentation Mode
+                        </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="export-summary-mode-group">
+                            
+                            <!-- Mode 1: With Visual Charts -->
+                            <div onclick="setExportSummaryMode('charts')" 
+                                 id="export-mode-card-charts"
+                                 class="export-mode-card cursor-pointer p-4 rounded-2xl border-2 border-primary bg-primary/5 transition hover:shadow-xs flex items-start space-x-3.5">
+                                <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-lg font-bold flex-shrink-0 mt-0.5">
+                                    <i class="fas fa-chart-pie"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-bold text-slate-900 text-sm">With Visual Charts</span>
+                                        <span class="w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center flex-shrink-0">
+                                            <span class="w-2 h-2 rounded-full bg-primary export-mode-dot"></span>
+                                        </span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                                        Includes graphical charts (Performance Velocity, Shift Climate Doughnut, Competency Matrix) along with summary tables.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Mode 2: Text / Data Only -->
+                            <div onclick="setExportSummaryMode('text')" 
+                                 id="export-mode-card-text"
+                                 class="export-mode-card cursor-pointer p-4 rounded-2xl border-2 border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-xs flex items-start space-x-3.5">
+                                <div class="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-lg font-bold flex-shrink-0 mt-0.5">
+                                    <i class="fas fa-file-lines"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-bold text-slate-900 text-sm">Text &amp; Data Only</span>
+                                        <span class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center flex-shrink-0">
+                                            <span class="w-2 h-2 rounded-full bg-transparent export-mode-dot"></span>
+                                        </span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                                        Condensed, high-density structured tables with raw scores, metrics, percentages, and telemetry text without chart graphics.
+                                    </p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- 3. Scope & Filtering -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">
+                                3. Department Scope
+                            </label>
+                            <select id="export-summary-dept-select" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none transition">
+                                <option value="all">All Departments (Hotel-Wide)</option>
+                                <option value="Front Office">Front Office (Guest Services)</option>
+                                <option value="Culinary">Culinary &amp; Kitchen</option>
+                                <option value="Housekeeping">Housekeeping &amp; Laundry</option>
+                                <option value="Food &amp; Beverage">Food &amp; Beverage Service</option>
+                                <option value="Engineering">Engineering &amp; Facilities</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">
+                                Audit Window / Cycle
+                            </label>
+                            <div class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-700 flex items-center justify-between">
+                                <span>Q3 2026 Appraisal &amp; Live Telemetry</span>
+                                <span class="badge-sage text-[10px] font-bold">Active</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Export Preview Callout -->
+                    <div class="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-center space-x-3 text-xs text-amber-900">
+                        <i class="fas fa-circle-info text-amber-600 text-sm flex-shrink-0"></i>
+                        <span id="export-summary-preview-text">Generating <strong>Excel Spreadsheet</strong> with <strong>Visual Charts</strong> for <strong>All Departments</strong>.</span>
+                    </div>
+
+                </div>
+
+                <!-- Modal Footer Actions -->
+                <div class="p-5 border-t border-slate-100 bg-slate-50/80 flex items-center justify-between flex-shrink-0">
+                    <button type="button" onclick="closeModal('modal-export-summary')" class="btn-secondary px-4 py-2 text-xs font-semibold">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="executeExportSummary()" id="btn-execute-export-summary" class="btn-primary px-6 py-2.5 text-xs font-bold flex items-center space-x-2 shadow-sm">
+                        <i class="fas fa-download"></i>
+                        <span id="export-summary-action-btn-text">Download Excel (.xlsx)</span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
 
 
         <!-- 17. Modal: Log Performance Milestone & KPI Progress -->

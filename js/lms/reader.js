@@ -177,6 +177,18 @@ function openBookReader(docId) {
     // Default to Document Viewer Tab
     switchReaderTab('viewer');
 
+    // Hide Quiz button in Reader for Supervisor / Manager / HR roles
+    const userRole = (window.currentUser?.role || window.activePersonaRole || '').toLowerCase();
+    const isSupervisorOrManager = userRole.includes('supervisor') || userRole.includes('manager') || userRole.includes('admin') || userRole.includes('hr') || userRole.includes('executive');
+    const quizBtn = document.getElementById('reader-quiz-btn');
+    if (quizBtn) {
+        if (isSupervisorOrManager) {
+            quizBtn.classList.add('hidden');
+        } else {
+            quizBtn.classList.remove('hidden');
+        }
+    }
+
     openModal('modal-book-reader');
 }
 window.openBookReader = openBookReader;

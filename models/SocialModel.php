@@ -79,6 +79,24 @@ class SocialModel extends BaseModel
      */
     public function getCurrentXpBalance(string $employeeId): int
     {
+        try {
+            $pdo = getSupabaseDb();
+            if ($pdo) {
+                $stmt = $pdo->prepare("SELECT balance_after, points FROM public.xp_ledger WHERE employee_id = :emp_id ORDER BY created_at DESC LIMIT 1");
+                $stmt->execute([':emp_id' => $employeeId]);
+                $last = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($last && isset($last['balance_after']) && $last['balance_after'] !== null) {
+                    return (int)$last['balance_after'];
+                }
+                $sumStmt = $pdo->prepare("SELECT COALESCE(SUM(points), 0) AS total_pts FROM public.xp_ledger WHERE employee_id = :emp_id");
+                $sumStmt->execute([':emp_id' => $employeeId]);
+                $sRow = $sumStmt->fetch(PDO::FETCH_ASSOC);
+                if ($sRow && isset($sRow['total_pts'])) {
+                    return (int)$sRow['total_pts'];
+                }
+            }
+        } catch (Throwable $e) {}
+
         $res = supabaseRequest('xp_ledger?employee_id=eq.' . urlencode($employeeId) . '&order=created_at.desc&limit=1', 'GET', null, true);
         if (!empty($res['data'][0]['balance_after'])) {
             return (int)$res['data'][0]['balance_after'];
@@ -472,16 +490,36 @@ class SocialModel extends BaseModel
             });
 
             $filtered = array_values($filtered);
-
-            // If today filter returns empty (seeded data is older), return all so the chart isn't blank
-            if ($filterType === 'today' && count($filtered) === 0) {
-                return array_values($sentiments);
-            }
-
             return $filtered;
         }
 
         return array_values($sentiments);
+    }
+
+    /**
+     * Check if a specific user has logged a shift sentiment today
+     */
+    public function getUserTodayShiftSentiment(string $employeeId): ?array
+    {
+        $all = $this->getShiftSentiments();
+        $todayUtc = gmdate('Y-m-d');
+        $todayLocal = date('Y-m-d');
+        foreach ($all as $s) {
+            if (($s['employee_id'] ?? '') === $employeeId) {
+                $createdAt = $s['created_at'] ?? '';
+                if (!empty($createdAt)) {
+                    $ts = strtotime($createdAt);
+                    if ($ts !== false) {
+                        $dUtc = gmdate('Y-m-d', $ts);
+                        $dLocal = date('Y-m-d', $ts);
+                        if ($dUtc === $todayUtc || $dLocal === $todayLocal || $dUtc === $todayLocal || $dLocal === $todayUtc) {
+                            return $s;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -532,13 +570,31 @@ class SocialModel extends BaseModel
      */
     public function getLedger(?string $employeeId = null): array
     {
-        // Direct Query on unified xp_ledger table from Supabase
-        $endpoint = 'xp_ledger?order=created_at.asc';
-        if ($employeeId) {
-            $endpoint .= '&employee_id=eq.' . urlencode($employeeId);
+        $ledgerRows = [];
+        try {
+            $pdo = getSupabaseDb();
+            if ($pdo) {
+                if (!empty($employeeId)) {
+                    $stmt = $pdo->prepare("SELECT * FROM public.xp_ledger WHERE employee_id = :emp_id ORDER BY created_at ASC");
+                    $stmt->execute([':emp_id' => $employeeId]);
+                } else {
+                    $stmt = $pdo->query("SELECT * FROM public.xp_ledger ORDER BY created_at ASC");
+                }
+                $ledgerRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+        } catch (Throwable $e) {
+            error_log('[SocialModel::getLedger] PDO query fallback: ' . $e->getMessage());
         }
-        $ledgerRes = supabaseRequest($endpoint, 'GET', null, true);
-        $ledgerRows = (is_array($ledgerRes['data'] ?? null) && !isset($ledgerRes['data']['code'])) ? $ledgerRes['data'] : [];
+
+        if (empty($ledgerRows)) {
+            // Direct Query on unified xp_ledger table from Supabase REST API
+            $endpoint = 'xp_ledger?order=created_at.asc';
+            if ($employeeId) {
+                $endpoint .= '&employee_id=eq.' . urlencode($employeeId);
+            }
+            $ledgerRes = supabaseRequest($endpoint, 'GET', null, true);
+            $ledgerRows = (is_array($ledgerRes['data'] ?? null) && !isset($ledgerRes['data']['code'])) ? $ledgerRes['data'] : [];
+        }
 
         $roster = $this->getRoster();
         $empMap = [];
@@ -588,12 +644,28 @@ class SocialModel extends BaseModel
      */
     public function getMilestoneBadges(?string $employeeId = null): array
     {
-        $endpoint = 'xp_ledger?order=created_at.desc';
-        if ($employeeId) {
-            $endpoint .= '&employee_id=eq.' . urlencode($employeeId);
+        $ledgerRows = [];
+        try {
+            $pdo = getSupabaseDb();
+            if ($pdo) {
+                if (!empty($employeeId)) {
+                    $stmt = $pdo->prepare("SELECT * FROM public.xp_ledger WHERE employee_id = :emp_id ORDER BY created_at DESC");
+                    $stmt->execute([':emp_id' => $employeeId]);
+                } else {
+                    $stmt = $pdo->query("SELECT * FROM public.xp_ledger ORDER BY created_at DESC");
+                }
+                $ledgerRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+        } catch (Throwable $e) {}
+
+        if (empty($ledgerRows)) {
+            $endpoint = 'xp_ledger?order=created_at.desc';
+            if ($employeeId) {
+                $endpoint .= '&employee_id=eq.' . urlencode($employeeId);
+            }
+            $ledgerRes = supabaseRequest($endpoint, 'GET', null, true);
+            $ledgerRows = (is_array($ledgerRes['data'] ?? null) && !isset($ledgerRes['data']['code'])) ? $ledgerRes['data'] : [];
         }
-        $ledgerRes = supabaseRequest($endpoint, 'GET', null, true);
-        $ledgerRows = (is_array($ledgerRes['data'] ?? null) && !isset($ledgerRes['data']['code'])) ? $ledgerRes['data'] : [];
 
         $userTotalXp = 0;
         $userSafetyXp = 0;
@@ -725,8 +797,19 @@ class SocialModel extends BaseModel
     public function getTop5XpChampions(): array
     {
         // 1. Fetch all records from xp_ledger
-        $ledgerRes = supabaseRequest('xp_ledger?order=created_at.asc', 'GET', null, true);
-        $ledgerRows = (is_array($ledgerRes['data'] ?? null) && !isset($ledgerRes['data']['code'])) ? $ledgerRes['data'] : [];
+        $ledgerRows = [];
+        try {
+            $pdo = getSupabaseDb();
+            if ($pdo) {
+                $stmt = $pdo->query("SELECT * FROM public.xp_ledger ORDER BY created_at ASC");
+                $ledgerRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+        } catch (Throwable $e) {}
+
+        if (empty($ledgerRows)) {
+            $ledgerRes = supabaseRequest('xp_ledger?order=created_at.asc', 'GET', null, true);
+            $ledgerRows = (is_array($ledgerRes['data'] ?? null) && !isset($ledgerRes['data']['code'])) ? $ledgerRes['data'] : [];
+        }
 
         // 2. Fetch full active roster
         $roster = $this->getRoster();

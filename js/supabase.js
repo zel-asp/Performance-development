@@ -268,7 +268,7 @@ function initSupabaseRealtime() {
                 .subscribe();
         }
 
-        // 3. Competency Evaluations Channel (Instant Score Update)
+        // 3. Competency Evaluations Channel (Instant Score Update & Cache Invalidation)
         if (!realtimeChannels.competency_evaluations) {
             realtimeChannels.competency_evaluations = supabaseClient
                 .channel('realtime_competency_evals')
@@ -280,6 +280,21 @@ function initSupabaseRealtime() {
                         const empId = newRow.employee_id;
                         const compId = newRow.competency_id;
                         if (!empId || !compId) return;
+
+                        // Invalidate competency caches in memory and sessionStorage
+                        if (window.dynamicCompetencyState) {
+                            window.dynamicCompetencyState.cache = {};
+                        }
+                        window._cachedEmpCompetencies = window._cachedEmpCompetencies || {};
+                        delete window._cachedEmpCompetencies[empId.toLowerCase()];
+                        try {
+                            for (let i = sessionStorage.length - 1; i >= 0; i--) {
+                                const k = sessionStorage.key(i);
+                                if (k && (k.startsWith('comp_matrix_cache_') || k.startsWith('comp_emp_cache_'))) {
+                                    sessionStorage.removeItem(k);
+                                }
+                            }
+                        } catch (e) {}
 
                         const employees = window.dynamicCompetencyState?.employees || [];
                         const targetEmp = employees.find(e => e.id === empId);
@@ -295,6 +310,10 @@ function initSupabaseRealtime() {
                             }
                         }
 
+                        if (typeof renderEmployeeOverviewCompetencies === 'function') {
+                            renderEmployeeOverviewCompetencies(empId, true);
+                        }
+
                         if (typeof activeCompetencyEmpKey !== 'undefined' && activeCompetencyEmpKey === empId) {
                             if (typeof renderSelectedEmployeeRadarView === 'function') {
                                 renderSelectedEmployeeRadarView();
@@ -305,7 +324,7 @@ function initSupabaseRealtime() {
                 .subscribe();
         }
 
-        // 4. Social Recognition Feed Channel (Live Instant Updates for Feed, Reactions & Cheers)
+        // 4. Social Recognition Feed & Gamified XP Ledger Channel
         if (!realtimeChannels.social_recognitions) {
             realtimeChannels.social_recognitions = supabaseClient
                 .channel('realtime_social_recognitions')
@@ -343,8 +362,19 @@ function initSupabaseRealtime() {
                     { event: '*', schema: 'public', table: 'xp_ledger' },
                     (payload) => {
                         const currentUserId = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+                        
+                        // Invalidate XP ledger cache for real-time update
+                        window._cachedXpLedger = window._cachedXpLedger || {};
+                        delete window._cachedXpLedger[currentUserId];
+                        try {
+                            sessionStorage.removeItem(`xp_ledger_cache_${currentUserId}`);
+                        } catch(e) {}
+
                         if (typeof updateXpTrajectoryFromLedger === 'function') {
-                            updateXpTrajectoryFromLedger(currentUserId);
+                            updateXpTrajectoryFromLedger(currentUserId, true);
+                        }
+                        if (typeof initSocialRecognition === 'function') {
+                            initSocialRecognition();
                         }
                     }
                 )
@@ -363,25 +393,92 @@ function initSupabaseRealtime() {
                 .subscribe();
         }
 
-        // 5. LMS Documents & Learning Records Realtime Channel
+        // 5. LMS Documents & Learning Prescriptions Realtime Channel
         if (!realtimeChannels.lms_documents) {
             realtimeChannels.lms_documents = supabaseClient
-                .channel('realtime_lms_documents')
+                .channel('realtime_lms_documents_hub')
                 .on(
                     'postgres_changes',
                     { event: '*', schema: 'public', table: 'lms_documents' },
                     (payload) => {
-                        if (typeof fetchLibraryDocuments === 'function') {
-                            fetchLibraryDocuments(true);
+                        const newRow = payload.new || {};
+                        const oldRow = payload.old || {};
+
+                        // Clear local cache for instant freshness
+                        try {
+                            sessionStorage.removeItem('lms_documents_cache');
+                        } catch (e) {}
+
+                        // In-memory instant sync for window.dynamicLmsState.documents
+                        if (window.dynamicLmsState && Array.isArray(window.dynamicLmsState.documents)) {
+                            if (payload.eventType === 'INSERT' && newRow.id) {
+                                const exists = window.dynamicLmsState.documents.some(d => d.id == newRow.id);
+                                if (!exists) {
+                                    window.dynamicLmsState.documents.unshift(newRow);
+                                }
+                            } else if (payload.eventType === 'UPDATE' && newRow.id) {
+                                const idx = window.dynamicLmsState.documents.findIndex(d => d.id == newRow.id);
+                                if (idx >= 0) {
+                                    window.dynamicLmsState.documents[idx] = Object.assign({}, window.dynamicLmsState.documents[idx], newRow);
+                                } else {
+                                    window.dynamicLmsState.documents.unshift(newRow);
+                                }
+                            } else if (payload.eventType === 'DELETE' && oldRow.id) {
+                                window.dynamicLmsState.documents = window.dynamicLmsState.documents.filter(d => d.id != oldRow.id);
+                            }
+                        }
+
+                        // Trigger UI re-renders across LMS views
+                        if (typeof renderLmsBooks === 'function') {
+                            renderLmsBooks();
+                        }
+                        if (typeof fetchDynamicLmsDocuments === 'function') {
+                            fetchDynamicLmsDocuments();
+                        }
+                        if (typeof fetchNeedsAnalysisData === 'function') {
+                            fetchNeedsAnalysisData();
                         }
                     }
                 )
                 .on(
                     'postgres_changes',
-                    { event: '*', schema: 'public', table: 'lms_prescriptions' },
+                    { event: '*', schema: 'public', table: 'lms_prescribed' },
                     (payload) => {
-                        if (typeof fetchTnaPrescriptions === 'function') {
-                            fetchTnaPrescriptions(true);
+                        const newRow = payload.new || {};
+                        const oldRow = payload.old || {};
+
+                        try {
+                            sessionStorage.removeItem('lms_prescribed_cache');
+                        } catch (e) {}
+
+                        // In-memory instant sync for window.dynamicLmsState.prescribed
+                        if (window.dynamicLmsState && Array.isArray(window.dynamicLmsState.prescribed)) {
+                            if (payload.eventType === 'INSERT' && newRow.id) {
+                                const exists = window.dynamicLmsState.prescribed.some(p => p.id == newRow.id);
+                                if (!exists) {
+                                    window.dynamicLmsState.prescribed.unshift(newRow);
+                                }
+                            } else if (payload.eventType === 'UPDATE' && newRow.id) {
+                                const idx = window.dynamicLmsState.prescribed.findIndex(p => p.id == newRow.id);
+                                if (idx >= 0) {
+                                    window.dynamicLmsState.prescribed[idx] = Object.assign({}, window.dynamicLmsState.prescribed[idx], newRow);
+                                } else {
+                                    window.dynamicLmsState.prescribed.unshift(newRow);
+                                }
+                            } else if (payload.eventType === 'DELETE' && oldRow.id) {
+                                window.dynamicLmsState.prescribed = window.dynamicLmsState.prescribed.filter(p => p.id != oldRow.id);
+                            }
+                        }
+
+                        // Re-render bookshelf and prescribed status
+                        if (typeof renderLmsBooks === 'function') {
+                            renderLmsBooks();
+                        }
+                        if (typeof fetchPrescribedLms === 'function') {
+                            fetchPrescribedLms();
+                        }
+                        if (typeof fetchNeedsAnalysisData === 'function') {
+                            fetchNeedsAnalysisData();
                         }
                     }
                 )

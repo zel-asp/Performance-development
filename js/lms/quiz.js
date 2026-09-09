@@ -118,6 +118,15 @@
             return;
         }
 
+        const userRole = (window.currentUser?.role || window.activePersonaRole || '').toLowerCase();
+        const isSupervisorOrManager = userRole.includes('supervisor') || userRole.includes('manager') || userRole.includes('admin') || userRole.includes('hr') || userRole.includes('executive');
+        if (isSupervisorOrManager) {
+            if (typeof showToast === 'function') {
+                showToast('Knowledge quizzes are designated for hotel associates and trainees.', 'info');
+            }
+            return;
+        }
+
         // Close reader if open
         if (typeof closeModal === 'function') {
             closeModal('modal-book-reader');

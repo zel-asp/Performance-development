@@ -630,15 +630,24 @@ function switchRole(userRole, silent = false) {
         if (typeof renderEmployeeOverviewCompetencies === 'function') {
             renderEmployeeOverviewCompetencies(persona.id);
         }
-        if (typeof updateXpTrajectoryFromLedger === 'function') {
-            updateXpTrajectoryFromLedger(persona.id);
-        }
+    }
+    if (typeof updateXpTrajectoryFromLedger === 'function') {
+        updateXpTrajectoryFromLedger(persona.id);
+    }
+    if (typeof initSocialRecognition === 'function') {
+        initSocialRecognition();
     }
     if (typeof renderTnaEnrollments === 'function') {
         renderTnaEnrollments();
     }
     if (typeof renderLmsBooks === 'function') {
         renderLmsBooks();
+    }
+    if (typeof checkAndRefreshShiftSentimentStatus === 'function') {
+        checkAndRefreshShiftSentimentStatus();
+    }
+    if (typeof updateShiftClimatePulseFromSupabase === 'function') {
+        updateShiftClimatePulseFromSupabase();
     }
     if (!silent) {
         showToast(`Signed in: ${persona.name} (${persona.tag})`, 'info');
@@ -1209,38 +1218,217 @@ function submitQuizSuccess() {
     }
 }
 
-function logQuickSentiment(sentimentType) {
-    const map = {
-        smooth: { emoji: '😊', title: 'Smooth & Energized', desc: 'Shift operating on schedule with high clarity and zero blockers.', badge: 'badge-sage' },
-        manageable: { emoji: '😐', title: 'Manageable & Steady', desc: 'Standard operating pace maintained with steady guest workflow.', badge: 'badge-dusty' },
-        friction: { emoji: '😟', title: 'Friction / High Pressure', desc: 'Shift experiencing bottlenecks or resource constraints.', badge: 'badge-terracotta' }
-    };
-    const s = map[sentimentType] || map.smooth;
+/**
+ * Check in shift_sentiments table if the active user already logged for today.
+ * If yes, disables check-in and quick mood buttons and reflects the logged state.
+ */
+async function checkAndRefreshShiftSentimentStatus(sentimentsInput) {
+    const sessionUser = (typeof getActiveSessionUser === 'function')
+        ? getActiveSessionUser()
+        : (window.currentUser || JSON.parse(localStorage.getItem('oxford_session_user') || '{}'));
+    const currentUserId = sessionUser.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+
+    let list = sentimentsInput;
+    if (!Array.isArray(list)) {
+        if (window.shiftSentimentsState && Array.isArray(window.shiftSentimentsState) && window.shiftSentimentsState.length > 0) {
+            list = window.shiftSentimentsState;
+        } else {
+            try {
+                const res = await fetch('api/social.php?action=get_sentiments');
+                const json = await res.json();
+                if (json && Array.isArray(json.data)) {
+                    list = json.data;
+                    window.shiftSentimentsState = list;
+                }
+            } catch (e) {
+                list = [];
+            }
+        }
+    }
+    if (!Array.isArray(list)) list = [];
+
+    // Date normalization for today
+    const now = new Date();
+    const utcToday = now.toISOString().slice(0, 10);
+    const localToday = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
+
+    const todayLog = list.find(s => {
+        const empId = s.employee_id || s.employeeId;
+        if (empId !== currentUserId) return false;
+        const raw = s.created_at || s.timestamp || '';
+        if (!raw) return false;
+        const d = new Date(raw);
+        if (isNaN(d.getTime())) return false;
+        const rawUtc = d.toISOString().slice(0, 10);
+        const rawLocal = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
+        return rawUtc === utcToday || rawLocal === localToday || rawUtc === localToday || rawLocal === utcToday;
+    });
+
     const emojiEl = document.getElementById('my-shift-sentiment-emoji');
     const titleEl = document.getElementById('my-shift-sentiment-title');
     const descEl = document.getElementById('my-shift-sentiment-desc');
     const badgeEl = document.getElementById('my-shift-sentiment-badge');
     const bannerEl = document.getElementById('my-shift-sentiment-banner');
+    const hintEl = document.getElementById('my-shift-already-logged-hint');
+    const checkinBtn = document.getElementById('btn-log-checkin-modal');
+    const checkinTxt = document.getElementById('btn-log-checkin-text');
+    const quickBtnIds = ['quick-mood-btn-smooth', 'quick-mood-btn-manageable', 'quick-mood-btn-friction'];
 
-    if (emojiEl) emojiEl.textContent = s.emoji;
-    if (titleEl) titleEl.textContent = s.title;
-    if (descEl) descEl.textContent = s.desc;
-    if (badgeEl) {
-        badgeEl.className = s.badge;
-        badgeEl.textContent = 'Active';
+    if (todayLog) {
+        // ALREADY LOGGED TODAY -> DISABLE BUTTONS
+        quickBtnIds.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+                btn.title = 'You have already logged your shift feeling for today';
+            }
+        });
+
+        if (checkinBtn) {
+            checkinBtn.disabled = true;
+            checkinBtn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+        }
+        if (checkinTxt) {
+            checkinTxt.textContent = 'Logged Today';
+        }
+        if (hintEl) {
+            hintEl.classList.remove('hidden');
+        }
+
+        const score = Number(todayLog.sentiment_score ?? todayLog.sentimentScore ?? 4);
+        let moodKey = 'smooth';
+        if (score === 3) moodKey = 'manageable';
+        else if (score <= 2) moodKey = 'friction';
+
+        const map = {
+            smooth: { emoji: '😊', title: 'Smooth & Energized', desc: todayLog.note || 'Shift operating on schedule with high clarity and zero blockers.', badge: 'badge-sage', bg: 'p-4 rounded-2xl bg-sage-50/70 border border-sage-200/80 flex items-center justify-between gap-3 transition-all' },
+            manageable: { emoji: '😐', title: 'Manageable & Steady', desc: todayLog.note || 'Standard operating pace maintained with steady guest workflow.', badge: 'badge-dusty', bg: 'p-4 rounded-2xl bg-dusty-50/70 border border-dusty-200/80 flex items-center justify-between gap-3 transition-all' },
+            friction: { emoji: '😟', title: 'Friction / High Pressure', desc: todayLog.note || 'Shift experiencing bottlenecks or resource constraints.', badge: 'badge-terracotta', bg: 'p-4 rounded-2xl bg-terracotta-50/70 border border-terracotta-200/80 flex items-center justify-between gap-3 transition-all' }
+        };
+        const s = map[moodKey] || map.smooth;
+        if (emojiEl) emojiEl.textContent = s.emoji;
+        if (titleEl) titleEl.textContent = s.title;
+        if (descEl) descEl.textContent = s.desc;
+        if (badgeEl) {
+            badgeEl.className = `${s.badge} flex-shrink-0`;
+            badgeEl.textContent = 'Logged Today';
+        }
+        if (bannerEl) bannerEl.className = s.bg;
+    } else {
+        // NOT LOGGED TODAY -> ENABLE BUTTONS
+        quickBtnIds.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+                btn.removeAttribute('title');
+            }
+        });
+
+        if (checkinBtn) {
+            checkinBtn.disabled = false;
+            checkinBtn.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+        }
+        if (checkinTxt) {
+            checkinTxt.textContent = 'Log Check-In';
+        }
+        if (hintEl) {
+            hintEl.classList.add('hidden');
+        }
+
+        if (emojiEl) emojiEl.textContent = '👋';
+        if (titleEl) titleEl.textContent = 'Ready for Daily Check-In';
+        if (descEl) descEl.textContent = 'Select your shift mood below or click Log Check-In for detailed notes.';
+        if (badgeEl) {
+            badgeEl.className = 'badge-dusty flex-shrink-0';
+            badgeEl.textContent = 'Pending';
+        }
+        if (bannerEl) bannerEl.className = 'p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 transition-all';
     }
-    if (bannerEl) {
-        if (sentimentType === 'smooth') bannerEl.className = 'p-4 rounded-2xl bg-sage-50/70 border border-sage-200/80 flex items-center justify-between gap-3';
-        else if (sentimentType === 'manageable') bannerEl.className = 'p-4 rounded-2xl bg-dusty-50/70 border border-dusty-200/80 flex items-center justify-between gap-3';
-        else bannerEl.className = 'p-4 rounded-2xl bg-terracotta-50/70 border border-terracotta-200/80 flex items-center justify-between gap-3';
+}
+window.checkAndRefreshShiftSentimentStatus = checkAndRefreshShiftSentimentStatus;
+
+/**
+ * Quick Shift Mood Logger - Directly persists to Supabase shift_sentiments
+ */
+async function logQuickSentiment(sentimentType) {
+    const sessionUser = (typeof getActiveSessionUser === 'function')
+        ? getActiveSessionUser()
+        : (window.currentUser || JSON.parse(localStorage.getItem('oxford_session_user') || '{}'));
+    const currentUserId = sessionUser.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+    const currentUserName = sessionUser.name || (window.activePersonaRole === 'Supervisor' ? 'Chef Marco Rossi' : 'Maria Santos');
+    const currentDept = sessionUser.dept || sessionUser.department || (sessionUser.type === 'Supervisor' ? 'Culinary' : 'Front Office');
+
+    const map = {
+        smooth: { emoji: '😊', title: 'Smooth & Energized', desc: 'Shift operating on schedule with high clarity and zero blockers.', badge: 'badge-sage', score: 5, mood: 'Positive' },
+        manageable: { emoji: '😐', title: 'Manageable & Steady', desc: 'Standard operating pace maintained with steady guest workflow.', badge: 'badge-dusty', score: 3, mood: 'Neutral' },
+        friction: { emoji: '😟', title: 'Friction / High Pressure', desc: 'Shift experiencing bottlenecks or resource constraints.', badge: 'badge-terracotta', score: 1, mood: 'Stressful' }
+    };
+    const s = map[sentimentType] || map.smooth;
+
+    // Immediately disable buttons to prevent duplicate submission
+    ['quick-mood-btn-smooth', 'quick-mood-btn-manageable', 'quick-mood-btn-friction'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+        }
+    });
+
+    const sentimentId = `sent-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const nowIso = new Date().toISOString();
+
+    const payload = {
+        id: sentimentId,
+        employeeId: currentUserId,
+        employeeName: currentUserName,
+        department: currentDept,
+        sentimentScore: s.score,
+        shiftPeriod: 'Peak Rush Window',
+        sentimentType: s.mood,
+        note: `Quick mood log: ${s.title}`
+    };
+
+    const localItem = {
+        id: sentimentId,
+        employee_id: currentUserId,
+        employee_name: currentUserName,
+        department: currentDept,
+        sentiment_score: s.score,
+        shift_period: 'Peak Rush Window',
+        sentiment_type: s.mood,
+        note: `Quick mood log: ${s.title}`,
+        created_at: nowIso
+    };
+
+    // Update shared state
+    if (!window.shiftSentimentsState) window.shiftSentimentsState = [];
+    if (!window.shiftSentimentsState.some(item => item.id === sentimentId)) {
+        window.shiftSentimentsState.unshift(localItem);
+    }
+
+    // Refresh UI & pulse chart immediately
+    checkAndRefreshShiftSentimentStatus(window.shiftSentimentsState);
+    if (typeof updateShiftClimatePulseFromSupabase === 'function') {
+        updateShiftClimatePulseFromSupabase(window.shiftSentimentsState);
+    }
+    if (typeof applySentimentFiltering === 'function') {
+        applySentimentFiltering();
+    }
+
+    if (typeof showToast === 'function') {
+        showToast(`Logged shift feeling: ${s.title} & synced to Supabase!`, 'success');
     }
 
     try {
-        localStorage.setItem('oxford_my_shift_sentiment', sentimentType);
-    } catch(e){}
-
-    if (typeof showToast === 'function') {
-        showToast(`Logged shift feeling: ${s.title}`, 'success');
+        await fetch('api/social.php?action=log_sentiment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    } catch (e) {
+        console.warn('Sentiment saved locally (network fallback):', e);
     }
 }
 window.logQuickSentiment = logQuickSentiment;
@@ -1253,4 +1441,9 @@ window.closeModal = closeModal;
 window.toggleMobileSidebar = toggleMobileSidebar;
 window.switchRole = switchRole;
 window.logOutToAuth = logOutToAuth;
+
+// Automatic initial check on page load
+window.addEventListener('DOMContentLoaded', () => {
+    checkAndRefreshShiftSentimentStatus();
+});
 

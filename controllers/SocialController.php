@@ -55,6 +55,8 @@ class SocialController
             $avgScore = round($totalScore / count($sentiments), 1);
         }
 
+        $todaySentiment = $employeeId ? $this->model->getUserTodayShiftSentiment($employeeId) : null;
+
         return [
             'success' => true,
             'data'    => [
@@ -65,12 +67,13 @@ class SocialController
                     'averageSentiment'    => $avgScore,
                     'performanceSyncPct'  => $totalRecognitions > 0 ? 100 : 0
                 ],
-                'recognitions' => $recognitions,
-                'sentiments'   => $sentiments,
-                'roster'       => $roster,
-                'ledger'       => $ledger,
-                'badges'       => $badges,
-                'champions'    => $this->model->getTop5XpChampions()
+                'recognitions'    => $recognitions,
+                'sentiments'      => $sentiments,
+                'todaySentiment'  => $todaySentiment,
+                'roster'          => $roster,
+                'ledger'          => $ledger,
+                'badges'          => $badges,
+                'champions'       => $this->model->getTop5XpChampions()
             ]
         ];
     }
@@ -307,4 +310,26 @@ class SocialController
             'data'    => $data
         ];
     }
+
+    /**
+     * Get shift sentiments with optional filter
+     */
+    public function getShiftSentiments(?string $filterType = null, ?string $filterValue = null): array
+    {
+        return $this->model->getShiftSentiments($filterType, $filterValue);
+    }
+
+    /**
+     * Check if specific employee has logged shift sentiment today
+     */
+    public function getUserTodaySentiment(string $employeeId): array
+    {
+        $today = $this->model->getUserTodayShiftSentiment($employeeId);
+        return [
+            'success' => true,
+            'hasLogged' => $today !== null,
+            'data' => $today
+        ];
+    }
 }
+

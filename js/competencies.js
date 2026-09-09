@@ -3305,12 +3305,23 @@ function renderCompetencyCardsHTML(list) {
     }).join('');
 }
 
-async function fetchEmployeeSpecificCompetencies(empId = 'emp-101') {
+async function fetchEmployeeSpecificCompetencies(empId = 'emp-101', forceRefresh = false) {
     const cleanId = (empId || 'emp-101').toString().toLowerCase();
+    const cacheKey = `comp_emp_cache_${cleanId}`;
 
-    // Check memory cache
-    if (window._cachedEmpCompetencies[cleanId]) {
-        return window._cachedEmpCompetencies[cleanId];
+    // 1. Check memory and session cache
+    if (!forceRefresh) {
+        if (window._cachedEmpCompetencies[cleanId]) {
+            return window._cachedEmpCompetencies[cleanId];
+        }
+        try {
+            const stored = sessionStorage.getItem(cacheKey);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                window._cachedEmpCompetencies[cleanId] = parsed;
+                return parsed;
+            }
+        } catch(e) {}
     }
     
     try {
@@ -3326,6 +3337,9 @@ async function fetchEmployeeSpecificCompetencies(empId = 'emp-101') {
                 dept: item.category || item.department_name || 'Competency'
             }));
             window._cachedEmpCompetencies[cleanId] = mapped;
+            try {
+                sessionStorage.setItem(cacheKey, JSON.stringify(mapped));
+            } catch(e) {}
             return mapped;
         }
 
@@ -3337,22 +3351,42 @@ async function fetchEmployeeSpecificCompetencies(empId = 'emp-101') {
 }
 window.fetchEmployeeSpecificCompetencies = fetchEmployeeSpecificCompetencies;
 
-async function renderEmployeeOverviewCompetencies(empId = 'emp-101') {
+async function renderEmployeeOverviewCompetencies(empId = 'emp-101', forceRefresh = false) {
     const container = document.getElementById('emp-overview-competencies-container');
     const compLoading = document.getElementById('kpi-comp-loading');
-    if (compLoading) compLoading.classList.remove('hidden');
 
     const cleanId = (empId || 'emp-101').toString().toLowerCase();
     const countEl = document.getElementById('emp-overview-comp-count');
+    const cacheKey = `comp_emp_cache_${cleanId}`;
 
-    // 1. Instant Render: Use cached or fallback data immediately with ZERO delay
-    const initialList = window._cachedEmpCompetencies[cleanId] || getFallbackCompetencyProfile(cleanId);
+    // 1. Instant 0ms Render: Use memory/session cache or fallback data immediately with ZERO delay
+    let hasRenderedFromCache = false;
+    let initialList = null;
+    if (!forceRefresh) {
+        if (window._cachedEmpCompetencies[cleanId]) {
+            initialList = window._cachedEmpCompetencies[cleanId];
+        } else {
+            try {
+                const stored = sessionStorage.getItem(cacheKey);
+                if (stored) {
+                    initialList = JSON.parse(stored);
+                    window._cachedEmpCompetencies[cleanId] = initialList;
+                }
+            } catch(e) {}
+        }
+    }
+    if (!initialList) {
+        initialList = getFallbackCompetencyProfile(cleanId);
+    }
+
     if (initialList && initialList.length > 0) {
         if (container) container.innerHTML = renderCompetencyCardsHTML(initialList);
         if (countEl) countEl.textContent = `${initialList.length} Assigned Competencies`;
         updateCompetencyKpiCard(initialList, empId);
+        hasRenderedFromCache = true;
     } else if (container) {
         // Skeleton only if no data exists at all
+        if (compLoading) compLoading.classList.remove('hidden');
         container.innerHTML = `
             <div class="col-span-1 md:col-span-2 lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
                 ${[1, 2, 3, 4].map(() => `
@@ -3374,7 +3408,7 @@ async function renderEmployeeOverviewCompetencies(empId = 'emp-101') {
 
     // 2. Fetch fresh database competencies asynchronously and update seamlessly
     try {
-        const freshList = await fetchEmployeeSpecificCompetencies(empId);
+        const freshList = await fetchEmployeeSpecificCompetencies(empId, forceRefresh);
         if (freshList && freshList.length > 0) {
             if (container) container.innerHTML = renderCompetencyCardsHTML(freshList);
             if (countEl) countEl.textContent = `${freshList.length} Assigned Competencies`;

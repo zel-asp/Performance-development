@@ -61,9 +61,11 @@ class LmsController
         $category = $params['category'] ?? null;
         $status = $params['status'] ?? null;
         $search = isset($params['search']) ? trim($params['search']) : '';
+        $userId = trim($params['user_id'] ?? $params['employee_id'] ?? $params['employee'] ?? ($_SESSION['user']['id'] ?? ''));
+        $role = strtolower(trim($params['role'] ?? $params['user_role'] ?? ($_SESSION['user']['role'] ?? '')));
 
-        $cacheKey = 'docs_' . md5(json_encode([$deptId, $category, $status, $search]));
-        $cached = self::getCache($cacheKey, 60);
+        $cacheKey = 'docs_' . md5(json_encode([$deptId, $category, $status, $search, $userId, $role]));
+        $cached = self::getCache($cacheKey, 30);
         if ($cached !== null) {
             return $cached;
         }
@@ -80,14 +82,54 @@ class LmsController
             self::setCache('dept_map', $deptMap);
         }
 
-        // 2. Build Query for lms_documents
-        $query = 'lms_documents?order=created_at.desc';
-        if (!empty($status) && $status !== 'all') {
-            $query .= '&status=eq.' . urlencode($status);
+        // Determine supervisor/manager authority
+        $isSupervisor = empty($role) ||
+            strpos($role, 'supervisor') !== false ||
+            strpos($role, 'manager') !== false ||
+            strpos($role, 'admin') !== false ||
+            strpos($role, 'hr') !== false ||
+            strpos($role, 'executive') !== false;
+
+        // If not supervisor, fetch this associate's prescribed LMS document IDs from lms_prescribed
+        $prescribedLmsIds = [];
+        if (!$isSupervisor && !empty($userId)) {
+            try {
+                $pdo = getSupabaseDb();
+                if ($pdo) {
+                    $pStmt = $pdo->prepare("SELECT lms_id FROM public.lms_prescribed WHERE LOWER(employee) = LOWER(:emp)");
+                    $pStmt->execute(['emp' => $userId]);
+                    $prescribedLmsIds = $pStmt->fetchAll(PDO::FETCH_COLUMN);
+                }
+            } catch (Throwable $e) {}
+
+            if (empty($prescribedLmsIds)) {
+                $pRes = supabaseRequest('lms_prescribed?employee=eq.' . urlencode($userId) . '&select=lms_id', 'GET', null, true);
+                if (!empty($pRes['data']) && is_array($pRes['data'])) {
+                    $prescribedLmsIds = array_column($pRes['data'], 'lms_id');
+                }
+            }
+            $prescribedLmsIds = array_map('strval', $prescribedLmsIds);
         }
 
-        $res = supabaseRequest($query, 'GET', null, true);
-        $allDocs = is_array($res['data']) ? $res['data'] : [];
+        // 2. Fetch lms_documents via direct PDO with REST API fallback
+        $allDocs = [];
+        try {
+            $pdo = getSupabaseDb();
+            if ($pdo) {
+                $stmt = $pdo->query("SELECT * FROM public.lms_documents ORDER BY created_at DESC");
+                $allDocs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+        } catch (Throwable $e) {}
+
+        if (empty($allDocs)) {
+            $query = 'lms_documents?order=created_at.desc';
+            if (!empty($status) && $status !== 'all') {
+                $query .= '&status=eq.' . urlencode($status);
+            }
+
+            $res = supabaseRequest($query, 'GET', null, true);
+            $allDocs = is_array($res['data'] ?? null) ? $res['data'] : [];
+        }
 
         // 3. Resolve department names and filter in PHP
         $filtered = [];
@@ -100,9 +142,25 @@ class LmsController
         ];
 
         foreach ($allDocs as $doc) {
+            $docId = (string)($doc['id'] ?? '');
+            $isMandatory = !empty($doc['manatory']) || !empty($doc['mandatory']) || !empty($doc['is_mandatory']) ||
+                (isset($doc['manatory']) && ($doc['manatory'] === true || $doc['manatory'] === 1 || $doc['manatory'] === 'true' || $doc['manatory'] === 't')) ||
+                (isset($doc['mandatory']) && ($doc['mandatory'] === true || $doc['mandatory'] === 1 || $doc['mandatory'] === 'true' || $doc['mandatory'] === 't'));
+
+            // Rule: If mandatory is false, do not show to anyone except supervisors unless it is in lms_prescribed
+            if (!$isSupervisor && !$isMandatory) {
+                if (!in_array($docId, $prescribedLmsIds, true)) {
+                    continue; // Skip non-mandatory documents not prescribed to this employee
+                }
+            }
+
             $dId = $doc['department_id'] ?? null;
             $dName = $dId && isset($deptMap[$dId]) ? $deptMap[$dId] : 'Property-Wide';
             $doc['department_name'] = $dName;
+            $doc['manatory'] = $isMandatory;
+            $doc['mandatory'] = $isMandatory;
+            $doc['is_mandatory'] = $isMandatory;
+            $doc['is_prescribed'] = in_array($docId, $prescribedLmsIds, true);
 
             // Department filter: include specific department match AND all documents that don't have a department (null / Property-Wide)
             if (!empty($deptId) && $deptId !== 'all') {
@@ -150,6 +208,21 @@ class LmsController
         ];
         self::setCache($cacheKey, $res);
         return $res;
+    }
+
+    private function getCategoryBadge(string $category): string
+    {
+        $cat = strtolower($category);
+        if (strpos($cat, 'safety') !== false || strpos($cat, 'haccp') !== false) {
+            return 'badge-sage';
+        }
+        if (strpos($cat, 'guest') !== false || strpos($cat, 'service') !== false) {
+            return 'badge-gold';
+        }
+        if (strpos($cat, 'crisis') !== false || strpos($cat, 'emergency') !== false) {
+            return 'badge-terracotta';
+        }
+        return 'badge-secondary';
     }
 
     /**

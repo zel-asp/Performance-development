@@ -66,6 +66,24 @@ try {
             echo json_encode($controller->logShiftSentiment($payload));
             break;
 
+        case 'get_sentiments':
+            $filterType = $_GET['filterType'] ?? ($_GET['filter_type'] ?? null);
+            $filterVal = $_GET['filterValue'] ?? ($_GET['filter_value'] ?? null);
+            echo json_encode([
+                'success' => true,
+                'data' => $controller->getShiftSentiments($filterType, $filterVal)
+            ]);
+            break;
+
+        case 'check_today_sentiment':
+            $empId = $_GET['employeeId'] ?? ($_GET['employee_id'] ?? null);
+            if (!$empId) {
+                echo json_encode(['success' => false, 'hasLogged' => false, 'message' => 'Missing employeeId']);
+            } else {
+                echo json_encode($controller->getUserTodaySentiment($empId));
+            }
+            break;
+
         default:
             echo json_encode([
                 'success' => false,
