@@ -68,11 +68,17 @@ const TrainingAPI = {
             throw error;
         }
     },
-
+    bootstrap(filters = {}) {
+        const currentRole = window.activePersonaRole || 'Associate';
+        const currentUserId = window.currentUser?.id || '';
+        const scope = window.trainingSupervisorShowAll ? 'all' : (filters.scope || '');
+        return this.request('bootstrap', 'GET', { ...filters, scope, role: currentRole, user_id: currentUserId });
+    },
     getNeeds(filters = {}) {
         const currentRole = window.activePersonaRole || 'Associate';
         const currentUserId = window.currentUser?.id || '';
-        return this.request('get_needs', 'GET', { ...filters, role: currentRole, user_id: currentUserId });
+        const scope = window.trainingSupervisorShowAll ? 'all' : (filters.scope || '');
+        return this.request('get_needs', 'GET', { ...filters, scope, role: currentRole, user_id: currentUserId });
     },
     createNeed(data) { return this.request('create_need', 'POST', data); },
     getPrograms(filters = {}) {
@@ -131,6 +137,31 @@ let trainingResultsState = [];
 let trainingCertificatesState = [];
 
 let activeAttendanceSessionId = 'sess-101';
+
+function matchesDepartment(itemDept, supervisorDept) {
+    if (!supervisorDept) return true;
+    const a = String(itemDept || '').toLowerCase().trim();
+    const b = String(supervisorDept || '').toLowerCase().trim();
+    if (a === '' || b === '') return true;
+    if (a.includes(b) || b.includes(a)) return true;
+
+    const aliases = {
+        'culinary & f&b': ['culinary', 'f&b service', 'f & b service', 'food & beverage'],
+        'front office': ['front office', 'fo'],
+        'human resources': ['human resources', 'hr'],
+        'executive office': ['executive office', 'gm'],
+    };
+
+    const normalize = (s) => s.replace(/&/g, 'and').replace(/\s+/g, ' ').trim();
+
+    for (const [key, vals] of Object.entries(aliases)) {
+        if (normalize(a) === key || vals.some(v => normalize(a).includes(v))) {
+            if (normalize(b) === key || vals.some(v => normalize(b).includes(v))) return true;
+        }
+    }
+    return false;
+}
+
 let currentEvaluationContext = {
     sessionId: null,
     associateId: null,
@@ -338,9 +369,34 @@ async function initTrainingManagement() {
     // 2. Asynchronous Fetch & Sync from MVC Backend
     try {
         showNeedsLoadingState();
-        const bootstrapData = await TrainingAPI.bootstrap();
+        let bootstrapData = null;
+        try {
+            bootstrapData = await TrainingAPI.bootstrap();
+        } catch (bErr) {
+            console.warn('[Training] Bootstrap fetch failed, trying direct getNeeds fallback:', bErr);
+        }
+
+        if (!bootstrapData || !Array.isArray(bootstrapData.needs)) {
+            try {
+                const rawNeeds = await TrainingAPI.getNeeds();
+                if (Array.isArray(rawNeeds)) {
+                    bootstrapData = bootstrapData || {};
+                    bootstrapData.needs = rawNeeds;
+                }
+            } catch (nErr) {
+                console.warn('[Training] Fallback getNeeds also failed:', nErr);
+            }
+        }
+
         if (bootstrapData) {
             if (Array.isArray(bootstrapData.needs)) trainingNeedsState = bootstrapData.needs.map(normalizeTrainingNeed);
+            if (Array.isArray(bootstrapData.propertyNeeds)) {
+                window.propertyNeedsState = bootstrapData.propertyNeeds.map(normalizeTrainingNeed);
+            } else if (Array.isArray(bootstrapData.allNeeds)) {
+                window.propertyNeedsState = bootstrapData.allNeeds.map(normalizeTrainingNeed);
+            } else {
+                window.propertyNeedsState = trainingNeedsState;
+            }
             if (Array.isArray(bootstrapData.programs)) trainingProgramsState = bootstrapData.programs.map(normalizeTrainingProgram);
             if (Array.isArray(bootstrapData.sessions)) trainingSessionsState = bootstrapData.sessions.map(normalizeTrainingSession);
             if (Array.isArray(bootstrapData.results)) trainingResultsState = bootstrapData.results.map(normalizeTrainingResult);
@@ -360,32 +416,36 @@ async function initTrainingManagement() {
         console.warn('[Training] Running with cached offline state:', err.message);
     }
 
-    // 3. Supabase Realtime Subscription for Competency Gaps
+    // 3. Supabase Realtime Subscription for Competency Gaps, Performance Evaluations & Training Needs
     const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.channel === 'function' ? window.supabase : null);
     if (sbClient && typeof sbClient.channel === 'function') {
-        sbClient
-            .channel('public:competency_assessments')
-            .on('postgres_changes', { 
-                event: '*', 
-                schema: 'public', 
-                table: 'competency_assessments' 
-            }, async (payload) => {
-                console.log('Realtime Assessment Detected in Training Module:', payload);
-                try {
-                    showNeedsLoadingState();
-                    const bootstrapData = await TrainingAPI.bootstrap();
-                    if (bootstrapData && Array.isArray(bootstrapData.needs)) {
-                        trainingNeedsState = bootstrapData.needs.map(normalizeTrainingNeed);
-                        renderTrainingNeeds();
-                        updateTrainingStats();
-                        if (typeof window.showToast === 'function') {
-                            window.showToast('New Training Need automatically detected from latest competency appraisal.', 'info');
-                        }
+        const handleRealtimeSync = async (source) => {
+            console.log(`[Training Realtime] Change detected in ${source}: refreshing deficits.`);
+            try {
+                const freshData = await TrainingAPI.bootstrap({ force_sync: true });
+                if (freshData) {
+                    if (Array.isArray(freshData.needs)) trainingNeedsState = freshData.needs.map(normalizeTrainingNeed);
+                    if (Array.isArray(freshData.propertyNeeds)) {
+                        window.propertyNeedsState = freshData.propertyNeeds.map(normalizeTrainingNeed);
+                    } else if (Array.isArray(freshData.allNeeds)) {
+                        window.propertyNeedsState = freshData.allNeeds.map(normalizeTrainingNeed);
                     }
-                } catch (err) {
-                    console.error("Failed to realtime sync training needs:", err);
+                    renderTrainingNeeds();
+                    updateTrainingStats();
+                    if (typeof window.showToast === 'function') {
+                        window.showToast(`Live Deficit Detected: Training Queue refreshed from ${source}.`, 'info');
+                    }
                 }
-            })
+            } catch (err) {
+                console.warn('[Training Realtime] Live sync error:', err);
+            }
+        };
+
+        sbClient
+            .channel('training_realtime_channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'competency_assessments' }, () => handleRealtimeSync('competency appraisal'))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'performance_evaluations' }, () => handleRealtimeSync('performance evaluation'))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'training_needs' }, () => handleRealtimeSync('training needs queue'))
             .subscribe();
     }
 }
@@ -398,7 +458,7 @@ function getAggregatedCertificates() {
     const list = [];
     const seenAssociates = new Set();
     const seenRefs = new Set();
-    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor');
+    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaRole === 'DeptHead' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor' || window.activePersonaKey === 'depthead');
     const currentUserDept = window.currentUser?.department || window.currentUser?.dept;
 
     // 1. From trainingResultsState
@@ -551,17 +611,24 @@ function renderTrainingNeeds() {
     const container = document.getElementById('training-needs-list');
     if (!container) return;
 
-    let allNormalized = trainingNeedsState.map(normalizeTrainingNeed);
-    
     const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
-    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor');
+    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaRole === 'DeptHead' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor' || window.activePersonaKey === 'depthead');
     const currentEmpId = window.currentUser?.id;
     const currentUserDept = window.currentUser?.department || window.currentUser?.dept;
 
+    // Use full property deficits if supervisor enabled property-wide view
+    const propertyNeeds = (window.propertyNeedsState && window.propertyNeedsState.length > 0)
+        ? window.propertyNeedsState
+        : trainingNeedsState.map(normalizeTrainingNeed);
+
+    let allNormalized = (window.trainingSupervisorShowAll && propertyNeeds.length > 0)
+        ? propertyNeeds
+        : trainingNeedsState.map(normalizeTrainingNeed);
+
     if (isAssociate && currentEmpId) {
         allNormalized = allNormalized.filter(n => n.employeeId === currentEmpId);
-    } else if (isSupervisor && currentUserDept) {
-        allNormalized = allNormalized.filter(n => (n.dept || '').toLowerCase() === currentUserDept.toLowerCase());
+    } else if (isSupervisor && currentUserDept && !window.trainingSupervisorShowAll) {
+        allNormalized = allNormalized.filter(n => matchesDepartment(n.dept, currentUserDept));
     }
     
     const perfItems = allNormalized.filter(n => n.isPerformanceGoal);
@@ -586,6 +653,12 @@ function renderTrainingNeeds() {
                     : `Showing All Audit Triggers (${filteredNeeds.length})`;
     }
 
+    // Tab button count badges
+    const activeNeedsCount = allNormalized.filter(n => n.status !== 'Resolved' && n.status !== 'Completed' && !n.isPerformanceGoal).length;
+    const referralsCount = perfItems.filter(n => n.status !== 'Resolved' && n.status !== 'Completed').length;
+    const resolvedCount = allNormalized.filter(n => n.status === 'Resolved' || n.status === 'Completed').length;
+    const allCount = allNormalized.length;
+
     // Personalize Header and Filters for Associate vs Supervisor
     const headTitle = document.getElementById('training-needs-header-title');
     const headDesc = document.getElementById('training-needs-header-desc');
@@ -599,26 +672,36 @@ function renderTrainingNeeds() {
         if (headTitle) headTitle.textContent = 'My Training & Skill Development Plan';
         if (headDesc) headDesc.textContent = 'Personalized learning assignments and mandatory compliance requirements to close skill gaps';
         if (headBadge) headBadge.innerHTML = '<i class="fas fa-user-graduate mr-1"></i> My Learning Plan';
-        if (btnActive) btnActive.innerHTML = '<i class="fas fa-bolt mr-1 text-amber-300"></i> My Active Needs';
-        if (btnPerf) btnPerf.innerHTML = '<i class="fas fa-bullseye mr-1 text-indigo-600"></i> My Goal Referrals';
-        if (btnResolved) btnResolved.innerHTML = '<i class="fas fa-check-circle mr-1 text-emerald-600"></i> My Completed &amp; Certs';
-        if (btnAll) btnAll.textContent = 'All My Training';
+        if (btnActive) btnActive.innerHTML = `<i class="fas fa-bolt mr-1 text-amber-300"></i> My Active Needs <span class="ml-1 px-1.5 py-0.5 rounded-full ${needsActiveFilterTab === 'active' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'} text-[10px] font-bold">${activeNeedsCount}</span>`;
+        if (btnPerf) btnPerf.innerHTML = `<i class="fas fa-bullseye mr-1 text-indigo-600"></i> My Goal Referrals <span class="ml-1 px-1.5 py-0.5 rounded-full ${needsActiveFilterTab === 'performance' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'} text-[10px] font-bold">${referralsCount}</span>`;
+        if (btnResolved) btnResolved.innerHTML = `<i class="fas fa-check-circle mr-1 text-emerald-600"></i> My Completed &amp; Certs <span class="ml-1 px-1.5 py-0.5 rounded-full ${needsActiveFilterTab === 'resolved' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'} text-[10px] font-bold">${resolvedCount}</span>`;
+        if (btnAll) btnAll.innerHTML = `All My Training <span class="ml-1 px-1.5 py-0.5 rounded-full ${needsActiveFilterTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'} text-[10px] font-bold">${allCount}</span>`;
     } else {
         if (headTitle) headTitle.textContent = 'Skill Gap Audits & Mandatory Compliance Requirements';
         if (headDesc) headDesc.textContent = 'Direct triggers identifying which associate requires training and linking to syllabus';
         if (headBadge) headBadge.innerHTML = '<i class="fas fa-bolt mr-1"></i> Live Needs Queue';
-        if (btnActive) btnActive.innerHTML = '<i class="fas fa-bolt mr-1 text-amber-300"></i> Active Deficits';
-        if (btnPerf) btnPerf.innerHTML = '<i class="fas fa-share-from-square mr-1 text-indigo-600"></i> Referrals';
-        if (btnResolved) btnResolved.innerHTML = '<i class="fas fa-check-circle mr-1 text-emerald-600"></i> Resolved History';
-        if (btnAll) btnAll.textContent = 'All Audit Triggers';
+        if (btnActive) btnActive.innerHTML = `<i class="fas fa-bolt mr-1 text-amber-300"></i> Active Deficits <span class="ml-1 px-1.5 py-0.5 rounded-full ${needsActiveFilterTab === 'active' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'} text-[10px] font-bold">${activeNeedsCount}</span>`;
+        if (btnPerf) btnPerf.innerHTML = `<i class="fas fa-share-from-square mr-1 text-indigo-600"></i> Referrals <span class="ml-1 px-1.5 py-0.5 rounded-full ${needsActiveFilterTab === 'performance' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'} text-[10px] font-bold">${referralsCount}</span>`;
+        if (btnResolved) btnResolved.innerHTML = `<i class="fas fa-check-circle mr-1 text-emerald-600"></i> Resolved History <span class="ml-1 px-1.5 py-0.5 rounded-full ${needsActiveFilterTab === 'resolved' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'} text-[10px] font-bold">${resolvedCount}</span>`;
+        if (btnAll) btnAll.innerHTML = `All Audit Triggers <span class="ml-1 px-1.5 py-0.5 rounded-full ${needsActiveFilterTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'} text-[10px] font-bold">${allCount}</span>`;
     }
 
     if (filteredNeeds.length === 0) {
+        // Auto-expand: if supervisor's dept has 0 deficits but other depts do, show property-wide automatically
+        if (isSupervisor && !window.trainingSupervisorShowAll && needsActiveFilterTab === 'active') {
+            const otherDeptDeficitsCount = propertyNeeds.filter(n => n.status !== 'Resolved' && n.status !== 'Completed' && !n.isPerformanceGoal && !matchesDepartment(n.dept, currentUserDept)).length;
+            if (otherDeptDeficitsCount > 0) {
+                window.trainingSupervisorShowAll = true;
+                renderTrainingNeeds();
+                return;
+            }
+        }
+
         const emptyMsg = needsActiveFilterTab === 'performance'
             ? (isAssociate ? 'No formal training needs linked to your Performance Goals yet.' : 'No formal training needs linked to Performance Goal Evaluations / IDP yet.')
             : needsActiveFilterTab === 'resolved'
                 ? (isAssociate ? 'No completed training certifications recorded on your profile yet.' : 'No resolved training history recorded yet.')
-                : (isAssociate ? 'Great job! You have no pending skill gaps or compliance deficits.' : 'No active skill gap deficits or compliance requirements pending in the queue.');
+                : (isAssociate ? 'Great job! You have no pending skill gaps or compliance deficits.' : 'No active skill gap deficits or compliance requirements pending in this view.');
 
         container.innerHTML = `
             <div class="card-clean p-8 bg-white border border-[#E8DEDC] text-center space-y-3">
@@ -632,7 +715,22 @@ function renderTrainingNeeds() {
         return;
     }
 
-    container.innerHTML = filteredNeeds.map(need => {
+    let supervisorBannerHtml = '';
+    if (isSupervisor && window.trainingSupervisorShowAll) {
+        supervisorBannerHtml = `
+            <div class="col-span-full mb-3 p-3 rounded-xl bg-amber-50 border border-amber-200 flex flex-wrap items-center justify-between gap-2 text-xs shadow-sm">
+                <div class="flex items-center space-x-2 text-amber-900 font-bold">
+                    <i class="fas fa-hotel text-amber-600"></i>
+                    <span>Viewing Property-Wide Deficits (All Hotel Departments)</span>
+                </div>
+                <button type="button" onclick="window.trainingSupervisorShowAll = false; renderTrainingNeeds();" class="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-100 text-amber-800 font-bold text-[11px] border border-amber-300 transition shadow-xs">
+                    <i class="fas fa-filter mr-1"></i> Return to My Department Only (${currentUserDept || 'Assigned Department'})
+                </button>
+            </div>
+        `;
+    }
+
+    container.innerHTML = supervisorBannerHtml + filteredNeeds.map(need => {
         const isResolved = need.status === 'Resolved' || need.status === 'Completed';
         const isScheduled = need.status === 'Scheduled';
         const isSkillGap = need.sourceType === 'competency_gap';
@@ -941,7 +1039,7 @@ function renderTrainingSessions() {
     if (!container) return;
 
     const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
-    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor');
+    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaRole === 'DeptHead' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor' || window.activePersonaKey === 'depthead');
     const currentEmpId = window.currentUser?.id;
     const currentUserDept = window.currentUser?.department || window.currentUser?.dept;
 
@@ -951,7 +1049,7 @@ function renderTrainingSessions() {
     } else if (isSupervisor && currentUserDept) {
         sessionsToRender = trainingSessionsState.filter(s => {
             const sessDept = (s.dept || '').toLowerCase();
-            return sessDept === currentUserDept.toLowerCase() || sessDept === '';
+            return matchesDepartment(sessDept, currentUserDept) || sessDept === '';
         });
     }
 
@@ -1042,7 +1140,7 @@ function renderAttendanceConsole() {
     if (!selector) return;
 
     const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
-    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor');
+    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaRole === 'DeptHead' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor' || window.activePersonaKey === 'depthead');
     const currentEmpId = window.currentUser?.id;
     const currentUserDept = window.currentUser?.department || window.currentUser?.dept;
 
@@ -1052,7 +1150,7 @@ function renderAttendanceConsole() {
     } else if (isSupervisor && currentUserDept) {
         filteredSessions = trainingSessionsState.filter(s => {
             const sessDept = (s.dept || '').toLowerCase();
-            return sessDept === currentUserDept.toLowerCase() || sessDept === '';
+            return matchesDepartment(sessDept, currentUserDept) || sessDept === '';
         });
     }
 
@@ -1282,7 +1380,7 @@ function openAttendanceForSession(sessionId) {
 // =========================================================================
 
 function startSessionEvaluation(sessionId, associateId) {
-    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor');
+    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaRole === 'DeptHead' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor' || window.activePersonaKey === 'depthead');
     if (isSupervisor) {
         showToast('Supervisors cannot submit training evaluations. The assigned associate must complete the evaluation quiz themselves.', 'error');
         return;
@@ -1493,7 +1591,7 @@ function renderTrainingResults() {
     if (!tbody) return;
 
     const isAssociate = (window.activePersonaRole === 'Associate' || window.activePersonaKey === 'associate' || window.activePersonaKey === 'employee');
-    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor');
+    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaRole === 'DeptHead' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor' || window.activePersonaKey === 'depthead');
     const currentEmpId = window.currentUser?.id;
     const currentUserDept = window.currentUser?.department || window.currentUser?.dept;
 
@@ -1501,7 +1599,7 @@ function renderTrainingResults() {
     if (isAssociate && currentEmpId) {
         resultsToRender = trainingResultsState.filter(r => r.associateId === currentEmpId || (window.currentUser?.name && String(r.associateName).toLowerCase().includes(String(window.currentUser.name).toLowerCase())));
     } else if (isSupervisor && currentUserDept) {
-        resultsToRender = trainingResultsState.filter(r => (r.dept || '').toLowerCase() === currentUserDept.toLowerCase());
+        resultsToRender = trainingResultsState.filter(r => matchesDepartment(r.dept, currentUserDept));
     }
 
     if (resultsToRender.length === 0) {
@@ -1646,7 +1744,7 @@ function renderBasicTrainingReport() {
     const deptSummaryContainer = document.getElementById('report-dept-summary');
     if (!tbody || !deptSummaryContainer) return;
 
-    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor');
+    const isSupervisor = (window.activePersonaRole === 'Supervisor' || window.activePersonaRole === 'DeptHead' || window.activePersonaKey === 'manager' || window.activePersonaKey === 'supervisor' || window.activePersonaKey === 'depthead');
     const currentUserDept = window.currentUser?.department || window.currentUser?.dept;
 
     if (isSupervisor && currentUserDept) {
@@ -1668,7 +1766,7 @@ function renderBasicTrainingReport() {
     });
 
     if (isSupervisor && currentUserDept) {
-        allParticipants = allParticipants.filter(p => (p.dept || p.sessionDept || '').toLowerCase() === currentUserDept.toLowerCase());
+        allParticipants = allParticipants.filter(p => matchesDepartment(p.dept || p.sessionDept, currentUserDept));
     }
 
     // Departments list

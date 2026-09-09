@@ -116,7 +116,8 @@ class AuthController
             'email'            => $email,
             'remaining_sends'  => $otpRes['remaining_sends'] ?? 0,
             'message'          => $otpRes['message'] ?? 'Verification code sent to employee email.',
-            'email_sent'       => $otpRes['email_sent'] ?? true
+            'email_sent'       => $otpRes['email_sent'] ?? true,
+            'dev_otp'          => $otpRes['dev_otp'] ?? null
         ];
     }
 

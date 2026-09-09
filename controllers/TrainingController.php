@@ -38,10 +38,50 @@ class TrainingController
     private function getSupervisorDepartment(string $userId, string $role): ?string
     {
         if (empty($userId)) return null;
-        $res = supabaseRequest('users?id=eq.' . urlencode($userId) . '&select=department', 'GET', null, true);
-        if ($res['status'] === 200 && !empty($res['data'][0]['department'])) {
-            return $res['data'][0]['department'];
+
+        // 1. Direct PDO query on employees table joined with departments
+        try {
+            $pdo = getSupabaseDb();
+            if ($pdo) {
+                $stmt = $pdo->prepare('
+                    SELECT d.name AS dept_name 
+                    FROM public.employees e 
+                    JOIN public.departments d ON e.department_id = d.id 
+                    WHERE e.id = :id LIMIT 1
+                ');
+                $stmt->execute([':id' => $userId]);
+                $deptRow = $stmt->fetch(PDO::FETCH_ASSOC);
+                if (!empty($deptRow['dept_name']) && strtolower(trim($deptRow['dept_name'])) !== 'general') {
+                    return $deptRow['dept_name'];
+                }
+
+                // Fallback: check users table
+                $stmt2 = $pdo->prepare('SELECT department FROM public.users WHERE id = :id LIMIT 1');
+                $stmt2->execute([':id' => $userId]);
+                $userRow = $stmt2->fetch(PDO::FETCH_ASSOC);
+                if (!empty($userRow['department']) && strtolower(trim($userRow['department'])) !== 'general') {
+                    return $userRow['department'];
+                }
+            }
+        } catch (Throwable $e) {
+            error_log('[TrainingController] PDO department lookup failed for user ' . $userId . ': ' . $e->getMessage());
         }
+
+        // 2. REST API queries as secondary fallback
+        $endpoints = [
+            'employees?id=eq.' . urlencode($userId) . '&select=department,department_id,departments(name)',
+            'users?id=eq.' . urlencode($userId) . '&select=department',
+        ];
+
+        foreach ($endpoints as $ep) {
+            $res = supabaseRequest($ep, 'GET', null, true);
+            if ($res['status'] === 200 && is_array($res['data']) && !empty($res['data'][0])) {
+                $d = $res['data'][0];
+                $dept = $d['departments']['name'] ?? ($d['department'] ?? null);
+                if ($dept && strtolower(trim($dept)) !== 'general') return $dept;
+            }
+        }
+
         return null;
     }
 
@@ -49,14 +89,37 @@ class TrainingController
     {
         if (!$dept) return true;
         $itemDept = strtolower(trim($item['dept'] ?? $item['department'] ?? ''));
-        return $itemDept === strtolower($dept) || $itemDept === '';
+        $supervisorDept = strtolower(trim($dept));
+        if ($itemDept === '' || $supervisorDept === '') return true;
+        if (stripos($itemDept, $supervisorDept) !== false || stripos($supervisorDept, $itemDept) !== false) return true;
+
+        $deptAliases = [
+            'culinary & f&b' => ['culinary', 'f&b service', 'f & b service', 'food & beverage', 'kitchen'],
+            'kitchen' => ['culinary', 'f&b service', 'food & beverage', 'culinary & f&b'],
+            'front office' => ['front office', 'fo'],
+            'housekeeping' => ['housekeeping', 'hk'],
+            'human resources' => ['human resources', 'hr'],
+            'executive office' => ['executive office', 'gm'],
+        ];
+
+        foreach (($deptAliases[$supervisorDept] ?? []) as $alias) {
+            if (stripos($itemDept, $alias) !== false) return true;
+        }
+        foreach (($deptAliases[$itemDept] ?? []) as $alias) {
+            if (stripos($supervisorDept, $alias) !== false) return true;
+        }
+
+        return false;
     }
 
     private function filterForSupervisor(array $items, string $userId, string $role): array
     {
         if (!$this->isSupervisor($role)) return $items;
         $dept = $this->getSupervisorDepartment($userId, $role);
-        if (!$dept) return $items;
+        if (!$dept) {
+            error_log('[TrainingController] filterForSupervisor: department could not be resolved for user ' . $userId . ' (role=' . $role . '). Returning all items as fallback.');
+            return $items;
+        }
         return array_values(array_filter($items, fn($item) => $this->matchesDepartment($item, $dept)));
     }
 
@@ -65,9 +128,12 @@ class TrainingController
     {
         $role = strtolower(trim($filters['role'] ?? ($filters['user_role'] ?? 'Associate')));
         $userId = trim($filters['user_id'] ?? ($filters['userId'] ?? ''));
-        $modelFilters = array_diff_key($filters, array_flip(['role', 'user_role', 'user_id', 'userId', 'action', 'controller', 'csrf_token', '_', 'apiKey']));
+        $scope = strtolower(trim($filters['scope'] ?? ''));
+        $modelFilters = array_diff_key($filters, array_flip(['role', 'user_role', 'user_id', 'userId', 'scope', 'action', 'controller', 'csrf_token', '_', 'apiKey']));
         $needs = $this->needModel->getNeeds($modelFilters);
-        $needs = $this->filterForSupervisor($needs, $userId, $role);
+        if ($scope !== 'all') {
+            $needs = $this->filterForSupervisor($needs, $userId, $role);
+        }
         return [
             'success' => true,
             'data'    => $needs
@@ -253,29 +319,35 @@ class TrainingController
     {
         $role = strtolower(trim($payload['role'] ?? ($payload['user_role'] ?? 'Associate')));
         $userId = trim($payload['user_id'] ?? ($payload['userId'] ?? ''));
-        $modelFilters = array_diff_key($payload, array_flip(['role', 'user_role', 'user_id', 'userId', 'action', 'controller', 'csrf_token', '_', 'apiKey']));
+        $scope = strtolower(trim($payload['scope'] ?? ''));
+        $modelFilters = array_diff_key($payload, array_flip(['role', 'user_role', 'user_id', 'userId', 'scope', 'action', 'controller', 'csrf_token', '_', 'apiKey']));
 
-        $needs = $this->needModel->getNeeds($modelFilters);
+        $allNeeds = $this->needModel->getNeeds($modelFilters);
+        $needs = $allNeeds;
         $programs = $this->programModel->getPrograms($modelFilters);
         $sessions = $this->sessionModel->getSessions($modelFilters);
         $results = $this->evaluationModel->getEvaluations($modelFilters);
         $certificates = $this->certificateModel->getCertificates($modelFilters);
 
-        $needs = $this->filterForSupervisor($needs, $userId, $role);
-        $programs = $this->filterForSupervisor($programs, $userId, $role);
-        $sessions = $this->filterForSupervisor($sessions, $userId, $role);
-        $results = $this->filterForSupervisor($results, $userId, $role);
-        $certificates = $this->filterForSupervisor($certificates, $userId, $role);
+        if ($scope !== 'all') {
+            $needs = $this->filterForSupervisor($needs, $userId, $role);
+            $programs = $this->filterForSupervisor($programs, $userId, $role);
+            $sessions = $this->filterForSupervisor($sessions, $userId, $role);
+            $results = $this->filterForSupervisor($results, $userId, $role);
+            $certificates = $this->filterForSupervisor($certificates, $userId, $role);
+        }
 
         return [
             'success' => true,
             'data'    => [
-                'needs'        => $needs,
-                'programs'     => $programs,
-                'sessions'     => $sessions,
-                'results'      => $results,
-                'certificates' => $certificates,
-                'reports'      => $this->reportModel->getSummaryAnalytics($this->isSupervisor($role) ? $this->getSupervisorDepartment($userId, $role) : null)
+                'needs'         => $needs,
+                'propertyNeeds' => $allNeeds,
+                'allNeeds'      => $allNeeds,
+                'programs'      => $programs,
+                'sessions'      => $sessions,
+                'results'       => $results,
+                'certificates'  => $certificates,
+                'reports'       => $this->reportModel->getSummaryAnalytics($this->isSupervisor($role) ? $this->getSupervisorDepartment($userId, $role) : null)
             ]
         ];
     }
