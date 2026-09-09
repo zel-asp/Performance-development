@@ -3,6 +3,38 @@
  * Sub-Module: Stage 6 — IDP Development Planning (70-20-10) & Draft Staging
  */
 
+function checkEmployeeStage6ObjectivesProgress(empId) {
+    if (typeof getEmployeeTaskStats === 'function') {
+        const stats = getEmployeeTaskStats(empId);
+        return {
+            is100: stats.allDone && stats.progressPct >= 100,
+            progressPct: stats.progressPct,
+            total: stats.total,
+            completed: stats.completed,
+            allDone: stats.allDone
+        };
+    }
+    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Done' || g.status === 'In Progress' || g.status === 'Completed') && isSameEmployee(g.employee_id, empId));
+    let total = 0;
+    let completed = 0;
+    empGoals.forEach(g => {
+        (g.tasks || []).forEach(t => {
+            total++;
+            if (t.status === 'completed') completed++;
+        });
+    });
+    const progressPct = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const is100 = total > 0 && completed === total && progressPct >= 100;
+    return {
+        is100,
+        progressPct,
+        total,
+        completed,
+        allDone: is100
+    };
+}
+window.checkEmployeeStage6ObjectivesProgress = checkEmployeeStage6ObjectivesProgress;
+
 function openViewIDPPlanModal(empId) {
     const emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId)) || (window.perfRoster || [])[0];
     if (!emp) return;
@@ -102,6 +134,9 @@ function openViewIDPPlanModal(empId) {
         const stagedBooks = stagedPlan.prescribedBooks || [];
         const stagedTotal = stagedTasks.length + stagedBooks.length;
 
+        const objCheck = checkEmployeeStage6ObjectivesProgress(emp.id);
+        const isObj100 = objCheck.is100;
+
         const stagedModalCards = [
             ...stagedTasks.map(t => `
                 <div class="p-3 bg-slate-50/90 rounded-2xl border border-dashed border-amber-300/80 space-y-1.5 shadow-2xs">
@@ -109,9 +144,13 @@ function openViewIDPPlanModal(empId) {
                         <span class="text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 px-2 py-0.5 rounded-full flex items-center space-x-1">
                             <i class="fas fa-pen-ruler text-[9px] mr-1 text-amber-600"></i>Draft Action Task (Unsaved)
                         </span>
-                        <button onclick="removeStagedIdpTask('${emp.id}', '${t.id}'); openViewIDPPlanModal('${emp.id}')" class="text-slate-400 hover:text-rose-600 text-[10px] font-medium transition">
-                            <i class="fas fa-times"></i> Remove
-                        </button>
+                        ${isObj100 ? `
+                            <button onclick="removeStagedIdpTask('${emp.id}', '${t.id}'); openViewIDPPlanModal('${emp.id}')" class="text-slate-400 hover:text-rose-600 text-[10px] font-medium transition">
+                                <i class="fas fa-times"></i> Remove
+                            </button>
+                        ` : `
+                            <span class="text-slate-400 text-[10px] font-medium"><i class="fas fa-lock text-[9px] mr-0.5"></i>Locked</span>
+                        `}
                     </div>
                     <p class="font-bold text-slate-900 text-xs">${t.title}</p>
                     <p class="text-slate-500 text-[11px]">${t.description || 'Pending database save upon clicking Finish & Save IDP Plan.'}</p>
@@ -123,9 +162,13 @@ function openViewIDPPlanModal(empId) {
                         <span class="text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 px-2 py-0.5 rounded-full flex items-center space-x-1">
                             <i class="fas fa-book-medical text-[9px] mr-1 text-amber-600"></i>Draft LMS Handbook (Unsaved)
                         </span>
-                        <button onclick="removeStagedIdpBook('${emp.id}', '${b.bookId}'); openViewIDPPlanModal('${emp.id}')" class="text-slate-400 hover:text-rose-600 text-[10px] font-medium transition">
-                            <i class="fas fa-times"></i> Remove
-                        </button>
+                        ${isObj100 ? `
+                            <button onclick="removeStagedIdpBook('${emp.id}', '${b.bookId}'); openViewIDPPlanModal('${emp.id}')" class="text-slate-400 hover:text-rose-600 text-[10px] font-medium transition">
+                                <i class="fas fa-times"></i> Remove
+                            </button>
+                        ` : `
+                            <span class="text-slate-400 text-[10px] font-medium"><i class="fas fa-lock text-[9px] mr-0.5"></i>Locked</span>
+                        `}
                     </div>
                     <p class="font-bold text-slate-900 text-xs">${b.bookTitle}</p>
                     <p class="text-slate-500 text-[11px]">Assigned to close competency gap. Will enroll in lms_prescribed on Finish.</p>
@@ -171,10 +214,24 @@ function openViewIDPPlanModal(empId) {
 
     const modalFooterActions = document.getElementById('modal-idp-plan-footer-actions');
     if (modalFooterActions) {
+        const objCheck = checkEmployeeStage6ObjectivesProgress(emp.id);
+        const isObj100 = objCheck.is100;
         const stagedPlan = window.stagedIdpPlans?.[emp.id] || { tasks: [], prescribedBooks: [] };
         const stagedTotal = (stagedPlan.tasks?.length || 0) + (stagedPlan.prescribedBooks?.length || 0);
 
-        if (stagedTotal > 0) {
+        if (!isObj100) {
+            modalFooterActions.innerHTML = `
+                <div class="flex items-center justify-between w-full flex-wrap gap-2">
+                    <span class="text-xs text-amber-700 font-semibold flex items-center space-x-1.5">
+                        <i class="fas fa-lock text-[11px]"></i>
+                        <span>Objectives Progress is ${objCheck.progressPct}% (${objCheck.completed}/${objCheck.total} Tasks) — Modification locked, viewing only</span>
+                    </span>
+                    <button onclick="closeModal('modal-view-idp-plan')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs transition">
+                        Close
+                    </button>
+                </div>
+            `;
+        } else if (stagedTotal > 0) {
             modalFooterActions.innerHTML = `
                 <button onclick="discardStagedIdpPlan('${emp.id}'); openViewIDPPlanModal('${emp.id}')" class="px-3 py-2 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Discard uncommitted draft items">
                     <i class="fas fa-trash-can text-slate-400"></i>
@@ -528,7 +585,7 @@ function renderIDPRosterTable() {
     }
 
     if (roster.length === 0) {
-        container.innerHTML = `<tr><td colspan="5" class="px-5 py-6 text-center text-slate-400 italic">No employees with evaluated ratings found in IDP roster. Complete Stage 4 appraisals and Stage 5 calibration first.</td></tr>`;
+        container.innerHTML = `<tr><td colspan="7" class="px-5 py-6 text-center text-slate-400 italic">No employees with evaluated ratings found in IDP roster. Complete Stage 4 appraisals and Stage 5 calibration first.</td></tr>`;
         showEmptyIDPDetail();
         renderPaginationControls('idp-pagination-container', 1, 0, idpPageSize, 'setIDPPage', 'setIDPPageSize');
         return;
@@ -563,6 +620,10 @@ function renderIDPRosterTable() {
         const xpPts = getKudosXP(score);
         const isGoalDone = (window.dbGoals || []).some(g => isSameEmployee(g.employee_id, emp.id) && (g.status === 'Done' || g.status === 'Completed' || !!g.exp_id));
         const isKudosDisabled = !!(emp.kudosSent || isGoalDone);
+
+        const objCheck = checkEmployeeStage6ObjectivesProgress(emp.id);
+        const isObj100 = objCheck.is100;
+
         return `
             <tr class="hover:bg-slate-50 transition text-xs border-b border-slate-100">
                 <td class="px-3 py-4 text-center font-mono font-bold text-slate-400 text-xs">
@@ -572,6 +633,20 @@ function renderIDPRosterTable() {
                     <span class="max-w-[160px] truncate block" title="${emp.name}">${emp.name}</span>
                 </td>
                 <td class="px-5 py-4 text-slate-500 max-w-[150px] truncate" title="${emp.position} · ${emp.department}">${emp.position} · ${emp.department}</td>
+                <td class="px-5 py-4">
+                    <div class="flex items-center justify-between text-[11px] mb-1">
+                        <span class="font-bold ${isObj100 ? 'text-emerald-700' : 'text-amber-700'}">${objCheck.progressPct}%</span>
+                        <span class="text-slate-400 text-[10px]">${objCheck.total > 0 ? objCheck.completed + '/' + objCheck.total + ' Tasks' : 'No Tasks'}</span>
+                    </div>
+                    <div class="w-24 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-300 ${isObj100 ? 'bg-emerald-500' : 'bg-amber-500'}" style="width: ${objCheck.progressPct}%"></div>
+                    </div>
+                    ${!isObj100 ? `
+                        <span class="text-[9px] text-amber-700 font-semibold flex items-center mt-0.5"><i class="fas fa-lock text-[8px] mr-1"></i>Incomplete (Actions Locked)</span>
+                    ` : `
+                        <span class="text-[9px] text-emerald-700 font-semibold flex items-center mt-0.5"><i class="fas fa-check text-[8px] mr-1"></i>100% Completed</span>
+                    `}
+                </td>
                 <td class="px-5 py-4 font-bold text-slate-800">
                     ${isExceededRetry ? `
                         <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-200 text-rose-900 border border-rose-300">
@@ -596,11 +671,16 @@ function renderIDPRosterTable() {
                 </td>
                 <td class="px-5 py-4 text-right">
                     <div class="flex items-center justify-end space-x-1.5">
-                        <button onclick="showIDPDetail('${emp.id}', true)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center space-x-1">
+                        <button onclick="showIDPDetail('${emp.id}', true)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center space-x-1" title="View Associate IDP">
                             <i class="fas fa-eye"></i>
                             <span>View IDP</span>
                         </button>
-                        ${hasPassed ? (isKudosDisabled ? `
+                        ${!isObj100 ? `
+                            <button disabled title="Objectives Progress is not 100% (${objCheck.progressPct}%). Complete all monitoring tasks in Stage 3 first. Only view is allowed." class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-bold cursor-not-allowed inline-flex items-center space-x-1">
+                                <i class="fas fa-lock text-[10px]"></i>
+                                <span>Action (Locked)</span>
+                            </button>
+                        ` : (hasPassed ? (isKudosDisabled ? `
                             <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-bold cursor-not-allowed inline-flex items-center space-x-1" title="Kudos already awarded">
                                 <i class="fas fa-check text-emerald-600"></i>
                                 <span>Kudos Sent</span>
@@ -615,7 +695,7 @@ function renderIDPRosterTable() {
                                 <i class="fas fa-arrow-right text-rose-600"></i>
                                 <span>Phase 7 &rarr;</span>
                             </button>
-                        `}
+                        `)}
                     </div>
                 </td>
             </tr>
@@ -707,16 +787,28 @@ function showIDPDetail(empId, openModalImmediately = false) {
         });
     }
 
+    const objCheck = checkEmployeeStage6ObjectivesProgress(emp.id);
+    const isObj100 = objCheck.is100;
+
     if (headerActions) {
         const actionButtons = [];
 
         if (stagedTotal > 0) {
-            actionButtons.push(`
-                <button onclick="discardStagedIdpPlan('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Discard draft items">
-                    <i class="fas fa-trash-can text-slate-400"></i>
-                    <span>Discard</span>
-                </button>
-            `);
+            if (!isObj100) {
+                actionButtons.push(`
+                    <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-bold cursor-not-allowed flex items-center space-x-1" title="Objectives Progress is not 100%. Only view is allowed.">
+                        <i class="fas fa-lock text-[10px]"></i>
+                        <span>Discard</span>
+                    </button>
+                `);
+            } else {
+                actionButtons.push(`
+                    <button onclick="discardStagedIdpPlan('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 rounded-xl text-xs font-bold transition flex items-center space-x-1" title="Discard draft items">
+                        <i class="fas fa-trash-can text-slate-400"></i>
+                        <span>Discard</span>
+                    </button>
+                `);
+            }
             actionButtons.push(`
                 <button onclick="viewDraftPlan('${emp.id}')" class="btn-view-idp-draft px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
                     <i class="fas fa-clipboard-list"></i>
@@ -725,7 +817,14 @@ function showIDPDetail(empId, openModalImmediately = false) {
             `);
         }
 
-        if (hasPassedBenchmark) {
+        if (!isObj100) {
+            actionButtons.push(`
+                <button disabled title="Objectives Progress is not 100% (${objCheck.progressPct}%). Complete all monitoring tasks in Stage 3 first. Only view is allowed." class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-bold cursor-not-allowed flex items-center space-x-1.5">
+                    <i class="fas fa-lock text-[10px]"></i>
+                    <span>Action (Locked)</span>
+                </button>
+            `);
+        } else if (hasPassedBenchmark) {
             if (isKudosDisabled) {
                 actionButtons.push(`
                     <button disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-bold cursor-not-allowed flex items-center space-x-1.5">
@@ -789,7 +888,14 @@ function showIDPDetail(empId, openModalImmediately = false) {
     }
 
     if (headerLmsAction) {
-        if (hasPassedBenchmark) {
+        if (!isObj100) {
+            headerLmsAction.innerHTML = `
+                <span class="text-xs text-amber-700 font-semibold flex items-center space-x-1">
+                    <i class="fas fa-lock text-[10px]"></i>
+                    <span>Objectives Incomplete (${objCheck.progressPct}%)</span>
+                </span>
+            `;
+        } else if (hasPassedBenchmark) {
             if (isKudosDisabled) {
                 headerLmsAction.innerHTML = `
                     <span class="text-xs text-slate-400 font-bold flex items-center space-x-1">
@@ -871,7 +977,12 @@ function showIDPDetail(empId, openModalImmediately = false) {
                             <p class="text-[10px] text-slate-500">Rating: <i class="fas fa-star text-amber-500 text-[10px] mr-0.5"></i><span class="font-bold text-slate-700">${parseFloat(g.rating).toFixed(1)} / 5.0</span></p>
                         </div>
                     </div>
-                    ${!hasPassedBenchmark ? (isTrainingPrescribed ? `
+                    ${!hasPassedBenchmark ? (!isObj100 ? `
+                        <button disabled class="px-2.5 py-1 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg font-bold text-[10px] flex-shrink-0 cursor-not-allowed flex items-center space-x-1" title="Objectives Progress is not 100% (${objCheck.progressPct}%). Only view is allowed.">
+                            <i class="fas fa-lock text-[8px]"></i>
+                            <span>Locked</span>
+                        </button>
+                    ` : (isTrainingPrescribed ? `
                         <button onclick="openRemedialBooksModal('${emp.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1 shadow-2xs" title="Training module assigned">
                             <i class="fas fa-check text-emerald-600 text-[9px]"></i>
                             <span>Prescribed</span>
@@ -881,7 +992,7 @@ function showIDPDetail(empId, openModalImmediately = false) {
                             <i class="fas fa-plus text-slate-600 text-[9px]"></i>
                             <span>Prescribe</span>
                         </button>
-                    `) : ''}
+                    `)) : ''}
                 </li>
             `).join('');
         } else {
@@ -902,8 +1013,101 @@ function showIDPDetail(empId, openModalImmediately = false) {
         });
         const allTasksDone = totalAllTasks > 0 && completedAllTasks === totalAllTasks;
 
+        // Check for any LMS Handbooks that require re-test for this associate
+        const retestBooks = empDbPrescribed.filter(p => {
+            const st = (p.status || '').toLowerCase().trim();
+            const sc = p.scores !== undefined && p.scores !== null ? parseFloat(p.scores) : null;
+            return st === 'needs retake' || st.includes('retake') || (sc !== null && sc < 80);
+        });
+
+        let retestBannerHtml = '';
+        if (retestBooks.length > 0) {
+            const allLmsDocs = window.dynamicLmsState?.documents || [];
+            const retestCards = retestBooks.map(rb => {
+                const bookDoc = allLmsDocs.find(d => String(d.id) === String(rb.lms_id)) || {};
+                const bookTitle = bookDoc.title || rb.document_title || `LMS Handbook [${rb.lms_id}]`;
+                const bookScore = rb.scores !== undefined && rb.scores !== null ? parseFloat(rb.scores) : null;
+                const scoreText = bookScore !== null ? `${bookScore}%` : 'Below 80%';
+                
+                // Check if already staged in current Stage 6 draft
+                const isStagedInDraft = stagedBooks.some(sb => 
+                    String(sb.lms_document_id) === String(rb.lms_id) || 
+                    String(sb.id) === String(rb.lms_id) ||
+                    (sb.book_title && sb.book_title.trim().toLowerCase() === bookTitle.trim().toLowerCase())
+                );
+
+                return `
+                    <div class="p-3 bg-white/90 rounded-xl border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                                <i class="fas fa-rotate-left"></i>
+                            </div>
+                            <div>
+                                <h6 class="font-bold text-slate-900 text-xs">${bookTitle}</h6>
+                                <p class="text-[11px] text-slate-500">Score: <strong class="text-rose-700">${scoreText}</strong> (Required: 80% passing threshold)</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 self-start sm:self-auto">
+                            ${isStagedInDraft ? `
+                                <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 flex items-center space-x-1">
+                                    <i class="fas fa-check text-amber-700 text-[9px]"></i>
+                                    <span>Added to Stage 6 Plan</span>
+                                </span>
+                            ` : (!isObj100 ? `
+                                <button disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-bold cursor-not-allowed flex items-center space-x-1 opacity-70" title="Complete Stage 3 monitoring tasks first.">
+                                    <i class="fas fa-lock text-[10px]"></i>
+                                    <span>+ Add Re-test (Locked)</span>
+                                </button>
+                            ` : `
+                                <button onclick="if(typeof addRetestBookToDraft==='function') { addRetestBookToDraft('${emp.id}', '${rb.lms_id}'); } else if(typeof openRemedialBooksModal==='function') { openRemedialBooksModal('${emp.id}'); }" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-2xs">
+                                    <i class="fas fa-rotate-left text-[10px]"></i>
+                                    <span>+ Add Re-test to Plan</span>
+                                </button>
+                            `)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            retestBannerHtml = `
+                <div class="col-span-full p-4 bg-rose-50/70 rounded-2xl border border-rose-200 space-y-2.5 shadow-2xs mb-1">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2 text-rose-800 font-bold text-xs">
+                            <i class="fas fa-triangle-exclamation text-rose-600 text-sm"></i>
+                            <span>LMS Handbook Re-test Required (${retestBooks.length})</span>
+                        </div>
+                        <span class="text-[10px] font-semibold text-rose-700 bg-rose-100 border border-rose-200 px-2 py-0.5 rounded-full">Phase 6 Developmental Retake</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600">The following prescribed handbook(s) did not reach the 80% passing benchmark on the latest attempt. Add re-test to the IDP draft so it can be re-assigned in Phase 7 deployment.</p>
+                    <div class="space-y-2 pt-1">
+                        ${retestCards}
+                    </div>
+                </div>
+            `;
+        }
+
         let topBannerHtml = '';
-        if (hasPassedBenchmark) {
+        if (!isObj100) {
+            topBannerHtml = `
+                <div class="col-span-full p-4 bg-amber-50/70 rounded-2xl border border-amber-200/80 space-y-2 shadow-2xs">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs border border-amber-200">
+                                <i class="fas fa-lock text-amber-700"></i>
+                            </div>
+                            <div>
+                                <h5 class="font-bold text-slate-900 text-xs">Objectives Progress Incomplete (${objCheck.progressPct}%)</h5>
+                                <p class="text-[11px] text-slate-600">Objectives tasks are currently at <strong class="text-amber-800">${objCheck.progressPct}%</strong> (${objCheck.completed}/${objCheck.total} Tasks completed). All modification and progression actions are locked until 100% completion. Only viewing is permitted.</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 self-start sm:self-auto flex items-center space-x-1">
+                            <i class="fas fa-lock text-[9px]"></i>
+                            <span>View Only</span>
+                        </span>
+                    </div>
+                </div>
+            `;
+        } else if (hasPassedBenchmark) {
             topBannerHtml = `
                 <div class="col-span-full p-4 bg-emerald-50/50 rounded-2xl border border-emerald-200/70 space-y-2 shadow-2xs">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -1001,16 +1205,26 @@ function showIDPDetail(empId, openModalImmediately = false) {
                                     <i class="fas fa-lock"></i>
                                     <span>+ Task</span>
                                 </button>
+                            ` : (!isObj100 ? `
+                                <button disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed flex items-center space-x-1" title="Objectives Progress is not 100% (${objCheck.progressPct}%). Only view is allowed.">
+                                    <i class="fas fa-lock text-[10px]"></i>
+                                    <span>+ Task</span>
+                                </button>
                             ` : `
                                 <button onclick="openAddSpecificTaskModal('${emp.id}')" class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs shadow-2xs transition flex items-center space-x-1">
                                     <i class="fas fa-plus text-slate-500"></i>
                                     <span>+ Task</span>
                                 </button>
-                            `}
+                            `)}
                             ${(inTraining && !isScored) ? `
                                 <button disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed flex items-center space-x-1">
                                     <i class="fas fa-lock"></i>
                                     <span>Books</span>
+                                </button>
+                            ` : (!isObj100 ? `
+                                <button disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed flex items-center space-x-1" title="Objectives Progress is not 100% (${objCheck.progressPct}%). Only view is allowed.">
+                                    <i class="fas fa-lock text-[10px]"></i>
+                                    <span>Prescribe Books</span>
                                 </button>
                             ` : (isTrainingPrescribed ? `
                                 <button onclick="openRemedialBooksModal('${emp.id}')" class="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs shadow-2xs transition flex items-center space-x-1" title="View assigned training modules">
@@ -1022,7 +1236,7 @@ function showIDPDetail(empId, openModalImmediately = false) {
                                     <i class="fas fa-book-medical text-slate-500"></i>
                                     <span>Prescribe Books</span>
                                 </button>
-                            `)}
+                            `))}
                         </div>
 
                         <div class="flex items-center space-x-2">
@@ -1030,6 +1244,11 @@ function showIDPDetail(empId, openModalImmediately = false) {
                                 <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed rounded-xl font-bold text-xs flex items-center space-x-1" title="Re-evaluation is locked while undergoing mandatory training.">
                                     <i class="fas fa-lock text-[10px]"></i>
                                     <span>In Training</span>
+                                </button>
+                            ` : (!isObj100 ? `
+                                <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed rounded-xl font-bold text-xs opacity-70 flex items-center space-x-1" title="Objectives Progress is not 100% (${objCheck.progressPct}%). Complete all monitoring tasks in Stage 3 first. Only view is allowed.">
+                                    <i class="fas fa-lock text-[10px]"></i>
+                                    <span>Incomplete (${objCheck.progressPct}%)</span>
                                 </button>
                             ` : (!allTasksDone ? `
                                 <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed rounded-xl font-bold text-xs opacity-70 flex items-center space-x-1" title="Complete all tasks first (${completedAllTasks}/${totalAllTasks} completed).">
@@ -1041,7 +1260,7 @@ function showIDPDetail(empId, openModalImmediately = false) {
                                     <i class="fas fa-star-half-stroke text-[10px]"></i>
                                     <span>Re-Evaluate</span>
                                 </button>
-                            `)}
+                            `))}
                         </div>
                     </div>
                 </div>
@@ -1056,10 +1275,17 @@ function showIDPDetail(empId, openModalImmediately = false) {
                             <span class="text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 px-2.5 py-0.5 rounded-full flex items-center space-x-1">
                                 <i class="fas fa-pen-ruler text-[9px] mr-1 text-amber-600"></i>Draft Task
                             </span>
-                            <button onclick="removeStagedIdpTask('${emp.id}', '${t.id}')" class="text-slate-400 hover:text-rose-600 text-[11px] font-medium transition flex items-center space-x-0.5 active:scale-95" title="Remove draft">
-                                <i class="fas fa-times text-[10px]"></i>
-                                <span>Remove</span>
-                            </button>
+                            ${!isObj100 ? `
+                                <span class="text-slate-300 text-[11px] font-medium flex items-center space-x-0.5" title="Objectives Progress is not 100%. Removal locked.">
+                                    <i class="fas fa-lock text-[9px]"></i>
+                                    <span>Locked</span>
+                                </span>
+                            ` : `
+                                <button onclick="removeStagedIdpTask('${emp.id}', '${t.id}')" class="text-slate-400 hover:text-rose-600 text-[11px] font-medium transition flex items-center space-x-0.5 active:scale-95" title="Remove draft">
+                                    <i class="fas fa-times text-[10px]"></i>
+                                    <span>Remove</span>
+                                </button>
+                            `}
                         </div>
                         <h5 class="font-heading font-bold text-slate-900 text-xs">${t.title || t.item_title || 'Draft Task'}</h5>
                         <p class="text-slate-500 text-[11px] leading-relaxed line-clamp-2">${t.description || t.item_description || 'Draft action task.'}</p>
@@ -1077,10 +1303,17 @@ function showIDPDetail(empId, openModalImmediately = false) {
                             <span class="text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 px-2.5 py-0.5 rounded-full flex items-center space-x-1">
                                 <i class="fas fa-book-medical text-[9px] mr-1 text-amber-600"></i>Draft LMS Book
                             </span>
-                            <button onclick="removeStagedIdpBook('${emp.id}', '${b.lms_document_id || b.id || b.bookId}', '${b.id}')" class="text-slate-400 hover:text-rose-600 text-[11px] font-medium transition flex items-center space-x-0.5 active:scale-95" title="Remove draft">
-                                <i class="fas fa-times text-[10px]"></i>
-                                <span>Remove</span>
-                            </button>
+                            ${!isObj100 ? `
+                                <span class="text-slate-300 text-[11px] font-medium flex items-center space-x-0.5" title="Objectives Progress is not 100%. Removal locked.">
+                                    <i class="fas fa-lock text-[9px]"></i>
+                                    <span>Locked</span>
+                                </span>
+                            ` : `
+                                <button onclick="removeStagedIdpBook('${emp.id}', '${b.lms_document_id || b.id || b.bookId}', '${b.id}')" class="text-slate-400 hover:text-rose-600 text-[11px] font-medium transition flex items-center space-x-0.5 active:scale-95" title="Remove draft">
+                                    <i class="fas fa-times text-[10px]"></i>
+                                    <span>Remove</span>
+                                </button>
+                            `}
                         </div>
                         <h5 class="font-heading font-bold text-slate-900 text-xs">${b.book_title || b.item_title || b.bookTitle || 'SOP Handbook'}</h5>
                         <p class="text-slate-500 text-[11px] leading-relaxed line-clamp-2">Prescribed LMS handbook for remediation.</p>
@@ -1093,8 +1326,8 @@ function showIDPDetail(empId, openModalImmediately = false) {
             `)
         ].join('');
 
-        if (stagedTotal > 0 || empGoals.length > 0 || isPIP || hasPassedBenchmark) {
-            commitmentsContainer.innerHTML = topBannerHtml + stagedCardsHtml + empGoals.map((g, idx) => `
+        if (stagedTotal > 0 || empGoals.length > 0 || isPIP || hasPassedBenchmark || retestBooks.length > 0) {
+            commitmentsContainer.innerHTML = retestBannerHtml + topBannerHtml + stagedCardsHtml + empGoals.map((g, idx) => `
                 <div class="p-4 bg-white hover:border-slate-300 rounded-2xl border border-slate-200/80 transition shadow-2xs flex flex-col justify-between space-y-3">
                     <div class="space-y-1.5">
                         <div class="flex items-center justify-between">
@@ -1113,6 +1346,13 @@ function showIDPDetail(empId, openModalImmediately = false) {
                                 const st = (g.status || '').toLowerCase().trim();
                                 const isConcluded = st === 'done' || st === 'completed' || st === 'failed';
                                 if (hasPassedBenchmark) return '';
+                                if (!isObj100) {
+                                    return `
+                                        <button disabled class="px-2 py-0.5 bg-slate-100 text-slate-400 border border-slate-200 rounded text-[10px] font-bold cursor-not-allowed" title="Objectives Progress is not 100% (${objCheck.progressPct}%). Only view is allowed.">
+                                            <i class="fas fa-lock text-[8px]"></i> Task
+                                        </button>
+                                    `;
+                                }
                                 if (isConcluded) {
                                     return `
                                         <button disabled class="px-2 py-0.5 bg-slate-100 text-slate-300 border border-slate-200 rounded text-[10px] font-bold cursor-not-allowed opacity-50" title="Add Task disabled: Objective is ${g.status}">

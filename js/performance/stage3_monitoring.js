@@ -11,7 +11,7 @@ function checkLmsTaskProgress(task, empId = null) {
     let lmsId = task.lms_id || null;
 
     if (!lmsId) {
-        const match = desc.match(/\[LMS:([^\]]+)\]/i);
+        const match = desc.match(/\[LMS:([^\]]+)\]/i) || title.match(/\[LMS:([^\]]+)\]/i);
         if (match) {
             lmsId = match[1].trim();
         }
@@ -29,28 +29,46 @@ function checkLmsTaskProgress(task, empId = null) {
         }
     }
 
-    if (!lmsId) {
-        return { isLmsTask: false, canComplete: true, progress: 100 };
-    }
+    // Look up in prescribed list (in-memory, fallback to storage cache)
+    const prescribedList = (window.dynamicLmsState && Array.isArray(window.dynamicLmsState.prescribed) && window.dynamicLmsState.prescribed.length > 0)
+        ? window.dynamicLmsState.prescribed
+        : (window.dbPrescribedLms || (sessionStorage.getItem('lms_prescribed_cache') ? JSON.parse(sessionStorage.getItem('lms_prescribed_cache')) : []));
 
     // Find employee ID
     const targetEmpId = empId || task.employee_id || window.selectedEvalEmpId || 'emp-101';
-    
-    // Look up in prescribed list
-    const prescribedList = window.dynamicLmsState?.prescribed || [];
-    const record = prescribedList.find(p => isSameEmployee(p.employee, targetEmpId) && String(p.lms_id) === String(lmsId));
+
+    let record = null;
+    if (task.prescribed_lms_id) {
+        record = prescribedList.find(p => String(p.id) === String(task.prescribed_lms_id));
+    }
+    if (!record && lmsId) {
+        record = prescribedList.find(p => (typeof isSameEmployee === 'function' ? isSameEmployee(p.employee, targetEmpId) : String(p.employee) === String(targetEmpId)) && String(p.lms_id) === String(lmsId));
+    }
+    if (record && !lmsId) {
+        lmsId = record.lms_id;
+    }
+
+    if (!lmsId && !record && !task.prescribed_lms_id) {
+        return { isLmsTask: false, canComplete: true, progress: 100 };
+    }
 
     const progress = record ? (parseInt(record.progress, 10) || 0) : 0;
     const status = (record?.status || '').toLowerCase();
-    const isPassed = progress >= 100 || status === 'passed' || status === 'completed' || status.includes('cert');
+    const score = record?.scores !== undefined && record?.scores !== null ? parseFloat(record.scores) : null;
+    const isPassed = status === 'passed' || status === 'completed' || status.includes('cert') || (score !== null && score >= 80);
+    const needsRetest = status === 'needs retake' || status.includes('retake') || (score !== null && score < 80);
+    const hasAttemptedQuiz = progress >= 100 || !!record?.last_attempt || isPassed || needsRetest;
 
     return {
         isLmsTask: true,
         lmsId: lmsId,
         lmsTitle: record?.document_title || title,
-        canComplete: isPassed,
-        progress: progress,
-        status: record?.status || 'Pending'
+        canComplete: hasAttemptedQuiz || progress >= 100,
+        progress: hasAttemptedQuiz ? 100 : progress,
+        status: record?.status || 'Pending',
+        score: score,
+        isPassed: isPassed,
+        needsRetest: needsRetest
     };
 }
 window.checkLmsTaskProgress = checkLmsTaskProgress;
@@ -101,7 +119,7 @@ function triggerTaskCompletionModal(taskId, goalId, checkboxEl) {
     if (lmsInfo.isLmsTask && !lmsInfo.canComplete) {
         if (checkboxEl) checkboxEl.checked = false;
         if (typeof showToast === 'function') {
-            showToast(`⚠️ LMS 100% Progress Required: You must complete the LMS Handbook ("${task?.title || 'Prescribed Module'}") with 100% progress before completing this task! (Current LMS Progress: ${lmsInfo.progress}%)`, 'warning');
+            showToast(`⚠️ LMS Quiz Attempt Required: You must study the LMS Handbook ("${task?.title || 'Prescribed Module'}") and take the certification quiz before completing this task!`, 'warning');
         }
         return;
     }
@@ -182,7 +200,7 @@ function openCompleteTaskModal(taskId, goalId) {
     if (lmsInfo.isLmsTask && !lmsInfo.canComplete) {
         if (window.lastActiveTaskCheckbox) window.lastActiveTaskCheckbox.checked = false;
         if (typeof showToast === 'function') {
-            showToast(`⚠️ LMS 100% Progress Required: You must reach 100% progress in LMS ("${task?.title || 'Prescribed Module'}") before completing this task! Current progress: ${lmsInfo.progress}%.`, 'warning');
+            showToast(`⚠️ LMS Quiz Attempt Required: You must study the LMS Handbook ("${task?.title || 'Prescribed Module'}") and take the certification quiz before completing this task!`, 'warning');
         }
         return;
     }
@@ -819,6 +837,7 @@ function renderEmployeeMonitoringStream(emp) {
                     </p>
                 ` : filteredTasks.map(task => {
             const isDone = task.status === 'completed';
+            const lmsInfo = checkLmsTaskProgress(task, emp.id);
             const dateStr = task.completed_at ? new Date(task.completed_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : `Target: ${task.target_date}`;
 
             return `
@@ -835,6 +854,22 @@ function renderEmployeeMonitoringStream(emp) {
                                 </div>
                                 <span class="text-slate-400 font-mono text-[10px]">${dateStr}</span>
                             </div>
+
+                            ${lmsInfo.isLmsTask ? `
+                                <div class="flex items-center space-x-2 pt-0.5 flex-wrap">
+                                    <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${lmsInfo.isPassed ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : (lmsInfo.needsRetest ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-amber-100 text-amber-900 border border-amber-200')}">
+                                        <i class="fas ${lmsInfo.isPassed ? 'fa-check text-emerald-600' : (lmsInfo.needsRetest ? 'fa-rotate-left text-rose-600' : 'fa-book-open text-amber-700')} text-[8px]"></i>
+                                        <span>LMS Module: ${lmsInfo.progress}%</span>
+                                        ${lmsInfo.isPassed ? `<span class="text-[8px] font-bold text-emerald-700 ml-0.5">✓ Passed (${lmsInfo.score !== null ? lmsInfo.score + '%' : '80%+'})</span>` : (lmsInfo.needsRetest ? `<span class="text-[8px] font-extrabold text-rose-700 ml-0.5">⚠️ Needs Re-test (${lmsInfo.score !== null ? lmsInfo.score + '%' : 'Score < 80%'})</span>` : '<span class="text-[8px] font-extrabold text-amber-700 ml-0.5">(Take Quiz Required)</span>')}
+                                    </span>
+                                    ${lmsInfo.lmsId ? `
+                                        <button type="button" onclick="if(typeof openBookReader === 'function'){ openBookReader('${lmsInfo.lmsId}'); } else { window.location.hash='#lms'; }" class="text-primary hover:underline font-bold text-[9px] inline-flex items-center space-x-0.5">
+                                            <i class="fas ${lmsInfo.needsRetest ? 'fa-rotate-left' : 'fa-book-reader'}"></i>
+                                            <span>${lmsInfo.needsRetest ? 'Retake Quiz &rarr;' : 'Study Handbook &amp; Take Quiz &rarr;'}</span>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            ` : ''}
 
                             ${task.employee_learnings ? `
                                 <div class="p-2 bg-white rounded-lg border border-emerald-100 text-[11px] space-y-0.5">
@@ -876,7 +911,13 @@ function renderEmployeeMonitoringStream(emp) {
                                 </div>
                             ` : ''}
 
-                            <div class="flex items-center justify-end pt-1">
+                            <div class="flex items-center justify-between pt-1">
+                                ${!isSupervisor && !isDone ? `
+                                    <button type="button" onclick="triggerTaskCompletionModal('${task.id}', '${goal.id}', null)" class="px-2.5 py-1 ${lmsInfo.isLmsTask && !lmsInfo.canComplete ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-75' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer'} text-[10px] font-bold rounded-lg transition inline-flex items-center space-x-1" title="${lmsInfo.isLmsTask && !lmsInfo.canComplete ? 'Must take LMS quiz before completing' : (lmsInfo.needsRetest ? 'Quiz completed (Needs Re-test). Click to record reflections and complete task' : 'Log your experience and finish task')}">
+                                        <i class="fas ${lmsInfo.isLmsTask && !lmsInfo.canComplete ? 'fa-lock' : 'fa-check'} text-[8px]"></i>
+                                        <span>${lmsInfo.isLmsTask && !lmsInfo.canComplete ? 'Take Quiz First' : (lmsInfo.needsRetest ? 'Complete Task (Re-test Needed)' : 'Complete Task')}</span>
+                                    </button>
+                                ` : '<div></div>'}
                                 <button onclick="openSupervisorFeedbackModal('${task.id}')" class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 text-[10px] font-bold rounded-lg transition inline-flex items-center space-x-1">
                                     <i class="fas fa-pen text-[8px]"></i>
                                     <span>${task.supervisor_feedback ? 'Edit Coaching / Accomplishment' : '+ Record Coaching & Accomplishments'}</span>

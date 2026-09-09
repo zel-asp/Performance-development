@@ -179,6 +179,18 @@ function renderRemedialBooksList() {
 
     container.innerHTML = books.map(b => {
         const isDbEnrolled = isEmployeeEnrolledInLms(emp.id, b.id, b.title);
+        const presRecord = (window.dynamicLmsState?.prescribed || []).find(item => {
+            const itemEmp = (item.employee || '').toString().toLowerCase();
+            const matchEmp = typeof isSameEmployee === 'function' ? isSameEmployee(itemEmp, emp.id) : (itemEmp === emp.id.toLowerCase());
+            if (!matchEmp) return false;
+            return String(item.lms_id) === String(b.id) || (b.title && item.document_title && item.document_title.trim().toLowerCase() === b.title.trim().toLowerCase());
+        });
+
+        const presStatus = (presRecord?.status || '').toLowerCase();
+        const presScore = presRecord?.scores !== undefined && presRecord?.scores !== null ? parseFloat(presRecord.scores) : null;
+        const needsRetest = presRecord && (presStatus === 'needs retake' || presStatus.includes('retake') || (presScore !== null && presScore < 80));
+        const hasPassed = presRecord && (presStatus === 'passed' || presStatus === 'completed' || (presScore !== null && presScore >= 80));
+
         const draftItem = stagedBooks.find(item => 
             String(item.lms_document_id) === String(b.id) ||
             String(item.id) === String(b.id) ||
@@ -190,20 +202,36 @@ function renderRemedialBooksList() {
         let statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600">Available</span>';
         let actionButton = '';
 
-        if (isDbEnrolled) {
-            statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">✓ Enrolled</span>';
-            actionButton = `
-                <button type="button" disabled class="btn-secondary px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-75 flex items-center space-x-1.5 shadow-none">
-                    <i class="fas fa-check text-emerald-600"></i>
-                    <span>Prescribed</span>
-                </button>
-            `;
-        } else if (isDraftStaged) {
+        if (isDraftStaged) {
             statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 animate-pulse">In Stage 6 Draft</span>';
             actionButton = `
                 <button type="button" onclick="removeRemedialDraftBook('${emp.id}', '${b.id}', '${draftRowId}')" class="px-3 py-1.5 text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-xl transition flex items-center space-x-1.5 shadow-2xs">
                     <i class="fas fa-times text-amber-700"></i>
                     <span>In Draft (Remove)</span>
+                </button>
+            `;
+        } else if (needsRetest) {
+            statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 flex items-center space-x-1"><i class="fas fa-rotate-left text-[9px] text-rose-600"></i><span>Needs Re-test (${presScore !== null ? presScore + '%' : '< 80%'})</span></span>`;
+            actionButton = `
+                <button type="button" onclick="assignBookToIdp('${b.id}')" class="btn-primary px-3 py-1.5 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white flex items-center space-x-1.5 shadow-2xs transition" title="Add re-test for this handbook to Stage 6 Plan">
+                    <i class="fas fa-rotate-left"></i>
+                    <span>+ Add Re-test to Plan</span>
+                </button>
+            `;
+        } else if (hasPassed) {
+            statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center space-x-1"><i class="fas fa-check text-emerald-600 text-[9px]"></i><span>✓ Passed (${presScore !== null ? presScore + '%' : 'Certified'})</span></span>`;
+            actionButton = `
+                <button type="button" disabled class="btn-secondary px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-75 flex items-center space-x-1.5 shadow-none">
+                    <i class="fas fa-check text-emerald-600"></i>
+                    <span>Certified</span>
+                </button>
+            `;
+        } else if (isDbEnrolled) {
+            statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">Enrolled</span>';
+            actionButton = `
+                <button type="button" disabled class="btn-secondary px-3 py-1.5 text-xs font-bold bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-75 flex items-center space-x-1.5 shadow-none">
+                    <i class="fas fa-book-open text-blue-600"></i>
+                    <span>Prescribed</span>
                 </button>
             `;
         } else {
@@ -359,3 +387,8 @@ function removeRemedialDraftBook(empId, bookId, rowId) {
 }
 window.removeRemedialDraftBook = removeRemedialDraftBook;
 window.removeStagedIdpBook = removeRemedialDraftBook;
+window.assignBookToIdp = assignBookToIdp;
+window.addRetestBookToDraft = function(empId, bookId) {
+    currentRemedialEmpId = empId;
+    assignBookToIdp(bookId);
+};

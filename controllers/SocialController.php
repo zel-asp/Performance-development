@@ -214,20 +214,32 @@ class SocialController
     public function triggerLmsQuizPass(array $payload): array
     {
         $recipientId = $payload['employeeId'] ?? 'emp-101';
-        $amount = (int)($payload['amount'] ?? 150);
+        $score = (int)($payload['score'] ?? $payload['amount'] ?? 100);
+        $lmsPrescribed = $payload['lms_prescribed'] ?? $payload['prescribed_id'] ?? null;
         $quizName = $payload['quizName'] ?? 'Standard Operating Procedure';
         
-        $ok = $this->model->createLmsGrant($recipientId, $amount, $quizName);
+        if ($score < 80) {
+            return [
+                'success' => false,
+                'message' => 'LMS Quiz score fell below 80% passing threshold. No XP awarded.',
+                'data' => [
+                    'employeeId' => $recipientId,
+                    'amount' => 0
+                ]
+            ];
+        }
+
+        $ok = $this->model->createLmsGrant($recipientId, $score, $quizName, $lmsPrescribed);
         if ($ok) {
             $this->model->checkAndAwardBadges($recipientId);
         }
 
         return [
             'success' => $ok,
-            'message' => $ok ? 'LMS XP Grant recorded in ledger!' : 'Failed to record LMS grant.',
+            'message' => $ok ? "LMS XP Grant (+{$score} XP) recorded in ledger!" : 'Failed to record LMS grant.',
             'data' => [
                 'employeeId' => $recipientId,
-                'amount' => $amount
+                'amount' => $score
             ]
         ];
     }

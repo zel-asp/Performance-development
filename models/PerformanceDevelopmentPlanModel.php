@@ -243,26 +243,112 @@ class PerformanceDevelopmentPlanModel extends BaseModel
                 }
 
             } elseif ($type === 'lms_book') {
-                // Build lms_prescribed payload
-                $bookPayload = [
-                    'id'         => 'lms-presc-' . substr(bin2hex(random_bytes(5)), 0, 8),
-                    'lms_id'     => $item['lms_document_id'],
-                    'employee'   => $empId,
-                    'goal_id'    => $goalId ?? ($item['goal_id'] ?? null),
-                    'for'        => ($item['goal_id'] || $goalId) ? 'goal' : 'both',
-                    'scores'     => 0,
-                    'ratings'    => 0,
-                    'progress'   => 0,
-                    'status'     => 'Needs Retake',
-                    'created_at' => date('c'),
-                    'updated_at' => date('c'),
-                ];
-                $res = supabaseRequest('lms_prescribed', 'POST', $bookPayload, true);
+                $targetGoal = $goalId ?? ($item['goal_id'] ?? null);
+                $lmsDocId = $item['lms_document_id'];
+
+                // Check if employee already has an lms_prescribed record for this book (e.g. Needs Re-test)
+                $existingPres = null;
+                $pRes = supabaseRequest("lms_prescribed?employee=eq.{$empId}&lms_id=eq.{$lmsDocId}&select=*");
+                if ($pRes['status'] >= 200 && !empty($pRes['data']) && is_array($pRes['data'])) {
+                    $existingPres = $pRes['data'][0];
+                }
+
+                $presId = $existingPres['id'] ?? ('lms-presc-' . substr(bin2hex(random_bytes(5)), 0, 8));
+
+                if ($existingPres) {
+                    // Restart test score, progress, and status in lms_prescribed
+                    $restartBookPayload = [
+                        'scores'        => 0.00,
+                        'ratings'       => 0.00,
+                        'progress'      => 0,
+                        'status'        => 'Needs Retake',
+                        'last_attempt'  => null,
+                        'time_consumed' => 0,
+                        'updated_at'    => date('c'),
+                    ];
+                    if ($targetGoal) {
+                        $restartBookPayload['goal_id'] = $targetGoal;
+                    }
+                    $res = supabaseRequest("lms_prescribed?id=eq.{$presId}", 'PATCH', $restartBookPayload, true);
+                } else {
+                    $bookPayload = [
+                        'id'         => $presId,
+                        'lms_id'     => $lmsDocId,
+                        'employee'   => $empId,
+                        'goal_id'    => $targetGoal,
+                        'for'        => ($item['goal_id'] || $goalId) ? 'goal' : 'both',
+                        'scores'     => 0,
+                        'ratings'    => 0,
+                        'progress'   => 0,
+                        'status'     => 'Needs Retake',
+                        'created_at' => date('c'),
+                        'updated_at' => date('c'),
+                    ];
+                    $res = supabaseRequest('lms_prescribed', 'POST', $bookPayload, true);
+                }
+
                 if ($res['status'] >= 200 && $res['status'] < 300) {
                     $booksDeployed++;
                     $this->update((string)$item['id'], ['status' => 'Committed']);
+
+                    // Check if a linked performance task already exists for this book or presId
+                    $existingTask = null;
+                    $taskCheck = supabaseRequest("performance_tasks?employee_id=eq.{$empId}&select=*&order=created_at.desc");
+                    if ($taskCheck['status'] >= 200 && !empty($taskCheck['data']) && is_array($taskCheck['data'])) {
+                        foreach ($taskCheck['data'] as $t) {
+                            $matchesPresId = !empty($t['prescribed_lms_id']) && $t['prescribed_lms_id'] === $presId;
+                            $matchesTitleDoc = !empty($t['title']) && strpos($t['title'], "[LMS:{$lmsDocId}]") !== false;
+                            $matchesDescDoc = !empty($t['description']) && strpos($t['description'], "[LMS:{$lmsDocId}]") !== false;
+                            if ($matchesPresId || $matchesTitleDoc || $matchesDescDoc) {
+                                $existingTask = $t;
+                                break;
+                            }
+                        }
+                    }
+
+                    $docTitle = $item['title'] ?? 'LMS Certification';
+                    if ($existingTask) {
+                        // Restart the existing task to pending so the associate must complete the re-test
+                        $restartTaskPayload = [
+                            'status'                    => 'pending',
+                            'completed_at'              => null,
+                            'employee_learnings'        => null,
+                            'employee_feedback'         => null,
+                            'supervisor_feedback'       => null,
+                            'supervisor_accomplishment' => null,
+                            'prescribed_lms_id'         => $presId,
+                            'target_date'               => $item['target_date'] ?? date('Y-m-d', strtotime('+14 days')),
+                            'updated_at'                => date('c'),
+                        ];
+                        if ($targetGoal) {
+                            $restartTaskPayload['goal_id'] = $targetGoal;
+                        }
+                        $tRes = supabaseRequest("performance_tasks?id=eq.{$existingTask['id']}", 'PATCH', $restartTaskPayload, true);
+                        if ($tRes['status'] >= 200 && $tRes['status'] < 300) {
+                            $tasksDeployed++;
+                        }
+                    } else {
+                        // Create a fresh linked specific task in performance_tasks
+                        $taskPayload = [
+                            'id'                => 'task-lms-' . substr(bin2hex(random_bytes(5)), 0, 8),
+                            'goal_id'           => $targetGoal,
+                            'employee_id'       => $empId,
+                            'task_type'         => 'specific',
+                            'title'             => "{$docTitle} [LMS:{$lmsDocId}]",
+                            'description'       => ($item['description'] ?? 'Mandatory learning module prescribed to IDP.') . " Read the handbook and achieve 100% progress in LMS before completing this task. [LMS:{$lmsDocId}]",
+                            'target_date'       => $item['target_date'] ?? date('Y-m-d', strtotime('+14 days')),
+                            'status'            => 'pending',
+                            'prescribed_lms_id' => $presId,
+                            'created_at'        => date('c'),
+                            'updated_at'        => date('c'),
+                        ];
+                        $tRes = supabaseRequest('performance_tasks', 'POST', $taskPayload, true);
+                        if ($tRes['status'] >= 200 && $tRes['status'] < 300) {
+                            $tasksDeployed++;
+                        }
+                    }
                 } else {
-                    $errors[] = "LMS Book '{$item['title']}': " . ($res['data']['message'] ?? 'Insert failed');
+                    $errors[] = "LMS Book '{$item['title']}': " . ($res['data']['message'] ?? 'Deploy failed');
                 }
             }
         }

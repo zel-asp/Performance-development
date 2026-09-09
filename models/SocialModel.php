@@ -174,25 +174,41 @@ class SocialModel extends BaseModel
 
     /**
      * Automatic grant from LMS (system-generated)
+     * Awards points = quiz score (e.g. 80 pts for 80%, 100 pts for 100%).
+     * If failed (<80%) or needs retest, does not add to xp_ledger.
      */
-    public function createLmsGrant(string $recipientId, int $amount, string $quizName): bool
+    public function createLmsGrant(string $recipientId, int $amount, string $quizName, ?string $lmsPrescribedId = null): bool
     {
+        // Only grant if score >= 80 (passed); if failed or needs retest, do not add
+        if ($amount < 80) {
+            return false;
+        }
+
         $currentBalance = $this->getCurrentXpBalance($recipientId);
         $newBalance = $currentBalance + $amount;
 
         $ledgerData = [
-            'id'            => 'txn-lms-' . time() . '-' . rand(100, 999),
-            'employee_id'   => $recipientId,
-            'source_type'   => 'lms_quiz',
-            'points'        => $amount,
-            'balance_after' => $newBalance,
-            'description'   => "LMS Quiz Pass: {$quizName}",
-            'created_at'    => gmdate('Y-m-d\TH:i:s\Z')
+            'id'             => 'txn-lms-' . time() . '-' . rand(100, 999),
+            'employee_id'    => $recipientId,
+            'source_type'    => 'lms_quiz',
+            'points'         => $amount,
+            'balance_after'  => $newBalance,
+            'description'    => "LMS Quiz Pass: {$quizName} (+{$amount} XP)",
+            'lms_prescribed' => $lmsPrescribedId,
+            'created_at'     => gmdate('Y-m-d\TH:i:s\Z')
         ];
         
         $res = supabaseRequest('xp_ledger', 'POST', $ledgerData, true);
         $ok = isset($res['status']) && ($res['status'] >= 200 && $res['status'] < 300);
         if ($ok) {
+            // Also update total_xp on employees table if present
+            try {
+                $uRes = supabaseRequest('employees?id=eq.' . urlencode($recipientId), 'GET', null, true);
+                if (!empty($uRes['data'][0])) {
+                    supabaseRequest('employees?id=eq.' . urlencode($recipientId), 'PATCH', ['total_xp' => $newBalance], true);
+                }
+            } catch (Throwable $e) {}
+
             $this->checkAndAwardBadges($recipientId);
         }
         return $ok;

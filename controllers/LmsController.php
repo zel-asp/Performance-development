@@ -635,18 +635,24 @@ class LmsController
         // 1. Check if employee is already enrolled / prescribed in this LMS document
         $query = 'lms_prescribed?employee=eq.' . urlencode($employee) . '&lms_id=eq.' . urlencode($lmsId);
         $checkRes = supabaseRequest($query, 'GET', null, true);
-        if ($checkRes['status'] >= 200 && $checkRes['status'] < 300 && !empty($checkRes['data']) && is_array($checkRes['data'])) {
+        if ($checkRes['status'] >= 200 && $checkRes['status'] < 300 && !empty($checkRes['data']) && is_array($checkRes['data']) && count($checkRes['data']) > 0) {
+            $existingPrescribed = $checkRes['data'][0];
+            $presId = $existingPrescribed['id'] ?? null;
+            // Ensure task exists in performance_tasks
+            $this->addLmsSpecificTaskToPerformance($employee, $lmsId, $goalId, $presId);
             return [
                 'success' => true,
                 'already_enrolled' => true,
                 'message' => 'Employee is already enrolled in this LMS document.',
-                'data' => $checkRes['data'][0]
+                'data' => $existingPrescribed
             ];
         }
 
         // 2. Insert new prescription record into lms_prescribed database table
         $now = date('c');
+        $prescribedId = 'lms-presc-' . substr(bin2hex(random_bytes(5)), 0, 8);
         $record = [
+            'id' => $prescribedId,
             'employee' => $employee,
             'lms_id' => $lmsId,
             'goal_id' => $goalId,
@@ -664,9 +670,10 @@ class LmsController
         $insertRes = supabaseRequest('lms_prescribed', 'POST', $record, true);
         if ($insertRes['status'] >= 200 && $insertRes['status'] < 300 && !empty($insertRes['data'])) {
             $created = is_array($insertRes['data']) && isset($insertRes['data'][0]) ? $insertRes['data'][0] : $record;
+            $finalPrescribedId = $created['id'] ?? $prescribedId;
             
             // Auto-create Specific Task in Performance Management for this employee & goal
-            $this->addLmsSpecificTaskToPerformance($employee, $lmsId, $goalId);
+            $this->addLmsSpecificTaskToPerformance($employee, $lmsId, $goalId, $finalPrescribedId);
 
             self::clearCache();
 
@@ -687,10 +694,10 @@ class LmsController
     /**
      * Automatically create a specific task in performance_tasks when an LMS document is prescribed
      */
-    private function addLmsSpecificTaskToPerformance(string $employee, string $lmsId, ?int $goalId): void
+    private function addLmsSpecificTaskToPerformance(string $employee, string $lmsId, ?int $goalId, ?string $prescribedLmsId = null): void
     {
         try {
-            // Find employee's active performance goal
+            // 1. Find employee's active performance goal
             $targetGoalId = $goalId;
             if (empty($targetGoalId)) {
                 $gRes = supabaseRequest('performance_goals?employee_id=eq.' . urlencode($employee) . '&order=created_at.desc&limit=1', 'GET', null, true);
@@ -699,32 +706,50 @@ class LmsController
                 }
             }
 
-            if (empty($targetGoalId)) return;
-
-            // Check if specific task for this LMS document already exists
-            $taskTitle = "LMS SOP Study: Handbook [LMS:{$lmsId}]";
-            $existRes = supabaseRequest('performance_tasks?goal_id=eq.' . $targetGoalId . '&title=ilike.' . urlencode("%[LMS:{$lmsId}]%"), 'GET', null, true);
-            if (!empty($existRes['data']) && is_array($existRes['data'])) {
-                return; // Already added
-            }
-
-            // Fetch doc title
+            // 2. Fetch doc title
             $docRes = supabaseRequest('lms_documents?id=eq.' . urlencode($lmsId), 'GET', null, true);
             $docTitle = !empty($docRes['data'][0]['title']) ? $docRes['data'][0]['title'] : "Handbook #{$lmsId}";
 
+            // 3. Check if specific task for this LMS document already exists for this employee
+            $existQuery = 'performance_tasks?employee_id=eq.' . urlencode($employee) . '&title=ilike.*' . urlencode("[LMS:{$lmsId}]") . '*';
+            $existRes = supabaseRequest($existQuery, 'GET', null, true);
+            if (!empty($existRes['data']) && is_array($existRes['data']) && count($existRes['data']) > 0) {
+                $existingTask = $existRes['data'][0];
+                $patch = [];
+                if (!empty($prescribedLmsId) && empty($existingTask['prescribed_lms_id'])) {
+                    $patch['prescribed_lms_id'] = $prescribedLmsId;
+                }
+                if (!empty($targetGoalId) && empty($existingTask['goal_id'])) {
+                    $patch['goal_id'] = $targetGoalId;
+                }
+                if (!empty($patch)) {
+                    $patch['updated_at'] = date('c');
+                    supabaseRequest('performance_tasks?id=eq.' . urlencode($existingTask['id']), 'PATCH', $patch, true);
+                }
+                return; // Already exists
+            }
+
+            // 4. Generate valid task payload matching performance_tasks schema
+            $taskId = 'task-lms-' . substr(bin2hex(random_bytes(5)), 0, 8);
             $taskPayload = [
-                'goal_id' => $targetGoalId,
-                'title' => "LMS Certification: {$docTitle} [LMS:{$lmsId}]",
-                'description' => "Mandatory learning module prescribed to IDP. Read the handbook and achieve 100% progress in LMS before completing this task. [LMS:{$lmsId}]",
-                'type' => 'specific',
-                'status' => 'Pending',
-                'completion_pct' => 0,
-                'weight' => 20,
-                'created_at' => date('c')
+                'id'                => $taskId,
+                'goal_id'           => $targetGoalId ?: null,
+                'employee_id'       => $employee,
+                'task_type'         => 'specific',
+                'title'             => "LMS Certification: {$docTitle} [LMS:{$lmsId}]",
+                'description'       => "Mandatory learning module prescribed to IDP. Read the handbook and achieve 100% progress in LMS before completing this task. [LMS:{$lmsId}]",
+                'target_date'       => date('Y-m-d', strtotime('+14 days')),
+                'status'            => 'pending',
+                'prescribed_lms_id' => $prescribedLmsId ?: null,
+                'created_at'        => date('c'),
+                'updated_at'        => date('c')
             ];
 
-            supabaseRequest('performance_tasks', 'POST', $taskPayload, true);
-        } catch (Exception $e) {
+            $postTaskRes = supabaseRequest('performance_tasks', 'POST', $taskPayload, true);
+            if ($postTaskRes['status'] < 200 || $postTaskRes['status'] >= 300) {
+                error_log("Failed to insert LMS performance task: " . json_encode($postTaskRes));
+            }
+        } catch (Throwable $e) {
             error_log("Failed to auto-add LMS task to performance: " . $e->getMessage());
         }
     }
@@ -783,8 +808,24 @@ class LmsController
             }
         }
 
+        // Fetch linked performance_tasks for these employees
+        $tasksByEmp = [];
+        if (!empty($empIds)) {
+            $cleanEmpIds = implode(',', array_map('urlencode', $empIds));
+            $taskRes = supabaseRequest("performance_tasks?employee_id=in.({$cleanEmpIds})&select=*", 'GET', null, true);
+            $allTasks = is_array($taskRes['data']) ? $taskRes['data'] : [];
+            foreach ($allTasks as $t) {
+                $teId = strtolower(trim($t['employee_id'] ?? ''));
+                if (!isset($tasksByEmp[$teId])) {
+                    $tasksByEmp[$teId] = [];
+                }
+                $tasksByEmp[$teId][] = $t;
+            }
+        }
+
         $enriched = [];
         foreach ($records as $rec) {
+            $recId = $rec['id'] ?? null;
             $lId = $rec['lms_id'] ?? null;
             $eId = $rec['employee'] ?? null;
 
@@ -800,6 +841,38 @@ class LmsController
             $rec['employee_title'] = $emp['title'] ?? 'Associate';
             $rec['employee_role'] = $emp['role'] ?? 'Associate';
             $rec['employee_avatar'] = $emp['avatar_url'] ?? 'public/images/removed-bg-logo.png';
+
+            // Find matching task in performance_tasks
+            $matchedTask = null;
+            $teId = strtolower(trim($eId ?? ''));
+            if (!empty($tasksByEmp[$teId])) {
+                foreach ($tasksByEmp[$teId] as $t) {
+                    $matchesPresId = !empty($recId) && !empty($t['prescribed_lms_id']) && $t['prescribed_lms_id'] === $recId;
+                    $matchesTitleDoc = !empty($lId) && !empty($t['title']) && strpos($t['title'], "[LMS:{$lId}]") !== false;
+                    $matchesDescDoc = !empty($lId) && !empty($t['description']) && strpos($t['description'], "[LMS:{$lId}]") !== false;
+                    if ($matchesPresId || $matchesTitleDoc || $matchesDescDoc) {
+                        $matchedTask = $t;
+                        break;
+                    }
+                }
+            }
+
+            $scoreVal = (float)($rec['scores'] ?? 0);
+            $statusVal = strtolower(trim($rec['status'] ?? ''));
+            $isQuizPassed = ($statusVal === 'passed' || $scoreVal >= 80.0);
+            $inPerfTask = ($matchedTask !== null);
+            $isTaskCompleted = $matchedTask ? in_array(strtolower(trim($matchedTask['status'] ?? '')), ['completed', 'done', 'approved']) : false;
+
+            // Only lock/disable if it is in performance_task AND complete AND LMS quiz is passed
+            $isLocked = ($inPerfTask && $isTaskCompleted && $isQuizPassed);
+
+            $rec['in_performance_task'] = $inPerfTask;
+            $rec['performance_task'] = $matchedTask;
+            $rec['performance_task_id'] = $matchedTask['id'] ?? null;
+            $rec['performance_task_status'] = $matchedTask['status'] ?? null;
+            $rec['is_task_completed'] = $isTaskCompleted;
+            $rec['is_quiz_passed'] = $isQuizPassed;
+            $rec['is_locked'] = $isLocked;
 
             $enriched[] = $rec;
         }
@@ -835,6 +908,45 @@ class LmsController
 
         $res = supabaseRequest('lms_prescribed?id=eq.' . urlencode($id), 'PATCH', $updatePayload, true);
         if ($res['status'] >= 200 && $res['status'] < 300) {
+            $scoreVal = isset($updatePayload['scores']) ? (float)$updatePayload['scores'] : null;
+            $statusVal = isset($updatePayload['status']) ? strtolower($updatePayload['status']) : '';
+            $isPassed = ($statusVal === 'passed') || ($scoreVal !== null && $scoreVal >= 80.0);
+
+            if ($isPassed) {
+                try {
+                    $pTaskQuery = 'performance_tasks?prescribed_lms_id=eq.' . urlencode($id) . '&status=neq.completed';
+                    $pTaskRes = supabaseRequest($pTaskQuery, 'GET', null, true);
+                    if (!empty($pTaskRes['data']) && is_array($pTaskRes['data'])) {
+                        foreach ($pTaskRes['data'] as $pt) {
+                            supabaseRequest('performance_tasks?id=eq.' . urlencode($pt['id']), 'PATCH', [
+                                'status' => 'completed',
+                                'completed_at' => date('c'),
+                                'employee_learnings' => !empty($pt['employee_learnings']) ? $pt['employee_learnings'] : 'Finished prescribed LMS handbook and fulfilled 100% learning requirements (Passed certification quiz).',
+                                'updated_at' => date('c')
+                            ], true);
+                        }
+                    }
+                } catch (Throwable $pe) {
+                    error_log("Failed to sync lms progress to performance_tasks: " . $pe->getMessage());
+                }
+            } elseif ($statusVal === 'needs retake' || ($scoreVal !== null && $scoreVal < 80.0)) {
+                try {
+                    $pTaskQuery = 'performance_tasks?prescribed_lms_id=eq.' . urlencode($id);
+                    $pTaskRes = supabaseRequest($pTaskQuery, 'GET', null, true);
+                    if (!empty($pTaskRes['data']) && is_array($pTaskRes['data'])) {
+                        foreach ($pTaskRes['data'] as $pt) {
+                            supabaseRequest('performance_tasks?id=eq.' . urlencode($pt['id']), 'PATCH', [
+                                'status' => 'pending',
+                                'completed_at' => null,
+                                'updated_at' => date('c')
+                            ], true);
+                        }
+                    }
+                } catch (Throwable $pe) {
+                    error_log("Failed to sync lms needs-retake to performance_tasks: " . $pe->getMessage());
+                }
+            }
+
             self::clearCache();
             return ['success' => true, 'message' => 'LMS prescription updated successfully!', 'data' => $updatePayload];
         }
@@ -1359,7 +1471,7 @@ class LmsController
         $score = max(0.0, min(100.0, $score));
         $passed = $score >= 80.0;
         $status = $passed ? 'Passed' : 'Needs Retake';
-        $progress = $passed ? 100 : (int)max($score, 50);
+        $progress = 100; // Quiz attempt has been taken and finalized: 100% progress
         $timeConsumed = isset($payload['time_consumed']) ? (int)$payload['time_consumed'] : 300; // seconds
         $timeConsumedMin = max(1, (int)round($timeConsumed / 60));
         $bookTitle = trim($payload['book_title'] ?? 'LMS SOP Handbook');
@@ -1410,19 +1522,58 @@ class LmsController
             $savedRow = (!empty($postRes['data'][0])) ? $postRes['data'][0] : $insertData;
         }
 
-        // Award XP on pass (+100 XP per Section 0.5/3.1)
+        // Award XP dynamically on pass: score % = points (80% = 80 pts, 100% = 100 pts). If failed or needs retest, do not add!
         $xpAwarded = 0;
-        if ($passed) {
+        $presId = $savedRow['id'] ?? null;
+        if ($passed && (float)$score >= 80.0) {
+            $quizPoints = (int)round((float)$score);
             try {
                 require_once __DIR__ . '/../models/SocialModel.php';
                 $socialModel = new SocialModel();
-                $ok = $socialModel->createLmsGrant($employee, 100, $bookTitle);
+                $ok = $socialModel->createLmsGrant($employee, $quizPoints, $bookTitle, $presId);
                 if ($ok) {
-                    $xpAwarded = 100;
+                    $xpAwarded = $quizPoints;
                 }
             } catch (Throwable $e) {
                 error_log("Failed to award LMS Quiz XP grant: " . $e->getMessage());
             }
+        }
+
+        // Auto-complete or sync linked task in performance_tasks
+        try {
+            $taskQuery = 'performance_tasks?employee_id=eq.' . urlencode($employee) . '&status=neq.completed';
+            $tRes = supabaseRequest($taskQuery, 'GET', null, true);
+            if (!empty($tRes['data']) && is_array($tRes['data'])) {
+                foreach ($tRes['data'] as $pt) {
+                    $isMatch = (!empty($presId) && ($pt['prescribed_lms_id'] ?? '') === $presId)
+                        || stripos($pt['title'] ?? '', "[LMS:{$lmsId}]") !== false
+                        || stripos($pt['description'] ?? '', "[LMS:{$lmsId}]") !== false;
+                    if ($isMatch) {
+                        if ($passed) {
+                            $learningsText = "Passed LMS SOP certification quiz with score {$score}% (100% completed).";
+                            supabaseRequest('performance_tasks?id=eq.' . urlencode($pt['id']), 'PATCH', [
+                                'status' => 'completed',
+                                'completed_at' => $now,
+                                'employee_learnings' => (!empty($pt['employee_learnings']))
+                                    ? $pt['employee_learnings']
+                                    : $learningsText,
+                                'updated_at' => $now
+                            ], true);
+                        } else {
+                            // If quiz failed, keep task pending for re-test
+                            $learningsText = "Completed LMS quiz attempt with score {$score}%. Needs Re-test (Benchmark: 80%).";
+                            supabaseRequest('performance_tasks?id=eq.' . urlencode($pt['id']), 'PATCH', [
+                                'status' => 'pending',
+                                'completed_at' => null,
+                                'employee_learnings' => $learningsText,
+                                'updated_at' => $now
+                            ], true);
+                        }
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            error_log("Failed to update performance task on quiz submission: " . $e->getMessage());
         }
 
         self::clearCache();

@@ -186,6 +186,20 @@ function openBookReader(docId) {
             quizBtn.classList.add('hidden');
         } else {
             quizBtn.classList.remove('hidden');
+            const rec = typeof window.getCompletedQuizRecord === 'function' ? window.getCompletedQuizRecord(doc.id) : null;
+            if (rec && rec.isLocked) {
+                quizBtn.disabled = true;
+                quizBtn.className = 'px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-bold text-xs flex items-center space-x-1.5 opacity-90 cursor-not-allowed';
+                quizBtn.innerHTML = '<i class="fas fa-circle-check text-emerald-600"></i><span>Quiz Passed ✓</span>';
+            } else if (rec && (rec.needsRetest || (!rec.passed && rec.score > 0))) {
+                quizBtn.disabled = false;
+                quizBtn.className = 'btn-primary px-4 py-2 text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow-2xs bg-rose-600 hover:bg-rose-700 text-white';
+                quizBtn.innerHTML = '<i class="fas fa-rotate-left"></i><span>Retake Knowledge Quiz</span>';
+            } else {
+                quizBtn.disabled = false;
+                quizBtn.className = 'btn-primary px-4 py-2 text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow-2xs';
+                quizBtn.innerHTML = '<i class="fas fa-graduation-cap"></i><span>Take Knowledge Quiz</span>';
+            }
         }
     }
 

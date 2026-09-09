@@ -19,54 +19,80 @@ let lmsActiveDeptFilter = 'all';
 let currentReadingBookId = null;
 
 // Unified Quiz Completion Detector
-if (typeof window.getCompletedQuizRecord !== 'function') {
-    window.getCompletedQuizRecord = function (bookId) {
-        if (!bookId) return null;
-        const currentUserId = (window.currentUser?.id || window.activePersonaId || 'emp-101').toLowerCase();
-        try {
-            const keyUser = 'oxford_lms_completed_quiz_' + bookId + '_' + currentUserId;
-            const itemUser = localStorage.getItem(keyUser);
-            if (itemUser) {
-                const parsed = JSON.parse(itemUser);
-                if (parsed && parsed.taken) return parsed;
-            }
-            const keyGen = 'oxford_lms_completed_quiz_' + bookId;
-            const itemGen = localStorage.getItem(keyGen);
-            if (itemGen) {
-                const parsedGen = JSON.parse(itemGen);
-                if (parsedGen && parsedGen.taken) return parsedGen;
-            }
-        } catch (e) {}
+window.getCompletedQuizRecord = function (bookId) {
+    if (!bookId) return null;
+    const currentUserId = (window.currentUser?.id || window.activePersonaId || 'emp-101').toLowerCase();
 
-        if (window.dynamicLmsState && Array.isArray(window.dynamicLmsState.prescribed)) {
-            const match = window.dynamicLmsState.prescribed.find(p => {
-                const pBookId = p.lms_id || p.book_id || p.id;
-                if (String(pBookId) !== String(bookId)) return false;
-                const empId = (p.employee || p.employee_id || '').toLowerCase();
-                const empName = (p.employee_name || '').toLowerCase();
-                return empId === currentUserId ||
-                    (currentUserId === 'emp-101' && (empId.includes('101') || empId.includes('maria') || empName.includes('maria'))) ||
-                    (currentUserId === 'emp-102' && (empId.includes('102') || empId.includes('antonio') || empName.includes('antonio')));
-            });
+    let match = null;
+    if (window.dynamicLmsState && Array.isArray(window.dynamicLmsState.prescribed)) {
+        match = window.dynamicLmsState.prescribed.find(p => {
+            const pBookId = p.lms_id || p.book_id || p.id;
+            if (String(pBookId) !== String(bookId)) return false;
+            const empId = (p.employee || p.employee_id || '').toLowerCase();
+            const empName = (p.employee_name || '').toLowerCase();
+            return empId === currentUserId ||
+                (currentUserId === 'emp-101' && (empId.includes('101') || empId.includes('maria') || empName.includes('maria'))) ||
+                (currentUserId === 'emp-102' && (empId.includes('102') || empId.includes('antonio') || empName.includes('antonio')));
+        });
+    }
 
-            if (match) {
-                const score = Number(match.scores ?? match.score ?? 0);
-                const status = String(match.status || '').toLowerCase();
-                const hasAttempt = Boolean(match.last_attempt || match.scores !== null || status === 'passed' || status === 'completed');
-                if (hasAttempt || status === 'passed' || status === 'completed' || score > 0) {
-                    return {
-                        taken: true,
-                        passed: status === 'passed' || score >= 80,
-                        score: score,
-                        status: match.status || (score >= 80 ? 'Passed' : 'Completed'),
-                        completedAt: match.last_attempt || null
-                    };
+    const score = match ? Number(match.scores ?? match.score ?? 0) : 0;
+    const status = match ? String(match.status || '').toLowerCase() : '';
+    const isQuizPassed = (status === 'passed' || score >= 80);
+    const hasAttempt = match ? Boolean(match.last_attempt || (match.scores !== null && match.scores !== undefined && score > 0) || status === 'passed' || status === 'completed') : false;
+
+    // Check performance task status
+    let inPerformanceTask = Boolean(match?.in_performance_task);
+    let isTaskCompleted = Boolean(match?.is_task_completed);
+    let taskStatus = match?.performance_task_status || null;
+
+    if (Array.isArray(window.dbGoals)) {
+        for (const g of window.dbGoals) {
+            const tasks = Array.isArray(g.tasks) ? g.tasks : (Array.isArray(g.specific_tasks) ? g.specific_tasks : []);
+            for (const t of tasks) {
+                const matchesPres = match && t.prescribed_lms_id && t.prescribed_lms_id === match.id;
+                const matchesBook = (t.title && t.title.includes(`[LMS:${bookId}]`)) || (t.description && t.description.includes(`[LMS:${bookId}]`));
+                if (matchesPres || matchesBook) {
+                    inPerformanceTask = true;
+                    taskStatus = t.status;
+                    isTaskCompleted = (t.status === 'completed' || t.status === 'done');
+                    break;
                 }
             }
+            if (inPerformanceTask) break;
         }
-        return null;
-    };
-}
+    }
+
+    // Only lock/disable if it is in performance_task AND complete AND LMS quiz is passed
+    const isLocked = Boolean(inPerformanceTask && isTaskCompleted && isQuizPassed);
+    const needsRetest = !isQuizPassed && (hasAttempt || status === 'needs retake' || score > 0);
+
+    try {
+        const keyUser = 'oxford_lms_completed_quiz_' + bookId + '_' + currentUserId;
+        const keyGen = 'oxford_lms_completed_quiz_' + bookId;
+        if (!isLocked) {
+            localStorage.removeItem(keyUser);
+            localStorage.removeItem(keyGen);
+        }
+    } catch (e) {}
+
+    if (match || hasAttempt || isLocked) {
+        return {
+            taken: hasAttempt || isLocked || score > 0,
+            passed: isQuizPassed,
+            score: score,
+            status: match?.status || (isQuizPassed ? 'Passed' : 'Needs Retake'),
+            completedAt: match?.last_attempt || null,
+            inPerformanceTask: inPerformanceTask,
+            isTaskCompleted: isTaskCompleted,
+            taskStatus: taskStatus,
+            isLocked: isLocked,
+            needsRetest: needsRetest
+        };
+    }
+
+    return null;
+};
 
 // Load initial cache from sessionStorage for 0ms startup
 try {
@@ -315,12 +341,28 @@ function renderLmsBooks() {
                         <i class="fas fa-book-open text-xs"></i>
                         <span>Read</span>
                     </button>
-                    ${!isSupervisorOrManager ? `
-                    <button onclick="startQuizPrompt('${docId}', '${safeTitle}', '${deptName}', '${category}')" class="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-xl font-bold text-xs flex items-center space-x-1.5 transition shadow-2xs" title="Take 10-item Knowledge Quiz">
-                        <i class="fas fa-graduation-cap text-gold-dark"></i>
-                        <span>Quiz</span>
-                    </button>
-                    ` : ''}
+                    ${!isSupervisorOrManager ? (() => {
+                        const rec = typeof window.getCompletedQuizRecord === 'function' ? window.getCompletedQuizRecord(docId) : null;
+                        if (rec && rec.isLocked) {
+                            return `
+                            <button disabled class="px-3 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-bold text-xs flex items-center space-x-1.5 opacity-90 cursor-not-allowed" title="Passed &amp; Performance Task Completed">
+                                <i class="fas fa-circle-check text-emerald-600"></i>
+                                <span>Passed ✓</span>
+                            </button>`;
+                        }
+                        if (rec && (rec.needsRetest || (!rec.passed && rec.score > 0))) {
+                            return `
+                            <button onclick="startQuizPrompt('${docId}', '${safeTitle}', '${deptName}', '${category}')" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 rounded-xl font-bold text-xs flex items-center space-x-1.5 transition shadow-2xs" title="Retake Knowledge Quiz (Score: ${rec.score}%)">
+                                <i class="fas fa-rotate-left text-rose-600"></i>
+                                <span>Retake (${rec.score}%)</span>
+                            </button>`;
+                        }
+                        return `
+                        <button onclick="startQuizPrompt('${docId}', '${safeTitle}', '${deptName}', '${category}')" class="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-xl font-bold text-xs flex items-center space-x-1.5 transition shadow-2xs" title="Take 10-item Knowledge Quiz">
+                            <i class="fas fa-graduation-cap text-gold-dark"></i>
+                            <span>Quiz</span>
+                        </button>`;
+                    })() : ''}
                     ${isSupervisorOrManager ? `
                         <button onclick="deleteLmsDocument('${docId}', '${safeTitle}', this)" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition border border-transparent hover:border-red-200" title="Delete document">
                             <i class="fas fa-trash-can text-xs"></i>

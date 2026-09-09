@@ -62,7 +62,7 @@ function renderCycleRosterTable() {
     if (roster.length === 0) {
         container.innerHTML = `
             <tr>
-                <td colspan="6" class="py-12 text-center text-slate-400">
+                <td colspan="7" class="py-12 text-center text-slate-400">
                     <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-lg mx-auto font-bold mb-2">
                         <i class="fas fa-rotate"></i>
                     </div>
@@ -90,18 +90,33 @@ function renderCycleRosterTable() {
     const pageList = isAll ? roster : roster.slice(startIdx, startIdx + effectivePageSize);
 
 function checkEmployeeStage7Tasks(empId) {
-    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Done') && isSameEmployee(g.employee_id, empId));
+    let progressPct = 0;
     let totalTasks = 0;
     let completedTasks = 0;
-    empGoals.forEach(g => {
-        (g.tasks || []).forEach(t => {
-            totalTasks++;
-            if (t.status === 'completed') completedTasks++;
+
+    if (typeof getEmployeeTaskStats === 'function') {
+        const stats = getEmployeeTaskStats(empId);
+        progressPct = stats.progressPct || 0;
+        totalTasks = stats.total || 0;
+        completedTasks = stats.completed || 0;
+    } else {
+        const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Done' || g.status === 'Completed') && isSameEmployee(g.employee_id, empId));
+        empGoals.forEach(g => {
+            (g.tasks || []).forEach(t => {
+                totalTasks++;
+                if (t.status === 'completed') completedTasks++;
+            });
         });
-    });
-    const allTasksDone = totalTasks > 0 ? (completedTasks === totalTasks) : true;
+        progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 100;
+    }
+
+    const is100 = progressPct >= 100;
+    const allTasksDone = is100 && (totalTasks > 0 ? (completedTasks === totalTasks) : true);
+
     return {
         allTasksDone,
+        is100,
+        progressPct,
         totalTasks,
         completedTasks
     };
@@ -140,6 +155,7 @@ window.checkEmployeeStage7Tasks = checkEmployeeStage7Tasks;
 
         const taskCheck = checkEmployeeStage7Tasks(emp.id);
         const allTasksDone = taskCheck.allTasksDone;
+        const isObj100 = taskCheck.is100;
 
         return `
             <tr class="hover:bg-slate-50 transition text-xs border-b border-slate-100">
@@ -150,6 +166,20 @@ window.checkEmployeeStage7Tasks = checkEmployeeStage7Tasks;
                     <span class="max-w-[160px] truncate block" title="${emp.name}">${emp.name}</span>
                 </td>
                 <td class="px-5 py-4 text-slate-500 max-w-[130px] truncate" title="${emp.department}">${emp.department}</td>
+                <td class="px-5 py-4">
+                    <div class="flex items-center justify-between text-[11px] mb-1">
+                        <span class="font-bold ${isObj100 ? 'text-emerald-700' : 'text-amber-700'}">${taskCheck.progressPct}%</span>
+                        <span class="text-slate-400 text-[10px]">${taskCheck.totalTasks > 0 ? taskCheck.completedTasks + '/' + taskCheck.totalTasks + ' Tasks' : 'No Tasks'}</span>
+                    </div>
+                    <div class="w-24 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-300 ${isObj100 ? 'bg-emerald-500' : 'bg-amber-500'}" style="width: ${taskCheck.progressPct}%"></div>
+                    </div>
+                    ${!isObj100 ? `
+                        <span class="text-[9px] text-amber-700 font-semibold flex items-center mt-0.5"><i class="fas fa-lock text-[8px] mr-1"></i>Incomplete (Actions Locked)</span>
+                    ` : `
+                        <span class="text-[9px] text-emerald-700 font-semibold flex items-center mt-0.5"><i class="fas fa-check text-[8px] mr-1"></i>100% Completed</span>
+                    `}
+                </td>
                 <td class="px-5 py-4 font-bold ${isExceededRetry ? 'text-rose-700' : (hasPassed ? 'text-emerald-700' : 'text-rose-600')}">
                     <i class="fas fa-star text-amber-500 mr-1 text-[10px]"></i>${score.toFixed(2)} / 5.0 (${evalRec?.tier_label || (hasPassed ? ratingLabel : 'Needs PIP')})
                 </td>
@@ -185,34 +215,42 @@ window.checkEmployeeStage7Tasks = checkEmployeeStage7Tasks;
                 </td>
                 <td class="px-5 py-4 text-right">
                     <div class="flex items-center justify-end space-x-1.5">
-                        ${hasDraft ? `
+                        ${hasDraft ? (!isObj100 ? `
+                            <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 font-bold rounded-xl text-xs cursor-not-allowed flex items-center space-x-1" title="Objectives Progress is not 100% (${taskCheck.progressPct}%). Deploy locked. Only view is allowed.">
+                                <i class="fas fa-lock text-[10px]"></i>
+                                <span>Deploy</span>
+                            </button>
+                        ` : `
                             <button onclick="deployDraftPlan('${emp.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="Deploy draft plan to live tasks & LMS">
                                 <i class="fas fa-rocket text-[10px]"></i>
                                 <span>Deploy</span>
                             </button>
-                        ` : ''}
-                        ${isGoalDone ? `
+                        `) : ''}
+                        ${isGoalDone ? (!isObj100 ? `
+                            <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 font-bold rounded-xl text-xs cursor-not-allowed flex items-center space-x-1" title="Objectives Progress is not 100% (${taskCheck.progressPct}%). Revert locked. Only view is allowed.">
+                                <i class="fas fa-lock text-[10px]"></i>
+                                <span>Revert</span>
+                            </button>
+                        ` : `
                             <button onclick="confirmRevertGoalKudos('${emp.id}', '${doneGoal ? doneGoal.id : ''}')" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold rounded-xl text-xs shadow-2xs transition flex items-center space-x-1" title="Revert Kudos XP and reset goal status to Approved">
                                 <i class="fas fa-rotate-left text-amber-600"></i>
                                 <span>Revert</span>
                             </button>
-                        ` : ''}
+                        `) : ''}
                         ${isExceededRetry ? `
-                            <button onclick="showCycleDetail('${emp.id}', true)" class="px-3.5 py-1.5 bg-rose-700 hover:bg-rose-800 text-white font-bold rounded-xl text-xs shadow-xs transition">
-                                1-on-1 Remand
+                            <button onclick="showCycleDetail('${emp.id}', true)" class="px-3.5 py-1.5 bg-rose-700 hover:bg-rose-800 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="View 1-on-1 Remand Record">
+                                <i class="fas fa-eye text-[11px]"></i>
+                                <span>1-on-1 Remand</span>
                             </button>
-                        ` : (hasPassed ? (allTasksDone ? `
-                            <button onclick="showCycleDetail('${emp.id}', true)" class="px-3.5 py-1.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-xs shadow-xs transition">
-                                View Rollover
+                        ` : (hasPassed ? `
+                            <button onclick="showCycleDetail('${emp.id}', true)" class="px-3.5 py-1.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="View Cycle Rollover Details">
+                                <i class="fas fa-eye text-[11px]"></i>
+                                <span>View Rollover</span>
                             </button>
                         ` : `
-                            <button disabled title="Monitoring tasks are incomplete (${taskCheck.completedTasks}/${taskCheck.totalTasks} completed in Stage 3). Complete all monitoring tasks before cycle rollover." class="px-3.5 py-1.5 bg-slate-200 text-slate-400 border border-slate-300 font-bold rounded-xl text-xs cursor-not-allowed inline-flex items-center space-x-1">
-                                <i class="fas fa-lock text-[10px]"></i>
-                                <span>Rollover (Locked)</span>
-                            </button>
-                        `) : `
-                            <button onclick="showCycleDetail('${emp.id}', true)" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs shadow-xs transition">
-                                Review Plan
+                            <button onclick="showCycleDetail('${emp.id}', false); openReviewTasksModal('${emp.id}')" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center space-x-1" title="View & Review Action Plan">
+                                <i class="fas fa-eye text-[11px]"></i>
+                                <span>Review Plan</span>
                             </button>
                         `)}
                     </div>
@@ -345,6 +383,20 @@ function showCycleDetail(empId, openModalImmediately = false) {
 
     if (titleEl) titleEl.textContent = `Development Monitoring & Next Cycle Initiation: ${emp.name}`;
 
+    const taskCheck = checkEmployeeStage7Tasks(emp.id);
+    const allTasksDone = taskCheck.allTasksDone;
+    const isObj100 = taskCheck.is100;
+
+    const objWarningBanner = !isObj100 ? `
+        <div class="p-3.5 bg-amber-50/80 rounded-2xl border border-amber-200/90 text-amber-900 flex items-center justify-between gap-2 shadow-2xs mb-3">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-lock text-amber-700 text-xs"></i>
+                <span class="text-xs font-semibold">Objectives Progress Incomplete (${taskCheck.progressPct}%) — Actions Locked</span>
+            </div>
+            <span class="text-[10px] bg-amber-100/80 border border-amber-300/80 px-2 py-0.5 rounded-full font-bold">View Only</span>
+        </div>
+    ` : '';
+
     if (transitionCard) {
         if (isGoalFailed) {
             transitionCard.innerHTML = `
@@ -375,10 +427,8 @@ function showCycleDetail(empId, openModalImmediately = false) {
                 </div>
             `;
         } else if (hasPassed) {
-            const taskCheck = checkEmployeeStage7Tasks(emp.id);
-            const allTasksDone = taskCheck.allTasksDone;
-
             transitionCard.innerHTML = `
+                ${objWarningBanner}
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <div>
                         <span class="badge-sage">Continuous Growth Metric</span>
@@ -394,13 +444,23 @@ function showCycleDetail(empId, openModalImmediately = false) {
                         ${allTasksDone ? '<i class="fas fa-check text-sage-dark mr-1.5"></i> All 7 lifecycle phases completed for 2026 Q3' : `<i class="fas fa-triangle-exclamation text-amber-500 mr-1.5"></i> Monitoring tasks incomplete (${taskCheck.completedTasks}/${taskCheck.totalTasks} completed)`}
                     </span>
                     <div class="flex items-center space-x-2">
-                        ${isGoalDone ? `
+                        ${isGoalDone ? (!isObj100 ? `
+                            <button disabled class="px-4 py-2.5 text-xs font-bold flex items-center space-x-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl cursor-not-allowed" title="Objectives Progress is not 100% (${taskCheck.progressPct}%). Revert locked.">
+                                <i class="fas fa-lock text-[10px]"></i>
+                                <span>Revert Kudos</span>
+                            </button>
+                        ` : `
                             <button onclick="confirmRevertGoalKudos('${emp.id}', '${doneGoal ? doneGoal.id : ''}')" class="px-4 py-2.5 text-xs font-bold transition flex items-center space-x-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-xl" title="Revert Kudos XP and reset goal to Approved">
                                 <i class="fas fa-rotate-left text-amber-600"></i>
                                 <span>Revert Kudos</span>
                             </button>
-                        ` : ''}
-                        ${allTasksDone ? `
+                        `) : ''}
+                        ${!isObj100 ? `
+                            <button id="btn-mark-cycle-completed" disabled title="Objectives Progress is not 100% (${taskCheck.progressPct}%). Complete all tasks in Stage 3 first. Only view is allowed." class="px-5 py-2.5 text-xs font-bold transition flex items-center space-x-2 bg-slate-200 text-slate-400 border border-slate-300 rounded-xl cursor-not-allowed">
+                                <i class="fas fa-lock text-xs"></i>
+                                <span>Mark as Completed (Locked)</span>
+                            </button>
+                        ` : (allTasksDone ? `
                             <button id="btn-mark-cycle-completed" onclick="confirmMarkGoalCompleted('${emp.id}')" class="btn-primary px-5 py-2.5 text-xs font-bold transition flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white">
                                 <i class="fas fa-circle-check text-xs"></i>
                                 <span>Mark as Completed</span>
@@ -410,12 +470,13 @@ function showCycleDetail(empId, openModalImmediately = false) {
                                 <i class="fas fa-lock text-xs"></i>
                                 <span>Mark as Completed (Tasks Incomplete)</span>
                             </button>
-                        `}
+                        `)}
                     </div>
                 </div>
             `;
         } else if (retryCount >= 4 && !hasPassed) {
             transitionCard.innerHTML = `
+                ${objWarningBanner}
                 <div class="p-6 bg-rose-100 rounded-2xl border-2 border-rose-400 space-y-4 text-xs">
                     <div class="flex items-center justify-between flex-wrap gap-2">
                         <div class="flex items-center space-x-2.5">
@@ -436,15 +497,23 @@ function showCycleDetail(empId, openModalImmediately = false) {
                     </p>
                     <div class="pt-3 border-t border-rose-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <span class="text-xs text-rose-900 font-bold"><i class="fas fa-lock mr-1 text-rose-600"></i> Final Stage &bull; Last evaluation before failure</span>
-                        <button onclick="openPhase7FinalEvalModal('${emp.id}')" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
-                            <i class="fas fa-gavel"></i>
-                            <span>Conduct Final 1-on-1 Evaluation &rarr;</span>
-                        </button>
+                        ${!isObj100 ? `
+                            <button disabled class="px-5 py-2.5 bg-slate-200 text-slate-400 border border-slate-300 rounded-xl font-bold text-xs cursor-not-allowed flex items-center space-x-1.5" title="Objectives Progress is not 100% (${taskCheck.progressPct}%). Evaluation locked.">
+                                <i class="fas fa-lock"></i>
+                                <span>Conduct Final Evaluation (Locked)</span>
+                            </button>
+                        ` : `
+                            <button onclick="openPhase7FinalEvalModal('${emp.id}')" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
+                                <i class="fas fa-gavel"></i>
+                                <span>Conduct Final 1-on-1 Evaluation &rarr;</span>
+                            </button>
+                        `}
                     </div>
                 </div>
             `;
         } else if ((retryCount === 3 && isScored && !hasPassed) || (retryCount >= 3 && !hasPassed)) {
             transitionCard.innerHTML = `
+                ${objWarningBanner}
                 <div class="p-6 bg-gradient-to-r from-rose-50 via-amber-50 to-purple-50 rounded-2xl border-2 border-rose-300 space-y-4 text-xs">
                     <div class="flex items-center justify-between flex-wrap gap-2">
                         <div class="flex items-center space-x-2.5">
@@ -465,15 +534,23 @@ function showCycleDetail(empId, openModalImmediately = false) {
                     </p>
                     <div class="pt-3 border-t border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <span class="text-xs text-rose-900 font-bold"><i class="fas fa-arrow-right mr-1 text-rose-600"></i> Next Step: Transition to Final Evaluation</span>
-                        <button onclick="continueToFinal1on1Evaluation('${emp.id}')" class="px-5 py-2.5 bg-rose-700 hover:bg-rose-800 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
-                            <i class="fas fa-play"></i>
-                            <span>Continue to Final 1-on-1 Evaluation &rarr;</span>
-                        </button>
+                        ${!isObj100 ? `
+                            <button disabled class="px-5 py-2.5 bg-slate-200 text-slate-400 border border-slate-300 rounded-xl font-bold text-xs cursor-not-allowed flex items-center space-x-1.5" title="Objectives Progress is not 100% (${taskCheck.progressPct}%). Progression locked.">
+                                <i class="fas fa-lock"></i>
+                                <span>Continue to Final Evaluation (Locked)</span>
+                            </button>
+                        ` : `
+                            <button onclick="continueToFinal1on1Evaluation('${emp.id}')" class="px-5 py-2.5 bg-rose-700 hover:bg-rose-800 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
+                                <i class="fas fa-play"></i>
+                                <span>Continue to Final 1-on-1 Evaluation &rarr;</span>
+                            </button>
+                        `}
                     </div>
                 </div>
             `;
         } else if (inTraining && tnNeed) {
             transitionCard.innerHTML = `
+                ${objWarningBanner}
                 <div class="p-6 bg-gradient-to-r from-purple-50 via-rose-50 to-amber-50 rounded-2xl border border-purple-200 space-y-4 text-xs">
                     <div class="flex items-center justify-between flex-wrap gap-2">
                         <div class="flex items-center space-x-2.5">
@@ -498,16 +575,24 @@ function showCycleDetail(empId, openModalImmediately = false) {
                     <div class="pt-3 border-t border-purple-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <span class="text-xs text-purple-800 font-semibold"><i class="fas fa-book-open mr-1"></i> Program: ${tnNeed.target_competency || tnNeed.category || 'Skill Gap'}</span>
                         <div class="flex items-center space-x-2">
-                            <button onclick="openFormalCurriculumModal('${emp.id}')" class="px-3.5 py-1.5 bg-white hover:bg-purple-100 text-purple-900 border border-purple-300 rounded-xl font-bold transition text-xs flex items-center space-x-1">
-                                <i class="fas fa-repeat"></i>
-                                <span>Switch / View Curriculum</span>
-                            </button>
+                            ${!isObj100 ? `
+                                <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold cursor-not-allowed text-xs flex items-center space-x-1" title="Objectives Progress is not 100% (${taskCheck.progressPct}%). Locked.">
+                                    <i class="fas fa-lock text-[10px]"></i>
+                                    <span>Switch Curriculum (Locked)</span>
+                                </button>
+                            ` : `
+                                <button onclick="openFormalCurriculumModal('${emp.id}')" class="px-3.5 py-1.5 bg-white hover:bg-purple-100 text-purple-900 border border-purple-300 rounded-xl font-bold transition text-xs flex items-center space-x-1">
+                                    <i class="fas fa-repeat"></i>
+                                    <span>Switch / View Curriculum</span>
+                                </button>
+                            `}
                         </div>
                     </div>
                 </div>
             `;
         } else if (needsTraining || (retryCount >= 1 && !hasPassed)) {
             transitionCard.innerHTML = `
+                ${objWarningBanner}
                 <div class="p-6 bg-rose-50 rounded-2xl border border-rose-300 space-y-4 text-xs">
                     <div class="flex items-center justify-between flex-wrap gap-2">
                         <div class="flex items-center space-x-2.5">
@@ -529,13 +614,23 @@ function showCycleDetail(empId, openModalImmediately = false) {
                         <div class="pt-3 border-t border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <span class="text-xs text-rose-800 font-bold"><i class="fas fa-graduation-cap mr-1 text-rose-600"></i> Action required: Mandatory Formal Curriculum enrollment</span>
                             <div class="flex items-center space-x-2">
-                                <button onclick="toggleNeedsTrainingFlag('${emp.id}', false)" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl font-bold transition text-xs">
-                                    <span>Clear Flag</span>
-                                </button>
-                                <button onclick="openFormalCurriculumModal('${emp.id}')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
-                                    <i class="fas fa-graduation-cap"></i>
-                                    <span>Need Training &rarr; Assign Formal Curriculum</span>
-                                </button>
+                                ${!isObj100 ? `
+                                    <button disabled class="px-3 py-2 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed">
+                                        <i class="fas fa-lock mr-1"></i><span>Clear Flag</span>
+                                    </button>
+                                    <button disabled class="px-4 py-2 bg-slate-200 text-slate-400 border border-slate-300 rounded-xl font-bold text-xs cursor-not-allowed flex items-center space-x-1.5" title="Objectives Progress is not 100% (${taskCheck.progressPct}%). Curriculum assignment locked.">
+                                        <i class="fas fa-lock"></i>
+                                        <span>Assign Curriculum (Locked)</span>
+                                    </button>
+                                ` : `
+                                    <button onclick="toggleNeedsTrainingFlag('${emp.id}', false)" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl font-bold transition text-xs">
+                                        <span>Clear Flag</span>
+                                    </button>
+                                    <button onclick="openFormalCurriculumModal('${emp.id}')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
+                                        <i class="fas fa-graduation-cap"></i>
+                                        <span>Need Training &rarr; Assign Formal Curriculum</span>
+                                    </button>
+                                `}
                             </div>
                         </div>
                     </div>
@@ -548,6 +643,7 @@ function showCycleDetail(empId, openModalImmediately = false) {
                 const hasDraft = draftTotal > 0;
 
                 transitionCard.innerHTML = `
+                    ${objWarningBanner}
                     <div class="p-6 bg-amber-50/70 rounded-2xl border border-amber-200 space-y-4 text-xs">
                         <div class="flex items-center justify-between flex-wrap gap-2">
                             <div class="flex items-center space-x-2.5">
@@ -580,10 +676,17 @@ function showCycleDetail(empId, openModalImmediately = false) {
                                             <p class="text-[10px] text-slate-500">${draftTaskCount} Action Task(s) · ${draftBookCount} LMS Handbook(s) staged in Stage 6</p>
                                         </div>
                                     </div>
-                                    <button onclick="deployDraftPlan('${emp.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1">
-                                        <i class="fas fa-rocket text-[10px]"></i>
-                                        <span>Deploy Plan</span>
-                                    </button>
+                                    ${!isObj100 ? `
+                                        <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed flex items-center space-x-1" title="Objectives Progress is not 100% (${taskCheck.progressPct}%). Deploy locked.">
+                                            <i class="fas fa-lock text-[10px]"></i>
+                                            <span>Deploy Plan (Locked)</span>
+                                        </button>
+                                    ` : `
+                                        <button onclick="deployDraftPlan('${emp.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1">
+                                            <i class="fas fa-rocket text-[10px]"></i>
+                                            <span>Deploy Plan</span>
+                                        </button>
+                                    `}
                                 </div>
                             </div>
                         ` : ''}
@@ -591,10 +694,16 @@ function showCycleDetail(empId, openModalImmediately = false) {
                         <div class="pt-3 border-t border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <span class="text-xs text-amber-900 font-semibold"><i class="fas fa-rotate mr-1 text-amber-700"></i> Tasks can be reset for employee to re-do in Stage 3 Monitoring</span>
                             <div class="flex items-center space-x-2">
-                                <button onclick="toggleNeedsTrainingFlag('${emp.id}', true)" class="px-3 py-2 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-xl font-bold transition text-xs border border-rose-200">
-                                    <i class="fas fa-flag mr-1"></i><span>Flag as Needs Training</span>
-                                </button>
-                                <button onclick="openReviewTasksModal('${emp.id}')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5">
+                                ${!isObj100 ? `
+                                    <button disabled class="px-3 py-2 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed" title="Objectives Progress is not 100% (${taskCheck.progressPct}%). Locked.">
+                                        <i class="fas fa-lock mr-1"></i><span>Flag as Needs Training</span>
+                                    </button>
+                                ` : `
+                                    <button onclick="toggleNeedsTrainingFlag('${emp.id}', true)" class="px-3 py-2 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-xl font-bold transition text-xs border border-rose-200">
+                                        <i class="fas fa-flag mr-1"></i><span>Flag as Needs Training</span>
+                                    </button>
+                                `}
+                                <button onclick="openReviewTasksModal('${emp.id}')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shadow-xs transition flex items-center space-x-1.5" title="View & Review Plan & Tasks">
                                     <i class="fas fa-list-check"></i>
                                     <span>Review Plan &amp; Tasks &rarr;</span>
                                 </button>
@@ -606,7 +715,7 @@ function showCycleDetail(empId, openModalImmediately = false) {
     }
 
     if (openModalImmediately) {
-        if (!hasPassed && !needsTraining) {
+        if (!hasPassed) {
             openReviewTasksModal(emp.id);
         } else if (typeof openModal === 'function') {
             openModal('modal-cycle-detail');
@@ -794,9 +903,12 @@ async function openReviewTasksModal(empId) {
     const isCalibrated = evalRec && (evalRec.status === 'Calibrated' || (evalRec.calibrated_score !== null && evalRec.calibrated_score !== undefined && evalRec.status !== 'Rated'));
     const score = isCalibrated && evalRec.calibrated_score ? parseFloat(evalRec.calibrated_score) : (parseFloat(emp.supervisorRating || 0));
 
-    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
+    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Done' || g.status === 'In Progress' || g.status === 'Completed') && isSameEmployee(g.employee_id, emp.id));
     const retryCount = empGoals.reduce((max, g) => Math.max(max, parseInt(g.retry_count || 0)), 0);
     const needsTraining = empGoals.some(g => !!g.needs_training) || retryCount > 2;
+
+    const taskCheck = checkEmployeeStage7Tasks(emp.id);
+    const isObj100 = taskCheck.is100;
 
     const titleEl = document.getElementById('modal-review-tasks-title');
     const avatarEl = document.getElementById('review-tasks-avatar');
@@ -888,10 +1000,17 @@ async function openReviewTasksModal(empId) {
 
                     <div class="pt-2 border-t border-indigo-100 flex items-center justify-between text-[11px]">
                         <span class="text-indigo-900 font-medium"><i class="fas fa-circle-info mr-1 text-indigo-600"></i> Deploying copies tasks to <code>performance_tasks</code> &amp; handbooks to <code>lms_prescribed</code>.</span>
-                        <button onclick="deployDraftPlanFromModal('${emp.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1">
-                            <i class="fas fa-rocket text-[10px]"></i>
-                            <span>Deploy Draft Plan Now</span>
-                        </button>
+                        ${!isObj100 ? `
+                            <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl font-bold text-xs cursor-not-allowed flex items-center space-x-1" title="Objectives Progress is not 100% (${taskCheck.progressPct}%). Deploy locked.">
+                                <i class="fas fa-lock text-[10px]"></i>
+                                <span>Deploy Draft Plan (Locked)</span>
+                            </button>
+                        ` : `
+                            <button onclick="deployDraftPlanFromModal('${emp.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center space-x-1">
+                                <i class="fas fa-rocket text-[10px]"></i>
+                                <span>Deploy Draft Plan Now</span>
+                            </button>
+                        `}
                     </div>
                 </div>
             `;
@@ -938,15 +1057,22 @@ async function openReviewTasksModal(empId) {
                         </div>
 
                         <div class="flex items-center space-x-2 flex-shrink-0 self-end sm:self-auto">
-                            ${isDone ? `
-                                <button onclick="resetTaskForGoal('${t.id}', '${emp.id}', this)" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl text-xs border border-amber-200 transition flex items-center space-x-1" title="Reset to pending so employee can re-do task">
-                                    <i class="fas fa-rotate-left"></i>
-                                    <span>Reset to Re-Do</span>
+                            ${!isObj100 ? `
+                                <span class="px-2.5 py-1 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg font-bold text-[10px] flex items-center space-x-1" title="Objectives Progress is not 100% (${taskCheck.progressPct}%). Modification locked. Only view is allowed.">
+                                    <i class="fas fa-lock text-[9px]"></i>
+                                    <span>Locked</span>
+                                </span>
+                            ` : `
+                                ${isDone ? `
+                                    <button onclick="resetTaskForGoal('${t.id}', '${emp.id}', this)" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl text-xs border border-amber-200 transition flex items-center space-x-1" title="Reset to pending so employee can re-do task">
+                                        <i class="fas fa-rotate-left"></i>
+                                        <span>Reset to Re-Do</span>
+                                    </button>
+                                ` : ''}
+                                <button onclick="deleteTaskFromGoal('${t.id}', '${emp.id}', this)" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs border border-rose-200 transition" title="Delete obsolete task">
+                                    <i class="fas fa-trash-can"></i>
                                 </button>
-                            ` : ''}
-                            <button onclick="deleteTaskFromGoal('${t.id}', '${emp.id}', this)" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl text-xs border border-rose-200 transition" title="Delete obsolete task">
-                                <i class="fas fa-trash-can"></i>
-                            </button>
+                            `}
                         </div>
                     </div>
                 `;
@@ -961,7 +1087,18 @@ async function openReviewTasksModal(empId) {
     }
 
     if (footerActions) {
-        if (needsTraining) {
+        if (!isObj100) {
+            footerActions.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs text-amber-700 font-semibold flex items-center">
+                        <i class="fas fa-lock text-[10px] mr-1.5"></i>Objectives Progress is ${taskCheck.progressPct}% (${taskCheck.completedTasks}/${taskCheck.totalTasks} Tasks). Actions locked.
+                    </span>
+                    <button onclick="closeModal('modal-review-tasks')" class="px-4 py-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition">
+                        Close
+                    </button>
+                </div>
+            `;
+        } else if (needsTraining) {
             footerActions.innerHTML = `
                 <button onclick="closeModal('modal-review-tasks'); openRemedialBooksModal('${emp.id}');" class="btn-primary px-5 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 border-rose-600 shadow-xs flex items-center space-x-2">
                     <i class="fas fa-graduation-cap"></i>

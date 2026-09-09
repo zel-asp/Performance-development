@@ -7,11 +7,8 @@
 // Unified Helper Functions
 // ============================================================================
 
-/**
- * Calculates monitoring task completion stats for a given employee.
- */
 function getEmployeeTaskStats(empId) {
-    const empGoals = (window.dbGoals || []).filter(g => g.status === 'Approved' && isSameEmployee(g.employee_id, empId));
+    const empGoals = (window.dbGoals || []).filter(g => (g.status === 'Approved' || g.status === 'Done' || g.status === 'In Progress' || g.status === 'Completed') && isSameEmployee(g.employee_id, empId));
     let total = 0;
     let completed = 0;
     empGoals.forEach(g => {

@@ -664,14 +664,23 @@ class PerformanceController
             }
             $desc = $existingTask['description'] ?? '';
             $title = $existingTask['title'] ?? '';
+            $presId = $existingTask['prescribed_lms_id'] ?? null;
             $lmsId = null;
             if (preg_match('/\[LMS:([^\]]+)\]/', $desc, $matches)) {
                 $lmsId = trim($matches[1]);
+            } elseif (preg_match('/\[LMS:([^\]]+)\]/', $title, $matches)) {
+                $lmsId = trim($matches[1]);
             }
 
-            if (!empty($lmsId)) {
+            if (!empty($presId) || !empty($lmsId)) {
                 $empId = $existingTask['employee_id'] ?? 'emp-101';
-                $checkPres = supabaseRequest('lms_prescribed?employee=eq.' . urlencode($empId) . '&lms_id=eq.' . urlencode($lmsId), 'GET', null, true);
+                $checkPres = null;
+                if (!empty($presId)) {
+                    $checkPres = supabaseRequest('lms_prescribed?id=eq.' . urlencode($presId), 'GET', null, true);
+                }
+                if (empty($checkPres['data']) && !empty($lmsId)) {
+                    $checkPres = supabaseRequest('lms_prescribed?employee=eq.' . urlencode($empId) . '&lms_id=eq.' . urlencode($lmsId), 'GET', null, true);
+                }
                 $presList = is_array($checkPres['data'] ?? null) ? $checkPres['data'] : [];
                 $pres = !empty($presList) ? $presList[0] : null;
 
@@ -1566,6 +1575,7 @@ class PerformanceController
             'points'              => $points,
             'balance_after'       => $balanceAfter,
             'description'         => $payload['description'] ?? "Performance appraisal recognition kudos (+{$points} XP)",
+            'lms_prescribed'      => $payload['lms_prescribed'] ?? $payload['prescribed_lms_id'] ?? null,
             'created_at'          => date('c')
         ];
 

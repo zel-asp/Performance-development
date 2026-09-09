@@ -62,25 +62,9 @@
         if (!bookId) return null;
         const currentUserId = (window.currentUser?.id || window.activePersonaId || 'emp-101').toLowerCase();
 
-        // 1. Check local storage persistent completion keys
-        try {
-            const keyUser = 'oxford_lms_completed_quiz_' + bookId + '_' + currentUserId;
-            const itemUser = localStorage.getItem(keyUser);
-            if (itemUser) {
-                const parsed = JSON.parse(itemUser);
-                if (parsed && parsed.taken) return parsed;
-            }
-            const keyGen = 'oxford_lms_completed_quiz_' + bookId;
-            const itemGen = localStorage.getItem(keyGen);
-            if (itemGen) {
-                const parsedGen = JSON.parse(itemGen);
-                if (parsedGen && parsedGen.taken) return parsedGen;
-            }
-        } catch (e) {}
-
-        // 2. Check window.dynamicLmsState.prescribed
+        let match = null;
         if (window.dynamicLmsState && Array.isArray(window.dynamicLmsState.prescribed)) {
-            const match = window.dynamicLmsState.prescribed.find(p => {
+            match = window.dynamicLmsState.prescribed.find(p => {
                 const pBookId = p.lms_id || p.book_id || p.id;
                 if (String(pBookId) !== String(bookId)) return false;
                 const empId = (p.employee || p.employee_id || '').toLowerCase();
@@ -89,21 +73,63 @@
                     (currentUserId === 'emp-101' && (empId.includes('101') || empId.includes('maria') || empName.includes('maria'))) ||
                     (currentUserId === 'emp-102' && (empId.includes('102') || empId.includes('antonio') || empName.includes('antonio')));
             });
+        }
 
-            if (match) {
-                const score = Number(match.scores ?? match.score ?? 0);
-                const status = String(match.status || '').toLowerCase();
-                const hasAttempt = Boolean(match.last_attempt || match.scores !== null || status === 'passed' || status === 'completed');
-                if (hasAttempt || status === 'passed' || status === 'completed' || score > 0) {
-                    return {
-                        taken: true,
-                        passed: status === 'passed' || score >= 80,
-                        score: score,
-                        status: match.status || (score >= 80 ? 'Passed' : 'Completed'),
-                        completedAt: match.last_attempt || null
-                    };
+        const score = match ? Number(match.scores ?? match.score ?? 0) : 0;
+        const status = match ? String(match.status || '').toLowerCase() : '';
+        const isQuizPassed = (status === 'passed' || score >= 80);
+        const hasAttempt = match ? Boolean(match.last_attempt || (match.scores !== null && match.scores !== undefined && score > 0) || status === 'passed' || status === 'completed') : false;
+
+        // Check performance task status
+        let inPerformanceTask = Boolean(match?.in_performance_task);
+        let isTaskCompleted = Boolean(match?.is_task_completed);
+        let taskStatus = match?.performance_task_status || null;
+
+        // Also check window.dbGoals or task roster if present in DOM/window
+        if (Array.isArray(window.dbGoals)) {
+            for (const g of window.dbGoals) {
+                const tasks = Array.isArray(g.tasks) ? g.tasks : (Array.isArray(g.specific_tasks) ? g.specific_tasks : []);
+                for (const t of tasks) {
+                    const matchesPres = match && t.prescribed_lms_id && t.prescribed_lms_id === match.id;
+                    const matchesBook = (t.title && t.title.includes(`[LMS:${bookId}]`)) || (t.description && t.description.includes(`[LMS:${bookId}]`));
+                    if (matchesPres || matchesBook) {
+                        inPerformanceTask = true;
+                        taskStatus = t.status;
+                        isTaskCompleted = (t.status === 'completed' || t.status === 'done');
+                        break;
+                    }
                 }
+                if (inPerformanceTask) break;
             }
+        }
+
+        // Only lock/disable if it is in performance_task AND complete AND LMS quiz is passed
+        const isLocked = Boolean(inPerformanceTask && isTaskCompleted && isQuizPassed);
+        const needsRetest = !isQuizPassed && (hasAttempt || status === 'needs retake' || score > 0);
+
+        // Local storage cleanup: if not locked, ensure stale localStorage does not lock user out
+        try {
+            const keyUser = 'oxford_lms_completed_quiz_' + bookId + '_' + currentUserId;
+            const keyGen = 'oxford_lms_completed_quiz_' + bookId;
+            if (!isLocked) {
+                localStorage.removeItem(keyUser);
+                localStorage.removeItem(keyGen);
+            }
+        } catch (e) {}
+
+        if (match || hasAttempt || isLocked) {
+            return {
+                taken: hasAttempt || isLocked || score > 0,
+                passed: isQuizPassed,
+                score: score,
+                status: match?.status || (isQuizPassed ? 'Passed' : 'Needs Retake'),
+                completedAt: match?.last_attempt || null,
+                inPerformanceTask: inPerformanceTask,
+                isTaskCompleted: isTaskCompleted,
+                taskStatus: taskStatus,
+                isLocked: isLocked,
+                needsRetest: needsRetest
+            };
         }
 
         return null;
@@ -198,13 +224,13 @@
             if (confirmDesc) {
                 confirmDesc.innerHTML = `You have already started the 10-item knowledge check for <strong class="text-slate-900">${title}</strong>. Starting a new quiz is <span class="text-rose-600 font-bold">disabled</span> while an active attempt is running. Please resume your current attempt before time expires.`;
             }
-        } else if (completedRecord && completedRecord.taken) {
-            // When already completed: DISABLE "Start Quiz" and show "Quiz Completed" text
+        } else if (completedRecord && completedRecord.isLocked) {
+            // ONLY disable if in performance_task and complete AND LMS quiz is passed!
             if (startBtn) {
                 startBtn.classList.remove('hidden');
                 startBtn.disabled = true;
                 startBtn.className = 'px-6 py-2.5 rounded-xl font-bold text-xs bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center space-x-2 cursor-not-allowed opacity-90 shadow-none';
-                startBtn.innerHTML = `<i class="fas fa-circle-check text-emerald-600"></i><span>Quiz Completed ✓ (${completedRecord.score}%)</span>`;
+                startBtn.innerHTML = `<i class="fas fa-circle-check text-emerald-600"></i><span>Quiz Passed ✓ (${completedRecord.score}%)</span>`;
             }
             if (resumeBtn) {
                 resumeBtn.classList.add('hidden');
@@ -212,10 +238,31 @@
             }
             if (resumeBanner) resumeBanner.classList.add('hidden');
             if (confirmTitle) {
-                confirmTitle.textContent = 'Knowledge Quiz Already Completed';
+                confirmTitle.textContent = 'Knowledge Quiz Passed & Certified';
             }
             if (confirmDesc) {
-                confirmDesc.innerHTML = `You have already completed the 10-item knowledge check for <strong class="text-slate-900">${title}</strong> with a score of <span class="text-emerald-700 font-bold">${completedRecord.score}% (${completedRecord.passed ? 'Passed' : 'Completed'})</span>. Retaking completed compliance quizzes is disabled.`;
+                confirmDesc.innerHTML = `You have successfully completed and passed the 10-item knowledge check for <strong class="text-slate-900">${title}</strong> with a score of <span class="text-emerald-700 font-bold">${completedRecord.score}% (Passed)</span> and the corresponding Performance IDP task is completed.`;
+            }
+        } else if (completedRecord && (completedRecord.needsRetest || !completedRecord.passed)) {
+            // NOT locked! Quiz failed (<80%) or task is pending (re-test). Enable RETAKE!
+            if (startBtn) {
+                startBtn.classList.remove('hidden');
+                startBtn.disabled = false;
+                startBtn.className = 'btn-primary px-6 py-2.5 text-xs font-bold rounded-xl flex items-center space-x-2 shadow-2xs bg-rose-600 hover:bg-rose-700 text-white';
+                startBtn.innerHTML = `<i class="fas fa-rotate-left"></i><span>Retake 10-Min Quiz</span>`;
+            }
+            if (resumeBtn) {
+                resumeBtn.classList.add('hidden');
+            }
+            if (resumeBanner) resumeBanner.classList.add('hidden');
+            if (confirmTitle) {
+                confirmTitle.textContent = 'Retake Knowledge Quiz';
+            }
+            const scoreMsg = completedRecord.score > 0
+                ? `Your previous score was <strong class="text-rose-700 font-bold">${completedRecord.score}% (Needs Retake)</strong>.`
+                : `This handbook quiz needs to be completed for your performance development plan.`;
+            if (confirmDesc) {
+                confirmDesc.innerHTML = `${scoreMsg} Passing benchmark is 80%. Ready to begin your retake attempt for <strong class="text-slate-800">${title}</strong>?`;
             }
         } else {
             // No active attempt and not yet taken: allow starting quiz fresh
@@ -249,13 +296,18 @@
         const bookId = window.activeQuizState.bookId;
         if (!bookId) return;
 
-        // Guard 1: If already completed, lock and prevent taking quiz
+        // Guard 1: Only lock if isLocked (in performance_task, completed, and quiz passed)
         const alreadyDone = window.getCompletedQuizRecord(bookId);
-        if (alreadyDone && alreadyDone.taken) {
+        if (alreadyDone && alreadyDone.isLocked) {
             if (typeof showToast === 'function') {
-                showToast(`You have already completed the quiz for "${window.activeQuizState.bookTitle}" (${alreadyDone.score}%).`, 'info');
+                showToast(`You have already completed and passed the quiz for "${window.activeQuizState.bookTitle}" (${alreadyDone.score}%).`, 'info');
             }
             return;
+        }
+
+        // If retaking, ensure previous local quiz progress/answers are cleaned up
+        if (alreadyDone && !alreadyDone.isLocked) {
+            clearQuizLocalStorage(bookId);
         }
 
         // Guard 2: If attempt has already started, do NOT start new quiz! Resume instead!
@@ -814,7 +866,7 @@
                 document_title: s.bookTitle,
                 document_department: s.department,
                 scores: scorePct,
-                progress: passed ? 100 : Math.max(scorePct, 50),
+                progress: 100,
                 ratings: passed ? 4.50 : 2.50,
                 status: passed ? 'Passed' : 'Needs Retake',
                 last_attempt: new Date().toISOString(),
@@ -840,17 +892,18 @@
             }
         }
 
-        // 5. If passed, notify XP and trigger Social Ledger sync
-        if (passed) {
+        // 5. If passed, notify XP and trigger Social Ledger sync (score% = points, 0 if failed)
+        const awardedPoints = (passed && scorePct >= 80) ? Math.round(scorePct) : 0;
+        if (passed && scorePct >= 80) {
             if (typeof awardXP === 'function') {
-                awardXP(100);
+                awardXP(awardedPoints);
             }
             if (typeof showToast === 'function') {
-                showToast(`Congratulations! Scored ${scorePct}% on ${s.bookTitle}! +100 XP awarded to ledger!`, 'success');
+                showToast(`Congratulations! Scored ${scorePct}% on ${s.bookTitle}! +${awardedPoints} XP awarded to ledger!`, 'success');
             }
         } else {
             if (typeof showToast === 'function') {
-                showToast(`Scored ${scorePct}%. Benchmark is 80%. Review handbook and retake.`, 'warning');
+                showToast(`Scored ${scorePct}%. Benchmark is 80%. Review handbook and retake (0 XP awarded).`, 'warning');
             }
         }
 
@@ -880,19 +933,21 @@
         if (scoreRatioEl) scoreRatioEl.textContent = `(${correctCount} of ${total} Correct)`;
         if (timeTakenEl) timeTakenEl.textContent = `Completed in ${timeTakenStr}`;
 
-        if (passed) {
+        const awardedPoints = (passed && scorePct >= 80) ? Math.round(scorePct) : 0;
+
+        if (passed && scorePct >= 80) {
             if (statusBadge) {
                 statusBadge.className = 'badge-sage text-[10px] font-extrabold';
                 statusBadge.textContent = 'PASSED';
             }
             if (xpBadge) {
                 xpBadge.className = 'badge-gold text-[10px] font-extrabold';
-                xpBadge.textContent = '+100 XP Granted';
+                xpBadge.textContent = `+${awardedPoints} XP Granted`;
             }
             if (iconBox) iconBox.className = 'w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg font-bold border border-emerald-200';
             if (icon) icon.className = 'fas fa-trophy';
             if (card) card.className = 'p-5 rounded-3xl border border-emerald-200 bg-emerald-50/50 flex flex-col sm:flex-row items-center justify-between gap-4';
-            if (feedbackEl) feedbackEl.textContent = 'Outstanding operational proficiency! Your official LMS record has been updated with full compliance completion.';
+            if (feedbackEl) feedbackEl.textContent = `Outstanding operational proficiency! Your official LMS record has been updated with full compliance completion (+${awardedPoints} XP).`;
             if (retakeBtn) retakeBtn.classList.add('hidden');
         } else {
             if (statusBadge) {
@@ -978,11 +1033,14 @@
         }
     }
 
-    /**
-     * Restart/Retake Quiz
-     */
     window.restartQuiz = function () {
-        clearQuizLocalStorage(window.activeQuizState.bookId);
+        const bookId = window.activeQuizState.bookId;
+        clearQuizLocalStorage(bookId);
+        try {
+            const currentUserId = (window.currentUser?.id || window.activePersonaId || 'emp-101').toLowerCase();
+            localStorage.removeItem('oxford_lms_completed_quiz_' + bookId + '_' + currentUserId);
+            localStorage.removeItem('oxford_lms_completed_quiz_' + bookId);
+        } catch (e) {}
         confirmAndBeginQuiz();
     };
 

@@ -3,10 +3,12 @@
  * Sub-Module: Stage 1 — Goal Planning, Objectives & KPI Templates
  */
 
-async function loadAndRenderPlanningGoals() {
-    renderPerformanceSkeletons();
-    const gl = document.getElementById('kpi-goals-loading');
-    if (gl) gl.classList.remove('hidden');
+async function loadAndRenderPlanningGoals(silent = false) {
+    if (!silent) {
+        renderPerformanceSkeletons();
+        const gl = document.getElementById('kpi-goals-loading');
+        if (gl) gl.classList.remove('hidden');
+    }
     try {
         // High-speed parallel fetch of all performance data
         const [planResult, monResult, evalResult, needsResult] = await Promise.allSettled([
@@ -167,6 +169,11 @@ async function loadAndRenderPlanningGoals() {
         renderEmployeePulseGoals(window.dbGoals || []);
         renderActiveStageTable();
         updateAllPerfStepperBadges();
+    } finally {
+        if (!silent) {
+            const gl = document.getElementById('kpi-goals-loading');
+            if (gl) gl.classList.add('hidden');
+        }
     }
 }
 
@@ -1234,16 +1241,16 @@ function openViewGoalModal(targetId) {
                                                 </div>
                                                 ${t.description ? `<p class="text-[10px] text-slate-500">${t.description}</p>` : ''}
                                                 ${lmsInfo.isLmsTask ? `
-                                                    <div class="flex items-center space-x-1.5 pt-0.5">
-                                                        <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${lmsInfo.canComplete ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-100 text-amber-900 border border-amber-200'}">
-                                                            <i class="fas fa-book-open text-[8px]"></i>
+                                                    <div class="flex items-center space-x-1.5 pt-0.5 flex-wrap">
+                                                        <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${lmsInfo.isPassed ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : (lmsInfo.needsRetest ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-amber-100 text-amber-900 border border-amber-200')}">
+                                                            <i class="fas ${lmsInfo.isPassed ? 'fa-check text-emerald-600' : (lmsInfo.needsRetest ? 'fa-rotate-left text-rose-600' : 'fa-book-open text-amber-700')} text-[8px]"></i>
                                                             <span>LMS: ${lmsInfo.progress}%</span>
-                                                            ${!lmsInfo.canComplete ? '<span class="text-[8px] font-extrabold text-amber-700">(Req: 100%)</span>' : '<i class="fas fa-check text-[8px] text-emerald-600 ml-0.5"></i>'}
+                                                            ${lmsInfo.isPassed ? `<span class="text-[8px] font-bold text-emerald-700">(Passed ${lmsInfo.score || 100}%)</span>` : (lmsInfo.needsRetest ? `<span class="text-[8px] font-extrabold text-rose-700">Needs Re-test (${lmsInfo.score || 0}%)</span>` : '<span class="text-[8px] font-extrabold text-amber-700">(Req: 100%)</span>')}
                                                         </span>
-                                                        ${!lmsInfo.canComplete && lmsInfo.lmsId ? `
+                                                        ${lmsInfo.lmsId ? `
                                                             <button type="button" onclick="closeModal('modal-view-goal'); openBookReader('${lmsInfo.lmsId}')" class="text-primary hover:underline font-bold text-[9px] inline-flex items-center space-x-0.5">
-                                                                <i class="fas fa-book-reader"></i>
-                                                                <span>Read SOP &rarr;</span>
+                                                                <i class="fas ${lmsInfo.needsRetest ? 'fa-rotate-left' : 'fa-book-reader'}"></i>
+                                                                <span>${lmsInfo.needsRetest ? 'Retake Quiz &rarr;' : 'Read SOP &rarr;'}</span>
                                                             </button>
                                                         ` : ''}
                                                     </div>

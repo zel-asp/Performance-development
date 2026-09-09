@@ -1166,7 +1166,7 @@
                     <div>
                         <div class="flex items-center space-x-2">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400" id="quiz-header-dept">Hotel Operations</span>
-                            <span class="text-[10px] font-bold text-gold-dark">• +100 XP Benchmark</span>
+                            <span class="text-[10px] font-bold text-gold-dark">• Dynamic XP (Score = Points, Min 80% to Pass)</span>
                         </div>
                         <h3 id="quiz-active-title" class="font-heading font-bold text-sm sm:text-base text-slate-900 truncate max-w-xs sm:max-w-md">Handbook Knowledge Quiz</h3>
                     </div>
