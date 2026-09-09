@@ -7,6 +7,7 @@ class RateLimitService
 {
     private int $maxPerWindow;
     private int $windowSeconds;
+    private int $maxPerDay;
 
     public function __construct()
     {

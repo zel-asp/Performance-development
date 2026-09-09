@@ -506,7 +506,6 @@
                             ⚡ 20/20 req left
                         </span>
                     </div>
-                    <h3 class="font-heading font-extrabold text-base text-slate-900 mt-0.5">SBI Feedback Refiner</h3>
                 </div>
             </div>
             <div class="flex items-center space-x-1.5">
@@ -529,9 +528,10 @@
                 <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500/20 via-primary/20 to-purple-500/20 text-primary flex items-center justify-center flex-shrink-0 shadow-2xs border border-primary/20 mt-1">
                     <i class="fas fa-sparkles text-[10px]"></i>
                 </div>
-                <div class="flex-1 bg-white p-3.5 rounded-2xl rounded-tl-sm border border-slate-200/60 shadow-2xs text-slate-700 leading-relaxed space-y-2">
-                    <p>Hello! I am your <strong>AI Leadership Coach</strong> for Oxford Suites.</p>
-                    <p>I can help you structure performance feedback, de-escalate difficult guest situations, or draft coaching notes. How can I help you today?</p>
+                <div class="flex-1 bg-white p-3.5 rounded-2xl rounded-tl-sm border border-slate-200/60 shadow-2xs text-slate-700 leading-relaxed space-y-2 text-xs">
+                    <p class="font-bold text-slate-900">Oxford Suites Makati · Leadership & System AI Copilot</p>
+                    <p>I am specialized in our hotel operations and our <strong>6 Performance & Development Modules</strong> (Performance, Competencies, LMS, Training, Succession, and Recognition).</p>
+                    <p class="text-[11px] text-slate-500">Ask me about the 9-Box Grid, computing readiness, drafting SBI coaching notes, or hotel SOPs.</p>
                 </div>
             </div>
 
@@ -540,19 +540,27 @@
         <!-- Chat Input Area -->
         <div class="p-3 sm:p-4 border-t border-slate-100 bg-white space-y-3">
             
-            <!-- Quick Prompts -->
+            <!-- Quick Prompts (System Knowledge & Coaching) -->
             <div class="flex space-x-2 overflow-x-auto custom-scrollbar pb-1">
-                <button type="button" onclick="AIRefiner.sendChat('Help me draft a coaching note about a difficult guest check-in.')"
+                <button type="button" onclick="AIRefiner.sendChat('How does the 9-Box Grid work and how is succession readiness computed?')"
                     class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
-                    📝 Draft Coaching Note
+                    📊 Explain 9-Box Grid
                 </button>
-                <button type="button" onclick="AIRefiner.sendChat('What is the best way to handle an impatient VIP guest?')"
+                <button type="button" onclick="AIRefiner.sendChat('Help me draft an SBI coaching note for a delayed guest check-in.')"
                     class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
-                    🗣️ De-escalation Tips
+                    💡 Draft SBI Coaching
                 </button>
-                <button type="button" onclick="AIRefiner.sendChat('How can I improve my team\'s table turnover time?')"
+                <button type="button" onclick="AIRefiner.sendChat('How does our Social Recognition and XP ledger work?')"
                     class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
-                    ⏱️ Speed & Efficiency
+                    🏆 What Awards XP?
+                </button>
+                <button type="button" onclick="AIRefiner.sendChat('Explain the LAST model for resolving guest complaints.')"
+                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    🛎️ LAST Recovery Model
+                </button>
+                <button type="button" onclick="AIRefiner.sendChat('How do LMS quiz passes and training attendance gates connect to competencies?')"
+                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    📚 LMS & Training Workflows
                 </button>
             </div>
 

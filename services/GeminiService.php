@@ -209,21 +209,26 @@ USER_PROMPT;
     }
 
     /**
-     * Conversational Chat with history context
+     * Conversational Chat with deep Oxford Suites system knowledge context
      */
     public function chatWithContext(array $chatHistory, string $employeeName, string $dept): array
     {
-        // Strict Oxford Suites domain guardrail system prompt
-        $systemInstruction = "You are the official Oxford Suites Makati Leadership & Operations AI Copilot. "
-            . "You are an internal corporate assistant strictly dedicated to Oxford Suites hotel operations, hospitality service standards, employee performance coaching, Situation-Behavior-Impact (SBI) feedback drafting, shift friction resolution, training development, and leadership succession. "
-            . "You are currently assisting with coaching for {$employeeName} in the {$dept} department. "
-            . "\n\nCRITICAL DOMAIN GUARDRAILS (STRICTLY ENFORCED):\n"
-            . "1. You must ONLY answer questions related to Oxford Suites hotel operations, hospitality leadership, staff coaching, guest service excellence, shift coordination, and HR performance development.\n"
-            . "2. You must NEVER answer technical programming, software engineering, or coding questions (e.g. writing Python, JavaScript, PHP, SQL, HTML, CSS, debugging code, solving algorithms, or technical computer tutorials). You are a hotel operations leadership coach, NOT a code assistant.\n"
-            . "3. You must NEVER answer homework problems, general trivia, recipes outside Oxford Suites F&B standards, or non-hotel topics.\n"
-            . "4. If a user asks you to write code, teach programming, or asks any question outside of Oxford Suites hotel operations, you MUST POLITELY REFUSE with this sentiment:\n"
-            . "'As the Oxford Suites Makati Leadership & Operations AI Copilot, I am specialized exclusively in our hotel operations, guest service excellence, and employee performance coaching. I cannot assist with computer programming or topics outside our hotel. How may I assist you with coaching {$employeeName}, handling shift operations in {$dept}, or refining hospitality feedback today?'\n"
-            . "5. Always maintain a warm, concise, professional hospitality tone in English.";
+        $systemKnowledge = file_exists(__DIR__ . '/../config/system_knowledge.php')
+            ? require __DIR__ . '/../config/system_knowledge.php'
+            : '';
+
+        $systemInstruction = "You are the official Oxford Suites Makati Leadership & System AI Copilot. "
+            . "You are an internal corporate intelligence assistant exclusively dedicated to the Oxford Suites Makati hotel operations and our 6-Module Performance & Development Management System.\n\n"
+            . "Current User Session Context:\n"
+            . "- Active Associate / Subject: {$employeeName}\n"
+            . "- Department: {$dept}\n\n"
+            . "=== SYSTEM KNOWLEDGE BASE ===\n"
+            . $systemKnowledge . "\n\n"
+            . "=== INSTRUCTIONS FOR COPILOT ===\n"
+            . "1. Use the knowledge base above to answer any question about our 6 modules (Performance, Competency, LMS, Training, Succession, Social Recognition), rating scales, 9-Box grid, readiness index formula (40% Performance + 60% Competency), XP rewards, badges, and hotel SOPs.\n"
+            . "2. Help supervisors and associates draft Situation-Behavior-Impact (SBI) feedback, solve guest service friction (using our LAST recovery model), prepare for appraisals, and plan leadership development.\n"
+            . "3. DOMAIN ENFORCEMENT: If the user asks about software coding, programming, non-hotel subjects, homework, general trivia, politics, or topics outside our hotel, you MUST POLITELY REFUSE and remind them that you are strictly dedicated to Oxford Suites hotel operations and this Performance & Development Management System.\n"
+            . "4. Keep your responses structured, clear, and professional, using markdown bullets and headings where helpful.";
 
         $contents = [];
         foreach ($chatHistory as $msg) {
@@ -241,18 +246,18 @@ USER_PROMPT;
             ],
             'contents' => $contents,
             'generationConfig' => [
-                'temperature'     => 0.6,
-                'maxOutputTokens' => 800,
+                'temperature'     => 0.4,
+                'maxOutputTokens' => 1000,
                 'responseMimeType'=> 'text/plain'
             ]
         ];
 
-        $response = $this->callGeminiApi($payload);
+        $response = $this->callGeminiApi($payload, 15);
 
         if (!$response['success']) {
             return [
                 'success' => false,
-                'message' => 'The AI Coach is temporarily unavailable.',
+                'message' => $response['error'] ?? 'The AI Coach is temporarily unavailable.',
                 'error'   => $response['error'] ?? 'API timeout'
             ];
         }
@@ -328,11 +333,13 @@ USER_PROMPT;
 
         $models = [
             GEMINI_MODEL,
+            'gemini-3.5-flash',
             'gemini-3.1-flash-lite'
         ];
 
         $jsonPayload = json_encode($payload);
         $timeout = $customTimeout !== null ? $customTimeout : $this->timeout;
+        $lastError = 'Connection failed';
 
         foreach ($models as $modelName) {
             $endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' . $modelName . ':generateContent';
@@ -348,7 +355,7 @@ USER_PROMPT;
                     'Content-Length: ' . strlen($jsonPayload)
                 ],
                 CURLOPT_TIMEOUT        => $timeout,
-                CURLOPT_CONNECTTIMEOUT => 2,
+                CURLOPT_CONNECTTIMEOUT => 4,
                 CURLOPT_SSL_VERIFYPEER => false
             ]);
 
@@ -369,10 +376,12 @@ USER_PROMPT;
                     'tokens'  => $tokens,
                     'model'   => $modelName
                 ];
+            } else {
+                $lastError = !empty($curlError) ? $curlError : "HTTP {$httpCode} from {$modelName}";
             }
         }
 
-        return ['success' => false, 'error' => 'All Gemini flash endpoints failed or timed out.'];
+        return ['success' => false, 'error' => "Gemini API unavailable: {$lastError}"];
     }
 
     /**

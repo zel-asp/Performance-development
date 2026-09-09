@@ -41,7 +41,7 @@ const AIRefiner = {
             localStorage.removeItem(this.getStorageKey());
         } catch (e) {}
         this.clearChatUI();
-        const welcomeText = `Hello! I am your **AI Leadership Coach** for Oxford Suites Makati.\n\nI can help you structure performance feedback (Situation-Behavior-Impact), de-escalate difficult guest situations, or draft coaching notes for ${this.currentEmployeeName}. How can I help you today?`;
+        const welcomeText = `Hello! I am your **Oxford Suites Makati Leadership & System AI Copilot**.\n\nI am exclusively specialized in our hotel operations and our **6 Performance & Development Modules**:\n* 🎯 **Performance Management** (SMART goals, calibrated appraisals, SBI feedback, PIPs)\n* 🧭 **Competency Management** (benchmarks, skill gaps)\n* 📚 **LMS** (SOP reading, auto-graded quizzes, +100 XP)\n* 🎓 **Training Management** (6-stage workflow, attendance gate, +150 cert XP)\n* 📈 **Succession Planning** (9-Box grid, 40% perf + 60% comp readiness formula, HR flags)\n* 🌟 **Social Recognition** (kudos, unified XP ledger, badges, team feed)\n\nHow may I assist you with coaching ${this.currentEmployeeName}, reviewing hotel SOPs, or navigating our system today?`;
         this.chatHistory.push({ role: 'model', content: welcomeText });
         this.saveHistoryToStorage();
         this.appendMessage('model', welcomeText);
@@ -54,7 +54,7 @@ const AIRefiner = {
         const nameEl = document.getElementById('ai-modal-emp-name');
         const deptEl = document.getElementById('ai-modal-emp-dept');
         if (nameEl) nameEl.textContent = this.currentEmployeeName;
-        if (deptEl) deptEl.textContent = `${this.currentDept} · Subordinate Coaching`;
+        if (deptEl) deptEl.textContent = `${this.currentDept} · System & Leadership Coaching`;
 
         this.clearChatUI();
 
@@ -65,7 +65,7 @@ const AIRefiner = {
             this.renderFullHistoryUI();
         } else {
             this.chatHistory = [];
-            const welcomeText = `Hello! I am your **AI Leadership Coach** for Oxford Suites Makati.\n\nI can help you structure performance feedback (Situation-Behavior-Impact), de-escalate difficult guest situations, or draft coaching notes for ${this.currentEmployeeName}. How can I help you today?`;
+            const welcomeText = `Hello! I am your **Oxford Suites Makati Leadership & System AI Copilot**.\n\nI am exclusively specialized in our hotel operations and our **6 Performance & Development Modules**:\n* 🎯 **Performance Management** (SMART goals, calibrated appraisals, SBI feedback, PIPs)\n* 🧭 **Competency Management** (benchmarks, skill gaps)\n* 📚 **LMS** (SOP reading, auto-graded quizzes, +100 XP)\n* 🎓 **Training Management** (6-stage workflow, attendance gate, +150 cert XP)\n* 📈 **Succession Planning** (9-Box grid, 40% perf + 60% comp readiness formula, HR flags)\n* 🌟 **Social Recognition** (kudos, unified XP ledger, badges, team feed)\n\nHow may I assist you with coaching ${this.currentEmployeeName}, reviewing hotel SOPs, or navigating our system today?`;
             this.chatHistory.push({ role: 'model', content: welcomeText });
             this.saveHistoryToStorage();
             this.appendMessage('model', welcomeText);
@@ -163,7 +163,15 @@ const AIRefiner = {
                 })
             });
 
-            const json = await res.json();
+            const rawText = await res.text();
+            let json = null;
+            try {
+                json = JSON.parse(rawText);
+            } catch (jsonErr) {
+                console.error('[AIRefiner] Invalid JSON response:', rawText);
+                this.appendMessage('model', `⚠️ Error: Could not parse response from AI service.`);
+                return;
+            }
 
             // Real-time decrement & rate limit update
             if (json.rateLimit) {
@@ -176,11 +184,11 @@ const AIRefiner = {
                 this.saveHistoryToStorage();
                 this.appendMessage('model', responseText);
             } else {
-                this.appendMessage('model', `⚠️ Error: ${json.message || 'Unable to reach AI Coach.'}`);
+                this.appendMessage('model', `⚠️ ${json.message || 'The Oxford Suites AI Copilot is temporarily unavailable.'}`);
             }
         } catch (e) {
             console.error('[AIRefiner] Chat error:', e);
-            this.appendMessage('model', `⚠️ Network error connecting to Gemini AI.`);
+            this.appendMessage('model', `⚠️ Connection error: Unable to communicate with the local server. Please ensure your session is active.`);
         } finally {
             this.removeTypingIndicator();
             this.setLoadingState(false);
@@ -191,10 +199,12 @@ const AIRefiner = {
         const historyEl = document.getElementById('ai-chat-history');
         if (!historyEl) return;
 
-        // Convert basic markdown
+        // Convert markdown headings, bold, italics, bullets, and linebreaks
         let formattedText = text
+            .replace(/### (.*?)(?:\n|$)/g, '<h4 class="font-bold text-slate-900 mt-2 mb-1 text-xs">$1</h4>')
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/^[\*\-] (.*?)(?:\n|$)/gm, '• $1<br>')
             .replace(/\n/g, '<br>');
 
         const bubble = document.createElement('div');

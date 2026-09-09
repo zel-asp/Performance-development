@@ -21,26 +21,39 @@ class AIController
     }
 
     /**
-     * Handle conversational chat with history
-    /**
      * Pre-flight Domain Boundary Guardrail
-     * Enforce that the AI only discusses Oxford Suites hotel operations, coaching, and hospitality.
+     * Enforce that the AI only discusses Oxford Suites hotel operations, coaching, and the 6 performance modules.
      */
     private function checkDomainGuardrail(string $prompt, string $employeeName, string $dept): ?string
     {
         $lower = strtolower($prompt);
 
-        // Disallow programming and software coding requests
+        // 1. Software programming & coding requests
         $codingPatterns = [
             'how to code', 'write code', 'write a program', 'write a function', 'write a script',
             'python', 'javascript', 'html', 'css', 'react', 'java code', 'c++', 'c#', 'php script',
             'programming in', 'algorithm', 'sql query to create', 'how do i code',
-            'debug this code', 'write me a script', 'write a class', 'install npm', 'git clone'
+            'debug this code', 'write me a script', 'write a class', 'install npm', 'git clone',
+            'create a website', 'build an app', 'write an api'
         ];
 
         foreach ($codingPatterns as $pattern) {
             if (str_contains($lower, $pattern)) {
-                return "As the Oxford Suites Makati Leadership & Operations AI Copilot, my capabilities are strictly dedicated to our hotel operations, guest service excellence, and staff performance coaching. I cannot assist with computer programming, software coding, or non-hotel technical topics.\n\nHow may I assist you with coaching {$employeeName}, handling shift operations in {$dept}, or structuring SBI feedback today?";
+                return "As the official **Oxford Suites Makati Leadership & System AI Copilot**, my capabilities are strictly dedicated to our hotel operations, guest service excellence, and staff performance development across our 6 modules (Performance, Competencies, LMS, Training, Succession, and Recognition).\n\nI cannot assist with computer programming, software engineering, or technical coding tasks.\n\nHow may I assist you with coaching {$employeeName}, handling shift operations in {$dept}, or refining hospitality feedback today?";
+            }
+        }
+
+        // 2. Academic homework, non-hotel math/science, or general trivia
+        $outOfScopePatterns = [
+            'solve for x', 'solve equation', 'derivative of', 'integral of', 'math homework',
+            'who is the president', 'who won the world cup', 'tell me about ancient rome',
+            'write a horror story', 'write a poem about space', 'minecraft', 'fortnite',
+            'crypto prices', 'bitcoin', 'stock market tips'
+        ];
+
+        foreach ($outOfScopePatterns as $pattern) {
+            if (str_contains($lower, $pattern)) {
+                return "As the official **Oxford Suites Makati Leadership & System AI Copilot**, my scope is strictly dedicated to our hotel operations and Performance & Development Management System.\n\nI cannot answer questions outside of Oxford Suites hotel operations, staff coaching, and our 6 performance modules.\n\nHow may I assist you with hotel SOPs, guest recovery (LAST model), or staff performance coaching today?";
             }
         }
 
@@ -116,6 +129,23 @@ class AIController
 
         $result = $this->geminiService->chatWithContext($chatHistory, $employeeName, $dept);
 
+        if (!$result['success']) {
+            $this->aiLogModel->logRequest([
+                'user_id'         => $userId ?: 'anonymous-supervisor',
+                'role'            => $role,
+                'feature'         => 'chatbot',
+                'input_reference' => substr($latestUserMsg, 0, 150),
+                'tokens_used'     => 0,
+                'status'          => 'FAILED'
+            ]);
+
+            return [
+                'success'   => false,
+                'message'   => $result['message'] ?? 'Gemini AI service temporarily unavailable.',
+                'rateLimit' => $rateCheck
+            ];
+        }
+
         $this->aiLogModel->logRequest([
             'user_id'         => $userId ?: 'anonymous-supervisor',
             'role'            => $role,
@@ -129,7 +159,7 @@ class AIController
             'success'   => true,
             'data'      => [
                 'text'  => $result['text'] ?? '',
-                'model' => $result['model'] ?? 'gemini-1.5-flash'
+                'model' => $result['model'] ?? GEMINI_MODEL
             ],
             'rateLimit' => $rateCheck
         ];
