@@ -29,7 +29,8 @@ class GeminiService
         string $roughObservation,
         string $employeeName = 'Associate',
         string $dept = 'Operations',
-        string $tone = 'balanced'
+        string $tone = 'balanced',
+        string $role = 'Supervisor'
     ): array {
         $roughObservation = trim($roughObservation);
         if (empty($roughObservation)) {
@@ -63,23 +64,40 @@ class GeminiService
             }
         }
 
-        // 2. Prepare Gemini Prompt
-        $userPrompt = <<<USER_PROMPT
+        // 2. Prepare Gemini Prompt based on user role
+        $isAssociate = (strcasecmp($role, 'Associate') === 0 || strcasecmp($role, 'Employee') === 0);
+        $systemInstruction = $isAssociate ? GEMINI_EMPLOYEE_REFLECTION_INSTRUCTION : GEMINI_SBI_SYSTEM_INSTRUCTION;
+
+        if ($isAssociate) {
+            $userPrompt = <<<USER_PROMPT
+Employee / Associate: {$employeeName}
+Department: {$dept}
+Selected Tone: {$tone}
+Perspective: Associate Self-Reflection & Development Draft
+Rough Shift Reflection / Notes:
+"{$roughObservation}"
+
+Please structure this employee reflection into the 3-part SBI format ("situation", "behavior", "impact"). Return valid JSON only with keys "situation", "behavior", "impact".
+USER_PROMPT;
+        } else {
+            $userPrompt = <<<USER_PROMPT
 Associate Name: {$employeeName}
 Department: {$dept}
 Selected Tone: {$tone}
+Perspective: Supervisor Coaching Observation
 Rough Floor Observation:
 "{$roughObservation}"
 
-Please structure this observation into the 3-part SBI format. Return valid JSON only with keys "situation", "behavior", "impact".
+Please structure this observation into the 3-part SBI format ("situation", "behavior", "impact"). Return valid JSON only with keys "situation", "behavior", "impact".
 USER_PROMPT;
+        }
 
         $payload = [
             'contents' => [
                 [
                     'role' => 'user',
                     'parts' => [
-                        ['text' => GEMINI_SBI_SYSTEM_INSTRUCTION . "\n\n" . $userPrompt]
+                        ['text' => $systemInstruction . "\n\n" . $userPrompt]
                     ]
                 ]
             ],
@@ -211,24 +229,39 @@ USER_PROMPT;
     /**
      * Conversational Chat with deep Oxford Suites system knowledge context
      */
-    public function chatWithContext(array $chatHistory, string $employeeName, string $dept): array
+    public function chatWithContext(array $chatHistory, string $employeeName, string $dept, string $role = 'Supervisor'): array
     {
         $systemKnowledge = file_exists(__DIR__ . '/../config/system_knowledge.php')
             ? require __DIR__ . '/../config/system_knowledge.php'
             : '';
 
-        $systemInstruction = "You are the official Oxford Suites Makati Leadership & System AI Copilot. "
-            . "You are an internal corporate intelligence assistant exclusively dedicated to the Oxford Suites Makati hotel operations and our 6-Module Performance & Development Management System.\n\n"
-            . "Current User Session Context:\n"
-            . "- Active Associate / Subject: {$employeeName}\n"
-            . "- Department: {$dept}\n\n"
-            . "=== SYSTEM KNOWLEDGE BASE ===\n"
-            . $systemKnowledge . "\n\n"
-            . "=== INSTRUCTIONS FOR COPILOT ===\n"
-            . "1. Use the knowledge base above to answer any question about our 6 modules (Performance, Competency, LMS, Training, Succession, Social Recognition), rating scales, 9-Box grid, readiness index formula (40% Performance + 60% Competency), XP rewards, badges, and hotel SOPs.\n"
-            . "2. Help supervisors and associates draft Situation-Behavior-Impact (SBI) feedback, solve guest service friction (using our LAST recovery model), prepare for appraisals, and plan leadership development.\n"
-            . "3. DOMAIN ENFORCEMENT: If the user asks about software coding, programming, non-hotel subjects, homework, general trivia, politics, or topics outside our hotel, you MUST POLITELY REFUSE and remind them that you are strictly dedicated to Oxford Suites hotel operations and this Performance & Development Management System.\n"
-            . "4. Keep your responses structured, clear, and professional, using markdown bullets and headings where helpful.";
+        $isAssociate = (strcasecmp($role, 'Associate') === 0 || strcasecmp($role, 'Employee') === 0);
+
+        if ($isAssociate) {
+            $systemInstruction = "You are the official Oxford Suites Makati Personal Performance & Learning AI Copilot, assisting frontline employee {$employeeName} in {$dept}.\n\n"
+                . "IMPORTANT ROLE CONSTRAINTS FOR ASSOCIATES:\n"
+                . "1. USER IDENTITY: The user is {$employeeName} (Frontline Associate in {$dept}). ALWAYS address them respectfully as {$employeeName}. Never call them by another name.\n"
+                . "2. NOT A SUPERVISOR: The user is an Associate, NOT a supervisor, department head, or HR manager. They DO NOT manage succession planning, evaluate bench candidates, assign HR readiness flags, or decide who gets promoted.\n"
+                . "3. PROMOTIONS & SUCCESSION BOUNDARY: If the associate asks about promotions, career advancement, or succession, DO NOT give them HR calibration matrices or 9-Box evaluation tasks. Instead, explain warmly that promotions and succession flags are formally determined by department supervisors and HR. Guide the associate on their own direct growth actions:\n"
+                . "   - Working on their Individual Development Plan (IDP) alongside their supervisor.\n"
+                . "   - Completing LMS SOP reading and passing knowledge quizzes (+100 XP).\n"
+                . "   - Completing scheduled training programs and earning certifications (+150 XP).\n"
+                . "   - Gathering Peer Kudos (+50 XP) and demonstrating consistent shift excellence (such as the LAST guest recovery model).\n"
+                . "4. NEVER predict or announce who is going to be promoted. AI never determines ratings, scores, or succession flags.\n"
+                . "5. HELP WITH EMPLOYEE DRAFTS: Assist {$employeeName} with drafting thoughtful Self-Assessments for their appraisals, writing Peer Kudos for colleagues, and breaking goals into daily shift habits.\n"
+                . "6. DOMAIN ENFORCEMENT: If the user asks about computer programming, non-hotel subjects, homework, general trivia, politics, or topics outside our hotel, you MUST POLITELY REFUSE and remind them that you are dedicated solely to Oxford Suites hotel operations and performance development.\n\n"
+                . "=== SYSTEM KNOWLEDGE BASE ===\n"
+                . $systemKnowledge;
+        } else {
+            $systemInstruction = "You are the official Oxford Suites Makati Leadership & Coaching AI Copilot, assisting hotel leadership / supervisor.\n\n"
+                . "SUPERVISOR & LEADERSHIP CONSTRAINTS:\n"
+                . "1. The user is a Supervisor or HR leader. The team member currently under review or coaching discussion is {$employeeName} ({$dept}).\n"
+                . "2. Assist leadership with drafting constructive Situation-Behavior-Impact (SBI) coaching notes, preparing objective appraisal reviews, analyzing 9-Box succession readiness formulas (40% Performance + 60% Competency), and setting SMART shift objectives.\n"
+                . "3. Remind supervisors that formal readiness flags (Ready Now, Ready in 1-2 Years, Not Ready) are calibrated by HR and leadership, and that AI never assigns ratings or scores.\n"
+                . "4. DOMAIN ENFORCEMENT: Strictly refuse programming, math homework, general trivia, or non-hotel inquiries.\n\n"
+                . "=== SYSTEM KNOWLEDGE BASE ===\n"
+                . $systemKnowledge;
+        }
 
         $contents = [];
         foreach ($chatHistory as $msg) {

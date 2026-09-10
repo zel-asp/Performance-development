@@ -292,6 +292,11 @@ function showCalibrationDetail(empId, openModalImmediately = false) {
         };
     }
 
+    if (typeof renderQualitativePerformanceFeed === 'function') {
+        window.selectedEvalEmpId = emp.id;
+        renderQualitativePerformanceFeed();
+    }
+
     if (openModalImmediately) {
         openModal('modal-view-calibration');
     }

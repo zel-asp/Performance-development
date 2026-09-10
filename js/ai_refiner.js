@@ -10,8 +10,31 @@ const AIRefiner = {
     currentDept: 'Front Office',
 
     getStorageKey() {
-        const uid = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+        let loggedInUser = window.currentUser;
+        if (!loggedInUser || !loggedInUser.id) {
+            try {
+                const raw = localStorage.getItem('oxford_session_user');
+                if (raw) loggedInUser = JSON.parse(raw);
+            } catch (e) {}
+        }
+        const uid = loggedInUser?.id || (this.isSupervisorRole() ? 'emp-102' : 'emp-101');
         return `oxford_ai_chat_history_${uid}`;
+    },
+
+    getLoggedInProfile() {
+        let loggedInUser = window.currentUser;
+        if (!loggedInUser || !loggedInUser.name) {
+            try {
+                const raw = localStorage.getItem('oxford_session_user');
+                if (raw) loggedInUser = JSON.parse(raw);
+            } catch (e) {}
+        }
+        return {
+            id: loggedInUser?.id || (this.isSupervisorRole() ? 'emp-102' : 'emp-101'),
+            name: loggedInUser?.full_name || loggedInUser?.name || (this.isSupervisorRole() ? 'Supervisor' : 'Associate'),
+            role: loggedInUser?.role || window.activePersonaRole || (this.isSupervisorRole() ? 'Supervisor' : 'Associate'),
+            dept: loggedInUser?.department || loggedInUser?.dept || 'Front Office'
+        };
     },
 
     loadSavedHistory() {
@@ -35,28 +58,117 @@ const AIRefiner = {
         }
     },
 
+    getUserRole() {
+        const profile = this.getLoggedInProfile();
+        return profile.role;
+    },
+
+    isSupervisorRole() {
+        const r = (this.getUserRole() || '').toLowerCase();
+        return r.includes('supervisor') || r.includes('manager') || r.includes('hr') || r.includes('admin') || r.includes('lead') || r.includes('executive');
+    },
+
+    getWelcomeText() {
+        const isSup = this.isSupervisorRole();
+        const profile = this.getLoggedInProfile();
+        const userName = profile.name;
+        if (isSup) {
+            return `Hello ${userName}! I am your **Oxford Suites Makati Leadership & Coaching AI Copilot**.\n\nI can assist you with:\n* 💡 **Drafting SBI Coaching Notes** (Situation-Behavior-Impact) for ${this.currentEmployeeName}\n* 📝 **Drafting Appraisal Review Commentaries** and calibration feedback\n* 📊 **9-Box Grid & Succession Readiness** computations\n* 🎯 **Structuring SMART Objectives** and floor milestone tracking\n\nWhat coaching observation or leadership draft can I assist you with today?`;
+        } else {
+            return `Hello ${userName}! I am your **Oxford Suites Makati Performance & Learning AI Copilot**.\n\nI can assist you with:\n* ✍️ **Drafting Self-Assessments** for your performance appraisal review\n* 🌟 **Drafting Peer Kudos** to recognize your colleagues (+50 XP)\n* 🎯 **Breaking down your shift targets** into daily floor action habits\n* 📚 **Preparing for LMS SOP quizzes** and training milestones\n\nWhat reflection or development draft would you like help writing today?`;
+        }
+    },
+
+    renderQuickPrompts() {
+        const container = document.getElementById('ai-quick-prompts-bar');
+        if (!container) return;
+
+        if (this.isSupervisorRole()) {
+            container.innerHTML = `
+                <button type="button" onclick="AIRefiner.sendChat('Help me draft a constructive SBI coaching note for an associate regarding guest check-in speed and front-desk composure.')"
+                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    💡 Draft SBI Coaching Note
+                </button>
+                <button type="button" onclick="AIRefiner.sendChat('Help me draft an objective supervisor appraisal review commentary for an associate who consistently meets SOP standards.')"
+                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    📝 Draft Appraisal Review
+                </button>
+                <button type="button" onclick="AIRefiner.sendChat('How does the 9-Box Grid work and how is succession readiness computed?')"
+                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    📊 Explain 9-Box Grid
+                </button>
+                <button type="button" onclick="AIRefiner.sendChat('Explain the LAST model for resolving guest complaints and coaching floor staff.')"
+                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    🛎️ LAST Recovery Coaching
+                </button>
+                <button type="button" onclick="AIRefiner.sendChat('Help me draft SMART performance goals and milestone metrics for my shift team.')"
+                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    🎯 Draft SMART Goals
+                </button>
+            `;
+        } else {
+            container.innerHTML = `
+                <button type="button" onclick="AIRefiner.sendChat('Help me draft a self-assessment reflection for my performance appraisal detailing my shift achievements and key learnings.')"
+                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-amber-50/70 border border-amber-200 text-amber-900 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    ✍️ Draft Self-Assessment
+                </button>
+                <button type="button" onclick="AIRefiner.sendChat('Help me draft a peer kudos commendation for a teammate who helped me during a busy check-in rush.')"
+                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-purple-50/70 border border-purple-200 text-purple-900 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    🌟 Draft Peer Kudos (+50 XP)
+                </button>
+                <button type="button" onclick="AIRefiner.sendChat('Help me draft daily shift action habits to hit my quarterly KPI targets.')"
+                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-emerald-50/70 border border-emerald-200 text-emerald-900 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    🎯 Draft Goal Habits
+                </button>
+                <button type="button" onclick="AIRefiner.sendChat('How can I prepare for my upcoming LMS SOP quiz and training milestones?')"
+                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    📚 LMS Quiz & SOP Prep
+                </button>
+                <button type="button" onclick="AIRefiner.sendChat('Explain the LAST recovery model with hospitality examples for frontline staff.')"
+                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    🛎️ LAST Model in Action
+                </button>
+            `;
+        }
+    },
+
     clearHistory() {
         this.chatHistory = [];
         try {
             localStorage.removeItem(this.getStorageKey());
         } catch (e) {}
         this.clearChatUI();
-        const welcomeText = `Hello! I am your **Oxford Suites Makati Leadership & System AI Copilot**.\n\nI am exclusively specialized in our hotel operations and our **6 Performance & Development Modules**:\n* 🎯 **Performance Management** (SMART goals, calibrated appraisals, SBI feedback, PIPs)\n* 🧭 **Competency Management** (benchmarks, skill gaps)\n* 📚 **LMS** (SOP reading, auto-graded quizzes, +100 XP)\n* 🎓 **Training Management** (6-stage workflow, attendance gate, +150 cert XP)\n* 📈 **Succession Planning** (9-Box grid, 40% perf + 60% comp readiness formula, HR flags)\n* 🌟 **Social Recognition** (kudos, unified XP ledger, badges, team feed)\n\nHow may I assist you with coaching ${this.currentEmployeeName}, reviewing hotel SOPs, or navigating our system today?`;
+        const welcomeText = this.getWelcomeText();
         this.chatHistory.push({ role: 'model', content: welcomeText });
         this.saveHistoryToStorage();
         this.appendMessage('model', welcomeText);
+        this.renderQuickPrompts();
     },
 
-    open(empId = 'emp-101', empName = 'Maria Santos', dept = 'Front Office') {
-        this.currentEmployeeName = empName || (window.currentUser?.name || 'Associate');
-        this.currentDept = dept || 'Operations';
+    open(targetEmpId = null, targetEmpName = null, targetDept = null) {
+        const profile = this.getLoggedInProfile();
+        const isSup = this.isSupervisorRole();
+
+        if (isSup) {
+            this.currentEmployeeName = targetEmpName || window.selectedEmployeeContext?.name || 'Associate';
+            this.currentDept = targetDept || window.selectedEmployeeContext?.dept || profile.dept;
+            this.currentEmployeeId = targetEmpId || window.selectedEmployeeContext?.id || '';
+        } else {
+            // For frontline employee: identity is always the logged-in user themselves
+            this.currentEmployeeName = profile.name;
+            this.currentDept = profile.dept;
+            this.currentEmployeeId = profile.id;
+        }
 
         const nameEl = document.getElementById('ai-modal-emp-name');
         const deptEl = document.getElementById('ai-modal-emp-dept');
         if (nameEl) nameEl.textContent = this.currentEmployeeName;
-        if (deptEl) deptEl.textContent = `${this.currentDept} · System & Leadership Coaching`;
+        if (deptEl) deptEl.textContent = isSup 
+            ? `${this.currentDept} · Leadership & Coaching Copilot` 
+            : `${this.currentDept} · Personal Development & Reflection`;
 
         this.clearChatUI();
+        this.renderQuickPrompts();
 
         // Restore chat history if exists, otherwise show greeting
         const savedHistory = this.loadSavedHistory();
@@ -65,7 +177,7 @@ const AIRefiner = {
             this.renderFullHistoryUI();
         } else {
             this.chatHistory = [];
-            const welcomeText = `Hello! I am your **Oxford Suites Makati Leadership & System AI Copilot**.\n\nI am exclusively specialized in our hotel operations and our **6 Performance & Development Modules**:\n* 🎯 **Performance Management** (SMART goals, calibrated appraisals, SBI feedback, PIPs)\n* 🧭 **Competency Management** (benchmarks, skill gaps)\n* 📚 **LMS** (SOP reading, auto-graded quizzes, +100 XP)\n* 🎓 **Training Management** (6-stage workflow, attendance gate, +150 cert XP)\n* 📈 **Succession Planning** (9-Box grid, 40% perf + 60% comp readiness formula, HR flags)\n* 🌟 **Social Recognition** (kudos, unified XP ledger, badges, team feed)\n\nHow may I assist you with coaching ${this.currentEmployeeName}, reviewing hotel SOPs, or navigating our system today?`;
+            const welcomeText = this.getWelcomeText();
             this.chatHistory.push({ role: 'model', content: welcomeText });
             this.saveHistoryToStorage();
             this.appendMessage('model', welcomeText);
@@ -99,7 +211,8 @@ const AIRefiner = {
     },
 
     async fetchCurrentRateLimit() {
-        const currentUserId = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+        const profile = this.getLoggedInProfile();
+        const currentUserId = profile.id;
         try {
             const res = await fetch(`api/ai.php?action=rate_limit&user_id=${encodeURIComponent(currentUserId)}`);
             const json = await res.json();
@@ -147,8 +260,9 @@ const AIRefiner = {
         this.setLoadingState(true);
         this.appendTypingIndicator();
 
-        const currentRole = window.activePersonaRole || 'Supervisor';
-        const currentUserId = window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
+        const profile = this.getLoggedInProfile();
+        const currentRole = profile.role;
+        const currentUserId = profile.id;
 
         try {
             const res = await fetch('api/ai.php?action=chat', {

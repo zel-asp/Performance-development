@@ -93,6 +93,14 @@ try {
             $response = $trainingController->getReports($payload);
             break;
 
+        // 8. Employees Roster for Training Registration
+        case 'get_employees':
+            $response = [
+                'success' => true,
+                'data'    => $trainingController->getEmployeesList()
+            ];
+            break;
+
         default:
             http_response_code(400);
             $response = [

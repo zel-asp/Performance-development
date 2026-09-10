@@ -540,8 +540,8 @@
         <!-- Chat Input Area -->
         <div class="p-3 sm:p-4 border-t border-slate-100 bg-white space-y-3">
             
-            <!-- Quick Prompts (System Knowledge & Coaching) -->
-            <div class="flex space-x-2 overflow-x-auto custom-scrollbar pb-1">
+            <!-- Quick Prompts (Role-aware System Knowledge & Coaching) -->
+            <div id="ai-quick-prompts-bar" class="flex space-x-2 overflow-x-auto custom-scrollbar pb-1">
                 <button type="button" onclick="AIRefiner.sendChat('How does the 9-Box Grid work and how is succession readiness computed?')"
                     class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
                     📊 Explain 9-Box Grid
@@ -1766,7 +1766,7 @@
 </div>
 
 <!-- 7e. Modal: Associate Knowledge & Quiz Re-evaluation -->
-<div id="modal-re-evaluate" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+<div id="modal-reevaluate-competency" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4" data-alias="modal-re-evaluate">
     <div class="modal-card max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
 
         <!-- Header -->
@@ -1783,7 +1783,7 @@
                     <p class="text-xs text-slate-500 mt-0.5">Re-assess quiz knowledge score &amp; competency rating after book review</p>
                 </div>
             </div>
-            <button onclick="closeModal('modal-re-evaluate')"
+            <button onclick="closeModal('modal-reevaluate-competency'); closeModal('modal-re-evaluate');"
                 class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90">
                 <i class="fas fa-times text-xs"></i>
             </button>
@@ -1793,8 +1793,8 @@
         <div class="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1 text-xs bg-white">
             <div class="p-3.5 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-1">
                 <p class="text-[11px] text-slate-500 uppercase font-bold tracking-wider">Enrolled Associate &amp; Book</p>
-                <p id="reeval-employee-name" class="text-sm font-bold text-slate-900">Lucas Vargas (Junior Host · Front Office)</p>
-                <p id="reeval-book-title" class="text-xs font-semibold text-primary">Front Desk Standards &amp; VIP Protocols Codex</p>
+                <p id="reeval-modal-emp-name" class="text-sm font-bold text-slate-900">Lucas Vargas (Junior Host · Front Office)</p>
+                <p id="reeval-modal-book-title" class="text-xs font-semibold text-primary">Front Desk Standards &amp; VIP Protocols Codex</p>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
@@ -1841,9 +1841,9 @@
         <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
             <span class="text-[11px] text-slate-500 font-semibold"><i class="fas fa-award text-sage-dark mr-1"></i> Auto-updates TNA &amp; Competency Matrix</span>
             <div class="flex items-center space-x-2">
-                <button onclick="closeModal('modal-re-evaluate')"
+                <button onclick="closeModal('modal-reevaluate-competency'); closeModal('modal-re-evaluate');"
                     class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
-                <button onclick="submitAssociateReevaluation()"
+                <button id="btn-submit-reeval" onclick="submitCompetencyReevaluation()"
                     class="btn-primary px-5 py-2 text-xs font-bold">
                     <i class="fas fa-check-circle mr-1.5"></i> Save Re-evaluation
                 </button>
@@ -2853,6 +2853,153 @@
 
                 <div class="p-4 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-end">
                     <button onclick="closeModal('modal-training-certificate')" class="btn-primary px-5 py-2 text-xs font-bold">Done</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- MODAL: POST-TRAINING EXAM & EVALUATION DETAILS           -->
+        <!-- ======================================================== -->
+        <div id="modal-training-exam-details" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+            <div class="modal-card max-w-2xl w-full overflow-hidden max-h-[92vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-100">
+                <div class="p-5 border-b border-[#E8DEDC] flex items-center justify-between bg-[#FAF8F7]">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 flex items-center justify-center shadow-xs">
+                            <i class="fas fa-clipboard-check text-base"></i>
+                        </div>
+                        <div>
+                            <span class="badge-sage text-[10px] font-bold uppercase tracking-wider">Evaluation Audit Record</span>
+                            <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">Post-Training Exam &amp; Kirkpatrick Results</h3>
+                            <p class="text-slate-500 text-[11px]">Official auto-graded exam score, Level 1 feedback, and competency sync</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeModal('modal-training-exam-details')" class="w-8 h-8 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition shadow-xs border border-[#E8DEDC]">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+
+                <div class="p-6 overflow-y-auto custom-scrollbar space-y-5 text-xs">
+                    
+                    <!-- Candidate & Program Overview Card -->
+                    <div class="p-4 rounded-2xl bg-[#FAF8F7] border border-[#E8DEDC] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div class="flex items-center space-x-3.5">
+                            <img id="exam-detail-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" alt="Avatar" class="w-12 h-12 rounded-full object-cover border-2 border-white shadow-xs">
+                            <div>
+                                <h4 id="exam-detail-associate-name" class="font-heading font-bold text-sm text-slate-900">Associate Name</h4>
+                                <div class="flex flex-wrap items-center gap-1.5 mt-0.5 text-[11px] text-slate-500">
+                                    <span id="exam-detail-associate-role" class="font-medium">Role</span>
+                                    <span>·</span>
+                                    <span id="exam-detail-dept" class="px-2 py-0.5 rounded-full bg-white border border-[#E8DEDC] font-semibold text-slate-700">Department</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right sm:border-l sm:border-[#E8DEDC] sm:pl-4">
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Completion Date</span>
+                            <span id="exam-detail-completion-date" class="font-bold text-slate-800 text-xs">Sep 10, 2026</span>
+                            <span id="exam-detail-trainer" class="text-[11px] text-slate-500 block mt-0.5">Trainer: Elena Vance</span>
+                        </div>
+                    </div>
+
+                    <!-- Program Title Banner -->
+                    <div class="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200/80 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-800">Assigned Curriculum &amp; Assessment</span>
+                            <h5 id="exam-detail-program-title" class="font-heading font-bold text-xs text-amber-950 mt-0.5">Hospitality Crisis Diplomacy &amp; Guest De-escalation</h5>
+                        </div>
+                        <span id="exam-detail-category" class="badge-terracotta text-[10px]">Skill Gap Deficit</span>
+                    </div>
+
+                    <!-- Exam Score & Kirkpatrick Scorecards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <!-- Exam Score Card -->
+                        <div class="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 via-white to-emerald-50/30 border border-emerald-200/80 shadow-xs space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Part A: Knowledge Exam</span>
+                                <span id="exam-detail-status-badge" class="badge-sage font-bold">Passed &amp; Certified</span>
+                            </div>
+                            <div class="flex items-baseline space-x-2">
+                                <span id="exam-detail-score" class="text-3xl font-heading font-black text-emerald-700">100%</span>
+                                <span class="text-[11px] font-medium text-emerald-600">Score Achieved</span>
+                            </div>
+                            <div class="text-[11px] text-slate-600 space-y-0.5 border-t border-emerald-100 pt-2">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Passing Threshold:</span>
+                                    <span id="exam-detail-threshold" class="font-bold text-slate-800">80%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Attendance Gate:</span>
+                                    <span id="exam-detail-attendance" class="font-bold text-emerald-700">100% (Attended)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Kirkpatrick Rating Card -->
+                        <div class="p-4 rounded-2xl bg-gradient-to-br from-amber-50 via-white to-amber-50/30 border border-amber-200/80 shadow-xs space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Part B: Kirkpatrick Level 1</span>
+                                <span class="text-amber-500 text-xs flex items-center">
+                                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                                </span>
+                            </div>
+                            <div class="flex items-baseline space-x-2">
+                                <span id="exam-detail-rating" class="text-3xl font-heading font-black text-amber-700">5.0</span>
+                                <span class="text-[11px] font-medium text-amber-600">Overall Feedback</span>
+                            </div>
+                            <div class="text-[11px] text-slate-600 space-y-0.5 border-t border-amber-100 pt-2">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Trainer Mastery:</span>
+                                    <span class="font-bold text-slate-800">5.0 / 5.0 ⭐</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Role Relevance:</span>
+                                    <span class="font-bold text-slate-800">5.0 / 5.0 ⭐</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Participant Action Commitment / Notes -->
+                    <div class="p-3.5 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] space-y-1">
+                        <span class="font-bold text-slate-800 block text-[11px] uppercase tracking-wider">Kirkpatrick Action Commitment / Evaluator Note</span>
+                        <p id="exam-detail-notes" class="text-slate-700 italic text-xs leading-relaxed">"Clear practical scenario training."</p>
+                    </div>
+
+                    <!-- Inter-Module System Impact Highlights (Per AGENTS.md Specs) -->
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1.5">
+                            <i class="fas fa-arrows-split-up-and-left text-primary"></i>
+                            <span>Downstream Operations &amp; Automated Pipeline Updates</span>
+                        </span>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                            <div class="p-2.5 bg-white rounded-xl border border-slate-200 shadow-xs">
+                                <span class="text-[10px] text-slate-400 font-bold block uppercase">Competency Upgrade</span>
+                                <span id="exam-detail-comp-target" class="font-bold text-slate-800 block truncate">Conflict De-escalation</span>
+                                <span id="exam-detail-comp-scores" class="text-[11px] font-bold text-emerald-700">3.00 &rarr; 4.80 Master Level</span>
+                            </div>
+                            <div class="p-2.5 bg-white rounded-xl border border-slate-200 shadow-xs">
+                                <span class="text-[10px] text-slate-400 font-bold block uppercase">Unified XP Ledger</span>
+                                <span class="font-bold text-slate-800 block">Certificate Grant</span>
+                                <span id="exam-detail-xp" class="text-[11px] font-bold text-indigo-700">+150 XP Awarded</span>
+                            </div>
+                            <div class="p-2.5 bg-white rounded-xl border border-slate-200 shadow-xs">
+                                <span class="text-[10px] text-slate-400 font-bold block uppercase">Official Reference</span>
+                                <span id="exam-detail-cert-ref" class="font-mono text-[11px] font-bold text-primary block truncate">OXF-CERT-2026-9508</span>
+                                <span class="text-[10px] text-emerald-600 font-semibold"><i class="fas fa-check-circle mr-1"></i> Active License</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="p-4 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-between">
+                    <span class="text-[11px] text-slate-500 font-medium">Auto-recorded &amp; synchronized across Hotel Systems</span>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" onclick="closeModal('modal-training-exam-details')" class="btn-secondary px-4 py-2 text-xs font-bold">Close</button>
+                        <button type="button" id="btn-exam-detail-open-cert" onclick="" class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-xs">
+                            <i class="fas fa-certificate text-amber-300"></i>
+                            <span>View Digital Certificate</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -4236,7 +4383,7 @@
                 </div>
             </div>
             <div class="flex items-center space-x-2">
-                <button onclick="openAIFeedbackModal(window.selectedEmployeeContext?.id || 'emp-101', window.selectedEmployeeContext?.name || 'Maria Santos', window.selectedEmployeeContext?.dept || 'Front Office')" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5 shadow-2xs">
+                <button onclick="openAIFeedbackModal(window.selectedEmployeeContext?.id, window.selectedEmployeeContext?.name, window.selectedEmployeeContext?.dept)" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5 shadow-2xs">
                     <i class="fas fa-wand-magic-sparkles text-[10px]"></i>
                     <span>AI Copilot</span>
                 </button>
@@ -4448,6 +4595,9 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Verified Qualitative Recognition (Peer Kudos & Social Recognition Input) -->
+            <div id="perf-qualitative-recognition-container" class="empty:hidden"></div>
 
             <!-- Dynamic Next Step: Create Development Plan if >= 3.0, or Initiate PIP if < 3.0 -->
             <div id="calib-next-step-container">
