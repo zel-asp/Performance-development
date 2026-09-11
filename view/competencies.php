@@ -154,6 +154,12 @@
                 <span class="text-xs font-semibold text-slate-500">Associate 360° Assessment Focus:</span>
                 <span id="comp-assessment-header-name" class="font-heading font-bold text-xs bg-primary-50 text-primary border border-primary-100 px-3 py-1 rounded-xl">Maria Santos</span>
             </div>
+            <div class="flex items-center space-x-2">
+                <label for="comp-emp-select" class="text-xs font-semibold text-slate-500">Switch Associate:</label>
+                <select id="comp-emp-select" onchange="switchEmployeeView(this.value)" class="bg-[#FAF8F7] border border-[#E8DEDC] font-bold text-slate-800 text-xs px-3 py-1.5 rounded-xl focus:ring-1 focus:ring-primary focus:outline-none shadow-2xs">
+                    <!-- Populated dynamically by renderEmployeeSelectOptions() -->
+                </select>
+            </div>
         </div>
 
 

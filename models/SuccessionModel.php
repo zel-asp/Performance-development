@@ -275,7 +275,8 @@ class SuccessionModel extends BaseModel
                 'dept' => $emp['department'] ?? ($emp['dept'] ?? 'Front Office'),
                 'avatar' => $emp['avatar_url'] ?? ($emp['avatar'] ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'),
                 'closedPerformanceRating' => $perfScore,
-                'performanceLabel' => ($perfScore >= 4.7 ? 'Exceeds Expectations' : ($perfScore >= 4.3 ? 'Strong Performer' : 'Meets Standards')) . " (" . number_format($perfScore, 2) . " / 5.0)",
+                'hasClosedEvaluation' => $perfScore > 0,
+                'performanceLabel' => ($perfScore >= 4.7 ? 'Exceeds Expectations' : ($perfScore >= 4.3 ? 'Strong Performer' : ($perfScore > 0 ? 'Meets Standards' : 'Pending Appraisal'))) . ($perfScore > 0 ? " (" . number_format($perfScore, 2) . " / 5.0)" : " (Uncalibrated)"),
                 'competencyAverage' => $compAvg,
                 'competencyMatchPct' => $compMatchPct,
                 'computedReadinessPercent' => $computedReadinessPct,
@@ -364,12 +365,14 @@ class SuccessionModel extends BaseModel
                 else { $boxIndex = 6; } // Box 1
             }
 
+            $hasEval = ((float)$cand['closedPerformanceRating']) > 0;
             $nineBoxes[$boxIndex]['items'][] = [
                 'name' => $cand['name'],
                 'role' => $cand['role'],
                 'dept' => $cand['dept'],
                 'avatar' => $cand['avatar'],
-                'score' => number_format($cand['closedPerformanceRating'], 2),
+                'score' => $hasEval ? number_format($cand['closedPerformanceRating'], 2) : 'Pending',
+                'hasClosedEvaluation' => $hasEval,
                 'action' => $cand['hrReadinessFlag'] === 'Ready Now' ? 'Primary Leadership Successor' : '1-on-1 Mentorship & IDP',
                 'readiness' => $cand['hrReadinessFlag']
             ];

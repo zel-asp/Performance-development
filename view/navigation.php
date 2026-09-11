@@ -95,7 +95,7 @@
                             </div>
                             <span class="nav-alert-badge hidden bg-primary text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-xs min-w-[18px] text-center">0</span>
                         </a>
-                        <a href="#" onclick="if (typeof openAIFeedbackModal === 'function') openAIFeedbackModal(window.selectedEmployeeContext?.id || 'emp-101', window.selectedEmployeeContext?.name || 'Maria Santos', window.selectedEmployeeContext?.dept || 'Front Office'); toggleMobileSidebar(false); return false;"
+                        <a href="#" onclick="if (typeof openAIFeedbackModal === 'function') openAIFeedbackModal(window.selectedEmployeeContext?.id, window.selectedEmployeeContext?.name, window.selectedEmployeeContext?.dept); toggleMobileSidebar(false); return false;"
                             class="nav-item flex items-center justify-between text-primary font-bold bg-primary/5 border border-primary/15 my-1"
                             title="AI Feedback &amp; Reflection Copilot">
                             <div class="flex items-center">
@@ -293,7 +293,7 @@
                         </div>
 
                         <!-- Gemini AI Trigger -->
-                        <button onclick="if (typeof openAIFeedbackModal === 'function') openAIFeedbackModal(window.selectedEmployeeContext?.id || 'emp-101', window.selectedEmployeeContext?.name || 'Maria Santos', window.selectedEmployeeContext?.dept || 'Front Office');" title="Open Gemini AI Feedback Coach"
+                        <button onclick="if (typeof openAIFeedbackModal === 'function') openAIFeedbackModal(window.selectedEmployeeContext?.id, window.selectedEmployeeContext?.name, window.selectedEmployeeContext?.dept);" title="Open Gemini AI Feedback Coach"
                             class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 border border-slate-200/80 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition text-xs shadow-2xs">
                             <i class="fas fa-wand-magic-sparkles text-primary"></i>
                             <span>Gemini AI</span>

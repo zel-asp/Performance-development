@@ -408,7 +408,7 @@
         <script src="js/lms/tna.js"></script>
         <script src="js/lms/quiz.js"></script>
         <script src="js/lms/index.js"></script>
-        <script src="js/training.js"></script>
+        <script src="js/training.js?v=2"></script>
         <script src="js/succession.js"></script>
         <script src="js/kudos.js"></script>
         <script src="js/notifications.js"></script>

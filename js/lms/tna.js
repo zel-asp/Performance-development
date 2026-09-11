@@ -393,3 +393,4 @@ async function submitCompetencyReevaluation() {
     }
 }
 window.submitCompetencyReevaluation = submitCompetencyReevaluation;
+window.submitAssociateReevaluation = submitCompetencyReevaluation;

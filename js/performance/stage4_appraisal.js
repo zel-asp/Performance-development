@@ -275,11 +275,11 @@ function showEmployeeEvalDetail(empId, openModalImmediately = false) {
     window.selectedEvalEmpId = emp.id;
 
     // Header Details
-    const nameEl = document.getElementById('eval-detail-emp-name');
-    const posEl = document.getElementById('eval-detail-emp-pos');
+    const nameEl = document.getElementById('eval-detail-emp-name') || document.getElementById('eval-modal-emp-title');
+    const posEl = document.getElementById('eval-detail-emp-pos') || document.getElementById('eval-modal-emp-subtitle');
     const idEl = document.getElementById('eval-detail-emp-id');
     const avatarEl = document.getElementById('eval-detail-emp-avatar');
-    if (nameEl) nameEl.textContent = emp.name;
+    if (nameEl) nameEl.textContent = `Formal Appraisal: ${emp.name}`;
     if (posEl) posEl.textContent = `${emp.position} · ${emp.department}`;
     if (idEl) idEl.textContent = `EMP #${emp.id}`;
     if (avatarEl) avatarEl.textContent = emp.avatar || emp.name.charAt(0);
@@ -289,7 +289,7 @@ function showEmployeeEvalDetail(empId, openModalImmediately = false) {
     const actionState = getAppraisalActionState(emp.id, taskStats.allDone);
     const tier = getTierInfo(evalData.supervisorRating);
 
-    const statusBadge = document.getElementById('eval-detail-status-badge');
+    const statusBadge = document.getElementById('eval-detail-status-badge') || document.getElementById('eval-modal-status-badge');
     if (statusBadge) {
         if (evalData.isRated) {
             statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200';

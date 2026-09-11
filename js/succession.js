@@ -54,29 +54,48 @@ async function initSuccessionPlanning() {
         
         // Listen to changes in Performance Appraisals that might close a cycle
         channel.on('postgres_changes', { event: '*', schema: 'public', table: 'performance_evaluations' }, (payload) => {
-            console.log('Realtime: Performance Evaluation change detected -> syncing succession bench');
-            syncSuccessionBackground();
+            console.log('Realtime: Performance Evaluation change detected -> scheduling debounced succession sync');
+            scheduleSuccessionBackgroundSync('performance_evaluations');
         });
         
         // Listen to changes in Competency/Training that alter readiness index
         channel.on('postgres_changes', { event: '*', schema: 'public', table: 'competency_assessments' }, (payload) => {
-            console.log('Realtime: Competency score change detected -> syncing succession bench');
-            syncSuccessionBackground();
+            console.log('Realtime: Competency score change detected -> scheduling debounced succession sync');
+            scheduleSuccessionBackgroundSync('competency_assessments');
         });
 
         // Listen directly to succession records changes (HR flags updated)
         channel.on('postgres_changes', { event: '*', schema: 'public', table: 'succession_candidates' }, (payload) => {
-            console.log('Realtime: Succession Candidate change detected -> syncing succession bench');
-            syncSuccessionBackground();
+            console.log('Realtime: Succession Candidate change detected -> scheduling debounced succession sync');
+            scheduleSuccessionBackgroundSync('succession_candidates');
         });
 
         channel.subscribe();
     }
 }
 
+let _successionSyncInFlight = false;
+let _successionDebounceTimer = null;
+const SUCCESSION_DEBOUNCE_MS = 2500;
+
+function scheduleSuccessionBackgroundSync(reason = '') {
+    if (_successionDebounceTimer) {
+        clearTimeout(_successionDebounceTimer);
+    }
+    _successionDebounceTimer = setTimeout(() => {
+        _successionDebounceTimer = null;
+        syncSuccessionBackground();
+    }, SUCCESSION_DEBOUNCE_MS);
+}
+
 async function syncSuccessionBackground() {
+    if (_successionSyncInFlight) {
+        scheduleSuccessionBackgroundSync('in-flight queue');
+        return;
+    }
+    _successionSyncInFlight = true;
+
     try {
-        showSuccessionLoadingState();
         const res = await fetch('api/succession.php?action=get_overview');
         const payload = await res.json();
         if (payload.success && payload.data) {
@@ -84,6 +103,9 @@ async function syncSuccessionBackground() {
             successionCandidatesState = payload.data.candidates || [];
             nineBoxRosterState = payload.data.nineBoxRoster || [];
             successionEmployeesState = payload.data.employees || [];
+            if (Array.isArray(payload.data.recommendations)) {
+                successionRecommendationsState = payload.data.recommendations;
+            }
             
             populateSuccessionEmployeeDropdowns();
             renderSuccessionKPIs();
@@ -91,18 +113,18 @@ async function syncSuccessionBackground() {
             renderComputedReadinessMatrix();
             renderSuccession9BoxGrid();
             
-            if (typeof window.showToast === 'function') {
-                window.showToast('Succession metrics automatically updated based on new performance/training data.', 'info');
-            }
+            console.log('[Succession Realtime] Succession metrics smoothly synchronized with latest performance/training data.');
         }
     } catch (e) {
         console.warn('Failed background sync for succession data:', e);
+    } finally {
+        _successionSyncInFlight = false;
     }
 }
 
 function showSuccessionLoadingState() {
     const recordsGrid = document.getElementById('succession-records-grid');
-    const tableBody = document.getElementById('succession-readiness-tbody');
+    const tableBody = document.getElementById('succession-matrix-tbody') || document.getElementById('succession-readiness-tbody');
 
     const loaderHTML = `
         <div class="col-span-full py-12 flex flex-col items-center justify-center space-y-3 bg-white/50 rounded-2xl border border-[#E8DEDC] border-dashed">
@@ -492,8 +514,15 @@ function renderComputedReadinessMatrix() {
 
                 <!-- Pulled Closed Performance Rating -->
                 <td class="px-5 py-3.5">
-                    <span class="font-bold text-primary text-xs"><i class="fas fa-star text-amber-500 mr-0.5 text-[10px]"></i>${parseFloat(candidate.closedPerformanceRating).toFixed(2)} / 5.0</span>
-                    <span class="block text-[10px] text-slate-400 font-medium">Calibrated Appraisal</span>
+                    ${parseFloat(candidate.closedPerformanceRating) > 0 ? `
+                        <span class="font-bold text-primary text-xs"><i class="fas fa-star text-amber-500 mr-0.5 text-[10px]"></i>${parseFloat(candidate.closedPerformanceRating).toFixed(2)} / 5.0</span>
+                        <span class="block text-[10px] text-slate-400 font-medium">Calibrated Appraisal</span>
+                    ` : `
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200" title="No closed performance review cycle in Module 1 yet">
+                            <i class="fas fa-clock text-amber-500 mr-1 text-[9px]"></i>Pending Appraisal
+                        </span>
+                        <span class="block text-[10px] text-slate-400 font-medium mt-0.5">Awaiting Cycle Close</span>
+                    `}
                 </td>
 
                 <!-- Pulled Competency Level Benchmark -->
@@ -797,7 +826,8 @@ function renderSuccession9BoxGrid() {
             role: cand.role,
             dept: cand.dept,
             avatar: cand.avatar,
-            score: perf.toFixed(2),
+            score: perf > 0 ? perf.toFixed(2) : 'Pending',
+            hasClosedEvaluation: perf > 0,
             action: cand.hrReadinessFlag === 'Ready Now' ? 'Primary Leadership Successor' : (cand.hrReadinessFlag === 'Not Ready' ? 'Performance Improvement Plan' : '1-on-1 Mentorship & IDP'),
             readiness: cand.hrReadinessFlag || 'Pending Calibration'
         });
@@ -865,7 +895,13 @@ function renderSuccession9BoxGrid() {
                                                 <div class="min-w-0 flex-1">
                                                     <div class="flex justify-between items-baseline">
                                                         <span class="font-bold text-slate-900 text-xs truncate">${m.name}</span>
-                                                        <span class="font-bold text-primary text-[11px]"><i class="fas fa-star text-amber-500 mr-0.5 text-[9px]"></i>${m.score}</span>
+                                                        ${m.hasClosedEvaluation && parseFloat(m.score) > 0 ? `
+                                                            <span class="font-bold text-primary text-[11px]"><i class="fas fa-star text-amber-500 mr-0.5 text-[9px]"></i>${m.score}</span>
+                                                        ` : `
+                                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-50 text-amber-700 border border-amber-200" title="Awaiting closed performance appraisal in Module 1">
+                                                                <i class="fas fa-clock mr-0.5 text-[8px]"></i>Pending
+                                                            </span>
+                                                        `}
                                                     </div>
                                                     <span class="text-[10px] text-slate-500 block truncate">${m.role} · ${m.dept}</span>
                                                 </div>
@@ -903,7 +939,8 @@ function exportNineBoxMatrix() {
     ];
 
     successionCandidatesState.forEach(cand => {
-        const perf = parseFloat(cand.closedPerformanceRating || 0.0).toFixed(2);
+        const perfVal = parseFloat(cand.closedPerformanceRating || 0.0);
+        const perf = perfVal > 0 ? `${perfVal.toFixed(2)} / 5.0` : 'Pending Appraisal (Uncalibrated)';
         const comp = parseFloat(cand.competencyAverage || 0.0).toFixed(2);
         const fit = (cand.computedReadinessPercent || 0) + '%';
         const flag = cand.hrReadinessFlag || 'Pending Calibration';
@@ -916,7 +953,7 @@ function exportNineBoxMatrix() {
             `"${cand.dept}"`,
             `"${boxCat}"`,
             `"Evaluated"`,
-            `"${perf} / 5.0"`,
+            `"${perf}"`,
             `"${comp} / 5.0"`,
             `"${fit}"`,
             `"${flag}"`,
@@ -985,6 +1022,8 @@ window.updateSuccessionModalRecommendations = updateSuccessionModalRecommendatio
 window.selectRecommendedSuccessor = selectRecommendedSuccessor;
 window.quickAssignSuccessor = quickAssignSuccessor;
 window.toggleCalibrationGridMode = toggleCalibrationGridMode;
+window.syncSuccessionBackground = syncSuccessionBackground;
+window.scheduleSuccessionBackgroundSync = scheduleSuccessionBackgroundSync;
 
 document.addEventListener('DOMContentLoaded', () => {
     initSuccessionPlanning();

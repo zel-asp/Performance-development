@@ -219,10 +219,10 @@ function renderAlertsKPIs() {
     const actionCount = alertsState.filter(a => a.priority === 'action' && !a.isRead).length;
     const totalLogs = auditLogsState.length;
 
-    const elTotal = document.getElementById('notif-kpi-total-alerts');
-    const elCrit = document.getElementById('notif-kpi-critical-count');
-    const elAction = document.getElementById('notif-kpi-action-count');
-    const elLogs = document.getElementById('notif-kpi-total-logs');
+    const elTotal = document.getElementById('notif-kpi-total-alerts') || document.getElementById('stat-alerts-unread');
+    const elCrit = document.getElementById('notif-kpi-critical-count') || document.getElementById('stat-alerts-critical');
+    const elAction = document.getElementById('notif-kpi-action-count') || document.getElementById('stat-alerts-action');
+    const elLogs = document.getElementById('notif-kpi-total-logs') || document.getElementById('stat-alerts-logs');
 
     if (elTotal) elTotal.textContent = totalAlerts;
     if (elCrit) elCrit.textContent = criticalCount;

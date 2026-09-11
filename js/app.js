@@ -16,11 +16,12 @@ var chartSystemDeptProgressInstance = window.chartSystemDeptProgressInstance || 
 window.activeModalStack = window.activeModalStack || [];
 
 function openModal(id) {
-    const el = document.getElementById(id);
+    const el = document.getElementById(id) || document.querySelector(`[data-alias="${id}"]`);
     if (el) {
+        const resolvedId = el.id || id;
         // Remove if already in stack to prevent duplicate references
-        window.activeModalStack = window.activeModalStack.filter(mId => mId !== id);
-        window.activeModalStack.push(id);
+        window.activeModalStack = window.activeModalStack.filter(mId => mId !== resolvedId);
+        window.activeModalStack.push(resolvedId);
 
         // Dynamically calculate z-index so every nested child modal opens securely ON TOP
         const stackLevel = window.activeModalStack.length;
@@ -56,13 +57,14 @@ function openModal(id) {
 }
 
 function closeModal(id) {
-    const el = document.getElementById(id);
+    const el = document.getElementById(id) || document.querySelector(`[data-alias="${id}"]`);
     if (el) {
+        const resolvedId = el.id || id;
         el.classList.add('hidden');
         el.classList.remove('flex');
         el.style.zIndex = '';
 
-        window.activeModalStack = window.activeModalStack.filter(mId => mId !== id);
+        window.activeModalStack = window.activeModalStack.filter(mId => mId !== resolvedId && mId !== id);
         if (window.activeModalStack.length === 0) {
             document.body.classList.remove('overflow-hidden');
         }
@@ -332,6 +334,13 @@ function switchSubTab(pillarPrefix, subKey) {
         if (subKey === 'ledger' && typeof renderPointLedger === 'function') renderPointLedger();
         if (subKey === 'badges' && typeof renderMilestoneBadges === 'function') renderMilestoneBadges();
         if (subKey === 'climate' && typeof updateHourlySentimentChart === 'function') updateHourlySentimentChart(shiftSentimentsState);
+    } else if (pillarPrefix === 'training') {
+        if (subKey === 'needs' && typeof renderTrainingNeeds === 'function') renderTrainingNeeds();
+        if (subKey === 'programs' && typeof renderTrainingPrograms === 'function') renderTrainingPrograms();
+        if (subKey === 'schedules' && typeof renderTrainingSessions === 'function') renderTrainingSessions();
+        if (subKey === 'attendance' && typeof renderAttendanceConsole === 'function') renderAttendanceConsole();
+        if (subKey === 'results' && typeof renderTrainingResults === 'function') renderTrainingResults();
+        if (subKey === 'reports' && typeof renderBasicTrainingReport === 'function') renderBasicTrainingReport();
     }
 
     setTimeout(() => {
@@ -578,17 +587,19 @@ function switchRole(userRole, silent = false) {
         dept: realDept
     };
 
-    document.querySelectorAll('.sidebar-user-name').forEach(el => el.textContent = persona.name);
-    document.querySelectorAll('.sidebar-user-dept').forEach(el => el.textContent = persona.dept);
+    const initials = realName ? realName.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() : persona.initials;
+
+    document.querySelectorAll('.sidebar-user-name').forEach(el => el.textContent = realName);
+    document.querySelectorAll('.sidebar-user-dept').forEach(el => el.textContent = `${realRole} · ${realDept}`);
     document.querySelectorAll('.role-badge-tag').forEach(el => el.textContent = persona.badge);
-    document.querySelectorAll('.user-avatar-circle').forEach(el => el.textContent = persona.initials);
+    document.querySelectorAll('.user-avatar-circle').forEach(el => el.textContent = initials);
     const heroGreet = document.getElementById('hero-greeting-text');
-    if (heroGreet) heroGreet.textContent = persona.greeting;
+    if (heroGreet) heroGreet.textContent = `Welcome, ${realName}`;
 
     const quickSwitcher = document.getElementById('quick-role-switcher');
     if (quickSwitcher) {
         for (let opt of quickSwitcher.options) {
-            if (opt.value.toLowerCase() === normalizedKey || opt.value.toLowerCase() === (persona.role || '').toLowerCase()) {
+            if (opt.value.toLowerCase() === normalizedKey || opt.value.toLowerCase() === (realRole || persona.role || '').toLowerCase()) {
                 quickSwitcher.value = opt.value;
                 break;
             }
@@ -599,9 +610,9 @@ function switchRole(userRole, silent = false) {
     const navAvatar = document.getElementById('nav-user-avatar');
     const navName = document.getElementById('nav-user-name');
     const navRole = document.getElementById('nav-user-role');
-    if (navAvatar && persona.avatar) navAvatar.src = persona.avatar;
-    if (navName) navName.textContent = persona.name;
-    if (navRole) navRole.textContent = `${persona.role} · ${persona.dept || 'Makati'}`;
+    if (navAvatar && persona.avatar) navAvatar.src = (storedUser && storedUser.avatar_url) ? storedUser.avatar_url : persona.avatar;
+    if (navName) navName.textContent = realName;
+    if (navRole) navRole.textContent = `${realRole} · ${realDept || 'Makati'}`;
 
     // Update Dynamic Role Context Banner
     const contextBanner = document.getElementById('role-context-banner');
@@ -659,6 +670,21 @@ function switchRole(userRole, silent = false) {
     }
     if (typeof updateShiftClimatePulseFromSupabase === 'function') {
         updateShiftClimatePulseFromSupabase();
+    }
+    if (window.AIRefiner && typeof window.AIRefiner.renderQuickPrompts === 'function') {
+        window.AIRefiner.renderQuickPrompts();
+    }
+    if (typeof renderTrainingResults === 'function') {
+        renderTrainingResults();
+    }
+    if (typeof renderTrainingNeeds === 'function') {
+        renderTrainingNeeds();
+    }
+    if (typeof updateTrainingStats === 'function') {
+        updateTrainingStats();
+    }
+    if (typeof renderCertsTable === 'function') {
+        renderCertsTable();
     }
     if (!silent) {
         showToast(`Signed in: ${persona.name} (${persona.tag})`, 'info');

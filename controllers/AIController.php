@@ -127,7 +127,7 @@ class AIController
             ];
         }
 
-        $result = $this->geminiService->chatWithContext($chatHistory, $employeeName, $dept);
+        $result = $this->geminiService->chatWithContext($chatHistory, $employeeName, $dept, $role);
 
         if (!$result['success']) {
             $this->aiLogModel->logRequest([
@@ -221,7 +221,7 @@ class AIController
         }
 
         // 4. Dispatch to Gemini Service
-        $result = $this->geminiService->refineSBIFeedback($roughNotes, $employeeName, $dept, $tone);
+        $result = $this->geminiService->refineSBIFeedback($roughNotes, $employeeName, $dept, $tone, $role);
 
         // 5. Log Request in Audit Trail
         $this->aiLogModel->logRequest([

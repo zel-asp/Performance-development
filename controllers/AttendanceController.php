@@ -20,10 +20,38 @@ class AttendanceController
     private function getSupervisorDepartment(string $userId, string $role): ?string
     {
         if (empty($userId)) return null;
-        $res = supabaseRequest('users?id=eq.' . urlencode($userId) . '&select=department', 'GET', null, true);
-        if ($res['status'] === 200 && !empty($res['data'][0]['department'])) {
-            return $res['data'][0]['department'];
+
+        $endpoints = [
+            'users?id=eq.' . urlencode($userId) . '&select=department',
+            'employees?id=eq.' . urlencode($userId) . '&select=department',
+            'users?id=eq.' . urlencode($userId) . '&select=dept',
+            'employees?id=eq.' . urlencode($userId) . '&select=dept',
+        ];
+
+        foreach ($endpoints as $ep) {
+            $res = supabaseRequest($ep, 'GET', null, true);
+            if ($res['status'] === 200 && is_array($res['data']) && !empty($res['data'][0])) {
+                $dept = $res['data'][0]['department'] ?? $res['data'][0]['dept'] ?? null;
+                if ($dept) return $dept;
+            }
         }
+
+        try {
+            $pdo = getSupabaseDb();
+            if ($pdo) {
+                $stmt = $pdo->prepare('SELECT department, dept FROM public.users WHERE id = :id LIMIT 1');
+                $stmt->execute([':id' => $userId]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($row) {
+                    $dept = $row['department'] ?? $row['dept'] ?? null;
+                    if ($dept) return $dept;
+                }
+            }
+        } catch (Throwable $e) {
+            error_log('[AttendanceController] PDO department fallback failed for user ' . $userId . ': ' . $e->getMessage());
+        }
+
+        error_log('[AttendanceController] Could not resolve department for user ' . $userId . ' (role=' . $role . ').');
         return null;
     }
 
@@ -58,7 +86,8 @@ class AttendanceController
         if ($this->isSupervisor($role)) {
             $supervisorDept = $this->getSupervisorDepartment($userId, $role);
             $sessionDept = strtolower(trim($session['dept'] ?? ''));
-            if ($supervisorDept && $sessionDept && $sessionDept !== strtolower($supervisorDept)) {
+            $supervisorDeptLower = strtolower(trim($supervisorDept ?? ''));
+            if ($supervisorDept && $sessionDept && stripos($sessionDept, $supervisorDeptLower) === false && stripos($supervisorDeptLower, $sessionDept) === false) {
                 return [
                     'success' => false,
                     'message' => 'Access denied: You may only update attendance for sessions in your own department.'

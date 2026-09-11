@@ -201,6 +201,30 @@
             <span class="badge-primary"><i class="fas fa-award mr-1"></i> Recorded Results</span>
         </div>
 
+        <!-- Results Department Filter & Scope Bar -->
+        <div id="training-results-filter-bar" class="flex flex-wrap items-center justify-between gap-3 bg-white p-2.5 rounded-2xl border border-[#E8DEDC]">
+            <div class="flex items-center space-x-1.5 overflow-x-auto custom-scrollbar">
+                <button type="button" onclick="setResultsDeptFilter('all')" data-dept="all" class="results-dept-chip px-3 py-1 rounded-full font-bold bg-primary text-white text-[11px] whitespace-nowrap shadow-xs transition">
+                    <i class="fas fa-hotel mr-1 text-amber-300"></i> All Depts
+                </button>
+                <button type="button" onclick="setResultsDeptFilter('my-dept')" data-dept="my-dept" class="results-dept-chip px-3 py-1 rounded-full font-semibold bg-[#FAF8F7] text-slate-600 border border-[#E8DEDC] hover:bg-slate-100 text-[11px] whitespace-nowrap transition">
+                    <i class="fas fa-user-tie mr-1 text-indigo-500"></i> My Department
+                </button>
+                <button type="button" onclick="setResultsDeptFilter('front office')" data-dept="front office" class="results-dept-chip px-3 py-1 rounded-full font-semibold bg-[#FAF8F7] text-slate-600 border border-[#E8DEDC] hover:bg-slate-100 text-[11px] whitespace-nowrap transition">
+                    Front Office
+                </button>
+                <button type="button" onclick="setResultsDeptFilter('housekeeping')" data-dept="housekeeping" class="results-dept-chip px-3 py-1 rounded-full font-semibold bg-[#FAF8F7] text-slate-600 border border-[#E8DEDC] hover:bg-slate-100 text-[11px] whitespace-nowrap transition">
+                    Housekeeping
+                </button>
+                <button type="button" onclick="setResultsDeptFilter('culinary')" data-dept="culinary" class="results-dept-chip px-3 py-1 rounded-full font-semibold bg-[#FAF8F7] text-slate-600 border border-[#E8DEDC] hover:bg-slate-100 text-[11px] whitespace-nowrap transition">
+                    Culinary &amp; F&amp;B
+                </button>
+            </div>
+            <div class="flex items-center space-x-2 text-[11px] text-slate-500 pr-2">
+                <span id="results-count-badge" class="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">Showing All Hotel Results</span>
+            </div>
+        </div>
+
         <div class="card-clean overflow-hidden border border-[#E8DEDC]">
             <table class="w-full text-left text-xs">
                 <thead class="bg-[#FAF8F7] text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-[#E8DEDC]">
