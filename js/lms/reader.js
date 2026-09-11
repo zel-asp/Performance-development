@@ -11,11 +11,11 @@ function switchReaderTab(tabKey) {
 
     if (tabKey === 'viewer') {
         if (btnViewer) btnViewer.className = 'px-3 py-1.5 rounded-xl font-bold bg-primary text-white shadow-2xs transition text-xs flex items-center space-x-1.5';
-        if (btnDetails) btnDetails.className = 'px-3 py-1.5 rounded-xl font-semibold bg-white text-slate-700 border border-[#E8DEDC] hover:bg-slate-100 transition text-xs flex items-center space-x-1.5';
+        if (btnDetails) btnDetails.className = 'px-3 py-1.5 rounded-xl font-semibold bg-white text-slate-700 border border-brand-border hover:bg-slate-100 transition text-xs flex items-center space-x-1.5';
         if (panelViewer) panelViewer.classList.remove('hidden');
         if (panelDetails) panelDetails.classList.add('hidden');
     } else {
-        if (btnViewer) btnViewer.className = 'px-3 py-1.5 rounded-xl font-semibold bg-white text-slate-700 border border-[#E8DEDC] hover:bg-slate-100 transition text-xs flex items-center space-x-1.5';
+        if (btnViewer) btnViewer.className = 'px-3 py-1.5 rounded-xl font-semibold bg-white text-slate-700 border border-brand-border hover:bg-slate-100 transition text-xs flex items-center space-x-1.5';
         if (btnDetails) btnDetails.className = 'px-3 py-1.5 rounded-xl font-bold bg-primary text-white shadow-2xs transition text-xs flex items-center space-x-1.5';
         if (panelViewer) panelViewer.classList.add('hidden');
         if (panelDetails) panelDetails.classList.remove('hidden');
@@ -86,7 +86,7 @@ function openBookReader(docId) {
             if (isPdf) {
                 iframeContainer.innerHTML = `
                     <iframe src="${filePath}#toolbar=1&navpanes=0" 
-                        class="w-full h-[540px] rounded-xl border border-slate-200 bg-slate-50" 
+                        class="w-full h-135 rounded-xl border border-slate-200 bg-slate-50" 
                         title="${doc.title}"
                         loading="lazy">
                     </iframe>
@@ -101,7 +101,7 @@ function openBookReader(docId) {
                             <a href="${filePath}" target="_blank" download class="btn-primary px-3 py-1 text-xs font-bold shadow-2xs">Download Original &darr;</a>
                         </div>
                         <iframe src="${officeViewerUrl}" 
-                            class="w-full h-[480px] rounded-xl border border-slate-200 bg-white" 
+                            class="w-full h-120 rounded-xl border border-slate-200 bg-white" 
                             title="${doc.title}">
                         </iframe>
                     </div>
@@ -109,7 +109,7 @@ function openBookReader(docId) {
             } else {
                 iframeContainer.innerHTML = `
                     <iframe src="${filePath}" 
-                        class="w-full h-[540px] rounded-xl border border-slate-200 bg-white" 
+                        class="w-full h-135 rounded-xl border border-slate-200 bg-white" 
                         title="${doc.title}">
                     </iframe>
                 `;
@@ -148,7 +148,7 @@ function openBookReader(docId) {
             .filter(Boolean);
         outcomesEl.innerHTML = outcomesList.map(o => `
             <div class="flex items-start space-x-2 text-xs text-slate-700 leading-relaxed">
-                <i class="fas fa-circle-check text-emerald-600 text-[11px] mt-1 flex-shrink-0"></i>
+                <i class="fas fa-circle-check text-emerald-600 text-[11px] mt-1 shrink-0"></i>
                 <span>${o}</span>
             </div>
         `).join('');

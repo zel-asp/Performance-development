@@ -555,6 +555,37 @@ try {
                 'updated' => date('c'),
                 'source'  => 'supabase'
             ];
+
+            // Asynchronously sync computed overview metrics to disk cache for instantaneous subsequent page loads
+            try {
+                $cachePath = __DIR__ . '/../cache/overview_metrics.json';
+                if (!is_dir(dirname($cachePath))) @mkdir(dirname($cachePath), 0777, true);
+                $existingCache = file_exists($cachePath) ? @json_decode(file_get_contents($cachePath), true) : [];
+                $toCache = [
+                    'livePropertyXp'        => $existingCache['livePropertyXp'] ?? 0,
+                    'liveKudosSent'         => $existingCache['liveKudosSent'] ?? 0,
+                    'liveBadgesCount'       => $existingCache['liveBadgesCount'] ?? 0,
+                    'liveActiveStaffCount'  => count($allEmps),
+                    'liveTotalGoals'        => $sysTotalGoals,
+                    'liveApprovedGoals'     => $sysApprovedGoals,
+                    'liveReviewGoals'       => $sysReviewGoals,
+                    'liveReviseGoals'       => $sysReviseGoals,
+                    'liveGoalsApprovalRate' => $sysGoalsRate,
+                    'liveTotalPrescribed'   => $sysTotalLms,
+                    'livePassedPrescribed'  => $sysPassedLms,
+                    'liveLmsAvgScore'       => $sysLmsAvgScore,
+                    'liveLmsRate'           => $sysLmsRate,
+                    'totalRolesCount'       => $sysSuccPositionsCount,
+                    'coveredRolesCount'     => $sysSuccCoveredCount,
+                    'fastTrackCount'        => $sysSuccFastTrack,
+                    'liveBenchDepthPct'     => $sysSuccRate,
+                    'deptBuckets'           => $deptBuckets,
+                    'overviewChampions'     => $existingCache['overviewChampions'] ?? [],
+                    'cached_at'             => time()
+                ];
+                @file_put_contents($cachePath, json_encode($toCache, JSON_PRETTY_PRINT));
+            } catch (\Throwable $cErr) {}
+
             break;
 
         // ─── Department summary only ──────────────────────────────────────────

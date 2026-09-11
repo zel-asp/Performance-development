@@ -297,11 +297,11 @@ function renderLmsBooks() {
 
         return `
             <!-- Minimalist Clean Book Card with Supabase Data -->
-            <div class="card-clean p-5 flex flex-col justify-between h-full group bg-white border border-[#E8DEDC] hover:border-[#D8CECB] transition shadow-2xs hover:shadow-xs rounded-2xl relative">
+            <div class="card-clean p-5 flex flex-col justify-between h-full group bg-white border border-brand-border hover:border-[#D8CECB] transition shadow-2xs hover:shadow-xs rounded-2xl relative">
                 <div class="space-y-3">
                     <!-- Top Badges & Icon -->
                     <div class="flex items-center justify-between">
-                        <div class="w-9 h-9 rounded-xl bg-[#FAF8F7] text-primary border border-[#E8DEDC] flex items-center justify-center text-sm font-bold shadow-2xs group-hover:scale-105 transition">
+                        <div class="w-9 h-9 rounded-xl bg-brand-canvas text-primary border border-brand-border flex items-center justify-center text-sm font-bold shadow-2xs group-hover:scale-105 transition">
                             <i class="fas ${icon}"></i>
                         </div>
                         <div class="flex items-center space-x-1.5">

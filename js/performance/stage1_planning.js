@@ -4,11 +4,31 @@
  */
 
 async function loadAndRenderPlanningGoals(silent = false) {
-    if (!silent) {
+    // 0. Instant Cache Pre-Hydration (0ms Latency on Page Refresh)
+    if (!window.dbGoals || window.dbGoals.length === 0) {
+        const cached = window.PerfCache ? window.PerfCache.get('planning_data') : null;
+        if (cached && Array.isArray(cached.goals) && cached.goals.length > 0) {
+            window.dbGoals = cached.goals;
+            window.dbGeneralTasks = cached.general_tasks || [];
+            if (cached.draft_plans) window.dbDraftPlans = cached.draft_plans;
+            if (cached.roster) window.perfRoster = cached.roster;
+            if (cached.evaluations) window.dbEvaluations = cached.evaluations;
+            if (cached.training_needs) window.dbTrainingNeeds = cached.training_needs;
+
+            renderEmployeePulseGoals(cached.goals);
+            renderActiveStageTable();
+            updateAllPerfStepperBadges();
+        }
+    }
+
+    if (!silent && (!window.dbGoals || window.dbGoals.length === 0)) {
         renderPerformanceSkeletons();
+        if (typeof showStage1TableLoading === 'function') showStage1TableLoading(true, 'Loading objectives...');
+        if (typeof renderStage1TableSkeleton === 'function') renderStage1TableSkeleton(3);
         const gl = document.getElementById('kpi-goals-loading');
         if (gl) gl.classList.remove('hidden');
     }
+
     try {
         // High-speed parallel fetch of all performance data
         const [planResult, monResult, evalResult, needsResult] = await Promise.allSettled([
@@ -50,27 +70,34 @@ async function loadAndRenderPlanningGoals(silent = false) {
             });
         }
 
+        // High-performance O(1) Employee Hash Map index
+        const empMap = new Map();
+        (window.perfRoster || []).forEach(emp => {
+            emp.goals = []; // Reset goals before mapping
+            if (emp.id) empMap.set(String(emp.id).toLowerCase().trim(), emp);
+            if (emp.employee_code) empMap.set(String(emp.employee_code).toLowerCase().trim(), emp);
+        });
+
         // Apply monitoring roster fields if available
         if (monResult.status === 'fulfilled' && monResult.value?.roster && Array.isArray(monResult.value.roster)) {
             monResult.value.roster.forEach(dynEmp => {
-                const existing = (window.perfRoster || []).find(e => isSameEmployee(e.id, dynEmp.id) || isSameEmployee(e.employee_code, dynEmp.id));
+                const idKey = String(dynEmp.id || '').toLowerCase().trim();
+                const codeKey = String(dynEmp.employee_code || '').toLowerCase().trim();
+                const existing = empMap.get(idKey) || (codeKey ? empMap.get(codeKey) : null) || (window.perfRoster || []).find(e => isSameEmployee(e.id, dynEmp.id) || isSameEmployee(e.employee_code, dynEmp.id));
                 if (existing) {
                     Object.assign(existing, dynEmp);
                 } else {
                     window.perfRoster.push(dynEmp);
+                    if (dynEmp.id) empMap.set(idKey, dynEmp);
+                    if (dynEmp.employee_code) empMap.set(codeKey, dynEmp);
                 }
             });
         }
 
-        // Reset goals on roster employees before mapping
-        (window.perfRoster || []).forEach(emp => {
-            emp.goals = [];
-        });
-
-        // Map DB goals strictly to real employees in perfRoster
+        // Map DB goals strictly to real employees via O(1) lookup
         goals.forEach(g => {
             const empId = (g.employee_id || '').toString().toLowerCase().trim();
-            let emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, empId) || isSameEmployee(e.employee_code, empId));
+            let emp = empMap.get(empId) || (window.perfRoster || []).find(e => isSameEmployee(e.id, empId) || isSameEmployee(e.employee_code, empId));
 
             if (emp) {
                 emp.goals.push({
@@ -148,6 +175,18 @@ async function loadAndRenderPlanningGoals(silent = false) {
             weightAllocEl.textContent = `${data.calibration || '100%'} Calibrated`;
         }
 
+        // Stale-While-Revalidate session caching for 180 seconds
+        if (window.PerfCache) {
+            window.PerfCache.set('planning_data', {
+                goals: goals,
+                general_tasks: generalTasks,
+                draft_plans: window.dbDraftPlans,
+                roster: window.perfRoster,
+                evaluations: window.dbEvaluations,
+                training_needs: window.dbTrainingNeeds
+            }, 180);
+        }
+
         // Fast batch render of active table & cached badges
         renderEmployeePulseGoals(goals);
         renderActiveStageTable();
@@ -173,6 +212,7 @@ async function loadAndRenderPlanningGoals(silent = false) {
         if (!silent) {
             const gl = document.getElementById('kpi-goals-loading');
             if (gl) gl.classList.add('hidden');
+            if (typeof showStage1TableLoading === 'function') showStage1TableLoading(false);
         }
     }
 }
@@ -234,21 +274,26 @@ function getInitialGoalCoaching(goal) {
 async function fetchDynamicGoalCoaching(goal, force = false) {
     if (!goal || !goal.id) return;
 
-    if (!window._aiGoalFetching) window._aiGoalFetching = {};
-    if (window._aiGoalFetching[goal.id]) return;
+    const tipEl = document.getElementById(`ai-coaching-tip-${goal.id}`);
+    const summaryEl = document.getElementById(`ai-summary-text-${goal.id}`);
+    const focusEl = document.getElementById(`ai-focus-tag-${goal.id}`);
 
     if (!force) {
         try {
             const cached = localStorage.getItem('oxford_ai_goal_coaching_' + goal.id);
-            if (cached) return;
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (summaryEl && parsed.summary) summaryEl.textContent = parsed.summary;
+                if (tipEl && parsed.coaching_tip) tipEl.textContent = parsed.coaching_tip;
+                if (focusEl && parsed.key_focus) focusEl.textContent = parsed.key_focus;
+                return;
+            }
         } catch (e) {}
     }
 
+    if (!window._aiGoalFetching) window._aiGoalFetching = {};
+    if (window._aiGoalFetching[goal.id]) return;
     window._aiGoalFetching[goal.id] = true;
-
-    const tipEl = document.getElementById(`ai-coaching-tip-${goal.id}`);
-    const summaryEl = document.getElementById(`ai-summary-text-${goal.id}`);
-    const focusEl = document.getElementById(`ai-focus-tag-${goal.id}`);
 
     try {
         const res = await fetch('api/ai.php?action=goal_coaching', {
@@ -285,21 +330,37 @@ async function fetchDynamicGoalCoaching(goal, force = false) {
     }
 }
 
-function refreshGoalAiCoaching(goalId) {
+async function refreshGoalAiCoaching(goalId, btnEl = null) {
     const goals = window.dbGoals || [];
     const goal = goals.find(g => String(g.id) === String(goalId));
     if (!goal) return;
 
-    const tipEl = document.getElementById(`ai-coaching-tip-${goalId}`);
-    if (tipEl) {
-        tipEl.innerHTML = '<span class="inline-flex items-center text-primary"><i class="fas fa-circle-notch fa-spin text-xs mr-1.5"></i>Consulting Gemini AI Coach...</span>';
+    const btn = btnEl || (typeof event !== 'undefined' && event?.currentTarget ? event.currentTarget : null) || document.querySelector(`button[onclick*="refreshGoalAiCoaching('${goalId}')"]`);
+
+    const doRefresh = async () => {
+        const tipEl = document.getElementById(`ai-coaching-tip-${goalId}`);
+        if (tipEl) {
+            tipEl.innerHTML = '<span class="inline-flex items-center text-primary"><i class="fas fa-circle-notch fa-spin text-xs mr-1.5"></i>Consulting Gemini AI Coach...</span>';
+        }
+
+        try {
+            localStorage.removeItem('oxford_ai_goal_coaching_' + goalId);
+        } catch (e) {}
+
+        await fetchDynamicGoalCoaching(goal, true);
+        if (typeof showToast === 'function') {
+            showToast('Gemini AI coaching updated.', 'success');
+        }
+    };
+
+    if (btn && window.withButtonLock) {
+        await window.withButtonLock(btn, doRefresh, {
+            loadingText: 'Refreshing...',
+            spinnerIcon: 'fa-arrows-rotate fa-spin'
+        });
+    } else {
+        await doRefresh();
     }
-
-    try {
-        localStorage.removeItem('oxford_ai_goal_coaching_' + goalId);
-    } catch (e) {}
-
-    fetchDynamicGoalCoaching(goal, true);
 }
 
 /**
@@ -321,8 +382,7 @@ function renderEmployeePulseGoals(goals) {
         const goalEmpId = (g.employee_id || '').toLowerCase().trim();
         return isSameEmployee(goalEmpId, currentUserId) ||
                (userObj.id && isSameEmployee(goalEmpId, userObj.id)) ||
-               (userObj.employee_code && isSameEmployee(goalEmpId, userObj.employee_code)) ||
-               (isAssociate && (goalEmpId === 'emp-101' || goalEmpId === 'emp-1' || goalEmpId === 'oxf-emp-1001' || goalEmpId === 'emp-001' || goalEmpId === '3a52667f-53cf-412a-b048-ef96eb407707'));
+               (userObj.employee_code && isSameEmployee(goalEmpId, userObj.employee_code));
     });
 
     const totalGoalCount = empGoals.length;
@@ -537,7 +597,7 @@ function renderEmployeePulseGoals(goals) {
                     </div>
 
                     <!-- AI Objective Summary & Coaching Section -->
-                    <div id="ai-coaching-box-${g.id}" class="p-3 bg-gradient-to-br from-amber-500/5 via-primary/5 to-purple-500/5 rounded-xl border border-primary/20 shadow-2xs space-y-2 relative overflow-hidden transition-all">
+                    <div id="ai-coaching-box-${g.id}" class="p-3 bg-linear-to-br from-amber-500/5 via-primary/5 to-purple-500/5 rounded-xl border border-primary/20 shadow-2xs space-y-2 relative overflow-hidden transition-all min-h-37" style="contain: layout style;">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-1.5">
                                 <span class="w-5 h-5 rounded-md bg-primary/10 text-primary flex items-center justify-center text-[10px] shadow-2xs">
@@ -555,21 +615,21 @@ function renderEmployeePulseGoals(goals) {
 
                         <!-- Summary & Floor Tip -->
                         <div class="space-y-1.5 text-[11px]">
-                            <p id="ai-summary-text-${g.id}" class="text-slate-700 font-medium leading-relaxed">
+                            <p id="ai-summary-text-${g.id}" class="text-slate-700 font-medium leading-relaxed min-h-9">
                                 ${initialCoaching.summary}
                             </p>
                             <div class="p-2 bg-white/95 rounded-lg border border-primary/15 shadow-2xs flex items-start space-x-2 text-slate-600">
-                                <i class="fas fa-lightbulb text-amber-500 text-xs mt-0.5 flex-shrink-0"></i>
+                                <i class="fas fa-lightbulb text-amber-500 text-xs mt-0.5 shrink-0"></i>
                                 <div class="leading-relaxed">
                                     <span class="font-bold text-slate-800 text-[10px] uppercase tracking-wide mr-1">Shift Coaching:</span>
-                                    <span id="ai-coaching-tip-${g.id}">${initialCoaching.coaching_tip}</span>
+                                    <span id="ai-coaching-tip-${g.id}" class="min-h-8 inline-block">${initialCoaching.coaching_tip}</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Quick Actions -->
                         <div class="flex items-center justify-between pt-1 border-t border-slate-100/80 text-[10px]">
-                            <button type="button" onclick="refreshGoalAiCoaching('${g.id}')" class="text-slate-400 hover:text-primary transition inline-flex items-center space-x-1 font-medium" title="Re-evaluate with Gemini AI">
+                            <button type="button" onclick="refreshGoalAiCoaching('${g.id}', this)" class="text-slate-400 hover:text-primary transition inline-flex items-center space-x-1 font-medium" title="Re-evaluate with Gemini AI">
                                 <i class="fas fa-arrows-rotate text-[9px]"></i>
                                 <span>Refresh AI Tip</span>
                             </button>
@@ -594,17 +654,24 @@ function renderEmployeePulseGoals(goals) {
                 <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs gap-2">
                     <span class="text-[10px] text-slate-400 font-medium">${g.weight ? g.weight.split(' ')[0] : '20%'} Weight</span>
                     <div class="flex items-center space-x-1.5">
-                        ${(statusLower === 'completed' || statusLower === 'done' || statusLower === 'failed') ? `
-                            <button disabled class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60" title="Self evaluation disabled: Objective is ${g.status || 'Concluded'}">
-                                <i class="fas fa-lock text-[8px] mr-0.5"></i>
-                                <span>Self Review</span>
-                            </button>
-                        ` : `
-                            <button type="button" onclick="openEmployeeSelfEvalModal('${g.id}', '${g.employee_id || currentUserId}')" class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 transition inline-flex items-center space-x-1 shadow-2xs" title="Submit Self Review Rating">
-                                <i class="fas fa-user-pen text-[9px] text-purple-600"></i>
-                                <span>Self Review</span>
-                            </button>
-                        `}
+                        ${(() => {
+                            const isGoalNeedsTraining = (typeof isEmployeeNeedsTraining === 'function' ? isEmployeeNeedsTraining(g.employee_id || currentUserId, g.id) : (g.needs_training || g.in_training));
+                            if (statusLower === 'completed' || statusLower === 'done' || statusLower === 'failed' || isGoalNeedsTraining) {
+                                return `
+                                    <button disabled class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60" title="${isGoalNeedsTraining ? 'Self review locked: Associate is undergoing mandatory formal training.' : 'Self evaluation disabled: Objective is ' + (g.status || 'Concluded')}">
+                                        <i class="fas fa-lock text-[8px] mr-0.5"></i>
+                                        <span>Self Review (Locked)</span>
+                                    </button>
+                                `;
+                            } else {
+                                return `
+                                    <button type="button" onclick="openEmployeeSelfEvalModal('${g.id}', '${g.employee_id || currentUserId}')" class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 transition inline-flex items-center space-x-1 shadow-2xs" title="Submit Self Review Rating">
+                                        <i class="fas fa-user-pen text-[9px] text-purple-600"></i>
+                                        <span>Self Review</span>
+                                    </button>
+                                `;
+                            }
+                        })()}
                         <button type="button" onclick="openViewGoalModal('${g.id}')" class="btn-primary px-3 py-1 text-[11px] font-bold shadow-2xs inline-flex items-center space-x-1">
                             <i class="fas fa-list-check text-[10px]"></i>
                             <span>View Details &amp; Checklist</span>
@@ -614,13 +681,6 @@ function renderEmployeePulseGoals(goals) {
             </div>
         `;
     }).join('');
-
-    // Asynchronously enrich with dynamic Gemini AI coaching
-    empGoals.forEach(g => {
-        setTimeout(() => {
-            fetchDynamicGoalCoaching(g);
-        }, 150);
-    });
 }
 window.renderEmployeePulseGoals = renderEmployeePulseGoals;
 window.getInitialGoalCoaching = getInitialGoalCoaching;
@@ -746,8 +806,50 @@ async function handleEmployeeSelfEvalSubmit(event) {
 }
 window.handleEmployeeSelfEvalSubmit = handleEmployeeSelfEvalSubmit;
 
-window.loadAndRenderPlanningGoals = loadAndRenderPlanningGoals;
+// Stage 1 Table Loading & Skeleton Helpers
+window.showStage1TableLoading = function(show, message = 'Updating Objectives...') {
+    const el = document.getElementById('stage1-table-loading');
+    const txt = document.getElementById('stage1-loading-text');
+    if (!el) return;
+    if (show) {
+        if (txt) txt.textContent = message;
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+    } else {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+    }
+};
 
+window.renderStage1TableSkeleton = function(rowCount = 3) {
+    const tbody = document.getElementById('goals-table-body');
+    if (!tbody) return;
+    let html = '';
+    for (let i = 0; i < rowCount; i++) {
+        html += `
+            <tr class="animate-pulse border-b border-slate-100">
+                <td class="sticky-col-checkbox px-4 py-4 text-center border-b border-slate-100" style="position: sticky; left: 0px; width: 48px; min-width: 48px; max-width: 48px; z-index: 25; background-color: #ffffff !important; background: #ffffff !important; opacity: 1 !important;">
+                    <div class="w-4 h-4 bg-slate-200 rounded mx-auto"></div>
+                </td>
+                <td class="sticky-col-index px-3 py-4 text-center border-b border-slate-100" style="position: sticky; left: 48px; width: 48px; min-width: 48px; max-width: 48px; z-index: 25; background-color: #ffffff !important; background: #ffffff !important; opacity: 1 !important;">
+                    <div class="w-4 h-3 bg-slate-200 rounded mx-auto"></div>
+                </td>
+                <td class="sticky-col-employee px-5 py-4 border-b border-slate-100" style="position: sticky; left: 96px; width: 192px; min-width: 192px; max-width: 192px; z-index: 25; background-color: #ffffff !important; background: #ffffff !important; opacity: 1 !important; border-right: 1px solid #e2e8f0; box-shadow: 4px 0 10px -2px rgba(0,0,0,0.08);">
+                    <div class="w-28 h-3.5 bg-slate-200 rounded mb-1.5"></div>
+                    <div class="w-20 h-2.5 bg-slate-100 rounded"></div>
+                </td>
+                <td class="px-5 py-4 bg-white"><div class="w-36 h-3 bg-slate-200 rounded"></div></td>
+                <td class="px-5 py-4 bg-white"><div class="w-24 h-5 bg-slate-100 rounded-lg"></div></td>
+                <td class="px-5 py-4 bg-white"><div class="w-20 h-3 bg-slate-200 rounded"></div></td>
+                <td class="px-5 py-4 bg-white"><div class="w-16 h-4 bg-slate-100 rounded"></div></td>
+                <td class="px-5 py-4 bg-white"><div class="w-20 h-2 bg-slate-200 rounded-full"></div></td>
+                <td class="px-5 py-4 text-center bg-white"><div class="w-16 h-4 bg-slate-100 rounded-full mx-auto"></div></td>
+                <td class="px-5 py-4 text-right bg-white"><div class="w-12 h-6 bg-slate-100 rounded ml-auto"></div></td>
+            </tr>
+        `;
+    }
+    tbody.innerHTML = html;
+};
 
 function renderPlanningRosterTable() {
     const tbody = document.getElementById('goals-table-body');
@@ -797,7 +899,7 @@ function renderPlanningRosterTable() {
     if (allGoals.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="9" class="p-8 text-center text-slate-400">
+                <td colspan="10" class="p-8 text-center text-slate-400 bg-white">
                     <div class="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-2 text-slate-300">
                         <i class="fas fa-bullseye text-xl"></i>
                     </div>
@@ -858,60 +960,62 @@ function renderPlanningRosterTable() {
         const totalTasks = tasks.length;
         const taskProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : (isCompleted ? 100 : 0);
 
+        const rowBgClass = 'bg-white group-hover:bg-slate-50';
+
         return `
-            <tr class="hover:bg-slate-50/80 transition text-xs border-b border-slate-100 ${index === 0 ? 'bg-emerald-50/10' : ''}">
+            <tr class="group text-xs transition bg-white">
                 <!-- Checkbox Column -->
-                <td class="px-4 py-4 text-center">
+                <td class="sticky-col-checkbox px-4 py-4 text-center sticky left-0 z-25 w-12 min-w-12 max-w-12 border-b border-slate-100 transition" style="position: sticky; left: 0px; width: 48px; min-width: 48px; max-width: 48px; z-index: 25; background-color: #ffffff !important; background: #ffffff !important; opacity: 1 !important;">
                     <input type="checkbox" class="stage1-goal-checkbox rounded border-slate-300 text-primary focus:ring-primary ${!isPending ? 'opacity-30 cursor-not-allowed' : ''}" value="${goal.id}" onchange="updateStage1BulkDeleteState()" ${!isPending ? 'disabled title="Only pending objectives can be deleted"' : ''}>
                 </td>
 
                 <!-- Numbering Column -->
-                <td class="px-3 py-4 text-center font-mono font-bold text-slate-400 text-xs">
+                <td class="sticky-col-index px-3 py-4 text-center font-mono font-bold text-slate-400 text-xs sticky left-12 z-25 w-12 min-w-12 max-w-12 border-b border-slate-100 transition" style="position: sticky; left: 48px; width: 48px; min-width: 48px; max-width: 48px; z-index: 25; background-color: #ffffff !important; background: #ffffff !important; opacity: 1 !important;">
                     ${startIdx + index + 1}
                 </td>
 
                 <!-- 1. Employee Column -->
-                <td class="px-5 py-4">
+                <td class="sticky-col-employee px-5 py-4 sticky left-24 z-25 w-48 min-w-48 max-w-48 border-b border-slate-100 border-r border-slate-200/80 shadow-[4px_0_10px_-2px_rgba(0,0,0,0.08)] transition" style="position: sticky; left: 96px; width: 192px; min-width: 192px; max-width: 192px; z-index: 25; background-color: #ffffff !important; background: #ffffff !important; opacity: 1 !important; border-right: 1px solid #e2e8f0; box-shadow: 4px 0 10px -2px rgba(0,0,0,0.08);">
                     <div>
-                        <p class="font-bold text-slate-900 text-xs leading-tight max-w-[160px] truncate" title="${emp.name}">${emp.name}</p>
-                        <p class="text-[10px] text-slate-500 font-medium max-w-[160px] truncate" title="${emp.position}">${emp.position}</p>
+                        <p class="font-bold text-slate-900 text-xs leading-tight max-w-40 truncate" title="${emp.name}">${emp.name}</p>
+                        <p class="text-[10px] text-slate-500 font-medium max-w-40 truncate" title="${emp.position}">${emp.position}</p>
                     </div>
                 </td>
 
                 <!-- 2. Objective & Scope -->
-                <td class="px-5 py-4">
-                    <div class="space-y-1 max-w-[240px]">
+                <td class="px-5 py-4 border-b border-slate-100 ${rowBgClass}">
+                    <div class="space-y-1 max-w-60">
                         <div class="flex items-center space-x-1.5 flex-wrap">
                             <p class="font-bold text-slate-900 text-xs leading-snug line-clamp-2" title="${goal.title}">${goal.title}</p>
                             ${isRevised ? `<span class="px-1.5 py-0.2 rounded text-[8px] font-bold bg-purple-100 text-purple-700 border border-purple-200">Edited</span>` : ''}
                         </div>
-                        <span class="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded inline-block max-w-[200px] truncate" title="${goal.department || emp.department}">${goal.department || emp.department}</span>
+                        <span class="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded inline-block max-w-50 truncate" title="${goal.department || emp.department}">${goal.department || emp.department}</span>
                     </div>
                 </td>
 
                 <!-- 3. Target Metric / KPI -->
-                <td class="px-5 py-4">
-                    <span class="text-primary font-bold font-mono text-[11px] bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10 block w-fit max-w-[180px] truncate" title="${goal.target_metric}">
+                <td class="px-5 py-4 border-b border-slate-100 ${rowBgClass}">
+                    <span class="text-primary font-bold font-mono text-[11px] bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10 block w-fit max-w-45 truncate" title="${goal.target_metric}">
                         ${goal.target_metric}
                     </span>
                 </td>
 
                 <!-- 4. Target Date -->
-                <td class="px-5 py-4 whitespace-nowrap">
+                <td class="px-5 py-4 whitespace-nowrap border-b border-slate-100 ${rowBgClass}">
                     <span class="text-slate-700 font-mono text-xs font-semibold">
                         ${goal.target_date || 'Q3 2026'}
                     </span>
                 </td>
 
                 <!-- 5. Weight -->
-                <td class="px-5 py-4 whitespace-nowrap">
+                <td class="px-5 py-4 whitespace-nowrap border-b border-slate-100 ${rowBgClass}">
                     <span class="text-slate-700 font-bold text-[11px] bg-slate-100 px-2 py-1 rounded-lg">
                         ${goal.weight ? goal.weight.split(' ')[0] : '20%'}
                     </span>
                 </td>
 
                 <!-- 6. Checklist Progress -->
-                <td class="px-5 py-4 min-w-[140px]">
+                <td class="px-5 py-4 min-w-35 border-b border-slate-100 ${rowBgClass}">
                     <div class="space-y-1">
                         <div class="flex items-center justify-between text-[10px] font-bold">
                             <span class="text-slate-600">${completedTasks}/${totalTasks} Done</span>
@@ -924,7 +1028,7 @@ function renderPlanningRosterTable() {
                 </td>
 
                 <!-- 7. Status Badge (Pending / Approved / Completed / Failed) -->
-                <td class="px-5 py-4 text-center whitespace-nowrap">
+                <td class="px-5 py-4 text-center whitespace-nowrap border-b border-slate-100 ${rowBgClass}">
                     ${isFailed ? `
                         <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 inline-flex items-center space-x-1">
                             <i class="fas fa-times-circle text-rose-600 text-[9px]"></i><span>Failed</span>
@@ -945,12 +1049,37 @@ function renderPlanningRosterTable() {
                 </td>
 
                 <!-- 8. Actions -->
-                <td class="px-5 py-4 text-right space-x-1 whitespace-nowrap">
+                <td class="px-5 py-4 text-right space-x-1.5 whitespace-nowrap border-b border-slate-100 ${rowBgClass}">
+                    ${(() => {
+                        const isGoalNeedsTraining = (typeof isEmployeeNeedsTraining === 'function' ? isEmployeeNeedsTraining(emp.id, goal.id) : (goal.needs_training || goal.in_training));
+                        if (isGoalNeedsTraining) {
+                            return `
+                                <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg text-xs font-semibold cursor-not-allowed opacity-50 inline-flex items-center space-x-1" title="In Training: Objective modifications locked during mandatory formal training">
+                                    <i class="fas fa-lock text-[9px]"></i>
+                                    <span>Training Locked</span>
+                                </button>
+                            `;
+                        } else if (!isCompleted && !isFailed) {
+                            return `
+                                <button onclick="openCreateSpecificTaskModal('${goal.id}', '${emp.id}')" class="px-2.5 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg text-xs font-bold shadow-2xs transition inline-flex items-center space-x-1" title="Add Specific Task to this Objective">
+                                    <i class="fas fa-plus text-[10px]"></i>
+                                    <span>Add Specific Task</span>
+                                </button>
+                            `;
+                        } else {
+                            return `
+                                <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg text-xs font-semibold cursor-not-allowed opacity-50 inline-flex items-center space-x-1" title="Cannot add tasks: Objective is ${goal.status}">
+                                    <i class="fas fa-lock text-[9px]"></i>
+                                    <span>Task Locked</span>
+                                </button>
+                            `;
+                        }
+                    })()}
                     <button onclick="openViewGoalModal('${goal.id || emp.id}')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex items-center justify-center transition shadow-2xs" title="View Full Details">
                         <i class="fas fa-eye text-xs"></i>
                     </button>
-                    ${(isApproved || isCompleted || isFailed) ? `
-                        <button disabled class="w-7 h-7 rounded-lg bg-slate-100 text-slate-300 inline-flex items-center justify-center cursor-not-allowed opacity-40 shadow-2xs" title="Revise disabled for approved, completed, or failed goals">
+                    ${(isApproved || isCompleted || isFailed || (typeof isEmployeeNeedsTraining === 'function' && isEmployeeNeedsTraining(emp.id, goal.id))) ? `
+                        <button disabled class="w-7 h-7 rounded-lg bg-slate-100 text-slate-300 inline-flex items-center justify-center cursor-not-allowed opacity-40 shadow-2xs" title="Revise disabled for approved, completed, or training locked goals">
                             <i class="fas fa-pen-to-square text-xs"></i>
                         </button>
                     ` : `
@@ -990,17 +1119,27 @@ function renderPlanningRosterTable() {
 }
 window.renderPlanningRosterTable = renderPlanningRosterTable;
 
-// Stage 1 Filter & Search Handlers
+// Stage 1 Filter & Search Handlers with Smooth Loading Effect
 window.filterPlanningByStatus = function(status) {
     window.planningStatusFilter = status;
     planningCurrentPage = 1;
-    renderPlanningRosterTable();
+    showStage1TableLoading(true, 'Filtering objectives...');
+    setTimeout(() => {
+        renderPlanningRosterTable();
+        showStage1TableLoading(false);
+    }, 100);
 };
 
+let planningSearchTimer = null;
 window.onPlanningGoalsSearch = function(query) {
     window.planningSearchQuery = query;
     planningCurrentPage = 1;
-    renderPlanningRosterTable();
+    clearTimeout(planningSearchTimer);
+    showStage1TableLoading(true, 'Searching objectives...');
+    planningSearchTimer = setTimeout(() => {
+        renderPlanningRosterTable();
+        showStage1TableLoading(false);
+    }, 150);
 };
 
 // Stage 1 Bulk Delete and Single Delete Handlers
@@ -1043,6 +1182,9 @@ window.confirmDeleteGoal = function(goalId, goalTitle = 'Objective', btnEl = nul
         }
     }
 
+    const targetRow = btnEl ? btnEl.closest('tr') : document.querySelector(`button[onclick*="'${goalId}'"]`)?.closest('tr');
+    const deleteBtn = btnEl || targetRow?.querySelector('button[title="Delete Objective"]');
+
     showActionConfirmModal({
         title: 'Delete Performance Objective',
         message: `Are you sure you want to delete "${goalTitle}"? This will permanently remove this goal and its associated tasks.`,
@@ -1051,24 +1193,72 @@ window.confirmDeleteGoal = function(goalId, goalTitle = 'Objective', btnEl = nul
         iconClass: 'fas fa-trash-can',
         iconContainerClass: 'bg-rose-100 text-rose-700',
         onConfirm: async () => {
-            let origBtnHtml = '';
-            if (btnEl) {
-                origBtnHtml = btnEl.innerHTML;
-                btnEl.disabled = true;
-                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i>';
+            // Visual loading state on row and table
+            if (targetRow) {
+                targetRow.classList.add('opacity-50', 'bg-rose-50/30', 'pointer-events-none');
+                targetRow.querySelectorAll('button').forEach(b => { b.disabled = true; });
             }
+            if (deleteBtn) {
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i>';
+            }
+            showStage1TableLoading(true, 'Deleting objective...');
+
+            const goalIndex = (window.dbGoals || []).findIndex(g => String(g.id) === String(goalId));
+            const goalBackup = goalIndex !== -1 ? window.dbGoals[goalIndex] : null;
+
             try {
-                await PerformanceAPI.deleteGoal(goalId);
+                await PerformanceAPI.deleteGoal(goalId, { status: goalBackup?.status || 'pending' });
+
+                closeModal('modal-action-confirmation');
+
+                if (goalIndex !== -1) {
+                    window.dbGoals.splice(goalIndex, 1);
+                }
+                (window.perfRoster || []).forEach(emp => {
+                    if (emp.goals && Array.isArray(emp.goals)) {
+                        emp.goals = emp.goals.filter(g => String(g.id) !== String(goalId));
+                        emp.goalsCount = emp.goals.length;
+                    }
+                });
+
                 showToast('Performance objective deleted successfully.', 'success');
-                await loadAndRenderPlanningGoals();
+
+                if (targetRow) {
+                    targetRow.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+                    targetRow.style.opacity = '0';
+                    targetRow.style.transform = 'translateX(10px)';
+                    setTimeout(() => {
+                        renderPlanningRosterTable();
+                        updateStage1BulkDeleteState();
+                        showStage1TableLoading(false);
+                    }, 200);
+                } else {
+                    renderPlanningRosterTable();
+                    updateStage1BulkDeleteState();
+                    showStage1TableLoading(false);
+                }
+
+                if (typeof updateAllPerfStepperBadges === 'function') updateAllPerfStepperBadges();
+                if (typeof renderEmployeePulseGoals === 'function') renderEmployeePulseGoals(window.dbGoals || []);
+                if (typeof renderApprovalRosterTable === 'function') renderApprovalRosterTable();
+
+                if (typeof loadAndRenderPlanningGoals === 'function') {
+                    await loadAndRenderPlanningGoals(true);
+                }
             } catch (err) {
                 console.error('Delete goal error:', err);
-                showToast(err.message || 'Failed to delete goal', 'error');
-            } finally {
-                if (btnEl) {
-                    btnEl.disabled = false;
-                    btnEl.innerHTML = origBtnHtml;
+                closeModal('modal-action-confirmation');
+                showStage1TableLoading(false);
+                if (targetRow) {
+                    targetRow.classList.remove('opacity-50', 'bg-rose-50/30', 'pointer-events-none');
+                    targetRow.querySelectorAll('button').forEach(b => { b.disabled = false; });
                 }
+                if (deleteBtn) {
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = '<i class="fas fa-trash text-xs"></i>';
+                }
+                showToast(err.message || 'Failed to delete goal', 'error');
             }
         }
     });
@@ -1078,7 +1268,6 @@ window.confirmBulkDeleteStage1 = function() {
     const selected = Array.from(document.querySelectorAll('.stage1-goal-checkbox:checked')).map(cb => cb.value);
     if (selected.length === 0) return;
 
-    // Filter to only pending goals
     const pendingSelected = selected.filter(id => {
         const goal = (window.dbGoals || []).find(g => String(g.id) === String(id));
         if (!goal) return false;
@@ -1093,34 +1282,67 @@ window.confirmBulkDeleteStage1 = function() {
         return;
     }
 
-    const bulkBtn = document.getElementById('btn-stage1-bulk-delete');
+    const count = pendingSelected.length;
+    const btnBulk = document.getElementById('btn-stage1-bulk-delete');
 
     showActionConfirmModal({
         title: 'Bulk Delete Objectives',
-        message: `Are you sure you want to delete ${selected.length} selected objective(s)?`,
-        confirmBtnText: `Delete ${selected.length} Goals`,
+        message: `Are you sure you want to delete ${count} selected objective(s)? This will permanently remove them and their associated tasks.`,
+        confirmBtnText: `Delete ${count} Goal${count > 1 ? 's' : ''}`,
         confirmBtnClass: 'btn-danger bg-rose-600 hover:bg-rose-700 text-white',
         iconClass: 'fas fa-trash-can',
         iconContainerClass: 'bg-rose-100 text-rose-700',
         onConfirm: async () => {
-            let origBulkHtml = '';
-            if (bulkBtn) {
-                origBulkHtml = bulkBtn.innerHTML;
-                bulkBtn.disabled = true;
-                bulkBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Deleting...</span>';
+            if (btnBulk) {
+                btnBulk.disabled = true;
+                btnBulk.innerHTML = `<i class="fas fa-spinner fa-spin mr-1.5"></i> Deleting (${count})...`;
             }
+            showStage1TableLoading(true, `Deleting ${count} selected objective${count > 1 ? 's' : ''}...`);
+
+            pendingSelected.forEach(id => {
+                const cb = document.querySelector(`.stage1-goal-checkbox[value="${id}"]`);
+                const tr = cb?.closest('tr');
+                if (tr) tr.classList.add('opacity-40', 'pointer-events-none');
+            });
+
             try {
-                await PerformanceAPI.bulkDeleteGoals(selected);
-                showToast(`${selected.length} objectives deleted successfully.`, 'success');
-                await loadAndRenderPlanningGoals();
+                await PerformanceAPI.bulkDeleteGoals(pendingSelected);
+                closeModal('modal-action-confirmation');
+
+                window.dbGoals = (window.dbGoals || []).filter(g => !pendingSelected.includes(String(g.id)));
+                (window.perfRoster || []).forEach(emp => {
+                    if (emp.goals && Array.isArray(emp.goals)) {
+                        emp.goals = emp.goals.filter(g => !pendingSelected.includes(String(g.id)));
+                        emp.goalsCount = emp.goals.length;
+                    }
+                });
+
+                showToast(`${count} objective${count > 1 ? 's' : ''} deleted successfully.`, 'success');
+                renderPlanningRosterTable();
+                updateStage1BulkDeleteState();
+                showStage1TableLoading(false);
+
+                if (typeof updateAllPerfStepperBadges === 'function') updateAllPerfStepperBadges();
+                if (typeof renderEmployeePulseGoals === 'function') renderEmployeePulseGoals(window.dbGoals || []);
+                if (typeof renderApprovalRosterTable === 'function') renderApprovalRosterTable();
+
+                if (typeof loadAndRenderPlanningGoals === 'function') {
+                    await loadAndRenderPlanningGoals(true);
+                }
             } catch (err) {
                 console.error('Bulk delete error:', err);
-                showToast(err.message || 'Failed to delete goals', 'error');
-            } finally {
-                if (bulkBtn) {
-                    bulkBtn.disabled = false;
-                    bulkBtn.innerHTML = origBulkHtml;
+                closeModal('modal-action-confirmation');
+                showStage1TableLoading(false);
+                if (btnBulk) {
+                    btnBulk.disabled = false;
+                    btnBulk.innerHTML = `<i class="fas fa-trash-can mr-1.5"></i> Delete (<span id="stage1-selected-count">${count}</span>)`;
                 }
+                pendingSelected.forEach(id => {
+                    const cb = document.querySelector(`.stage1-goal-checkbox[value="${id}"]`);
+                    const tr = cb?.closest('tr');
+                    if (tr) tr.classList.remove('opacity-40', 'pointer-events-none');
+                });
+                showToast(err.message || 'Failed to bulk delete objectives', 'error');
             }
         }
     });
@@ -1163,11 +1385,12 @@ window.confirmApproveAllPendingGoals = function() {
         iconContainerClass: 'bg-emerald-100 text-emerald-700',
         onConfirm: async () => {
             try {
-                for (const g of pendingGoals) {
-                    await PerformanceAPI.updateGoalStatus(g.id, 'Approved');
-                }
+                await Promise.all(pendingGoals.map(g => PerformanceAPI.updateGoalStatus(g.id, 'Approved')));
                 showToast(`All ${pendingGoals.length} pending goals have been approved!`, 'success');
                 await loadAndRenderPlanningGoals();
+                if (typeof refreshObjectiveDetailsModal === 'function') {
+                    refreshObjectiveDetailsModal();
+                }
             } catch (err) {
                 console.error('Approve all error:', err);
                 showToast(err.message || 'Failed to approve all goals', 'error');
@@ -1215,12 +1438,13 @@ async function handleGoalSubmit(e) {
     }
 
     const storedUser = JSON.parse(localStorage.getItem('oxford_session_user') || '{}');
-    const isAssociate = (typeof activePersonaKey !== 'undefined' && (activePersonaKey === 'associate' || activePersonaKey === 'employee'));
+    const roleStr = String(window.activePersonaRole || window.currentUser?.role || storedUser.role || (typeof activePersonaKey !== 'undefined' ? activePersonaKey : '')).toLowerCase().trim();
+    const isAssociate = (roleStr === 'associate' || roleStr === 'employee' || roleStr === 'staff');
     const currentUserId = window.currentUser?.id || storedUser.id || (isAssociate ? 'emp-101' : 'emp-102');
     const currentRole = window.currentUser?.role || storedUser.role || (isAssociate ? 'Associate' : 'Supervisor');
 
     const selectedOpt = scopeSelect && scopeSelect.selectedIndex >= 0 ? scopeSelect.options[scopeSelect.selectedIndex] : null;
-    let employeeId = isAssociate ? currentUserId : (selectedOpt && selectedOpt.value !== 'dept' && selectedOpt.value !== 'property' ? selectedOpt.value : currentUserId);
+    let employeeId = isAssociate ? currentUserId : (selectedOpt && selectedOpt.value !== 'dept' && selectedOpt.value !== 'property' && selectedOpt.value ? selectedOpt.value : currentUserId);
     let role = isAssociate ? 'Associate' : (selectedOpt ? (selectedOpt.getAttribute('data-role') || currentRole) : currentRole);
     const targetScope = selectedOpt ? (selectedOpt.getAttribute('data-scope') || 'single') : 'single';
 
@@ -1228,7 +1452,7 @@ async function handleGoalSubmit(e) {
     const existingRunningGoal = (window.dbGoals || []).find(g => isSameEmployee(g.employee_id, employeeId) && g.status !== 'Completed');
     if (existingRunningGoal) {
         if (typeof showToast === 'function') {
-            showToast(`⚠️ Cannot create goal: This employee already has an active in-progress goal ("${existingRunningGoal.title}"). Employees can only create a new goal if they have no active goals or their set goals are marked as Completed.`, 'error');
+            showToast(` Cannot create goal: This employee already has an active in-progress goal ("${existingRunningGoal.title}"). Employees can only create a new goal if they have no active goals or their set goals are marked as Completed.`, 'error');
         }
         return;
     }
@@ -1313,18 +1537,81 @@ function handleGoalScopeChange(selectEl) {
 }
 window.handleGoalScopeChange = handleGoalScopeChange;
 
+function populateGoalEmployeeDropdown() {
+    const scopeSelect = document.getElementById('goal-target-scope');
+    if (!scopeSelect) return;
 
-function openViewGoalModal(targetId) {
-    // Find goal in live dbGoals or roster
-    let targetGoal = (window.dbGoals || []).find(g => String(g.id) === String(targetId) || String(g.employee_id) === String(targetId));
-    let emp = (window.perfRoster || []).find(e => String(e.id) === String(targetId) || (e.goals && e.goals.some(g => String(g.id) === String(targetId))));
+    const roster = window.perfRoster || window.dbEmployees || [];
+    const associates = roster.filter(u => {
+        const r = (u.role || '').toLowerCase();
+        return !r.includes('supervisor') && !r.includes('manager') && !r.includes('director') && !r.includes('admin') && !r.includes('generalmanager');
+    });
+
+    if (associates.length > 0) {
+        scopeSelect.innerHTML = associates.map(u => {
+            const name = u.name || u.full_name || 'Staff';
+            const dept = u.department || u.dept || 'Front Office & Guest Experience';
+            const role = u.role || 'Associate';
+            const pos = u.position || u.title || role;
+            return `<option value="${u.id}" data-scope="single" data-name="${name}" data-dept="${dept}" data-role="${role}">${name} · ${pos} (${dept})</option>`;
+        }).join('');
+    }
+}
+window.populateGoalEmployeeDropdown = populateGoalEmployeeDropdown;
+
+
+function openViewGoalModal(targetId, isSilentLiveSync = false) {
+    if (!targetId && window.currentViewGoalTargetId) {
+        targetId = window.currentViewGoalTargetId;
+    }
+    if (!targetId) return;
+    window.currentViewGoalTargetId = targetId;
+
+    // 1. Accurately locate goal or employee
+    let targetGoal = (window.dbGoals || []).find(g => String(g.id) === String(targetId));
+    let isSpecificGoal = !!targetGoal;
+    let emp = null;
+    if (targetGoal) {
+        emp = (window.perfRoster || []).find(e => isSameEmployee(e.id, targetGoal.employee_id) || isSameEmployee(e.employee_code, targetGoal.employee_id));
+    }
+    if (!emp) {
+        emp = (window.perfRoster || []).find(e => String(e.id) === String(targetId) || String(e.employee_code) === String(targetId) || (e.goals && e.goals.some(g => String(g.id) === String(targetId))));
+    }
+    if (!targetGoal && emp && Array.isArray(emp.goals) && emp.goals.length > 0) {
+        const foundG = emp.goals.find(g => String(g.id) === String(targetId));
+        if (foundG) {
+            targetGoal = foundG;
+            isSpecificGoal = true;
+        }
+    }
+    if (!targetGoal && !emp) {
+        targetGoal = (window.dbGoals || []).find(g => String(g.employee_id) === String(targetId));
+    }
+
+    if (!emp && targetGoal && window.dbEmployees) {
+        const foundUser = window.dbEmployees.find(u => isSameEmployee(u.id, targetGoal.employee_id) || isSameEmployee(u.employee_code, targetGoal.employee_id));
+        if (foundUser) {
+            emp = {
+                id: foundUser.id,
+                employee_code: foundUser.employee_code || foundUser.id,
+                name: foundUser.full_name || foundUser.name || 'Associate',
+                position: foundUser.title || foundUser.position || 'Associate',
+                department: foundUser.department || targetGoal.department || 'Hotel Operations',
+                attendance: { present: 22, absent: 1, percentage: '96.5%' },
+                managerRating: 4.6,
+                customerRating: 4.8,
+                goals: targetGoal ? [targetGoal] : []
+            };
+        }
+    }
 
     if (!emp) {
         emp = {
+            id: targetGoal?.employee_id || targetId,
             name: targetGoal?.employee_name || 'Team Member',
             position: 'Associate',
             department: targetGoal?.department || 'Hotel Operations',
-            attendance: { present: 22, absent: 1, percentage: '95.6%' },
+            attendance: { present: 22, absent: 1, percentage: '96.5%' },
             managerRating: 4.6,
             customerRating: 4.8,
             goals: targetGoal ? [targetGoal] : []
@@ -1337,31 +1624,70 @@ function openViewGoalModal(targetId) {
     const mgrRatEl = document.getElementById('view-modal-mgr-rating');
     const custRatEl = document.getElementById('view-modal-cust-rating');
 
-    if (empNameEl) empNameEl.innerText = emp.name;
+    if (empNameEl) empNameEl.innerText = emp.name || 'Associate';
     if (empPosEl) empPosEl.innerText = `${emp.position || 'Associate'} · ${emp.department || targetGoal?.department || 'Oxford Suites'}`;
-    if (attEl) attEl.innerText = emp.attendance ? `${emp.attendance.percentage} Attendance` : '96.5% Attendance';
-    if (mgrRatEl) mgrRatEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1"></i>${(emp.managerRating || 4.6).toFixed(1)}`;
-    if (custRatEl) custRatEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1"></i>${(emp.customerRating || 4.8).toFixed(1)}`;
+    if (attEl) attEl.innerText = emp.attendance ? (typeof emp.attendance === 'object' ? (emp.attendance.percentage || '96.5%') : emp.attendance) : '96.5% Attendance';
+    
+    const mgrRatingVal = emp.supervisorRating || emp.managerRating || (emp.evaluationRecord?.supervisor_rating ? parseFloat(emp.evaluationRecord.supervisor_rating) : 4.6);
+    const custRatingVal = emp.customerRating || (emp.evaluationRecord?.self_evaluation ? parseFloat(emp.evaluationRecord.self_evaluation) : 4.8);
+    if (mgrRatEl) mgrRatEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1"></i>${Number(mgrRatingVal).toFixed(1)}`;
+    if (custRatEl) custRatEl.innerHTML = `<i class="fas fa-star text-amber-500 mr-1"></i>${Number(custRatingVal).toFixed(1)}`;
 
     const container = document.getElementById('view-modal-goals-list');
+    const scrollEl = document.getElementById('view-modal-scroll-body');
+    const prevScroll = scrollEl ? scrollEl.scrollTop : 0;
+
     if (container) {
         container.innerHTML = '';
-        const displayGoals = targetGoal ? [targetGoal] : (emp.goals || []);
+        
+        let displayGoals = [];
+        if (isSpecificGoal && targetGoal) {
+            displayGoals = [targetGoal];
+        } else if (emp && emp.id) {
+            const rosterEmp = (window.perfRoster || []).find(e => isSameEmployee(e.id, emp.id));
+            const rosterGoals = (rosterEmp && Array.isArray(rosterEmp.goals) && rosterEmp.goals.length > 0) ? rosterEmp.goals : [];
+            const liveGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, emp.id));
+            displayGoals = liveGoals.length > 0 ? liveGoals : rosterGoals;
+            if (displayGoals.length === 0 && targetGoal) {
+                displayGoals = [targetGoal];
+            }
+        } else if (targetGoal) {
+            displayGoals = [targetGoal];
+        }
 
         displayGoals.forEach((g, idx) => {
-            const isApproved = (g.status === 'Approved');
+            // Live sync in-memory fields and tasks from window.dbGoals
+            if (Array.isArray(window.dbGoals)) {
+                const liveG = window.dbGoals.find(dg => String(dg.id) === String(g.id));
+                if (liveG) {
+                    g.title = liveG.title || g.title;
+                    g.status = liveG.status || g.status;
+                    g.target_metric = liveG.target_metric || g.target_metric;
+                    g.weight = liveG.weight || g.weight;
+                    g.evidence = liveG.evidence || g.evidence;
+                    g.department = liveG.department || g.department;
+                    g.target_date = liveG.target_date || g.target_date;
+                    if (liveG.supervisor_notes !== undefined) g.supervisor_notes = liveG.supervisor_notes;
+                    if (liveG.tasks) g.tasks = liveG.tasks;
+                }
+            }
+            const goalStatus = (g.status || 'Pending Approval').trim();
+            const isApproved = (goalStatus.toLowerCase() === 'approved');
+            const isCompleted = (goalStatus.toLowerCase() === 'completed' || goalStatus.toLowerCase() === 'done');
+            const isFailed = (goalStatus.toLowerCase() === 'failed');
+
             const tasks = g.tasks || [];
             const completedCount = tasks.filter(t => t.status === 'completed').length;
             const totalCount = tasks.length;
-            const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+            const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : (isCompleted ? 100 : 0);
 
             const div = document.createElement('div');
             div.className = 'p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 text-xs';
             div.innerHTML = `
                 <div class="flex items-center justify-between">
                     <span class="font-bold text-slate-900 text-sm">${idx + 1}. ${g.title}</span>
-                    <span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] ${isApproved ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                        ${g.status || 'Pending Approval'}
+                    <span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] ${isCompleted ? 'bg-indigo-100 text-indigo-800' : (isApproved ? 'bg-emerald-100 text-emerald-800' : (isFailed ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'))}">
+                        ${isCompleted ? 'Completed' : (isApproved ? 'Approved' : (isFailed ? 'Failed' : 'Pending Approval'))}
                     </span>
                 </div>
                 <p class="text-slate-500 text-[11px]">Department: <strong>${g.department || 'Front Office'}</strong> &middot; Target Date: <strong>${g.target_date || 'Q3 2026'}</strong></p>
@@ -1397,11 +1723,10 @@ function openViewGoalModal(targetId) {
                         ${tasks.length > 0 ? tasks.map(t => {
                             const isDone = t.status === 'completed';
                             const isSupervisor = (typeof isCurrentUserSupervisor === 'function') ? isCurrentUserSupervisor() : (window.activePersonaRole === 'Supervisor');
-                            const goalStatus = (g.status || '').toLowerCase().trim();
-                            const isGoalConcluded = goalStatus === 'done' || goalStatus === 'completed' || goalStatus === 'failed';
+                            const isGoalConcluded = isCompleted || isFailed;
                             const cannotEditReason = isSupervisor
                                 ? 'Supervisor cannot edit employee Action Checklist'
-                                : (isGoalConcluded ? `Action Checklist is locked: Objective is ${g.status}` : '');
+                                : (isGoalConcluded ? `Action Checklist is locked: Objective is ${goalStatus}` : '');
                             const isEditDisabled = isSupervisor || isGoalConcluded;
                             const completedDateStr = t.completed_at ? new Date(t.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
                             const lmsInfo = (typeof checkLmsTaskProgress === 'function') ? checkLmsTaskProgress(t, g.employee_id) : { isLmsTask: false };
@@ -1433,7 +1758,7 @@ function openViewGoalModal(targetId) {
                                                 ` : ''}
                                             </div>
                                         </label>
-                                        <div class="flex items-center space-x-1.5 flex-shrink-0">
+                                        <div class="flex items-center space-x-1.5 shrink-0">
                                             ${isDone ? `
                                                 <span class="text-[9px] font-mono text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-bold">
                                                     ✓ Done ${completedDateStr ? `(${completedDateStr})` : ''}
@@ -1475,8 +1800,52 @@ function openViewGoalModal(targetId) {
         });
     }
 
-    openModal('modal-view-goal');
+    if (scrollEl && isSilentLiveSync) {
+        scrollEl.scrollTop = prevScroll;
+    }
+
+    if (!isSilentLiveSync) {
+        openModal('modal-view-goal');
+    }
+
+    // 2. Realtime Background Parity Fetch (Fresh Database Sync)
+    if (!isSilentLiveSync && typeof PerformanceAPI !== 'undefined' && PerformanceAPI.getGoalTasks) {
+        const goalIdToQuery = isSpecificGoal ? targetGoal?.id : undefined;
+        const empIdToQuery = emp?.id || targetGoal?.employee_id;
+        PerformanceAPI.getGoalTasks({ goal_id: goalIdToQuery, employee_id: empIdToQuery }).then(res => {
+            if (res && res.success && Array.isArray(res.data)) {
+                const freshTasks = res.data;
+                displayGoals.forEach(dg => {
+                    const matched = freshTasks.filter(t => String(t.goal_id) === String(dg.id));
+                    if (matched.length > 0) {
+                        dg.tasks = matched;
+                    } else if (isSpecificGoal && freshTasks.length > 0) {
+                        dg.tasks = freshTasks;
+                    }
+                    if (Array.isArray(window.dbGoals)) {
+                        const targetDbGoal = window.dbGoals.find(item => String(item.id) === String(dg.id));
+                        if (targetDbGoal) {
+                            targetDbGoal.tasks = dg.tasks;
+                        }
+                    }
+                });
+                const modal = document.getElementById('modal-view-goal');
+                if (modal && !modal.classList.contains('hidden') && window.currentViewGoalTargetId === targetId) {
+                    openViewGoalModal(targetId, true);
+                }
+            }
+        }).catch(() => {});
+    }
 }
+window.openViewGoalModal = openViewGoalModal;
+
+function refreshObjectiveDetailsModal() {
+    const modal = document.getElementById('modal-view-goal');
+    if (modal && !modal.classList.contains('hidden') && window.currentViewGoalTargetId) {
+        openViewGoalModal(window.currentViewGoalTargetId, true);
+    }
+}
+window.refreshObjectiveDetailsModal = refreshObjectiveDetailsModal;
 
 function openReviseGoalModal(targetId) {
     // 1. Locate goal by id or employee_id
@@ -1592,35 +1961,38 @@ async function saveGoalRevision(event) {
         return;
     }
 
-    try {
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Saving Changes...';
-        }
+    const doSave = async () => {
+        try {
+            // Call AJAX endpoint to update database
+            await PerformanceAPI.reviseGoal(goalId, updates);
 
-        // Call AJAX endpoint to update database
-        await PerformanceAPI.reviseGoal(goalId, updates);
+            // Close modal and refresh Planning roster & pulse cards
+            closeModal('modal-revise-goal');
+            await loadAndRenderPlanningGoals();
+            if (typeof refreshObjectiveDetailsModal === 'function') {
+                refreshObjectiveDetailsModal();
+            }
+            if (typeof loadLiveNotifications === 'function') {
+                loadLiveNotifications(window.activePersonaRole || 'Associate');
+            }
 
-        // Close modal and refresh Planning roster & pulse cards
-        closeModal('modal-revise-goal');
-        await loadAndRenderPlanningGoals();
-        if (typeof loadLiveNotifications === 'function') {
-            loadLiveNotifications(window.activePersonaRole || 'Associate');
+            if (typeof showToast === 'function') {
+                showToast('Performance goal objectives successfully revised!', 'success');
+            }
+        } catch (err) {
+            console.error('Failed to save goal revision:', err);
+            if (typeof showToast === 'function') {
+                showToast(err.message || 'Failed to save revisions.', 'error');
+            }
+            throw err;
         }
+    };
 
-        if (typeof showToast === 'function') {
-            showToast('Performance goal objectives successfully revised!', 'success');
-        }
-    } catch (err) {
-        console.error('Failed to save goal revision:', err);
-        if (typeof showToast === 'function') {
-            showToast(err.message || 'Failed to save revisions.', 'error');
-        }
-    } finally {
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnText;
-        }
+    if (submitBtn && window.withButtonLock) {
+        await window.withButtonLock(submitBtn, doSave, { loadingText: 'Saving Changes...' });
+    } else {
+        await doSave();
     }
 }
+window.saveGoalRevision = saveGoalRevision;
 

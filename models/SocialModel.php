@@ -810,7 +810,11 @@ class SocialModel extends BaseModel
      * Ties are handled gracefully: if employees have the same XP (e.g. 0 XP),
      * they are placed at the same rank level.
      */
-    public function getTop5XpChampions(): array
+    /**
+     * Get Top 5 Gamified XP Champions and the specific Employee's Property-Wide Standing
+     * Supports calculating any rank (e.g. 1st, 2nd, 5th, 45th, 100th)
+     */
+    public function getLeaderboardWithStanding(?string $employeeId = null): array
     {
         // 1. Fetch all records from xp_ledger
         $ledgerRows = [];
@@ -870,23 +874,50 @@ class SocialModel extends BaseModel
             }
         }
 
-        // 4. Filter out employees with 0 XP - only employees with XP > 0 qualify for the podium
-        $qualifiers = array_filter($empTotals, function($e) {
-            return ($e['total_xp'] ?? 0) > 0;
-        });
-
-        $champions = array_values($qualifiers);
-        usort($champions, function($a, $b) {
+        // 4. Sort all employees by XP descending, then alphabetically by name
+        $allRanked = array_values($empTotals);
+        usort($allRanked, function($a, $b) {
             if ($b['total_xp'] !== $a['total_xp']) {
                 return $b['total_xp'] - $a['total_xp'];
             }
             return strcmp($a['name'], $b['name']);
         });
 
-        // 5. Calculate Dense Ranking and Rank Levels for qualifiers
+        // 5. Dense/standard competition ranking across qualifying associates (XP > 0)
         $currentRank = 1;
         $prevXp = null;
-        $rankedChampions = [];
+        $totalAssociates = count($allRanked);
+        $rankedCount = 0;
+        $rankMap = [];
+
+        for ($i = 0; $i < $totalAssociates; $i++) {
+            $xp = (int)($allRanked[$i]['total_xp'] ?? 0);
+            if ($xp > 0) {
+                if ($prevXp !== null && $xp < $prevXp) {
+                    $currentRank = $i + 1;
+                }
+                $prevXp = $xp;
+                $allRanked[$i]['rank'] = $currentRank;
+                $allRanked[$i]['place_number'] = $i + 1;
+                $allRanked[$i]['is_ranked'] = true;
+                $rankedCount++;
+            } else {
+                $allRanked[$i]['rank'] = null;
+                $allRanked[$i]['place_number'] = null;
+                $allRanked[$i]['is_ranked'] = false;
+            }
+
+            $idKey = (string)$allRanked[$i]['employee_id'];
+            $rankMap[$idKey] = $allRanked[$i];
+            $rankMap[strtolower(trim($idKey))] = $allRanked[$i];
+            $rankMap[strtolower(trim($allRanked[$i]['name']))] = $allRanked[$i];
+        }
+
+        // 6. Top 5 Champions Podium
+        $qualifiers = array_filter($allRanked, function($e) {
+            return ($e['total_xp'] ?? 0) > 0;
+        });
+        $championsList = array_values($qualifiers);
 
         $rankLabels = [
             1 => 'FIRST',
@@ -896,35 +927,22 @@ class SocialModel extends BaseModel
             5 => 'FIFTH'
         ];
 
-        for ($i = 0; $i < count($champions); $i++) {
-            $c = $champions[$i];
-            $xp = $c['total_xp'];
-
-            if ($prevXp !== null) {
-                if ($xp < $prevXp) {
-                    $currentRank++;
-                }
-            }
-            $prevXp = $xp;
-
-            $c['rank'] = $currentRank;
-            $c['rank_label'] = $rankLabels[$currentRank] ?? ('RANK ' . $currentRank);
+        $podium = [];
+        for ($i = 0; $i < min(5, count($championsList)); $i++) {
+            $c = $championsList[$i];
+            $c['rank_label'] = $rankLabels[$c['rank']] ?? ('RANK ' . $c['rank']);
             $c['is_tied'] = false;
             $c['is_ready'] = false;
-            $rankedChampions[] = $c;
+            $podium[] = $c;
         }
 
-        // Detect ties among qualifiers
-        $rankCounts = array_count_values(array_column($rankedChampions, 'rank'));
-        foreach ($rankedChampions as &$rc) {
-            if (($rankCounts[$rc['rank']] ?? 0) > 1) {
-                $rc['is_tied'] = true;
+        $podiumRankCounts = array_count_values(array_column($podium, 'rank'));
+        foreach ($podium as &$p) {
+            if (($podiumRankCounts[$p['rank']] ?? 0) > 1) {
+                $p['is_tied'] = true;
             }
         }
-        unset($rc);
-
-        // 6. Always ensure exactly 5 podium slots (fill remaining with "Ready" state)
-        $podium = array_slice($rankedChampions, 0, 5);
+        unset($p);
 
         while (count($podium) < 5) {
             $slotIndex = count($podium) + 1;
@@ -943,6 +961,192 @@ class SocialModel extends BaseModel
             ];
         }
 
-        return $podium;
+        // 7. Find standing for target employee
+        $targetStanding = null;
+        if (!empty($employeeId)) {
+            $searchKeys = [$employeeId, strtolower(trim($employeeId))];
+            foreach ($searchKeys as $sk) {
+                if (isset($rankMap[$sk])) {
+                    $targetStanding = $rankMap[$sk];
+                    break;
+                }
+            }
+        }
+
+        if (!$targetStanding && !empty($allRanked)) {
+            $targetStanding = $allRanked[0];
+        }
+
+        $empXp = (int)($targetStanding['total_xp'] ?? 0);
+        $isRanked = ($empXp > 0 && !empty($targetStanding['is_ranked']));
+        $empRank = $isRanked ? (int)($targetStanding['rank'] ?? 1) : null;
+        $placeNum = $isRanked ? (int)($targetStanding['place_number'] ?? 1) : null;
+
+        $rank5Xp = isset($podium[4]) && !$podium[4]['is_ready'] ? (int)$podium[4]['total_xp'] : 0;
+        $xpToTop5 = ($empRank === null || $empRank > 5) ? max(50, ($rank5Xp - $empXp) + 50) : 0;
+
+        $xpToNext = 0;
+        if ($isRanked && $empRank > 1) {
+            foreach ($allRanked as $other) {
+                if (!empty($other['is_ranked']) && $other['rank'] < $empRank && $other['total_xp'] > $empXp) {
+                    $xpToNext = ($other['total_xp'] - $empXp) + 25;
+                    break;
+                }
+            }
+            if ($xpToNext === 0) $xpToNext = 50;
+        } elseif (!$isRanked) {
+            $xpToNext = 50;
+        }
+
+        // Tier classification based on XP
+        $tier = 'Novice Associate';
+        if ($empXp >= 2000) $tier = 'Diamond Champion';
+        elseif ($empXp >= 1000) $tier = 'Platinum Performer';
+        elseif ($empXp >= 500) $tier = 'Gold Achiever';
+        elseif ($empXp >= 200) $tier = 'Silver Contender';
+        elseif ($empXp >= 50) $tier = 'Bronze Contender';
+
+        if ($isRanked && $placeNum !== null) {
+            $ordinalEnding = 'th';
+            if (!in_array(($placeNum % 100), [11, 12, 13])) {
+                switch ($placeNum % 10) {
+                    case 1: $ordinalEnding = 'st'; break;
+                    case 2: $ordinalEnding = 'nd'; break;
+                    case 3: $ordinalEnding = 'rd'; break;
+                }
+            }
+            $placeDisplay = $placeNum . $ordinalEnding . ' place';
+            $rankDisplay = '#' . $empRank;
+            $rankBadge = '#' . $empRank;
+        } else {
+            $placeDisplay = 'Not in ranking';
+            $rankDisplay = 'Not in ranking';
+            $rankBadge = '—';
+        }
+
+        $standingPayload = [
+            'employee_id'      => $targetStanding['employee_id'] ?? ($employeeId ?: 'emp-101'),
+            'name'             => $targetStanding['name'] ?? 'Associate',
+            'role'             => $targetStanding['role'] ?? 'Staff',
+            'department'       => $targetStanding['department'] ?? 'Front Office',
+            'avatar'           => $targetStanding['avatar'] ?? '',
+            'total_xp'         => $empXp,
+            'trophies'         => (int)($targetStanding['trophies'] ?? 0),
+            'is_ranked'        => $isRanked,
+            'rank'             => $empRank,
+            'place_number'     => $placeNum,
+            'place_display'    => $placeDisplay,
+            'rank_display'     => $rankDisplay,
+            'rank_badge'       => $rankBadge,
+            'tier'             => $tier,
+            'in_top_5'         => ($isRanked && $empRank <= 5),
+            'total_associates' => $totalAssociates,
+            'ranked_associates'=> $rankedCount,
+            'xp_to_top_5'      => $xpToTop5,
+            'xp_to_next_rank'  => $xpToNext,
+            'percentile'       => ($isRanked && $totalAssociates > 0) ? round((($totalAssociates - $empRank + 1) / $totalAssociates) * 100) : 0
+        ];
+
+        // 8. Build standing map for all associates in roster
+        $standingMap = [];
+        foreach ($allRanked as $r) {
+            $eXp = (int)($r['total_xp'] ?? 0);
+            $eIsRanked = ($eXp > 0 && !empty($r['is_ranked']));
+            $eRank = $eIsRanked ? (int)($r['rank'] ?? 1) : null;
+            $ePlaceNum = $eIsRanked ? (int)($r['place_number'] ?? 1) : null;
+
+            if ($eIsRanked && $ePlaceNum !== null) {
+                $ordEnding = 'th';
+                if (!in_array(($ePlaceNum % 100), [11, 12, 13])) {
+                    switch ($ePlaceNum % 10) {
+                        case 1: $ordEnding = 'st'; break;
+                        case 2: $ordEnding = 'nd'; break;
+                        case 3: $ordEnding = 'rd'; break;
+                    }
+                }
+                $ePlaceDisplay = $ePlaceNum . $ordEnding . ' place';
+                $eRankDisplay = '#' . $eRank;
+                $eRankBadge = '#' . $eRank;
+            } else {
+                $ePlaceDisplay = 'Not in ranking';
+                $eRankDisplay = 'Not in ranking';
+                $eRankBadge = '—';
+            }
+
+            $eTier = 'Novice Associate';
+            if ($eXp >= 2000) $eTier = 'Diamond Champion';
+            elseif ($eXp >= 1000) $eTier = 'Platinum Performer';
+            elseif ($eXp >= 500) $eTier = 'Gold Achiever';
+            elseif ($eXp >= 200) $eTier = 'Silver Contender';
+            elseif ($eXp >= 50) $eTier = 'Bronze Contender';
+
+            $eXpToTop5 = ($eRank === null || $eRank > 5) ? max(50, ($rank5Xp - $eXp) + 50) : 0;
+            $eXpToNext = 0;
+            if ($eIsRanked && $eRank > 1) {
+                foreach ($allRanked as $other) {
+                    if (!empty($other['is_ranked']) && $other['rank'] < $eRank && $other['total_xp'] > $eXp) {
+                        $eXpToNext = ($other['total_xp'] - $eXp) + 25;
+                        break;
+                    }
+                }
+                if ($eXpToNext === 0) $eXpToNext = 50;
+            } elseif (!$eIsRanked) {
+                $eXpToNext = 50;
+            }
+
+            $standingItem = [
+                'employee_id'      => $r['employee_id'],
+                'name'             => $r['name'],
+                'role'             => $r['role'],
+                'department'       => $r['department'],
+                'avatar'           => $r['avatar'],
+                'total_xp'         => $eXp,
+                'trophies'         => (int)($r['trophies'] ?? 0),
+                'is_ranked'        => $eIsRanked,
+                'rank'             => $eRank,
+                'place_number'     => $ePlaceNum,
+                'place_display'    => $ePlaceDisplay,
+                'rank_display'     => $eRankDisplay,
+                'rank_badge'       => $eRankBadge,
+                'tier'             => $eTier,
+                'in_top_5'         => ($eIsRanked && $eRank <= 5),
+                'total_associates' => $totalAssociates,
+                'ranked_associates'=> $rankedCount,
+                'xp_to_top_5'      => $eXpToTop5,
+                'xp_to_next_rank'  => $eXpToNext,
+                'percentile'       => ($eIsRanked && $totalAssociates > 0) ? round((($totalAssociates - $eRank + 1) / $totalAssociates) * 100) : 0
+            ];
+            $standingMap[(string)$r['employee_id']] = $standingItem;
+            $standingMap[strtolower(trim((string)$r['employee_id']))] = $standingItem;
+            $standingMap[strtolower(trim($r['name']))] = $standingItem;
+        }
+
+        return [
+            'champions'    => $podium,
+            'standing'     => $standingPayload,
+            'standing_map' => $standingMap,
+            'all_rankings' => array_map(function($e) {
+                return [
+                    'employee_id'   => $e['employee_id'],
+                    'name'          => $e['name'],
+                    'role'          => $e['role'],
+                    'department'    => $e['department'],
+                    'total_xp'      => $e['total_xp'],
+                    'trophies'      => $e['trophies'],
+                    'rank'          => $e['rank'],
+                    'place_number'  => $e['place_number'] ?? $e['rank'],
+                    'place_display' => ($e['place_number'] ?? $e['rank']) . 'th place'
+                ];
+            }, $allRanked)
+        ];
+    }
+
+    /**
+     * Backward-compatible alias returning exactly the 5 podium slots
+     */
+    public function getTop5XpChampions(): array
+    {
+        $res = $this->getLeaderboardWithStanding();
+        return $res['champions'];
     }
 }

@@ -79,13 +79,16 @@ class SocialController
     }
 
     /**
-     * Get Top 5 Gamified XP Champions ranked directly from xp_ledger
+     * Get Top 5 Gamified XP Champions ranked directly from xp_ledger + personal employee standing
      */
-    public function getTop5Champions(): array
+    public function getTop5Champions(?string $employeeId = null): array
     {
+        $res = $this->model->getLeaderboardWithStanding($employeeId);
         return [
-            'success' => true,
-            'data'    => $this->model->getTop5XpChampions()
+            'success'  => true,
+            'data'     => $res['champions'],
+            'standing' => $res['standing'],
+            'all'      => $res['all_rankings'] ?? []
         ];
     }
 

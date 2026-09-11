@@ -268,10 +268,10 @@ function setAlertsFilter(filterKey) {
     document.querySelectorAll('.alerts-filter-chip').forEach(btn => {
         if (btn.dataset.filter === filterKey) {
             btn.classList.add('bg-primary', 'text-white');
-            btn.classList.remove('bg-[#FAF8F7]', 'text-slate-600');
+            btn.classList.remove('bg-brand-canvas', 'text-slate-600');
         } else {
             btn.classList.remove('bg-primary', 'text-white');
-            btn.classList.add('bg-[#FAF8F7]', 'text-slate-600');
+            btn.classList.add('bg-brand-canvas', 'text-slate-600');
         }
     });
     renderAlertsInbox();
@@ -294,7 +294,7 @@ function renderAlertsInbox() {
 
     if (filtered.length === 0) {
         container.innerHTML = `
-            <div class="card-clean p-10 text-center text-slate-400 space-y-2 border border-[#E8DEDC] bg-white rounded-2xl">
+            <div class="card-clean p-10 text-center text-slate-400 space-y-2 border border-brand-border bg-white rounded-2xl">
                 <i class="fas fa-bell-slash text-3xl text-slate-300"></i>
                 <p class="font-bold text-slate-700 text-sm">No alerts in this category</p>
                 <p class="text-xs text-slate-500">All notifications have been reviewed and acknowledged.</p>
@@ -311,10 +311,10 @@ function renderAlertsInbox() {
             : `<span class="badge-sage text-[10px] font-bold"><i class="fas fa-info-circle mr-1"></i> Notification</span>`;
 
         return `
-            <div class="card-clean p-4 sm:p-5 transition hover:shadow-md border border-[#E8DEDC] rounded-2xl ${alert.isRead ? 'bg-white opacity-85' : 'bg-primary-50/20 border-primary/30 ring-1 ring-primary/20'} space-y-3">
+            <div class="card-clean p-4 sm:p-5 transition hover:shadow-md border border-brand-border rounded-2xl ${alert.isRead ? 'bg-white opacity-85' : 'bg-primary-50/20 border-primary/30 ring-1 ring-primary/20'} space-y-3">
                 <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                     <div class="flex items-start space-x-3.5">
-                        <div class="w-10 h-10 rounded-2xl bg-${alert.color}-500/10 text-${alert.color}-700 border border-${alert.color}-500/20 flex items-center justify-center text-base flex-shrink-0 mt-0.5 shadow-2xs">
+                        <div class="w-10 h-10 rounded-2xl bg-${alert.color}-500/10 text-${alert.color}-700 border border-${alert.color}-500/20 flex items-center justify-center text-base shrink-0 mt-0.5 shadow-2xs">
                             <i class="fas ${alert.icon}"></i>
                         </div>
                         <div class="space-y-1">
@@ -329,7 +329,7 @@ function renderAlertsInbox() {
                     </div>
 
                     <!-- Action Controls -->
-                    <div class="flex items-center space-x-2 self-end sm:self-center flex-shrink-0">
+                    <div class="flex items-center space-x-2 self-end sm:self-center shrink-0">
                         ${!alert.isRead ? `
                             <button onclick="markAlertRead('${alert.id}')" class="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-bold transition flex items-center space-x-1" title="Mark as Read">
                                 <i class="fas fa-check text-emerald-600 text-[11px]"></i>
@@ -408,7 +408,7 @@ function renderAuditLogs() {
     }
 
     tbody.innerHTML = filtered.map(log => `
-        <tr class="hover:bg-[#FAF8F7]/80 transition text-xs">
+        <tr class="hover:bg-brand-canvas/80 transition text-xs">
             <td class="px-5 py-3 font-mono font-bold text-slate-700">${log.id}</td>
             <td class="px-5 py-3 text-slate-500 whitespace-nowrap">${log.timestamp}</td>
             <td class="px-5 py-3">

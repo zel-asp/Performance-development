@@ -202,7 +202,8 @@ class PerformanceController
         // Auto-assign general tasks matrix checklist to newly set goal
         if (!empty($created['id'])) {
             try {
-                $this->taskModel->assignGeneralTasksToGoal($created['id'], $employeeId, $data['target_date']);
+                $goalEmpId = $created['employee_id'] ?? $employeeId;
+                $this->taskModel->assignGeneralTasksToGoal($created['id'], $goalEmpId, $data['target_date']);
             } catch (\Throwable $e) {
                 error_log('Task assignment error: ' . $e->getMessage());
             }
@@ -297,7 +298,7 @@ class PerformanceController
                     'recipient_role' => $owner['role'] ?? 'Associate',
                     'user_id'        => $ownerId,
                     'type'           => 'goal_approved',
-                    'title'          => 'Objective Approved & Tasks Assigned! 🎉',
+                    'title'          => 'Objective Approved & Tasks Assigned! ',
                     'message'        => "Performance objective \"{$updated['title']}\" for {$ownerName} was approved. Task checklist is active.",
                     'related_id'     => $id,
                     'goal_id'        => is_numeric($id) ? (int)$id : null
@@ -1253,7 +1254,11 @@ class PerformanceController
         // Increment retry_count on all goals in Supabase
         $updatedGoals = $this->goalModel->incrementEmployeeGoalsRetryCount($empId, 1);
         $newRetryCount = $maxRetry + 1;
-        $needsTraining = ($newRetryCount > 2);
+        $needsTraining = ($newRetryCount >= 3 && $newRetryCount < 4);
+
+        if ($needsTraining) {
+            $this->goalModel->setEmployeeGoalsNeedsTraining($empId, true);
+        }
 
         return [
             'success' => true,
@@ -1261,7 +1266,9 @@ class PerformanceController
             'needs_training' => $needsTraining,
             'retry_count' => $newRetryCount,
             'data'    => $updatedGoals,
-            'message' => "Plan retried (Retry count updated to {$newRetryCount} in database). Tasks prepared for re-monitoring."
+            'message' => $needsTraining
+                ? "Plan retried (Retry count updated to {$newRetryCount}). Associate is flagged for Needs Training (True)."
+                : "Plan retried (Retry count updated to {$newRetryCount} in database). Tasks prepared for re-monitoring."
         ];
     }
 
@@ -1448,15 +1455,28 @@ class PerformanceController
             ];
         }
 
-        $existing = $this->goalModel->findById((string)$id);
-        if ($existing) {
-            $st = strtolower(trim($existing['status'] ?? ''));
+        // Fast-path: if status was supplied by caller and is non-pending, reject immediately
+        if (isset($payload['status'])) {
+            $st = strtolower(trim((string)$payload['status']));
             if ($st !== 'pending approval' && $st !== 'pending' && $st !== 'draft' && !empty($st)) {
                 return [
                     'success' => false,
                     'data'    => null,
-                    'message' => "Cannot delete objective #{$id}: Only pending objectives can be deleted. Current status is '{$existing['status']}'."
+                    'message' => "Cannot delete objective #{$id}: Only pending objectives can be deleted. Current status is '{$payload['status']}'."
                 ];
+            }
+        } else {
+            // Fallback check if status not provided in request
+            $existing = $this->goalModel->findById((string)$id);
+            if ($existing) {
+                $st = strtolower(trim($existing['status'] ?? ''));
+                if ($st !== 'pending approval' && $st !== 'pending' && $st !== 'draft' && !empty($st)) {
+                    return [
+                        'success' => false,
+                        'data'    => null,
+                        'message' => "Cannot delete objective #{$id}: Only pending objectives can be deleted. Current status is '{$existing['status']}'."
+                    ];
+                }
             }
         }
 
@@ -1482,22 +1502,12 @@ class PerformanceController
             ];
         }
 
-        $validIds = [];
-        foreach ($ids as $gid) {
-            $g = $this->goalModel->findById((string)$gid);
-            if ($g) {
-                $st = strtolower(trim($g['status'] ?? ''));
-                if ($st === 'pending approval' || $st === 'pending' || $st === 'draft' || empty($st)) {
-                    $validIds[] = (string)$gid;
-                }
-            }
-        }
-
+        $validIds = array_values(array_filter(array_map('trim', $ids)));
         if (empty($validIds)) {
             return [
                 'success' => false,
                 'data'    => null,
-                'message' => 'Cannot delete selected objectives: Only pending objectives can be deleted.'
+                'message' => 'Validation error: No valid IDs provided for bulk deletion.'
             ];
         }
 

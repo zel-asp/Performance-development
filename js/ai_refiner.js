@@ -169,7 +169,7 @@ const AIRefiner = {
                 json = JSON.parse(rawText);
             } catch (jsonErr) {
                 console.error('[AIRefiner] Invalid JSON response:', rawText);
-                this.appendMessage('model', `⚠️ Error: Could not parse response from AI service.`);
+                this.appendMessage('model', ` Error: Could not parse response from AI service.`);
                 return;
             }
 
@@ -184,11 +184,11 @@ const AIRefiner = {
                 this.saveHistoryToStorage();
                 this.appendMessage('model', responseText);
             } else {
-                this.appendMessage('model', `⚠️ ${json.message || 'The Oxford Suites AI Copilot is temporarily unavailable.'}`);
+                this.appendMessage('model', ` ${json.message || 'The Oxford Suites AI Copilot is temporarily unavailable.'}`);
             }
         } catch (e) {
             console.error('[AIRefiner] Chat error:', e);
-            this.appendMessage('model', `⚠️ Connection error: Unable to communicate with the local server. Please ensure your session is active.`);
+            this.appendMessage('model', ` Connection error: Unable to communicate with the local server. Please ensure your session is active.`);
         } finally {
             this.removeTypingIndicator();
             this.setLoadingState(false);
@@ -216,11 +216,11 @@ const AIRefiner = {
                 <div class="flex-1 max-w-[85%] bg-primary p-3.5 rounded-2xl rounded-tr-sm text-white leading-relaxed shadow-2xs text-xs">
                     ${formattedText}
                 </div>
-                <img src="${userAvatarSrc}" alt="User" class="w-8 h-8 rounded-full object-cover flex-shrink-0 shadow-2xs border border-slate-300 mt-1">
+                <img src="${userAvatarSrc}" alt="User" class="w-8 h-8 rounded-full object-cover shrink-0 shadow-2xs border border-slate-300 mt-1">
             `;
         } else {
             bubble.innerHTML = `
-                <img src="assets/images/ai_copilot_avatar.jpg" alt="AI Copilot" class="w-8 h-8 rounded-xl object-cover flex-shrink-0 shadow-2xs border border-slate-200 mt-1">
+                <img src="assets/images/ai_copilot_avatar.jpg" alt="AI Copilot" class="w-8 h-8 rounded-xl object-cover shrink-0 shadow-2xs border border-slate-200 mt-1">
                 <div class="flex-1 bg-white p-3.5 rounded-2xl rounded-tl-sm border border-slate-200/60 shadow-2xs text-slate-700 leading-relaxed space-y-2 text-xs">
                     ${formattedText}
                 </div>
@@ -239,7 +239,7 @@ const AIRefiner = {
         bubble.id = 'ai-typing-indicator';
         bubble.className = `flex items-start space-x-3 w-full max-w-lg`;
         bubble.innerHTML = `
-            <img src="assets/images/ai_copilot_avatar.jpg" alt="AI Copilot" class="w-8 h-8 rounded-xl object-cover flex-shrink-0 shadow-2xs border border-slate-200 mt-1 opacity-70">
+            <img src="assets/images/ai_copilot_avatar.jpg" alt="AI Copilot" class="w-8 h-8 rounded-xl object-cover shrink-0 shadow-2xs border border-slate-200 mt-1 opacity-70">
             <div class="flex-1 bg-white p-3.5 rounded-2xl rounded-tl-sm border border-slate-200/60 shadow-2xs text-slate-700 leading-relaxed space-y-2 text-xs flex items-center space-x-1.5 h-10 w-16">
                 <span class="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" style="animation-delay: 0ms;"></span>
                 <span class="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style="animation-delay: 150ms;"></span>

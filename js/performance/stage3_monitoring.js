@@ -78,7 +78,7 @@ function triggerTaskCompletionModal(taskId, goalId, checkboxEl) {
     if (isSupervisor) {
         if (checkboxEl) checkboxEl.checked = false;
         if (typeof showToast === 'function') {
-            showToast('⚠️ Action Checklist is employee-managed. Supervisors cannot edit or complete tasks.', 'warning');
+            showToast(' Action Checklist is employee-managed. Supervisors cannot edit or complete tasks.', 'warning');
         }
         return;
     }
@@ -97,7 +97,15 @@ function triggerTaskCompletionModal(taskId, goalId, checkboxEl) {
         if (goalStatus === 'done' || goalStatus === 'completed' || goalStatus === 'failed') {
             if (checkboxEl) checkboxEl.checked = false;
             if (typeof showToast === 'function') {
-                showToast(`⚠️ Action Checklist is locked: Objective is already marked as ${goal.status}.`, 'warning');
+                showToast(` Action Checklist is locked: Objective is already marked as ${goal.status}.`, 'warning');
+            }
+            return;
+        }
+
+        if (typeof isEmployeeNeedsTraining === 'function' && isEmployeeNeedsTraining(goal.employee_id, goal.id)) {
+            if (checkboxEl) checkboxEl.checked = false;
+            if (typeof showToast === 'function') {
+                showToast('Action Checklist locked: Associate is currently enrolled in mandatory formal training.', 'warning');
             }
             return;
         }
@@ -119,7 +127,7 @@ function triggerTaskCompletionModal(taskId, goalId, checkboxEl) {
     if (lmsInfo.isLmsTask && !lmsInfo.canComplete) {
         if (checkboxEl) checkboxEl.checked = false;
         if (typeof showToast === 'function') {
-            showToast(`⚠️ LMS Quiz Attempt Required: You must study the LMS Handbook ("${task?.title || 'Prescribed Module'}") and take the certification quiz before completing this task!`, 'warning');
+            showToast(` LMS Quiz Attempt Required: You must study the LMS Handbook ("${task?.title || 'Prescribed Module'}") and take the certification quiz before completing this task!`, 'warning');
         }
         return;
     }
@@ -137,7 +145,7 @@ function openCompleteTaskModal(taskId, goalId) {
     if (isSupervisor) {
         if (window.lastActiveTaskCheckbox) window.lastActiveTaskCheckbox.checked = false;
         if (typeof showToast === 'function') {
-            showToast('⚠️ Action Checklist is employee-managed. Supervisors cannot edit or complete tasks.', 'warning');
+            showToast(' Action Checklist is employee-managed. Supervisors cannot edit or complete tasks.', 'warning');
         }
         return;
     }
@@ -156,7 +164,7 @@ function openCompleteTaskModal(taskId, goalId) {
         if (goalStatus === 'done' || goalStatus === 'completed' || goalStatus === 'failed') {
             if (window.lastActiveTaskCheckbox) window.lastActiveTaskCheckbox.checked = false;
             if (typeof showToast === 'function') {
-                showToast(`⚠️ Action Checklist is locked: Objective is already marked as ${goal.status}.`, 'warning');
+                showToast(` Action Checklist is locked: Objective is already marked as ${goal.status}.`, 'warning');
             }
             return;
         }
@@ -200,7 +208,7 @@ function openCompleteTaskModal(taskId, goalId) {
     if (lmsInfo.isLmsTask && !lmsInfo.canComplete) {
         if (window.lastActiveTaskCheckbox) window.lastActiveTaskCheckbox.checked = false;
         if (typeof showToast === 'function') {
-            showToast(`⚠️ LMS Quiz Attempt Required: You must study the LMS Handbook ("${task?.title || 'Prescribed Module'}") and take the certification quiz before completing this task!`, 'warning');
+            showToast(` LMS Quiz Attempt Required: You must study the LMS Handbook ("${task?.title || 'Prescribed Module'}") and take the certification quiz before completing this task!`, 'warning');
         }
         return;
     }
@@ -270,7 +278,7 @@ async function handleTaskCompletionSubmit(e) {
     const lmsInfo = checkLmsTaskProgress(task);
     if (lmsInfo.isLmsTask && !lmsInfo.canComplete) {
         if (typeof showToast === 'function') {
-            showToast(`⚠️ LMS 100% Progress Required: You must reach 100% in LMS before completing this task! (Current progress: ${lmsInfo.progress}%)`, 'warning');
+            showToast(` LMS 100% Progress Required: You must reach 100% in LMS before completing this task! (Current progress: ${lmsInfo.progress}%)`, 'warning');
         }
         return;
     }
@@ -285,13 +293,16 @@ async function handleTaskCompletionSubmit(e) {
     try {
         const res = await PerformanceAPI.completeTask(taskId, learnings, feedback, completedAt);
         if (typeof showToast === 'function') {
-            showToast(`🎉 Task completed! Learnings logged and Goal Progress updated to ${res.goal_progress || 100}%!`, 'success');
+            showToast(` Task completed! Learnings logged and Goal Progress updated to ${res.goal_progress || 100}%!`, 'success');
         }
         closeModal('modal-complete-task');
         window.lastActiveTaskCheckbox = null;
         await loadAndRenderPlanningGoals();
         if (typeof loadAndRenderMonitoringData === 'function') {
             await loadAndRenderMonitoringData();
+        }
+        if (typeof refreshObjectiveDetailsModal === 'function') {
+            refreshObjectiveDetailsModal();
         }
     } catch (err) {
         console.error('Task completion error:', err);
@@ -506,12 +517,12 @@ function renderMonitoringRosterTable() {
                 </td>
                 <td class="px-5 py-4">
                     <div>
-                        <p class="font-bold text-slate-900 text-sm leading-tight max-w-[160px] truncate" title="${emp.name}">${emp.name}</p>
-                        <span class="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded max-w-[160px] truncate block" title="${emp.position}">${emp.position}</span>
+                        <p class="font-bold text-slate-900 text-sm leading-tight max-w-40 truncate" title="${emp.name}">${emp.name}</p>
+                        <span class="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded max-w-40 truncate block" title="${emp.position}">${emp.position}</span>
                         ${inTraining ? `
-                            <div class="mt-1.5 p-1.5 bg-rose-50/90 rounded-lg border border-rose-200 text-[10px] space-y-0.5 max-w-[180px]">
+                            <div class="mt-1.5 p-1.5 bg-rose-50/90 rounded-lg border border-rose-200 text-[10px] space-y-0.5 max-w-45">
                                 <div class="flex items-center space-x-1 font-bold text-rose-800 truncate" title="${tnNeed?.title || 'Mandatory Formal Training'}">
-                                    <i class="fas fa-graduation-cap text-rose-600 flex-shrink-0"></i>
+                                    <i class="fas fa-graduation-cap text-rose-600 shrink-0"></i>
                                     <span class="truncate">${tnNeed ? (tnNeed.title || '').replace('Formal Training: ', '') : 'Mandatory Training'}</span>
                                 </div>
                                 <div class="flex items-center justify-between text-[10px] text-slate-600 font-mono">
@@ -523,7 +534,7 @@ function renderMonitoringRosterTable() {
                     </div>
                 </td>
                 <td class="px-5 py-4">
-                    <span class="font-semibold text-slate-700 max-w-[130px] truncate block" title="${emp.department}">${emp.department}</span>
+                    <span class="font-semibold text-slate-700 max-w-32.5 truncate block" title="${emp.department}">${emp.department}</span>
                     ${inTraining ? `<span class="mt-1 inline-block px-2 py-0.5 bg-rose-100 text-rose-800 rounded text-[9px] font-bold">Needs Training: True</span>` : ''}
                 </td>
                 <td class="px-5 py-4">
@@ -539,7 +550,7 @@ function renderMonitoringRosterTable() {
                         <span class="text-slate-400 italic text-[11px]">Pending Appraisal</span>
                     `}
                 </td>
-                <td class="px-5 py-4 min-w-[140px]">
+                <td class="px-5 py-4 min-w-35">
                     <div class="space-y-1">
                         <div class="flex justify-between text-[11px] font-bold">
                             <span class="text-slate-700">${emp.monitoringProgress}% Met</span>
@@ -551,33 +562,44 @@ function renderMonitoringRosterTable() {
                     </div>
                 </td>
                 <td class="px-5 py-4 text-right space-x-2 whitespace-nowrap">
+                    ${(inTraining && !isScored) ? `
+                        <button disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 font-bold rounded-xl text-xs cursor-not-allowed inline-flex items-center space-x-1" title="In Training: Adding tasks is disabled while associate is in mandatory training.">
+                            <i class="fas fa-lock text-[10px]"></i>
+                            <span>Add Task (Locked)</span>
+                        </button>
+                    ` : `
+                        <button onclick="openCreateSpecificTaskModal(null, '${emp.id}')" class="px-2.5 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold rounded-xl text-xs transition inline-flex items-center space-x-1" title="Add Specific Task for ${emp.name}">
+                            <i class="fas fa-plus text-xs"></i>
+                            <span>Add Task</span>
+                        </button>
+                    `}
                     <button onclick="toggleEmployeeMonitoringDetail('${emp.id}')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition" title="View Full Employee Logs">
                         <i class="fas fa-eye text-primary"></i>
                         <span>Logs</span>
                     </button>
                     ${retryCount >= 3 ? `
-                        <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}', true);" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1 inline-flex" title="Exceeded Retries! Open Stage 6 IDP for Mandatory 1-on-1 Training">
+                        <button onclick="switchSubTab('perf', 'idp'); showIDPDetail('${emp.id}', true);" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition inline-flex items-center space-x-1" title="Exceeded Retries! Open Stage 6 IDP for Mandatory 1-on-1 Training">
                             <i class="fas fa-triangle-exclamation"></i>
                             <span>Mandatory Training</span>
                         </button>
                     ` : `
                         ${(inTraining && !isScored) ? `
-                            <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed flex items-center space-x-1 inline-flex" title="In Training: Post-training evaluation locked until training score is recorded.">
+                            <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed inline-flex items-center space-x-1" title="In Training: Post-training evaluation locked until training score is recorded.">
                                 <i class="fas fa-lock text-[10px]"></i>
                                 <span>In Training</span>
                             </button>
                         ` : ((inTraining && isScored) ? `
-                            <button onclick="triggerEvaluationForEmployee('${emp.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1 inline-flex" title="Training Completed! Open Post-Training Re-Evaluation">
+                            <button onclick="triggerEvaluationForEmployee('${emp.id}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition inline-flex items-center space-x-1" title="Training Completed! Open Post-Training Re-Evaluation">
                                 <i class="fas fa-star-half-stroke"></i>
                                 <span>Re-Evaluate (After Training)</span>
                             </button>
                         ` : (!allTasksDone ? `
-                            <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed flex items-center space-x-1 inline-flex" title="All shift monitoring tasks must be 100% completed before appraisal evaluation.">
+                            <button disabled class="px-3.5 py-1.5 bg-slate-100 text-slate-400 border border-slate-200 text-xs font-bold rounded-xl cursor-not-allowed inline-flex items-center space-x-1" title="All shift monitoring tasks must be 100% completed before appraisal evaluation.">
                                 <i class="fas fa-lock text-[10px]"></i>
                                 <span>Tasks Incomplete</span>
                             </button>
                         ` : `
-                            <button onclick="triggerEvaluationForEmployee('${emp.id}')" class="px-3.5 py-1.5 ${hasEval ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-primary hover:bg-primary-dark'} text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-1 inline-flex">
+                            <button onclick="triggerEvaluationForEmployee('${emp.id}')" class="px-3.5 py-1.5 ${hasEval ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-primary hover:bg-primary-dark'} text-white text-xs font-bold rounded-xl shadow-xs transition inline-flex items-center space-x-1">
                                 <i class="fas fa-star-half-stroke"></i>
                                 <span>${hasEval ? 'Re-Evaluate' : 'Evaluate'}</span>
                             </button>
@@ -609,7 +631,7 @@ function triggerEvaluationForEmployee(empId) {
 
     if (inTraining && !isScored) {
         if (typeof showToast === 'function') {
-            showToast(`⚠️ Cannot evaluate ${emp.name || 'Associate'}: Associate is currently enrolled in Mandatory Formal Training. Re-evaluation is locked until training score is recorded.`, 'warning');
+            showToast(` Cannot evaluate ${emp.name || 'Associate'}: Associate is currently enrolled in Mandatory Formal Training. Re-evaluation is locked until training score is recorded.`, 'warning');
         }
         return;
     }
@@ -806,7 +828,7 @@ function renderEmployeeMonitoringStream(emp) {
                         <span>Due: <strong class="text-slate-700">${goal.target_date || 'Q3 2026'}</strong></span>
                     </p>
                 </div>
-                <div class="flex items-center space-x-3 flex-shrink-0">
+                <div class="flex items-center space-x-3 shrink-0">
                     <div class="text-right space-y-0.5">
                         <span class="text-[10px] font-bold text-slate-700">${goalProgressPct}% Completed</span>
                         <div class="w-24 bg-slate-100 h-1.5 rounded-full overflow-hidden">
@@ -815,14 +837,14 @@ function renderEmployeeMonitoringStream(emp) {
                     </div>
                     ${isSupervisor ? (
                         isGoalConcluded ? `
-                            <button disabled class="px-2.5 py-1 bg-slate-100 text-slate-400 border border-slate-200 text-[10px] font-bold rounded-lg cursor-not-allowed opacity-50 inline-flex items-center space-x-1" title="Add Task disabled: Objective is ${goal.status}">
+                            <button disabled class="px-2.5 py-1 bg-slate-100 text-slate-400 border border-slate-200 text-[10px] font-bold rounded-lg cursor-not-allowed opacity-50 inline-flex items-center space-x-1" title="Add Specific Task disabled: Objective is ${goal.status}">
                                 <i class="fas fa-lock text-[8px]"></i>
-                                <span>Add Task</span>
+                                <span>Add Specific Task</span>
                             </button>
                         ` : `
                             <button onclick="openCreateSpecificTaskModal('${goal.id}', '${emp.id}')" class="px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold rounded-lg transition inline-flex items-center space-x-1" title="Assign Specific Task">
                                 <i class="fas fa-plus text-[8px]"></i>
-                                <span>Add Task</span>
+                                <span>Add Specific Task</span>
                             </button>
                         `
                     ) : ''}
@@ -860,7 +882,7 @@ function renderEmployeeMonitoringStream(emp) {
                                     <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${lmsInfo.isPassed ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : (lmsInfo.needsRetest ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-amber-100 text-amber-900 border border-amber-200')}">
                                         <i class="fas ${lmsInfo.isPassed ? 'fa-check text-emerald-600' : (lmsInfo.needsRetest ? 'fa-rotate-left text-rose-600' : 'fa-book-open text-amber-700')} text-[8px]"></i>
                                         <span>LMS Module: ${lmsInfo.progress}%</span>
-                                        ${lmsInfo.isPassed ? `<span class="text-[8px] font-bold text-emerald-700 ml-0.5">✓ Passed (${lmsInfo.score !== null ? lmsInfo.score + '%' : '80%+'})</span>` : (lmsInfo.needsRetest ? `<span class="text-[8px] font-extrabold text-rose-700 ml-0.5">⚠️ Needs Re-test (${lmsInfo.score !== null ? lmsInfo.score + '%' : 'Score < 80%'})</span>` : '<span class="text-[8px] font-extrabold text-amber-700 ml-0.5">(Take Quiz Required)</span>')}
+                                        ${lmsInfo.isPassed ? `<span class="text-[8px] font-bold text-emerald-700 ml-0.5">✓ Passed (${lmsInfo.score !== null ? lmsInfo.score + '%' : '80%+'})</span>` : (lmsInfo.needsRetest ? `<span class="text-[8px] font-extrabold text-rose-700 ml-0.5"> Needs Re-test (${lmsInfo.score !== null ? lmsInfo.score + '%' : 'Score < 80%'})</span>` : '<span class="text-[8px] font-extrabold text-amber-700 ml-0.5">(Take Quiz Required)</span>')}
                                     </span>
                                     ${lmsInfo.lmsId ? `
                                         <button type="button" onclick="if(typeof openBookReader === 'function'){ openBookReader('${lmsInfo.lmsId}'); } else { window.location.hash='#lms'; }" class="text-primary hover:underline font-bold text-[9px] inline-flex items-center space-x-0.5">
@@ -1065,7 +1087,7 @@ async function saveMilestoneLog(event) {
         renderMonitoringRosterTable();
 
         if (typeof showToast === 'function') {
-            showToast(`🎉 Shift monitoring log saved for ${emp.name}!`, 'success');
+            showToast(` Shift monitoring log saved for ${emp.name}!`, 'success');
         }
 
         if (typeof loadLiveNotifications === 'function') {
@@ -1093,8 +1115,8 @@ function addMilestoneToTimeline(emp, data) {
     item.className = 'flex items-start space-x-3.5 group';
     item.innerHTML = `
         <div class="flex flex-col items-center self-stretch">
-            <div class="w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100 mt-1 flex-shrink-0"></div>
-            <div class="w-0.5 flex-1 bg-slate-200 my-1 min-h-[36px]"></div>
+            <div class="w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100 mt-1 shrink-0"></div>
+            <div class="w-0.5 flex-1 bg-slate-200 my-1 min-h-9"></div>
         </div>
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-2 flex-1 hover:border-emerald-200 transition">
             <div class="flex items-center justify-between">

@@ -188,7 +188,7 @@ function renderTnaEnrollmentsTableRows() {
                 <td class="py-3 px-3 text-center text-slate-400 font-mono text-[11px]">${idx + 1}</td>
                 <td class="py-3 px-3">
                     <div class="flex items-center space-x-2.5">
-                        <div class="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0">
+                        <div class="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
                             ${row.empName.charAt(0)}
                         </div>
                         <div>

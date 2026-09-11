@@ -46,47 +46,74 @@ class PerformanceGoalModel extends BaseModel
         return array_values(array_filter($all, function ($g) use ($normalizedId) {
             $gEmp = strtolower(trim($g['employee_id'] ?? ''));
             if ($gEmp === $normalizedId) return true;
-            if ($normalizedId === 'emp-101' && in_array($gEmp, ['emp-1', 'oxf-emp-1001'])) return true;
-            if ($normalizedId === 'emp-102' && in_array($gEmp, ['emp-2', 'oxf-sup-2001'])) return true;
+            if (in_array($normalizedId, ['emp-101', 'emp-1', 'oxf-emp-1001', 'emp-001']) && in_array($gEmp, ['emp-101', 'emp-1', 'oxf-emp-1001', 'emp-001'])) return true;
+            if (in_array($normalizedId, ['emp-102', 'emp-2', 'oxf-sup-2001', 'sup-003']) && in_array($gEmp, ['emp-102', 'emp-2', 'oxf-sup-2001', 'sup-003'])) return true;
             return false;
         }));
     }
 
     /**
-     * Resolve a valid users.id (UUID) to satisfy foreign key constraints
+     * Resolve a valid users.id to satisfy foreign key constraints without misattributing to another employee
      */
     public function resolveValidUserId(?string $inputEmpId, string $role = 'employee'): string
     {
         $inputEmpId = trim((string)$inputEmpId);
-        
-        // 1. If it looks like a valid UUID, check if user exists
-        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $inputEmpId)) {
-            $userCheck = supabaseRequest("users?id=eq.{$inputEmpId}&limit=1", 'GET', null, true);
-            if (!empty($userCheck['data']) && is_array($userCheck['data']) && isset($userCheck['data'][0]['id'])) {
-                return $userCheck['data'][0]['id'];
+        if (empty($inputEmpId)) {
+            $roleFilter = strtolower($role) === 'supervisor' ? 'role=ilike.*Supervisor*' : 'role=ilike.*Employee*';
+            $fallback = supabaseRequest("users?{$roleFilter}&limit=1", 'GET', null, true);
+            if (!empty($fallback['data']) && is_array($fallback['data']) && isset($fallback['data'][0]['id'])) {
+                return $fallback['data'][0]['id'];
+            }
+            return 'emp-101';
+        }
+
+        // 1. Direct match by id in users table (works for string IDs, UUIDs, numeric IDs)
+        $userCheck = supabaseRequest("users?id=eq." . urlencode($inputEmpId) . "&limit=1", 'GET', null, true);
+        if (!empty($userCheck['data']) && is_array($userCheck['data']) && isset($userCheck['data'][0]['id'])) {
+            return $userCheck['data'][0]['id'];
+        }
+
+        // 2. Check by employee_code (e.g. OXF-EMP-1001, EMP-002, OXF-SUP-2001, SUP-003)
+        $codeCheck = supabaseRequest("users?employee_code=ilike." . urlencode($inputEmpId) . "&limit=1", 'GET', null, true);
+        if (!empty($codeCheck['data']) && is_array($codeCheck['data']) && isset($codeCheck['data'][0]['id'])) {
+            return $codeCheck['data'][0]['id'];
+        }
+
+        // 3. Check known aliases for demo/seed personas
+        $norm = strtolower($inputEmpId);
+        if (in_array($norm, ['emp-101', 'emp-1', 'oxf-emp-1001', 'emp-001'])) {
+            $aliasCheck = supabaseRequest("users?id=in.(emp-101,emp-1,oxf-emp-1001)&limit=1", 'GET', null, true);
+            if (!empty($aliasCheck['data'][0]['id'])) {
+                return $aliasCheck['data'][0]['id'];
+            }
+            $aliasCode = supabaseRequest("users?employee_code=ilike.OXF-EMP-1001&limit=1", 'GET', null, true);
+            if (!empty($aliasCode['data'][0]['id'])) {
+                return $aliasCode['data'][0]['id'];
             }
         }
-        
-        // 2. If it's an employee_code like EMP-001 or SUP-003 or legacy emp-101
-        if (!empty($inputEmpId)) {
-            $codeCheck = supabaseRequest("users?employee_code=ilike." . urlencode($inputEmpId) . "&limit=1", 'GET', null, true);
-            if (!empty($codeCheck['data']) && is_array($codeCheck['data']) && isset($codeCheck['data'][0]['id'])) {
-                return $codeCheck['data'][0]['id'];
+        if (in_array($norm, ['emp-102', 'emp-2', 'oxf-sup-2001', 'sup-003'])) {
+            $aliasCheck = supabaseRequest("users?id=in.(emp-102,emp-2,oxf-sup-2001)&limit=1", 'GET', null, true);
+            if (!empty($aliasCheck['data'][0]['id'])) {
+                return $aliasCheck['data'][0]['id'];
+            }
+            $aliasCode = supabaseRequest("users?employee_code=ilike.OXF-SUP-2001&limit=1", 'GET', null, true);
+            if (!empty($aliasCode['data'][0]['id'])) {
+                return $aliasCode['data'][0]['id'];
             }
         }
-        
-        // 3. Fallback to active user with matching role, or first user in users table
-        $roleFilter = strtolower($role) === 'supervisor' ? 'role=ilike.*Supervisor*' : 'role=ilike.*Employee*';
-        $fallback = supabaseRequest("users?{$roleFilter}&limit=1", 'GET', null, true);
-        if (!empty($fallback['data']) && is_array($fallback['data']) && isset($fallback['data'][0]['id'])) {
-            return $fallback['data'][0]['id'];
+
+        // 4. Check employees table fallback
+        $empCheck = supabaseRequest("employees?id=eq." . urlencode($inputEmpId) . "&limit=1", 'GET', null, true);
+        if (!empty($empCheck['data'][0]['id'])) {
+            return $empCheck['data'][0]['id'];
         }
-        
-        $anyUser = supabaseRequest("users?limit=1", 'GET', null, true);
-        if (!empty($anyUser['data']) && is_array($anyUser['data']) && isset($anyUser['data'][0]['id'])) {
-            return $anyUser['data'][0]['id'];
+
+        $empCodeCheck = supabaseRequest("employees?employee_code=ilike." . urlencode($inputEmpId) . "&limit=1", 'GET', null, true);
+        if (!empty($empCodeCheck['data'][0]['id'])) {
+            return $empCodeCheck['data'][0]['id'];
         }
-        
+
+        // 5. If provided inputEmpId was not found, retain it as-is (do NOT substitute a random user)
         return $inputEmpId;
     }
 
@@ -229,7 +256,7 @@ class PerformanceGoalModel extends BaseModel
     {
         return $this->update((string)$goalId, [
             'retry_count'    => $count,
-            'needs_training' => ($count >= 3),
+            'needs_training' => ($count >= 3 && $count < 4),
             'updated_at'     => date('c')
         ]);
     }
@@ -293,7 +320,7 @@ class PerformanceGoalModel extends BaseModel
 
         return $this->update((string)$goalId, [
             'retry_count'    => $newCount,
-            'needs_training' => ($newCount > 2),
+            'needs_training' => ($newCount >= 3 && $newCount < 4),
             'updated_at'     => date('c')
         ]);
     }
@@ -419,8 +446,11 @@ class PerformanceGoalModel extends BaseModel
     public function markFailed(string $id): ?array
     {
         return $this->update($id, [
-            'status'     => 'Failed',
-            'updated_at' => date('c')
+            'status'         => 'Failed',
+            'retry_count'    => 4,
+            'needs_training' => false,
+            'in_training'    => false,
+            'updated_at'     => date('c')
         ]);
     }
 
@@ -475,14 +505,8 @@ class PerformanceGoalModel extends BaseModel
      */
     public function bulkDeleteGoals(array $ids): bool
     {
-        $success = true;
-        foreach ($ids as $id) {
-            if (!empty($id)) {
-                $deleted = $this->delete((string)$id);
-                if (!$deleted) $success = false;
-            }
-        }
-        return $success;
+        if (empty($ids)) return true;
+        return $this->deleteMultiple($ids);
     }
 }
 

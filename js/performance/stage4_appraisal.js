@@ -200,11 +200,11 @@ function renderEvaluationRosterTable() {
         const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40';
 
         return `
-            <tr class="${rowBg} hover:bg-[#FAF8F7] transition border-b border-slate-100 text-xs">
+            <tr class="${rowBg} hover:bg-brand-canvas transition border-b border-slate-100 text-xs">
                 <td class="px-3 py-4 text-center text-slate-400 font-mono text-[11px]">${idx + 1}</td>
                 <td class="px-5 py-4">
                     <div class="flex items-center space-x-3">
-                        <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0">
+                        <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
                             ${emp.avatar || emp.name.charAt(0)}
                         </div>
                         <div>
@@ -436,7 +436,7 @@ function openAppraisalModal(empId, isPostTraining = false) {
     const isScored = isEmployeeTrainingScored(emp.id);
     if (inTraining && !isScored && !isPostTraining) {
         if (typeof showToast === 'function') {
-            showToast(`⚠️ Cannot evaluate ${emp.name}: Associate is currently enrolled in Mandatory Formal Training. Re-evaluation is locked until training score is recorded.`, 'warning');
+            showToast(` Cannot evaluate ${emp.name}: Associate is currently enrolled in Mandatory Formal Training. Re-evaluation is locked until training score is recorded.`, 'warning');
         }
         return;
     }
@@ -444,7 +444,7 @@ function openAppraisalModal(empId, isPostTraining = false) {
     const taskStats = getEmployeeTaskStats(emp.id);
     if (!taskStats.allDone && !isPostTraining && !inTraining) {
         if (typeof showToast === 'function') {
-            showToast(`⚠️ Cannot evaluate ${emp.name}: Monitoring tasks are still not done (${taskStats.completed}/${taskStats.total} completed). Complete all tasks in Stage 3 Continuous Monitoring first.`, 'warning');
+            showToast(` Cannot evaluate ${emp.name}: Monitoring tasks are still not done (${taskStats.completed}/${taskStats.total} completed). Complete all tasks in Stage 3 Continuous Monitoring first.`, 'warning');
         }
         return;
     }
@@ -507,14 +507,14 @@ function openAppraisalModalInternal(empId) {
     }
 
     criteriaContainer.innerHTML = criteriaList.map((c, idx) => `
-        <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2.5">
+        <div class="p-4 bg-brand-canvas rounded-2xl border border-brand-border space-y-2.5">
             <div class="flex justify-between items-center font-semibold text-xs">
                 <span class="text-slate-900">${idx + 1}. ${c.title} <span class="text-primary font-bold">(Weight: ${c.weight}%)</span></span>
                 <span id="criteria-val-display-${idx}" class="text-primary font-mono font-bold">${c.initialRating} / 5.0</span>
             </div>
             <p class="text-[10px] text-slate-500 font-medium font-mono">Target Metric: ${c.metric}</p>
             <input type="range" min="1" max="5" step="0.1" value="${c.initialRating}" data-title="${encodeURIComponent(c.title)}" data-metric="${encodeURIComponent(c.metric)}" data-weight="${c.weight}" id="criteria-slider-${idx}" oninput="updateAppraisalComputedScore()" class="w-full accent-[#9E1B20] appraisal-score-slider cursor-pointer">
-            <textarea rows="2" placeholder="Provide performance evidence, KPI deliverables observed, and coaching notes..." class="w-full p-2.5 bg-white rounded-xl border border-[#E8DEDC] text-xs text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar">${c.rationale || ''}</textarea>
+            <textarea rows="2" placeholder="Provide performance evidence, KPI deliverables observed, and coaching notes..." class="w-full p-2.5 bg-white rounded-xl border border-brand-border text-xs text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar">${c.rationale || ''}</textarea>
         </div>
     `).join('');
 
@@ -640,7 +640,7 @@ async function handleAppraisalSubmit(e) {
         updateDbEvaluationRecord(saved);
 
         if (typeof showToast === 'function') {
-            showToast(`🎉 Formal appraisal successfully saved for ${emp ? emp.name : 'Employee'}! (${finalScore.toFixed(2)} / 5.0)`, 'success');
+            showToast(` Formal appraisal successfully saved for ${emp ? emp.name : 'Employee'}! (${finalScore.toFixed(2)} / 5.0)`, 'success');
         }
 
         closeModal('modal-self-assessment');
@@ -711,7 +711,7 @@ function triggerSendKudosForEmployee(empId) {
                 });
 
                 if (typeof showToast === 'function') {
-                    showToast(`🎉 +${xpPoints} XP awarded to ${emp.name}! Performance goal marked as Done.`, 'success');
+                    showToast(` +${xpPoints} XP awarded to ${emp.name}! Performance goal marked as Done.`, 'success');
                 }
 
                 if (typeof renderIDPRosterTable === 'function') renderIDPRosterTable();

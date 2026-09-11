@@ -367,11 +367,13 @@ window.calculateXpLevel = calculateXpLevel;
 
 /**
  * Render Top 5 Gamified XP Champions Podium dynamically from xp_ledger data.
- * If multiple employees have the same XP (e.g. 0 XP), they share the exact same
- * rank level and visual pillar height.
+/**
+ * Render Top 5 Gamified XP Champions Podium
+ * Supports both management podium and employee pulse view podium with optional "YOU" highlight.
  */
-function renderTop5XpChampions(champions) {
-    const container = document.getElementById('overview-top5-podium');
+function renderTop5XpChampions(champions, currentUserId, targetContainerId) {
+    const containerId = targetContainerId || 'overview-top5-podium';
+    const container = document.getElementById(containerId);
     if (!container) return;
 
     // Filter qualifiers with XP > 0
@@ -416,6 +418,7 @@ function renderTop5XpChampions(champions) {
         const style = rankStyles[rank] || rankStyles[5];
         const rankBadge = String(rank).padStart(2, '0');
         const displayLabel = c.rank_label || ('RANK ' + rank);
+        const isSelf = Boolean(currentUserId && c.employee_id && String(c.employee_id).toLowerCase() === String(currentUserId).toLowerCase());
 
         if (c.is_ready) {
             return `
@@ -468,9 +471,10 @@ function renderTop5XpChampions(champions) {
         const roleShort = (c.role || c.department || 'Associate').replace('Director', 'Dir').replace('Supervisor', 'Sup').replace('Associate', 'Assoc');
 
         return `
-            <div class="flex flex-col items-center justify-end text-center group cursor-pointer" onclick="switchPillar('pillar-social')" title="${c.name} (${c.role || ''}): ${xp.toLocaleString()} XP">
-                <div class="mb-2 flex flex-col items-center space-y-1 w-full">
-                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ${style.avatarBg} text-white font-bold text-[10px] sm:text-xs flex items-center justify-center shadow-xs border-2 border-white">
+            <div class="flex flex-col items-center justify-end text-center group cursor-pointer ${isSelf ? 'scale-105 transition-transform' : ''}" onclick="switchPillar('pillar-social')" title="${c.name} (${c.role || ''}): ${xp.toLocaleString()} XP">
+                <div class="mb-2 flex flex-col items-center space-y-1 w-full relative">
+                    ${isSelf ? '<span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold-dark text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded-full shadow-xs border border-white tracking-wider z-20">YOU</span>' : ''}
+                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full ${style.avatarBg} text-white font-bold text-[10px] sm:text-xs flex items-center justify-center shadow-xs border-2 ${isSelf ? 'border-amber-400 ring-2 ring-gold' : 'border-white'}">
                         ${initials}
                     </div>
                     <p class="text-[10px] sm:text-xs font-bold text-slate-900 truncate max-w-full" title="${c.name}">${firstName}</p>
@@ -480,7 +484,7 @@ function renderTop5XpChampions(champions) {
                     </div>
                 </div>
 
-                <div class="w-full ${style.heightClass} rounded-t-xl sm:rounded-t-2xl ${style.pillarBg} shadow-sm group-hover:shadow-md group-hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center justify-between py-2.5 px-1 text-white border-t-2 border-white/40">
+                <div class="w-full ${style.heightClass} rounded-t-xl sm:rounded-t-2xl ${style.pillarBg} shadow-sm group-hover:shadow-md group-hover:-translate-y-1.5 transition-all duration-300 flex flex-col items-center justify-between py-2.5 px-1 text-white border-t-2 border-white/40 ${isSelf ? 'ring-2 ring-gold ring-offset-2' : ''}">
                     <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-white bg-black/15 backdrop-blur-xs flex items-center justify-center font-bold text-[10px] sm:text-xs text-white shadow-xs mt-1">
                         ${rankBadge}
                     </div>
@@ -503,15 +507,118 @@ function renderTop5XpChampions(champions) {
 }
 window.renderTop5XpChampions = renderTop5XpChampions;
 
-async function loadAndRenderTop5Champions() {
-    const container = document.getElementById('overview-top5-podium');
-    if (!container) return;
+/**
+ * Render Employee Standing Card (displays exact rank even if e.g. 45th place)
+ */
+function renderEmployeeStandingCard(standing, currentUserId) {
+    if (!standing) return;
+
+    const rankNumEl = document.getElementById('emp-standing-rank-num');
+    const pillBadgeEl = document.getElementById('emp-pulse-standing-badge');
+    const nameEl = document.getElementById('emp-standing-name');
+    const roleDeptEl = document.getElementById('emp-standing-role-dept');
+    const tierBadgeEl = document.getElementById('emp-standing-tier-badge');
+    const placeSummaryEl = document.getElementById('emp-standing-place-summary');
+    const xpValEl = document.getElementById('emp-standing-xp-val');
+    const trophiesValEl = document.getElementById('emp-standing-trophies-val');
+    const gapValEl = document.getElementById('emp-standing-gap-val');
+    const rankBadgeEl = document.getElementById('emp-standing-rank-badge');
+
+    const totalXp = Number(standing.total_xp || 0);
+    const isRanked = Boolean(standing.is_ranked) && totalXp > 0;
+    const rankDisplay = isRanked ? (standing.rank_display || ('#' + (standing.rank || 1))) : 'Not in ranking';
+    const placeDisplay = isRanked ? (standing.place_display || ((standing.place_number || standing.rank || 1) + 'th place')) : 'Not in ranking';
+    const totalAssociates = Number(standing.total_associates || 5);
+    const inTop5 = Boolean(standing.in_top_5) && isRanked;
+
+    if (nameEl) nameEl.textContent = standing.name || 'Associate';
+    if (roleDeptEl) roleDeptEl.textContent = `${standing.role || 'Associate'} · ${standing.department || 'Front Office'}`;
+    if (tierBadgeEl) tierBadgeEl.textContent = standing.tier || 'Novice Associate';
+    if (xpValEl) xpValEl.textContent = totalXp.toLocaleString();
+    if (trophiesValEl) trophiesValEl.innerHTML = `${standing.trophies || 0} <i class="fas fa-trophy text-[10px] text-amber-500"></i>`;
+
+    if (pillBadgeEl) {
+        if (isRanked) {
+            pillBadgeEl.className = 'inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-gold-50/90 border border-gold-200 text-gold-dark text-xs font-bold shadow-2xs self-start sm:self-auto';
+            pillBadgeEl.innerHTML = `<i class="fas fa-medal text-gold"></i><span id="emp-pulse-standing-pill-text">Your Rank: ${rankDisplay} (${placeDisplay})</span>`;
+        } else {
+            pillBadgeEl.className = 'inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-xs font-semibold shadow-2xs self-start sm:self-auto';
+            pillBadgeEl.innerHTML = `<i class="fas fa-award text-slate-400"></i><span id="emp-pulse-standing-pill-text">Not in ranking (0 XP)</span>`;
+        }
+    } else if (pillTextEl) {
+        pillTextEl.textContent = isRanked ? `Your Rank: ${rankDisplay} (${placeDisplay})` : 'Not in ranking (0 XP)';
+    }
+
+    if (rankBadgeEl) {
+        if (inTop5) {
+            rankBadgeEl.className = 'w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-linear-to-br from-gold via-amber-400 to-amber-600 text-white flex flex-col items-center justify-center font-heading font-black shadow-2xs shrink-0';
+            rankBadgeEl.innerHTML = `<span class="text-[8px] sm:text-[9px] uppercase tracking-wider opacity-80 leading-none">RANK</span><span id="emp-standing-rank-num" class="text-base sm:text-xl font-bold leading-none mt-0.5 text-white">${rankDisplay}</span>`;
+        } else if (isRanked) {
+            rankBadgeEl.className = 'w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-slate-900 text-white border-2 border-slate-700 flex flex-col items-center justify-center font-heading font-black shadow-2xs shrink-0';
+            rankBadgeEl.innerHTML = `<span class="text-[8px] sm:text-[9px] uppercase tracking-wider opacity-80 leading-none">RANK</span><span id="emp-standing-rank-num" class="text-base sm:text-xl font-bold leading-none mt-0.5 text-white">${rankDisplay}</span>`;
+        } else {
+            rankBadgeEl.className = 'w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-slate-100 text-slate-400 border border-slate-200 flex flex-col items-center justify-center font-heading font-black shadow-2xs shrink-0';
+            rankBadgeEl.innerHTML = `<span class="text-[8px] sm:text-[9px] uppercase tracking-wider text-slate-400 leading-none">UNRANKED</span><span id="emp-standing-rank-num" class="text-base sm:text-xl font-bold leading-none mt-0.5 text-slate-400">—</span>`;
+        }
+    }
+
+    if (gapValEl) {
+        if (inTop5) {
+            gapValEl.className = 'text-xs font-heading font-bold text-emerald-700';
+            gapValEl.textContent = 'Podium Top 5';
+        } else if (isRanked) {
+            gapValEl.className = 'text-xs font-heading font-bold text-terracotta-dark';
+            const gap = Number(standing.xp_to_top_5 || 50);
+            gapValEl.textContent = `+${gap.toLocaleString()} XP`;
+        } else {
+            gapValEl.className = 'text-xs font-heading font-bold text-slate-500';
+            gapValEl.textContent = '+50 XP to rank';
+        }
+    }
+
+    if (placeSummaryEl) {
+        if (inTop5) {
+            placeSummaryEl.innerHTML = `<i class="fas fa-trophy text-gold text-[9px]"></i><span>Outstanding! You hold <strong>Podium Rank ${rankDisplay}</strong> among all hotel associates</span>`;
+        } else if (isRanked) {
+            placeSummaryEl.innerHTML = `<i class="fas fa-chart-simple text-slate-400 text-[9px]"></i><span>Currently in <strong>${placeDisplay}</strong> of <strong>${totalAssociates} associates</strong></span>`;
+        } else {
+            placeSummaryEl.innerHTML = `<i class="fas fa-info-circle text-slate-400 text-[9px]"></i><span>Not in ranking (0 XP) · Earn XP to rank</span>`;
+        }
+    }
+}
+window.renderEmployeeStandingCard = renderEmployeeStandingCard;
+
+/**
+ * Load and render Top 5 Champions across both overview management & employee view,
+ * including personal standing card for the specified associate.
+ */
+async function loadAndRenderTop5Champions(employeeId) {
+    const hasOverviewPodium = Boolean(document.getElementById('overview-top5-podium'));
+    const hasEmployeePodium = Boolean(document.getElementById('employee-top5-podium'));
+    const hasStandingCard = Boolean(document.getElementById('employee-personal-standing-card'));
+
+    if (!hasOverviewPodium && !hasEmployeePodium && !hasStandingCard) return;
+
+    const empId = employeeId || window.currentUser?.id || (window.activePersonaRole === 'Supervisor' ? 'emp-102' : 'emp-101');
 
     try {
-        const res = await fetch('api/social.php?action=get_top_champions');
+        const res = await fetch(`api/social.php?action=get_top_champions&employee_id=${encodeURIComponent(empId)}`);
         const json = await res.json();
-        const champions = (json && json.success && Array.isArray(json.data)) ? json.data : [];
-        renderTop5XpChampions(champions);
+        if (json && json.success) {
+            const champions = Array.isArray(json.data) ? json.data : [];
+            // Render Management Tab Podium if present
+            if (hasOverviewPodium) {
+                renderTop5XpChampions(champions, empId, 'overview-top5-podium');
+            }
+            // Render Employee Tab Podium if present
+            if (hasEmployeePodium) {
+                renderTop5XpChampions(champions, empId, 'employee-top5-podium');
+            }
+            // Render Employee Personal Standing Card if present
+            if (json.standing) {
+                renderEmployeeStandingCard(json.standing, empId);
+            }
+        }
     } catch (err) {
         console.error('Failed to load top 5 XP champions:', err);
     }
@@ -529,7 +636,7 @@ function setSocialDeptFilter(dept) {
         if (btnDept === dept.toLowerCase()) {
             btn.className = 'social-dept-chip px-3 py-1 rounded-full font-bold bg-primary text-white text-[11px] whitespace-nowrap shadow-2xs transition';
         } else {
-            btn.className = 'social-dept-chip px-3 py-1 rounded-full font-semibold bg-[#FAF8F7] text-slate-600 border border-[#E8DEDC] hover:bg-slate-100 text-[11px] whitespace-nowrap transition';
+            btn.className = 'social-dept-chip px-3 py-1 rounded-full font-semibold bg-brand-canvas text-slate-600 border border-brand-border hover:bg-slate-100 text-[11px] whitespace-nowrap transition';
         }
     });
     renderSocialFeed();
@@ -570,7 +677,7 @@ function renderSocialFeed() {
 
     if (filtered.length === 0) {
         container.innerHTML = `
-            <div class="card-clean p-10 text-center space-y-2 border border-[#E8DEDC] bg-white">
+            <div class="card-clean p-10 text-center space-y-2 border border-brand-border bg-white">
                 <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto text-xl shadow-2xs">
                     <i class="fas fa-bullhorn"></i>
                 </div>
@@ -600,23 +707,23 @@ function renderSocialFeed() {
 
         const clapClass = isClapActive 
             ? 'bg-amber-100 border-amber-400 text-amber-900 shadow-xs ring-2 ring-amber-400/40 font-extrabold scale-105' 
-            : 'bg-[#FAF8F7] hover:bg-amber-50 hover:border-amber-300 border border-[#E8DEDC] text-slate-600';
+            : 'bg-brand-canvas hover:bg-amber-50 hover:border-amber-300 border border-brand-border text-slate-600';
         const heartClass = isHeartActive 
             ? 'bg-rose-100 border-rose-400 text-rose-900 shadow-xs ring-2 ring-rose-400/40 font-extrabold scale-105' 
-            : 'bg-[#FAF8F7] hover:bg-red-50 hover:border-red-300 border border-[#E8DEDC] text-slate-600';
+            : 'bg-brand-canvas hover:bg-red-50 hover:border-red-300 border border-brand-border text-slate-600';
         const starClass = isStarActive 
             ? 'bg-amber-100 border-yellow-400 text-amber-900 shadow-xs ring-2 ring-yellow-400/40 font-extrabold scale-105' 
-            : 'bg-[#FAF8F7] hover:bg-yellow-50 hover:border-yellow-300 border border-[#E8DEDC] text-slate-600';
+            : 'bg-brand-canvas hover:bg-yellow-50 hover:border-yellow-300 border border-brand-border text-slate-600';
         const fireClass = isFireActive 
             ? 'bg-orange-100 border-orange-400 text-orange-900 shadow-xs ring-2 ring-orange-400/40 font-extrabold scale-105' 
-            : 'bg-[#FAF8F7] hover:bg-orange-50 hover:border-orange-300 border border-[#E8DEDC] text-slate-600';
+            : 'bg-brand-canvas hover:bg-orange-50 hover:border-orange-300 border border-brand-border text-slate-600';
 
         return `
-            <div class="card-clean p-5 hover:shadow-md transition space-y-3.5 border border-[#E8DEDC] bg-white rounded-2xl">
+            <div class="card-clean p-5 hover:shadow-md transition space-y-3.5 border border-brand-border bg-white rounded-2xl">
                 <!-- Header: Sender & Receiver Details -->
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E8DEDC] pb-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-brand-border pb-3">
                     <div class="flex items-center space-x-3">
-                        <img src="${post.senderAvatar}" alt="${post.senderName}" class="w-10 h-10 rounded-full object-cover border border-[#E8DEDC] shadow-xs">
+                        <img src="${post.senderAvatar}" alt="${post.senderName}" class="w-10 h-10 rounded-full object-cover border border-brand-border shadow-xs">
                         <div>
                             <div class="flex items-center space-x-1.5 flex-wrap">
                                 <span class="font-bold text-slate-900 text-xs">${post.senderName}</span>
@@ -627,7 +734,7 @@ function renderSocialFeed() {
                         </div>
                     </div>
 
-                    <div class="flex items-center space-x-2 flex-shrink-0">
+                    <div class="flex items-center space-x-2 shrink-0">
                         <span class="badge-${catConfig.color} text-[10px]">
                             <i class="fas ${catConfig.icon} mr-1"></i> ${post.categoryLabel}
                         </span>
@@ -661,7 +768,7 @@ function renderSocialFeed() {
                             <i class="fas fa-fire text-orange-500"></i>
                             <span id="react-fire-${post.id}">${post.reactions.fire}</span>
                         </button>
-                        <button onclick="togglePostComments('${post.id}')" class="px-2.5 py-1 rounded-xl bg-[#FAF8F7] hover:bg-slate-100 border border-[#E8DEDC] text-[10px] font-semibold text-slate-600 flex items-center space-x-1 transition">
+                        <button onclick="togglePostComments('${post.id}')" class="px-2.5 py-1 rounded-xl bg-brand-canvas hover:bg-slate-100 border border-brand-border text-[10px] font-semibold text-slate-600 flex items-center space-x-1 transition">
                             <i class="fas fa-comment-dots text-slate-400"></i>
                             <span>${comments.length} Cheers</span>
                         </button>
@@ -679,8 +786,8 @@ function renderSocialFeed() {
                 <div id="comments-section-${post.id}" class="${hasComments ? '' : 'hidden'} pt-3 border-t border-slate-100 space-y-2">
                     <div id="comments-list-${post.id}" class="space-y-1.5">
                         ${comments.map(c => `
-                            <div class="p-2.5 rounded-xl bg-[#FAF8F7] border border-[#E8DEDC] flex items-start space-x-2.5 text-xs">
-                                <img src="${c.author_avatar || c.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}" class="w-6 h-6 rounded-full object-cover border border-[#E8DEDC] mt-0.5">
+                            <div class="p-2.5 rounded-xl bg-brand-canvas border border-brand-border flex items-start space-x-2.5 text-xs">
+                                <img src="${c.author_avatar || c.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}" class="w-6 h-6 rounded-full object-cover border border-brand-border mt-0.5">
                                 <div class="flex-1">
                                     <div class="flex items-center justify-between">
                                         <span class="font-bold text-slate-800 text-[11px]">${c.author_name || c.authorName || 'Colleague'}</span>
@@ -695,7 +802,7 @@ function renderSocialFeed() {
                     <!-- Quick Cheer Reply Input -->
                     <div class="flex items-center space-x-2 pt-1">
                         <input type="text" id="comment-input-${post.id}" placeholder="Cheer on ${post.receiverName} with a friendly note..." 
-                            class="flex-1 px-3 py-1.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-medium focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 focus:outline-none"
+                            class="flex-1 px-3 py-1.5 bg-brand-canvas border input-cheer rounded-xl text-xs font-medium focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
                             onkeypress="if(event.key==='Enter') submitPostComment('${post.id}')">
                         <button onclick="submitPostComment('${post.id}')" class="btn-primary px-3 py-1.5 text-xs font-bold flex items-center space-x-1">
                             <i class="fas fa-paper-plane text-[10px]"></i>
@@ -793,7 +900,7 @@ function updatePostReactionsUI(postId) {
         star: 'bg-amber-100 border-yellow-400 text-amber-900 shadow-xs ring-2 ring-yellow-400/40 font-extrabold scale-105',
         fire: 'bg-orange-100 border-orange-400 text-orange-900 shadow-xs ring-2 ring-orange-400/40 font-extrabold scale-105'
     };
-    const defaultClasses = 'bg-[#FAF8F7] hover:bg-slate-100 border border-[#E8DEDC] text-slate-600';
+    const defaultClasses = 'bg-brand-canvas hover:bg-slate-100 border border-brand-border text-slate-600';
     const baseBtnClass = 'px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center space-x-1.5 transition duration-150';
 
     types.forEach(t => {
@@ -853,8 +960,8 @@ window.updatePostFromRealtime = function(newRow) {
     const commentsListEl = document.getElementById(`comments-list-${post.id}`);
     if (commentsListEl && Array.isArray(post.comments)) {
         commentsListEl.innerHTML = post.comments.map(c => `
-            <div class="p-2.5 rounded-xl bg-[#FAF8F7] border border-[#E8DEDC] flex items-start space-x-2.5 text-xs">
-                <img src="${c.author_avatar || c.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}" class="w-6 h-6 rounded-full object-cover border border-[#E8DEDC] mt-0.5">
+            <div class="p-2.5 rounded-xl bg-brand-canvas border border-brand-border flex items-start space-x-2.5 text-xs">
+                <img src="${c.author_avatar || c.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}" class="w-6 h-6 rounded-full object-cover border border-brand-border mt-0.5">
                 <div class="flex-1">
                     <div class="flex items-center justify-between">
                         <span class="font-bold text-slate-800 text-[11px]">${c.author_name || c.authorName || 'Colleague'}</span>
@@ -994,7 +1101,7 @@ function renderPointLedger(filterQuery = '') {
     }
 
     tbody.innerHTML = rows.map(txn => `
-        <tr class="hover:bg-[#FAF8F7]/80 transition text-xs">
+        <tr class="hover:bg-brand-canvas/80 transition text-xs">
             <td class="px-5 py-3 font-mono font-bold text-slate-700">${txn.id || 'TXN-8800'}</td>
             <td class="px-5 py-3 text-slate-600">${txn.date || 'Aug 24, 2026'}</td>
             <td class="px-5 py-3 font-bold text-slate-900">${txn.recipient || 'My Account'}</td>
@@ -1021,7 +1128,7 @@ function renderMilestoneBadges() {
         const targetXp = b.targetXp || (b.threshold ? parseInt(b.threshold.replace(/\D/g, '')) || 1000 : 1000);
 
         return `
-            <div class="p-5 bg-white rounded-2xl border ${isUnlocked ? 'border-amber-400 bg-amber-50/20' : 'border-[#E8DEDC]'} space-y-3 text-center text-xs shadow-2xs hover:shadow-md transition">
+            <div class="p-5 bg-white rounded-2xl border ${isUnlocked ? 'border-amber-400 bg-amber-50/20' : 'border-brand-border'} space-y-3 text-center text-xs shadow-2xs hover:shadow-md transition">
                 <div class="w-14 h-14 mx-auto rounded-2xl ${isUnlocked ? 'bg-amber-500 text-white shadow-md' : 'bg-slate-100 text-slate-400'} border border-amber-500/20 flex items-center justify-center text-2xl transition">
                     <i class="fas ${b.icon || 'fa-medal'}"></i>
                 </div>
@@ -1042,7 +1149,7 @@ function renderMilestoneBadges() {
                     </div>
                 </div>
 
-                <div class="pt-2 border-t border-[#E8DEDC] flex justify-between items-center text-[10px]">
+                <div class="pt-2 border-t border-brand-border flex justify-between items-center text-[10px]">
                     <span class="text-slate-500">Status:</span>
                     ${isUnlocked 
                         ? `<span class="badge-sage font-bold"><i class="fas fa-check-circle mr-1"></i> Achieved</span>` 
@@ -1095,7 +1202,7 @@ function setSentimentTimeFilter(timeframeType, value = '') {
             if (timeframeType === k) {
                 btn.className = 'climate-chip px-3 py-1 rounded-full font-bold bg-primary text-white text-[11px] whitespace-nowrap shadow-2xs';
             } else {
-                btn.className = 'climate-chip px-3 py-1 rounded-full font-semibold bg-white text-slate-600 border border-[#E8DEDC] hover:bg-slate-100 text-[11px] whitespace-nowrap';
+                btn.className = 'climate-chip px-3 py-1 rounded-full font-semibold bg-white text-slate-600 border border-brand-border hover:bg-slate-100 text-[11px] whitespace-nowrap';
             }
         }
     });
@@ -1116,7 +1223,7 @@ function setSentimentTimeFilter(timeframeType, value = '') {
                 if (statusText) statusText.textContent = `Showing Month: ${value}`;
             }
         } else {
-            specificBtn.className = 'climate-chip px-3 py-1 rounded-full font-semibold bg-white text-slate-600 border border-[#E8DEDC] hover:bg-slate-100 text-[11px] whitespace-nowrap flex items-center space-x-1';
+            specificBtn.className = 'climate-chip px-3 py-1 rounded-full font-semibold bg-white text-slate-600 border border-brand-border hover:bg-slate-100 text-[11px] whitespace-nowrap flex items-center space-x-1';
             if (specificLabel) specificLabel.textContent = 'Specific Date';
             if (statusText) {
                 if (timeframeType === 'today') statusText.textContent = "Showing: Today's Shift";
@@ -1588,9 +1695,9 @@ function renderKudosRoster() {
 
         return `
             <div onclick="toggleKudosRecipient('${s.id}')" 
-                class="flex items-center justify-between p-2.5 rounded-xl border transition cursor-pointer select-none ${isSelected ? 'bg-amber-50 border-amber-400 ring-1 ring-amber-400' : 'bg-white border-[#E8DEDC] hover:bg-slate-50'}">
+                class="flex items-center justify-between p-2.5 rounded-xl border transition cursor-pointer select-none ${isSelected ? 'bg-amber-50 border-amber-400 ring-1 ring-amber-400' : 'bg-white border-brand-border hover:bg-slate-50'}">
                 <div class="flex items-center space-x-3">
-                    <img src="${s.avatar}" alt="${s.name}" class="w-8 h-8 rounded-full object-cover border border-[#E8DEDC]">
+                    <img src="${s.avatar}" alt="${s.name}" class="w-8 h-8 rounded-full object-cover border border-brand-border">
                     <div>
                         <span class="font-bold text-slate-900 block text-xs">${s.name}</span>
                         <span class="text-[10px] text-slate-500">${s.role} · <span class="text-primary font-semibold">${s.dept || s.department}</span></span>
@@ -1771,5 +1878,14 @@ window.dispatchRecognition = dispatchRecognition;
 window.renderQualitativePerformanceFeed = renderQualitativePerformanceFeed;
 
 document.addEventListener('DOMContentLoaded', () => {
-    initSocialRecognition();
+    const activePillar = localStorage.getItem('oxford_active_pillar') || 'dashboard';
+    if (activePillar === 'pillar-social') {
+        initSocialRecognition();
+    } else {
+        if (window.requestIdleCallback) {
+            window.requestIdleCallback(() => initSocialRecognition(), { timeout: 2000 });
+        } else {
+            setTimeout(initSocialRecognition, 500);
+        }
+    }
 });

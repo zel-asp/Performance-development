@@ -66,6 +66,14 @@ function closeModal(id) {
         if (window.activeModalStack.length === 0) {
             document.body.classList.remove('overflow-hidden');
         }
+
+        if (id === 'modal-action-confirmation' && typeof window.resetActionConfirmModal === 'function') {
+            window.resetActionConfirmModal();
+        }
+
+        if (id === 'modal-view-goal') {
+            window.currentViewGoalTargetId = null;
+        }
     }
 }
 
@@ -360,7 +368,7 @@ function updatePerfStepper(activeSubKey) {
     }
 
     // Dynamic Traveling Laser Glider: Shows traveling from fromIdx to activeIdx (forward or backward)
-    if (glider && track && stepItems.length >= 7 && fromIdx !== activeIdx) {
+    if (glider && track && track.offsetParent && stepItems.length >= 7 && fromIdx !== activeIdx) {
         const trackRect = track.getBoundingClientRect();
         const fromBubble = stepItems[fromIdx]?.querySelector('.perf-step-bubble');
         const toBubble = stepItems[activeIdx]?.querySelector('.perf-step-bubble');
@@ -633,6 +641,9 @@ function switchRole(userRole, silent = false) {
     }
     if (typeof updateXpTrajectoryFromLedger === 'function') {
         updateXpTrajectoryFromLedger(persona.id);
+    }
+    if (typeof loadAndRenderTop5Champions === 'function') {
+        loadAndRenderTop5Champions(persona.id);
     }
     if (typeof initSocialRecognition === 'function') {
         initSocialRecognition();
@@ -935,7 +946,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (typeof loadAndRenderTop5Champions === 'function') {
-        loadAndRenderTop5Champions();
+        if (window.requestIdleCallback) {
+            window.requestIdleCallback(() => loadAndRenderTop5Champions(), { timeout: 1000 });
+        } else {
+            setTimeout(loadAndRenderTop5Champions, 150);
+        }
     }
 });
 
@@ -1311,7 +1326,7 @@ async function checkAndRefreshShiftSentimentStatus(sentimentsInput) {
         if (titleEl) titleEl.textContent = s.title;
         if (descEl) descEl.textContent = s.desc;
         if (badgeEl) {
-            badgeEl.className = `${s.badge} flex-shrink-0`;
+            badgeEl.className = `${s.badge} shrink-0`;
             badgeEl.textContent = 'Logged Today';
         }
         if (bannerEl) bannerEl.className = s.bg;
@@ -1341,7 +1356,7 @@ async function checkAndRefreshShiftSentimentStatus(sentimentsInput) {
         if (titleEl) titleEl.textContent = 'Ready for Daily Check-In';
         if (descEl) descEl.textContent = 'Select your shift mood below or click Log Check-In for detailed notes.';
         if (badgeEl) {
-            badgeEl.className = 'badge-dusty flex-shrink-0';
+            badgeEl.className = 'badge-dusty shrink-0';
             badgeEl.textContent = 'Pending';
         }
         if (bannerEl) bannerEl.className = 'p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 transition-all';
@@ -1442,8 +1457,5 @@ window.toggleMobileSidebar = toggleMobileSidebar;
 window.switchRole = switchRole;
 window.logOutToAuth = logOutToAuth;
 
-// Automatic initial check on page load
-window.addEventListener('DOMContentLoaded', () => {
-    checkAndRefreshShiftSentimentStatus();
-});
+// Automatic initial check on page load (handled safely inside switchRole)
 

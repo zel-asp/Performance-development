@@ -36,7 +36,7 @@ foreach ($employees as $emp) {
     $totalDeficitsFound += $deficitCount;
     
     if ($deficitCount > 0) {
-        echo "   ⚠️  Found {$deficitCount} active deficit(s) < 3.8 score requiring training intervention:\n";
+        echo "     Found {$deficitCount} active deficit(s) < 3.8 score requiring training intervention:\n";
         foreach ($synced as $d) {
             $compName = $d['targetCompetency'] ?? ($d['target_competency'] ?? 'Competency');
             $score = $d['currentScore'] ?? ($d['current_score'] ?? 0);

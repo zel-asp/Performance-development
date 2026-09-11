@@ -1,0 +1,91 @@
+{
+    "livePropertyXp": 0,
+    "liveKudosSent": 0,
+    "liveBadgesCount": 0,
+    "liveActiveStaffCount": 5,
+    "liveTotalGoals": 1,
+    "liveApprovedGoals": 1,
+    "liveReviewGoals": 0,
+    "liveReviseGoals": 0,
+    "liveGoalsApprovalRate": 100,
+    "liveTotalPrescribed": 1,
+    "livePassedPrescribed": 1,
+    "liveLmsAvgScore": 100,
+    "liveLmsRate": 100,
+    "totalRolesCount": 1,
+    "coveredRolesCount": 1,
+    "fastTrackCount": 1,
+    "liveBenchDepthPct": 100,
+    "deptBuckets": {
+        "Front Office": {
+            "department": "Front Office",
+            "staff_count": 1,
+            "staff_ids": [
+                "emp-101"
+            ],
+            "goals_total": 1,
+            "goals_approved": 1,
+            "lms_total": 1,
+            "lms_progress_sum": 100,
+            "lms_passed": 1,
+            "succ_candidates": 1,
+            "succ_ready": 1
+        },
+        "Food & Beverage": {
+            "department": "Food & Beverage",
+            "staff_count": 0,
+            "staff_ids": [],
+            "goals_total": 0,
+            "goals_approved": 0,
+            "lms_total": 0,
+            "lms_progress_sum": 0,
+            "lms_passed": 0,
+            "succ_candidates": 0,
+            "succ_ready": 0
+        },
+        "Kitchen & Culinary": {
+            "department": "Kitchen & Culinary",
+            "staff_count": 1,
+            "staff_ids": [
+                "emp-102"
+            ],
+            "goals_total": 0,
+            "goals_approved": 0,
+            "lms_total": 0,
+            "lms_progress_sum": 0,
+            "lms_passed": 0,
+            "succ_candidates": 0,
+            "succ_ready": 0
+        },
+        "Banquet & Events": {
+            "department": "Banquet & Events",
+            "staff_count": 0,
+            "staff_ids": [],
+            "goals_total": 0,
+            "goals_approved": 0,
+            "lms_total": 0,
+            "lms_progress_sum": 0,
+            "lms_passed": 0,
+            "succ_candidates": 0,
+            "succ_ready": 0
+        },
+        "Housekeeping": {
+            "department": "Housekeeping",
+            "staff_count": 3,
+            "staff_ids": [
+                "3a52667f-53cf-412a-b048-ef96eb407707",
+                "3bb792e6-b25e-460e-a8fa-712c65c3b2e2",
+                "b7e1a2c4-9d3f-4a1e-8c6b-1f2e3d4a5b6c"
+            ],
+            "goals_total": 0,
+            "goals_approved": 0,
+            "lms_total": 0,
+            "lms_progress_sum": 0,
+            "lms_passed": 0,
+            "succ_candidates": 0,
+            "succ_ready": 0
+        }
+    },
+    "overviewChampions": [],
+    "cached_at": 1789095706
+}

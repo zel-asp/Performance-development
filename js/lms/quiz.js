@@ -546,7 +546,7 @@
                 const isSelected = selectedOpt === optIdx;
                 const borderClass = isSelected
                     ? 'border-primary bg-primary-50/40 ring-2 ring-primary/30 shadow-xs'
-                    : 'border-[#E8DEDC] bg-white hover:bg-[#FAF8F7] hover:border-slate-300';
+                    : 'border-brand-border bg-white hover:bg-brand-canvas hover:border-slate-300';
                 const circleClass = isSelected
                     ? 'bg-primary text-white border-primary'
                     : 'bg-slate-100 text-slate-700 border-slate-300';
@@ -554,7 +554,7 @@
                 return `
                     <label onclick="selectQuizOption(${optIdx})"
                         class="flex items-start space-x-3 p-3.5 rounded-2xl border ${borderClass} cursor-pointer transition select-none">
-                        <div class="w-6 h-6 rounded-full border ${circleClass} flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5 transition">
+                        <div class="w-6 h-6 rounded-full border ${circleClass} flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 transition">
                             ${letters[optIdx] || (optIdx + 1)}
                         </div>
                         <div class="flex-1">
@@ -749,7 +749,7 @@
 
                 return `
                     <div onclick="goToQuizQuestion(${idx}); backToActiveQuiz();"
-                        class="p-3.5 rounded-2xl border ${isAns ? 'border-slate-200 bg-[#FAF8F7]' : 'border-amber-200 bg-amber-50/40'} hover:border-primary/50 cursor-pointer transition space-y-1.5 shadow-2xs">
+                        class="p-3.5 rounded-2xl border ${isAns ? 'border-slate-200 bg-brand-canvas' : 'border-amber-200 bg-amber-50/40'} hover:border-primary/50 cursor-pointer transition space-y-1.5 shadow-2xs">
                         <div class="flex items-center justify-between">
                             <span class="font-bold text-[11px] ${isAns ? 'text-slate-700' : 'text-amber-800'}">Question ${idx + 1}</span>
                             <span class="text-[10px] font-bold ${isAns ? 'text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full' : 'text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full'}">
@@ -1000,7 +1000,7 @@
                         <div class="space-y-2 pt-2 border-t border-slate-200/60">
                             <!-- User Choice Display -->
                             <div class="p-2.5 rounded-xl ${isCorrect ? 'bg-emerald-50 border border-emerald-200' : (!isAnswered ? 'bg-slate-50 border border-slate-200 text-slate-500' : 'bg-rose-50 border border-rose-200')} flex items-start gap-2">
-                                <span class="font-bold text-[11px] ${isCorrect ? 'text-emerald-800' : (!isAnswered ? 'text-slate-500' : 'text-rose-800')} flex-shrink-0">
+                                <span class="font-bold text-[11px] ${isCorrect ? 'text-emerald-800' : (!isAnswered ? 'text-slate-500' : 'text-rose-800')} shrink-0">
                                     Your Answer:
                                 </span>
                                 <span class="text-xs font-semibold ${isCorrect ? 'text-emerald-950 font-bold' : (!isAnswered ? 'italic text-slate-500' : 'text-rose-950 font-bold')}">
@@ -1010,7 +1010,7 @@
 
                             <!-- Standard Verified Correct Answer (Always Rendered for All Items) -->
                             <div class="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-300 text-emerald-950 flex items-start gap-2 shadow-2xs">
-                                <div class="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[9px] font-black flex-shrink-0 mt-0.5">
+                                <div class="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[9px] font-black shrink-0 mt-0.5">
                                     <i class="fas fa-check"></i>
                                 </div>
                                 <div class="flex-1">
@@ -1021,7 +1021,7 @@
 
                             <!-- Explanation & Handbook Grounding Reference -->
                             <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-600 text-[11px] flex items-start gap-2">
-                                <i class="fas fa-book-open text-primary mt-0.5 text-xs flex-shrink-0"></i>
+                                <i class="fas fa-book-open text-primary mt-0.5 text-xs shrink-0"></i>
                                 <div class="flex-1 leading-relaxed">
                                     <strong class="text-slate-800 font-semibold">Handbook Reference:</strong> ${q.explanation || 'Verified standard operating protocol from course handbook.'}
                                 </div>

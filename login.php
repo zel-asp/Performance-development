@@ -236,7 +236,7 @@ require_once 'config/config.php';
                                     id="gateway-email"
                                     required
                                     placeholder="Enter role account email"
-                                    class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/10 transition shadow-sm placeholder:text-slate-400">
+                                    class="w-full pl-10 pr-4 py-3 bg-white border login-input rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary/10 transition shadow-sm">
                             </div>
                         </div>
 
@@ -256,7 +256,7 @@ require_once 'config/config.php';
                                     id="gateway-password"
                                     required
                                     placeholder="Enter your account password"
-                                    class="w-full pl-10 pr-11 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/10 transition shadow-sm placeholder:text-slate-400">
+                                    class="w-full pl-10 pr-11 py-3 bg-white border login-input rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary/10 transition shadow-sm">
                                 <button
                                     type="button"
                                     onclick="togglePasswordVisibility('gateway-password', 'gateway-pass-icon')"
@@ -293,7 +293,7 @@ require_once 'config/config.php';
         <!-- =================================================================== -->
         <!-- MODAL 1: EMPLOYEE / SUPERVISOR SELECTION MODAL                      -->
         <!-- =================================================================== -->
-        <div id="modal-employee-selection" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4">
+        <div id="modal-employee-selection" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
             <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 
                 <!-- Modal Header -->
@@ -330,12 +330,12 @@ require_once 'config/config.php';
                             id="employee-search-input"
                             oninput="filterEmployeeList(this.value)"
                             placeholder="Search by name, title, or email..."
-                            class="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-xs font-medium focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/10 transition placeholder:text-slate-400">
+                            class="w-full pl-9 pr-4 py-2.5 border login-input-search rounded-lg text-xs font-medium focus:ring-2 focus:ring-primary/10 transition">
                     </div>
                 </div>
 
                 <!-- Employee Cards List -->
-                <div class="p-6 overflow-y-auto flex-grow space-y-3" id="employee-cards-container">
+                <div class="p-6 overflow-y-auto grow space-y-3" id="employee-cards-container">
                     <div class="text-center py-8 text-slate-400 text-xs">
                         <i class="fas fa-spinner fa-spin text-lg mb-2 text-primary"></i>
                         <p>Loading directory profiles...</p>
@@ -368,7 +368,7 @@ require_once 'config/config.php';
         <!-- =================================================================== -->
         <!-- MODAL 2: OTP VERIFICATION MODAL                                     -->
         <!-- =================================================================== -->
-        <div id="modal-otp-verification" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4">
+        <div id="modal-otp-verification" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
             <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 
                 <!-- Modal Header -->
@@ -413,7 +413,7 @@ require_once 'config/config.php';
                                 maxlength="6"
                                 required
                                 placeholder="123456"
-                                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-2xl font-bold tracking-[0.35em] text-center focus:border-primary focus:ring-2 focus:ring-primary/10 transition shadow-sm placeholder:text-slate-300">
+                                class="w-full px-4 py-3 bg-white border login-input-otp rounded-lg text-2xl font-bold tracking-[0.35em] text-center focus:ring-2 focus:ring-primary/10 transition shadow-sm">
                         </div>
 
                         <!-- Remember Me Checkbox -->
@@ -472,7 +472,7 @@ require_once 'config/config.php';
         <!-- =================================================================== -->
         <!-- MODAL 3: CREATE PASSWORD MODAL (FIRST-TIME USERS)                   -->
         <!-- =================================================================== -->
-        <div id="modal-create-password" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4">
+        <div id="modal-create-password" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
             <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 
                 <!-- Modal Header -->
@@ -514,7 +514,7 @@ require_once 'config/config.php';
                                     required
                                     oninput="checkModalPasswordStrength(this.value)"
                                     placeholder="Enter your personal password"
-                                    class="w-full pl-10 pr-11 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/10 transition shadow-sm placeholder:text-slate-400">
+                                    class="w-full pl-10 pr-11 py-3 bg-white border login-input rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary/10 transition shadow-sm">
                                 <button
                                     type="button"
                                     onclick="togglePasswordVisibility('modal-new-password', 'modal-new-pass-icon')"
@@ -546,7 +546,7 @@ require_once 'config/config.php';
                                     id="modal-confirm-password"
                                     required
                                     placeholder="Re-enter your password"
-                                    class="w-full pl-10 pr-11 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/10 transition shadow-sm placeholder:text-slate-400">
+                                    class="w-full pl-10 pr-11 py-3 bg-white border login-input rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary/10 transition shadow-sm">
                                 <button
                                     type="button"
                                     onclick="togglePasswordVisibility('modal-confirm-password', 'modal-conf-pass-icon')"
@@ -574,7 +574,7 @@ require_once 'config/config.php';
         <!-- =================================================================== -->
         <!-- MODAL 4: REMEMBERED STAFF PASSWORD LOGIN MODAL                      -->
         <!-- =================================================================== -->
-        <div id="modal-remembered-login" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4">
+        <div id="modal-remembered-login" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
             <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 
                 <!-- Modal Header -->
@@ -624,7 +624,7 @@ require_once 'config/config.php';
                                     id="modal-rem-password"
                                     required
                                     placeholder="Enter your personal password"
-                                    class="w-full pl-10 pr-11 py-3 bg-white border border-slate-200 rounded-lg text-slate-900 text-sm font-medium focus:border-primary focus:ring-2 focus:ring-primary/10 transition shadow-sm placeholder:text-slate-400">
+                                    class="w-full pl-10 pr-11 py-3 bg-white border login-input rounded-lg text-sm font-medium focus:ring-2 focus:ring-primary/10 transition shadow-sm">
                                 <button
                                     type="button"
                                     onclick="togglePasswordVisibility('modal-rem-password', 'modal-rem-pass-icon')"

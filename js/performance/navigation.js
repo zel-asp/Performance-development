@@ -129,6 +129,21 @@ function renderAllStageTables() {
 window.renderAllStageTables = renderAllStageTables;
 
 async function initPerformanceViews() {
+    // 0. Instant Cache Pre-Hydration from PerfCache
+    let hasPreHydrated = false;
+    if (!window.dbGoals || window.dbGoals.length === 0) {
+        const cached = window.PerfCache ? window.PerfCache.get('planning_data') : null;
+        if (cached && Array.isArray(cached.goals) && cached.goals.length > 0) {
+            window.dbGoals = cached.goals;
+            window.dbGeneralTasks = cached.general_tasks || [];
+            if (cached.draft_plans) window.dbDraftPlans = cached.draft_plans;
+            if (cached.roster) window.perfRoster = cached.roster;
+            if (cached.evaluations) window.dbEvaluations = cached.evaluations;
+            if (cached.training_needs) window.dbTrainingNeeds = cached.training_needs;
+            hasPreHydrated = true;
+        }
+    }
+
     // 1. Instant local render of active stage first (0ms latency)
     if (window.dbGoals && window.dbGoals.length > 0) {
         renderEmployeePulseGoals(window.dbGoals);
@@ -140,15 +155,15 @@ async function initPerformanceViews() {
         loadSupervisorsForModal().catch(() => {});
     }
 
-    // 2. Fetch all dynamic data in parallel for maximum speed
-    await loadAndRenderPlanningGoals();
+    // 2. Fetch fresh dynamic data in background (silent if pre-hydrated to avoid skeleton flash)
+    await loadAndRenderPlanningGoals(hasPreHydrated);
 }
 
 function renderPerformanceSkeletons() {
     const pulseContainer = document.getElementById('emp-pulse-goals-container');
     if (pulseContainer && (!window.dbGoals || window.dbGoals.length === 0)) {
         pulseContainer.innerHTML = Array(2).fill(0).map(() => `
-            <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-3 animate-pulse">
+            <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-3 animate-pulse min-h-71.25 flex flex-col justify-between" style="contain: layout style;">
                 <div class="flex items-center justify-between">
                     <div class="h-4 bg-slate-200 rounded-full w-24"></div>
                     <div class="h-3 bg-slate-100 rounded w-16"></div>
@@ -157,9 +172,13 @@ function renderPerformanceSkeletons() {
                     <div class="h-4 bg-slate-200 rounded w-3/4"></div>
                     <div class="h-3 bg-slate-100 rounded w-1/2"></div>
                 </div>
-                <div class="p-2.5 bg-slate-50 rounded-xl space-y-1.5">
+                <div class="p-2.5 bg-slate-50 rounded-xl space-y-1.5 min-h-12.5">
                     <div class="h-3 bg-slate-200 rounded w-1/3"></div>
                     <div class="w-full bg-slate-200 h-1.5 rounded-full"></div>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 min-h-37 space-y-2">
+                    <div class="h-3 bg-slate-200 rounded w-1/3"></div>
+                    <div class="h-8 bg-slate-100 rounded w-full"></div>
                 </div>
                 <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
                     <div class="h-4 bg-slate-100 rounded w-16"></div>

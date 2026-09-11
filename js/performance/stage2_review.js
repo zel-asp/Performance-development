@@ -43,7 +43,7 @@ function renderGeneralTasksTable() {
             </td>
             <td class="px-5 py-3.5">
                 <div class="space-y-1">
-                    <p class="font-bold text-slate-900 text-xs max-w-[200px] truncate" title="${t.title}">${t.title}</p>
+                    <p class="font-bold text-slate-900 text-xs max-w-50 truncate" title="${t.title}">${t.title}</p>
                     <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-primary/10 text-primary">${t.category || 'Operational Excellence'}</span>
                 </div>
             </td>
@@ -281,27 +281,112 @@ function validateSpecificTaskRowDate(inputEl) {
 }
 window.validateSpecificTaskRowDate = validateSpecificTaskRowDate;
 
-function openCreateSpecificTaskModal(goalId, empId) {
-    const goal = (window.dbGoals || []).find(g => String(g.id) === String(goalId));
+function applySpecificTaskGoalData(goal, empId = null) {
     if (!goal) return;
+    const goalIdEl = document.getElementById('specific-task-goal-id');
+    const empIdEl = document.getElementById('specific-task-employee-id');
+    const targetDateEl = document.getElementById('specific-task-goal-target-date');
+    const titleDisp = document.getElementById('specific-task-goal-title-display');
+    const dateDisp = document.getElementById('specific-task-goal-date-display');
+    const empDisp = document.getElementById('specific-task-emp-name-display');
 
-    const st = (goal.status || '').toLowerCase().trim();
-    if (st === 'done' || st === 'completed' || st === 'failed') {
+    if (goalIdEl) goalIdEl.value = goal.id;
+    if (empIdEl) empIdEl.value = goal.employee_id || empId || 'emp-101';
+    if (targetDateEl) targetDateEl.value = goal.target_date || '';
+
+    if (titleDisp) titleDisp.textContent = goal.title;
+    if (dateDisp) dateDisp.textContent = goal.target_date || 'Q3 2026';
+
+    const emp = (window.perfRoster || []).find(e => e.id === (goal.employee_id || empId));
+    if (empDisp) empDisp.textContent = emp ? emp.name : (goal.employee_name || 'Associate');
+
+    // Update max dates on any already rendered rows
+    const container = document.getElementById('specific-tasks-rows-container');
+    if (container && goal.target_date) {
+        container.querySelectorAll('.task-row-date').forEach(input => {
+            input.setAttribute('max', goal.target_date);
+            if (input.value && input.value > goal.target_date) {
+                input.value = goal.target_date;
+            }
+        });
+    }
+}
+window.applySpecificTaskGoalData = applySpecificTaskGoalData;
+
+function onSpecificTaskGoalSelect(goalId) {
+    const goal = (window.dbGoals || []).find(g => String(g.id) === String(goalId));
+    if (goal) {
+        applySpecificTaskGoalData(goal);
+    }
+}
+window.onSpecificTaskGoalSelect = onSpecificTaskGoalSelect;
+
+function openCreateSpecificTaskModal(goalId = null, empId = null) {
+    const goals = (window.dbGoals || []).filter(g => {
+        const st = (g.status || '').toLowerCase().trim();
+        return st !== 'done' && st !== 'completed' && st !== 'failed';
+    });
+
+    if (goals.length === 0) {
         if (typeof showToast === 'function') {
-            showToast(`Cannot add tasks: Objective is already marked as ${goal.status}.`, 'warning');
+            showToast('No active objectives available to assign specific tasks to.', 'warning');
         }
         return;
     }
 
-    document.getElementById('specific-task-goal-id').value = goal.id;
-    document.getElementById('specific-task-employee-id').value = goal.employee_id || empId || 'emp-101';
-    document.getElementById('specific-task-goal-target-date').value = goal.target_date || '';
+    const titleDisplay = document.getElementById('specific-task-goal-title-display');
+    const goalSelect = document.getElementById('specific-task-goal-select');
 
-    document.getElementById('specific-task-goal-title-display').textContent = goal.title;
-    document.getElementById('specific-task-goal-date-display').textContent = goal.target_date || 'Q3 2026';
+    let targetGoal = null;
+    if (goalId) {
+        targetGoal = (window.dbGoals || []).find(g => String(g.id) === String(goalId));
+        if (!targetGoal) {
+            if (typeof showToast === 'function') showToast('Selected objective was not found.', 'error');
+            return;
+        }
+        const st = (targetGoal.status || '').toLowerCase().trim();
+        if (st === 'done' || st === 'completed' || st === 'failed') {
+            if (typeof showToast === 'function') {
+                showToast(`Cannot add tasks: Objective is already marked as ${targetGoal.status}.`, 'warning');
+            }
+            return;
+        }
 
-    const emp = (window.perfRoster || []).find(e => e.id === goal.employee_id);
-    document.getElementById('specific-task-emp-name-display').textContent = emp ? emp.name : 'Associate';
+        if (typeof isEmployeeNeedsTraining === 'function' && isEmployeeNeedsTraining(targetGoal.employee_id, targetGoal.id)) {
+            if (typeof showToast === 'function') {
+                showToast('Cannot add tasks: Associate is currently undergoing mandatory formal training.', 'warning');
+            }
+            return;
+        }
+
+        // Hide select, show text title
+        if (goalSelect) goalSelect.classList.add('hidden');
+        if (titleDisplay) titleDisplay.classList.remove('hidden');
+    } else {
+        // If empId was provided, prioritize goals for this employee
+        let candidateGoals = goals;
+        if (empId) {
+            const empGoals = goals.filter(g => String(g.employee_id) === String(empId));
+            if (empGoals.length > 0) {
+                candidateGoals = empGoals;
+            }
+        }
+
+        targetGoal = candidateGoals[0];
+
+        // Populate dropdown so supervisor can pick target objective
+        if (goalSelect) {
+            goalSelect.innerHTML = candidateGoals.map(g => {
+                const emp = (window.perfRoster || []).find(e => e.id === g.employee_id);
+                const empLabel = emp ? ` (${emp.name})` : '';
+                return `<option value="${g.id}" ${g.id === targetGoal.id ? 'selected' : ''}>${g.title}${empLabel} [Due: ${g.target_date || 'N/A'}]</option>`;
+            }).join('');
+            goalSelect.classList.remove('hidden');
+        }
+        if (titleDisplay) titleDisplay.classList.add('hidden');
+    }
+
+    applySpecificTaskGoalData(targetGoal, empId);
 
     const container = document.getElementById('specific-tasks-rows-container');
     if (container) {
@@ -320,8 +405,15 @@ window.openCreateSpecificTaskModal = openCreateSpecificTaskModal;
 async function handleSpecificTaskSubmit(e) {
     if (e && e.preventDefault) e.preventDefault();
 
-    const goalId = document.getElementById('specific-task-goal-id')?.value;
-    const employeeId = document.getElementById('specific-task-employee-id')?.value;
+    let goalId = document.getElementById('specific-task-goal-id')?.value;
+    if (!goalId) {
+        goalId = document.getElementById('specific-task-goal-select')?.value;
+    }
+    let employeeId = document.getElementById('specific-task-employee-id')?.value;
+    if (!employeeId && goalId) {
+        const targetG = (window.dbGoals || []).find(item => String(item.id) === String(goalId));
+        if (targetG) employeeId = targetG.employee_id;
+    }
 
     const container = document.getElementById('specific-tasks-rows-container');
     const rows = container?.querySelectorAll('.specific-task-item-row') || [];
@@ -359,6 +451,9 @@ async function handleSpecificTaskSubmit(e) {
         if (typeof showToast === 'function') showToast(`Successfully assigned ${tasks.length} specific action task${tasks.length === 1 ? '' : 's'} to Objective!`, 'success');
         closeModal('modal-specific-task');
         await loadAndRenderPlanningGoals();
+        if (typeof refreshObjectiveDetailsModal === 'function') {
+            refreshObjectiveDetailsModal();
+        }
     } catch (err) {
         console.error('Create specific task error:', err);
         if (typeof showToast === 'function') showToast(err.message || 'Failed to create specific tasks.', 'error');
@@ -382,6 +477,12 @@ window.handleSpecificTaskSubmit = handleSpecificTaskSubmit;
  */
 
 async function approveGoalViaAPI(goalId, empId, btnEl) {
+    if (typeof isEmployeeNeedsTraining === 'function' && isEmployeeNeedsTraining(empId, goalId)) {
+        if (typeof showToast === 'function') {
+            showToast('Approval locked: Associate is currently undergoing mandatory formal training.', 'warning');
+        }
+        return;
+    }
     let origHtml = '';
     if (btnEl) {
         origHtml = btnEl.innerHTML;
@@ -394,6 +495,9 @@ async function approveGoalViaAPI(goalId, empId, btnEl) {
             showToast('Goal officially approved and locked for Q3!', 'success');
         }
         await loadAndRenderPlanningGoals();
+        if (typeof refreshObjectiveDetailsModal === 'function') {
+            refreshObjectiveDetailsModal();
+        }
         if (typeof loadLiveNotifications === 'function') {
             loadLiveNotifications(window.activePersonaRole || 'Associate');
         }
@@ -409,43 +513,6 @@ async function approveGoalViaAPI(goalId, empId, btnEl) {
     }
 }
 window.approveGoalViaAPI = approveGoalViaAPI;
-
-function approveEmployeeGoals(empId) {
-    const emp = window.perfRoster.find(e => e.id === empId);
-    if (emp) {
-        emp.planningStatus = 'Approved';
-        emp.approvalStatus = 'Approved';
-        emp.goals.forEach(g => g.status = 'Approved');
-
-        renderPlanningRosterTable();
-        renderApprovalRosterTable();
-        updateAllPerfStepperBadges();
-
-        if (typeof showToast === 'function') {
-            showToast(`Approved performance goals for ${emp.name}!`, 'success');
-        }
-    }
-}
-
-function approveAllPendingGoals() {
-    let approvedCount = 0;
-    window.perfRoster.forEach(emp => {
-        if (emp.planningStatus !== 'Approved') {
-            emp.planningStatus = 'Approved';
-            emp.approvalStatus = 'Approved';
-            emp.goals.forEach(g => g.status = 'Approved');
-            approvedCount++;
-        }
-    });
-
-    renderPlanningRosterTable();
-    renderApprovalRosterTable();
-    updateAllPerfStepperBadges();
-
-    if (typeof showToast === 'function') {
-        showToast(`Successfully endorsed and approved all ${approvedCount} pending employee goals!`, 'success');
-    }
-}
 
 /**
  * View / Revise Modal Actions with Live Supabase Sync
@@ -553,10 +620,14 @@ function renderApprovalRosterTable() {
                     </div>
                 </div>
 
-                <div class="pt-2 flex items-center justify-end space-x-2 border-t border-slate-100">
+                <div class="pt-2 flex items-center justify-end space-x-2 border-t border-slate-100 flex-wrap gap-y-1.5">
                     <button onclick="confirmDeleteGoal('${goal.id}', '${(goal.title || '').replace(/'/g, "\\'")}', this)" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition flex items-center space-x-1" title="Delete Objective">
                         <i class="fas fa-trash text-xs"></i>
                         <span>Delete</span>
+                    </button>
+                    <button onclick="openCreateSpecificTaskModal('${goal.id}', '${emp.id}')" class="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-xs font-bold rounded-xl transition flex items-center space-x-1" title="Add Specific Task to this Objective">
+                        <i class="fas fa-plus text-xs"></i>
+                        <span>Add Specific Task</span>
                     </button>
                     <button onclick="openViewGoalModal('${goal.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
                         View Details
@@ -599,34 +670,53 @@ window.updateStage2BulkDeleteState = function() {
 window.confirmBulkDeleteStage2 = function() {
     const selected = Array.from(document.querySelectorAll('.stage2-goal-checkbox:checked')).map(cb => cb.value);
     if (selected.length === 0) return;
-    const bulkBtn = document.getElementById('btn-stage2-bulk-delete');
+    const count = selected.length;
 
     showActionConfirmModal({
-        title: 'Bulk Delete Approved Objectives',
-        message: `Are you sure you want to delete ${selected.length} selected approved objective(s)?`,
-        confirmBtnText: `Delete ${selected.length} Goals`,
+        title: 'Bulk Delete Objectives',
+        message: `Are you sure you want to delete ${count} selected objective(s)?`,
+        confirmBtnText: `Delete ${count} Goal${count > 1 ? 's' : ''}`,
         confirmBtnClass: 'btn-danger bg-rose-600 hover:bg-rose-700 text-white',
         iconClass: 'fas fa-trash-can',
         iconContainerClass: 'bg-rose-100 text-rose-700',
         onConfirm: async () => {
-            let origBulkHtml = '';
-            if (bulkBtn) {
-                origBulkHtml = bulkBtn.innerHTML;
-                bulkBtn.disabled = true;
-                bulkBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i><span>Deleting...</span>';
-            }
+            // 1. Immediately close modal so user is never blocked
+            closeModal('modal-action-confirmation');
+
+            // 2. Backup goals for rollback
+            const backupGoals = (window.dbGoals || []).filter(g => selected.includes(String(g.id)));
+
+            // 3. Optimistic removal
+            window.dbGoals = (window.dbGoals || []).filter(g => !selected.includes(String(g.id)));
+            (window.perfRoster || []).forEach(emp => {
+                if (emp.goals && Array.isArray(emp.goals)) {
+                    emp.goals = emp.goals.filter(g => !selected.includes(String(g.id)));
+                    emp.goalsCount = emp.goals.length;
+                }
+            });
+
+            // 4. Re-render table & bulk delete button
+            if (typeof renderApprovalRosterTable === 'function') renderApprovalRosterTable();
+            if (typeof renderPlanningRosterTable === 'function') renderPlanningRosterTable();
+            if (typeof updateStage2BulkDeleteState === 'function') updateStage2BulkDeleteState();
+            if (typeof updateAllPerfStepperBadges === 'function') updateAllPerfStepperBadges();
+
+            // 5. Execute backend in background
             try {
                 await PerformanceAPI.bulkDeleteGoals(selected);
-                showToast(`${selected.length} objectives deleted successfully.`, 'success');
-                await loadAndRenderPlanningGoals();
+                showToast(`${count} objective${count > 1 ? 's' : ''} deleted successfully.`, 'success');
+                if (typeof loadAndRenderPlanningGoals === 'function') {
+                    await loadAndRenderPlanningGoals(true);
+                }
             } catch (err) {
                 console.error('Bulk delete error:', err);
                 showToast(err.message || 'Failed to delete goals', 'error');
-            } finally {
-                if (bulkBtn) {
-                    bulkBtn.disabled = false;
-                    bulkBtn.innerHTML = origBulkHtml;
-                }
+                // Rollback
+                window.dbGoals = [...(window.dbGoals || []), ...backupGoals];
+                if (typeof renderApprovalRosterTable === 'function') renderApprovalRosterTable();
+                if (typeof renderPlanningRosterTable === 'function') renderPlanningRosterTable();
+                if (typeof updateStage2BulkDeleteState === 'function') updateStage2BulkDeleteState();
+                if (typeof updateAllPerfStepperBadges === 'function') updateAllPerfStepperBadges();
             }
         }
     });
@@ -636,7 +726,8 @@ window.confirmBulkDeleteStage2 = function() {
 /**
  * Approve all pending goals for a specific employee
  */
-async function approveEmployeeGoals(empId) {
+async function approveEmployeeGoals(empId, btnEl = null) {
+    const btn = btnEl || (typeof event !== 'undefined' && event?.currentTarget ? event.currentTarget : null);
     const emp = (window.perfRoster || []).find(e => e.id === empId);
     const goalsToApprove = (window.dbGoals || []).filter(g => (g.employee_id === empId || (emp && emp.goals && emp.goals.some(eg => eg.id === g.id))) && g.status !== 'Approved');
 
@@ -645,22 +736,30 @@ async function approveEmployeeGoals(empId) {
         return;
     }
 
-    try {
-        if (typeof showToast === 'function') showToast(`Calibrating & approving ${goalsToApprove.length} goal(s) for ${emp?.name || 'Associate'}...`, 'info');
+    const doApprove = async () => {
+        try {
+            if (typeof showToast === 'function') showToast(`Calibrating & approving ${goalsToApprove.length} goal(s) for ${emp?.name || 'Associate'}...`, 'info');
 
-        await Promise.all(goalsToApprove.map(g => PerformanceAPI.updateGoalStatus(g.id, 'Approved')));
+            await Promise.all(goalsToApprove.map(g => PerformanceAPI.updateGoalStatus(g.id, 'Approved')));
 
-        if (typeof showToast === 'function') {
-            showToast(`🎉 Objectives successfully approved & locked for ${emp?.name || 'Associate'}!`, 'success');
+            if (typeof showToast === 'function') {
+                showToast(` Objectives successfully approved & locked for ${emp?.name || 'Associate'}!`, 'success');
+            }
+
+            await loadAndRenderPlanningGoals();
+            if (typeof loadLiveNotifications === 'function') {
+                loadLiveNotifications(window.activePersonaRole || 'Supervisor');
+            }
+        } catch (err) {
+            console.error('Error approving employee goals:', err);
+            if (typeof showToast === 'function') showToast(err.message || 'Failed to approve goals.', 'error');
         }
+    };
 
-        await loadAndRenderPlanningGoals();
-        if (typeof loadLiveNotifications === 'function') {
-            loadLiveNotifications(window.activePersonaRole || 'Supervisor');
-        }
-    } catch (err) {
-        console.error('Error approving employee goals:', err);
-        if (typeof showToast === 'function') showToast(err.message || 'Failed to approve goals.', 'error');
+    if (btn && window.withButtonLock) {
+        await window.withButtonLock(btn, doApprove, { loadingText: 'Approving...' });
+    } else {
+        await doApprove();
     }
 }
 window.approveEmployeeGoals = approveEmployeeGoals;
@@ -668,19 +767,28 @@ window.approveEmployeeGoals = approveEmployeeGoals;
 /**
  * Approve a single goal by ID
  */
-async function approveGoal(goalId) {
-    try {
-        await PerformanceAPI.updateGoalStatus(goalId, 'Approved');
-        if (typeof showToast === 'function') {
-            showToast('Goal objective calibrated & approved! 🎉', 'success');
+async function approveGoal(goalId, btnEl = null) {
+    const btn = btnEl || (typeof event !== 'undefined' && event?.currentTarget ? event.currentTarget : null);
+    const doApprove = async () => {
+        try {
+            await PerformanceAPI.updateGoalStatus(goalId, 'Approved');
+            if (typeof showToast === 'function') {
+                showToast('Goal objective calibrated & approved! ', 'success');
+            }
+            await loadAndRenderPlanningGoals();
+            if (typeof loadLiveNotifications === 'function') {
+                loadLiveNotifications(window.activePersonaRole || 'Supervisor');
+            }
+        } catch (err) {
+            console.error('Error approving goal:', err);
+            if (typeof showToast === 'function') showToast(err.message || 'Failed to approve goal.', 'error');
         }
-        await loadAndRenderPlanningGoals();
-        if (typeof loadLiveNotifications === 'function') {
-            loadLiveNotifications(window.activePersonaRole || 'Supervisor');
-        }
-    } catch (err) {
-        console.error('Error approving goal:', err);
-        if (typeof showToast === 'function') showToast(err.message || 'Failed to approve goal.', 'error');
+    };
+
+    if (btn && window.withButtonLock) {
+        await window.withButtonLock(btn, doApprove, { loadingText: 'Approving...' });
+    } else {
+        await doApprove();
     }
 }
 window.approveGoal = approveGoal;
@@ -688,7 +796,8 @@ window.approveGoal = approveGoal;
 /**
  * Bulk approve all pending goals across the department
  */
-async function approveAllPendingGoals() {
+async function approveAllPendingGoals(btnEl = null) {
+    const btn = btnEl || (typeof event !== 'undefined' && event?.currentTarget ? event.currentTarget : null);
     const pendingGoals = (window.dbGoals || []).filter(g => g.status !== 'Approved');
 
     if (pendingGoals.length === 0) {
@@ -696,22 +805,30 @@ async function approveAllPendingGoals() {
         return;
     }
 
-    try {
-        if (typeof showToast === 'function') showToast(`Approving all ${pendingGoals.length} pending objective(s)...`, 'info');
+    const doBulkApprove = async () => {
+        try {
+            if (typeof showToast === 'function') showToast(`Approving all ${pendingGoals.length} pending objective(s)...`, 'info');
 
-        await Promise.all(pendingGoals.map(g => PerformanceAPI.updateGoalStatus(g.id, 'Approved')));
+            await Promise.all(pendingGoals.map(g => PerformanceAPI.updateGoalStatus(g.id, 'Approved')));
 
-        if (typeof showToast === 'function') {
-            showToast('🎉 All Q3 Department Objectives Approved & Calibrated!', 'success');
+            if (typeof showToast === 'function') {
+                showToast(' All Q3 Department Objectives Approved & Calibrated!', 'success');
+            }
+
+            await loadAndRenderPlanningGoals();
+            if (typeof loadLiveNotifications === 'function') {
+                loadLiveNotifications(window.activePersonaRole || 'Supervisor');
+            }
+        } catch (err) {
+            console.error('Error bulk approving goals:', err);
+            if (typeof showToast === 'function') showToast(err.message || 'Failed to approve all goals.', 'error');
         }
+    };
 
-        await loadAndRenderPlanningGoals();
-        if (typeof loadLiveNotifications === 'function') {
-            loadLiveNotifications(window.activePersonaRole || 'Supervisor');
-        }
-    } catch (err) {
-        console.error('Error bulk approving goals:', err);
-        if (typeof showToast === 'function') showToast(err.message || 'Failed to approve all goals.', 'error');
+    if (btn && window.withButtonLock) {
+        await window.withButtonLock(btn, doBulkApprove, { loadingText: 'Approving All...' });
+    } else {
+        await doBulkApprove();
     }
 }
 window.approveAllPendingGoals = approveAllPendingGoals;

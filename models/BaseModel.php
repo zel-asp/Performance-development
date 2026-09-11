@@ -57,6 +57,15 @@ class BaseModel
     }
 
     /**
+     * Find single record by ID (alias for find())
+     */
+    public function findById(string $id): ?array
+    {
+        return $this->find($id);
+    }
+
+
+    /**
      * Create record in Supabase PostgreSQL Database
      */
     public function create(array $data): array
@@ -99,6 +108,19 @@ class BaseModel
     public function delete(string $id): bool
     {
         $res = supabaseRequest($this->table . '?id=eq.' . urlencode($id), 'DELETE', null, true);
+        return ($res['status'] >= 200 && $res['status'] < 300);
+    }
+
+    /**
+     * Delete multiple records by IDs from Supabase PostgreSQL Database in a single call
+     */
+    public function deleteMultiple(array $ids): bool
+    {
+        if (empty($ids)) return true;
+        $cleanIds = array_values(array_filter(array_map('trim', $ids)));
+        if (empty($cleanIds)) return true;
+        $encoded = implode(',', array_map('urlencode', $cleanIds));
+        $res = supabaseRequest($this->table . '?id=in.(' . $encoded . ')', 'DELETE', null, true);
         return ($res['status'] >= 200 && $res['status'] < 300);
     }
 

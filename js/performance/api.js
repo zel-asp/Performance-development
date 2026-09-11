@@ -9,10 +9,19 @@
 const PerformanceAPI = {
     baseUrl: 'api/performance.php',
 
+    _inFlightRequests: {},
+
     async request(action, method = 'GET', payload = null, customLoadingMsg = null) {
         const url = method === 'GET' && payload
             ? `${this.baseUrl}?action=${action}&${new URLSearchParams(payload)}`
             : `${this.baseUrl}?action=${action}`;
+
+        // In-flight deduplication for identical GET requests to avoid network stampedes
+        if (method === 'GET') {
+            if (this._inFlightRequests[url]) {
+                return this._inFlightRequests[url];
+            }
+        }
 
         const options = {
             method: method,
@@ -43,28 +52,42 @@ const PerformanceAPI = {
             toastId = window.showToast(loadingMsg, 'loading');
         }
 
-        try {
-            const response = await fetch(url, options);
-            const result = await response.json();
+        const executeFetch = async () => {
+            try {
+                const response = await fetch(url, options);
+                const result = await response.json();
 
-            if (toastId && typeof window.dismissToast === 'function') {
-                window.dismissToast(toastId);
-            }
+                if (toastId && typeof window.dismissToast === 'function') {
+                    window.dismissToast(toastId);
+                }
 
-            if (!response.ok || !result.success) {
-                throw new Error(result.message || 'Server request failed');
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || 'Server request failed');
+                }
+                return result.data;
+            } catch (error) {
+                if (toastId && typeof window.dismissToast === 'function') {
+                    window.dismissToast(toastId);
+                }
+                console.error(`[PerformanceAPI Error] [${action}]:`, error);
+                if (typeof window.showToast === 'function') {
+                    window.showToast(error.message || 'Network error occurred', 'error');
+                }
+                throw error;
+            } finally {
+                if (method === 'GET') {
+                    delete this._inFlightRequests[url];
+                }
             }
-            return result.data;
-        } catch (error) {
-            if (toastId && typeof window.dismissToast === 'function') {
-                window.dismissToast(toastId);
-            }
-            console.error(`[PerformanceAPI Error] [${action}]:`, error);
-            if (typeof window.showToast === 'function') {
-                window.showToast(error.message || 'Network error occurred', 'error');
-            }
-            throw error;
+        };
+
+        if (method === 'GET') {
+            const reqPromise = executeFetch();
+            this._inFlightRequests[url] = reqPromise;
+            return reqPromise;
         }
+
+        return executeFetch();
     },
 
     // 1. Get Goals List
@@ -194,8 +217,8 @@ const PerformanceAPI = {
     },
 
     // 11. Delete and Bulk Delete Goals
-    deleteGoal(id) {
-        return this.request('delete_goal', 'POST', { id });
+    deleteGoal(id, extraPayload = {}) {
+        return this.request('delete_goal', 'POST', { id, ...extraPayload });
     },
 
     bulkDeleteGoals(ids) {
@@ -403,6 +426,32 @@ function isEmployeeTrainingScored(empId, goalId = null) {
 window.isEmployeeTrainingScored = isEmployeeTrainingScored;
 
 /**
+ * Check if employee is currently flagged for Needs Training or active In Training
+ * (and has not yet scored/passed the formal training curriculum).
+ */
+function isEmployeeNeedsTraining(empId, goalId = null) {
+    const isGoalFailed = isEmployeeGoalFailed(empId);
+    if (isGoalFailed) return false;
+
+    const empGoals = (window.dbGoals || []).filter(g => isSameEmployee(g.employee_id, empId));
+    const targetGoals = goalId ? empGoals.filter(g => String(g.id) === String(goalId)) : empGoals;
+    const hasNeedsTrainingGoal = targetGoals.some(g => (g.needs_training === true || g.needs_training === 1 || g.needs_training === '1' || g.needs_training === 'true' || g.needs_training === 't'));
+    const hasInTrainingGoal = targetGoals.some(g => (g.in_training === true || g.in_training === 1 || g.in_training === '1' || g.in_training === 'true' || g.in_training === 't'));
+
+    if (hasNeedsTrainingGoal || hasInTrainingGoal) {
+        return !isEmployeeTrainingScored(empId, goalId);
+    }
+
+    const tn = getEmployeeTrainingNeed(empId, goalId);
+    if (tn && (tn.status === 'In Training' || tn.status === 'In Progress' || tn.status === 'Identified')) {
+        return !isEmployeeTrainingScored(empId, goalId);
+    }
+
+    return false;
+}
+window.isEmployeeNeedsTraining = isEmployeeNeedsTraining;
+
+/**
  * Get max retry_count for employee
  */
 function getEmployeeRetryCount(empId) {
@@ -464,6 +513,27 @@ window.idpSearchQuery = '';
 window.cycleSearchQuery = '';
 
 
+window.resetActionConfirmModal = function() {
+    window._actionConfirmOpId = (window._actionConfirmOpId || 0) + 1;
+    const modal = document.getElementById('modal-action-confirmation');
+    const proceedBtn = document.getElementById('btn-proceed-action-confirm');
+    const cancelBtn = document.getElementById('btn-cancel-action-confirm');
+    const closeBtn = modal ? modal.querySelector('button[aria-label="Close"]') : null;
+
+    if (proceedBtn) {
+        proceedBtn.disabled = false;
+        proceedBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+    if (cancelBtn) {
+        cancelBtn.disabled = false;
+        cancelBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+    if (closeBtn) {
+        closeBtn.disabled = false;
+        closeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+};
+
 window.showActionConfirmModal = function({
     title = 'Confirm Action',
     message = 'Are you sure you want to proceed with this action?',
@@ -480,46 +550,78 @@ window.showActionConfirmModal = function({
         }
         return;
     }
+
+    // Reset previous modal button states and set new unique operation id
+    if (typeof window.resetActionConfirmModal === 'function') {
+        window.resetActionConfirmModal();
+    }
+    const currentOpId = window._actionConfirmOpId;
+
     const titleEl = document.getElementById('confirm-modal-title');
     const msgEl = document.getElementById('confirm-modal-message');
     const iconEl = document.getElementById('confirm-modal-icon');
     const iconContEl = document.getElementById('confirm-modal-icon-container');
     const proceedBtn = document.getElementById('btn-proceed-action-confirm');
     const cancelBtn = document.getElementById('btn-cancel-action-confirm');
+    const closeBtn = modal.querySelector('button[aria-label="Close"]');
 
     if (titleEl) titleEl.textContent = title;
     if (msgEl) msgEl.textContent = message;
     if (iconEl) iconEl.className = iconClass;
     if (iconContEl) iconContEl.className = `w-12 h-12 rounded-2xl ${iconContainerClass} flex items-center justify-center text-xl font-bold mx-auto`;
+
     if (cancelBtn) {
         cancelBtn.disabled = false;
         cancelBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     }
+    if (closeBtn) {
+        closeBtn.disabled = false;
+        closeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+
     if (proceedBtn) {
         proceedBtn.innerHTML = confirmBtnText;
         proceedBtn.disabled = false;
         proceedBtn.className = `${confirmBtnClass} px-4 py-2 text-xs font-bold flex-1 shadow-xs transition flex items-center justify-center space-x-1.5`;
-        proceedBtn.onclick = async function() {
+
+        proceedBtn.onclick = async function(e) {
+            if (e && typeof e.preventDefault === 'function') e.preventDefault();
+            if (proceedBtn.disabled || window._actionConfirmOpId !== currentOpId) return;
+
             if (typeof onConfirm === 'function') {
                 proceedBtn.disabled = true;
                 if (cancelBtn) {
                     cancelBtn.disabled = true;
                     cancelBtn.classList.add('opacity-50', 'cursor-not-allowed');
                 }
+                if (closeBtn) {
+                    closeBtn.disabled = true;
+                    closeBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
                 const isDelete = (confirmBtnText || '').toLowerCase().includes('delete') || (iconClass || '').includes('trash');
                 const loadingText = isDelete ? 'Deleting...' : 'Processing...';
                 proceedBtn.innerHTML = `<i class="fas fa-spinner fa-spin text-xs"></i><span>${loadingText}</span>`;
+
                 try {
                     await onConfirm();
-                    closeModal('modal-action-confirmation');
-                } catch (e) {
-                    console.error('Confirmation action error:', e);
+                    // If modal has not been closed by onConfirm and this is still the active op:
+                    if (window._actionConfirmOpId === currentOpId && !modal.classList.contains('hidden')) {
+                        closeModal('modal-action-confirmation');
+                    }
+                } catch (err) {
+                    console.error('Confirmation action error:', err);
                 } finally {
-                    proceedBtn.disabled = false;
-                    proceedBtn.innerHTML = confirmBtnText;
-                    if (cancelBtn) {
-                        cancelBtn.disabled = false;
-                        cancelBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    if (window._actionConfirmOpId === currentOpId) {
+                        proceedBtn.disabled = false;
+                        proceedBtn.innerHTML = confirmBtnText;
+                        if (cancelBtn) {
+                            cancelBtn.disabled = false;
+                            cancelBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
+                        if (closeBtn) {
+                            closeBtn.disabled = false;
+                            closeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
                     }
                 }
             } else {
@@ -630,3 +732,137 @@ function employeeHasAnyGoal(emp) {
     return goals.some(g => isSameEmployee(g.employee_id, empId) || (empCode && isSameEmployee(g.employee_id, empCode)));
 }
 window.employeeHasAnyGoal = employeeHasAnyGoal;
+
+/**
+ * Senior UX Button Locker & Spinner State Controller
+ * - Protects against double-clicks and repeated taps on unstable connections
+ * - Injects spinning icon while preserving original button width (prevents layout shift / CLS)
+ * - Restores state safely in finally block even if network fails
+ * - Optional runInBackground support to let user continue while notifying via toast
+ */
+async function withButtonLock(btnOrEvent, asyncFn, options = {}) {
+    let btn = null;
+    if (typeof btnOrEvent === 'string') {
+        btn = document.getElementById(btnOrEvent);
+    } else if (btnOrEvent && btnOrEvent.currentTarget) {
+        btn = btnOrEvent.currentTarget;
+    } else if (btnOrEvent && btnOrEvent.target && btnOrEvent.target.nodeType) {
+        btn = btnOrEvent.target.closest('button') || btnOrEvent.target;
+    } else if (btnOrEvent && btnOrEvent.tagName) {
+        btn = btnOrEvent;
+    }
+
+    const {
+        loadingText = 'Processing...',
+        spinnerIcon = 'fa-circle-notch fa-spin',
+        runInBackground = false,
+        onSuccess = null,
+        onError = null
+    } = options;
+
+    if (!btn) {
+        return await asyncFn();
+    }
+
+    // Prevent duplicate actions if already busy/locked
+    if (btn.dataset.isBusy === 'true' || btn.disabled) {
+        console.warn('[withButtonLock] Action ignored: button is already in flight.');
+        return;
+    }
+
+    // Lock and preserve dimensions to avoid layout shift (CLS = 0)
+    btn.dataset.isBusy = 'true';
+    btn.disabled = true;
+    const origWidth = btn.getBoundingClientRect().width;
+    const origHtml = btn.innerHTML;
+    if (origWidth > 0) {
+        btn.style.minWidth = `${Math.ceil(origWidth)}px`;
+    }
+
+    // Set loading indicator
+    btn.innerHTML = `<i class="fas ${spinnerIcon} mr-1.5"></i><span>${loadingText}</span>`;
+
+    const unlock = () => {
+        btn.disabled = false;
+        delete btn.dataset.isBusy;
+        btn.innerHTML = origHtml;
+        btn.style.minWidth = '';
+    };
+
+    if (runInBackground) {
+        (async () => {
+            try {
+                const res = await asyncFn();
+                if (typeof onSuccess === 'function') onSuccess(res);
+            } catch (err) {
+                console.error('[withButtonLock Background Error]', err);
+                if (typeof onError === 'function') onError(err);
+            } finally {
+                unlock();
+            }
+        })();
+        return;
+    }
+
+    try {
+        const res = await asyncFn();
+        if (typeof onSuccess === 'function') onSuccess(res);
+        return res;
+    } catch (err) {
+        console.error('[withButtonLock Error]', err);
+        if (typeof onError === 'function') onError(err);
+        throw err;
+    } finally {
+        unlock();
+    }
+}
+window.withButtonLock = withButtonLock;
+
+/**
+ * Performance Module Session Stale-While-Revalidate Cache
+ */
+window.PerfCache = {
+    set(key, data, ttlSeconds = 120) {
+        try {
+            sessionStorage.setItem('oxford_perf_' + key, JSON.stringify({
+                timestamp: Date.now(),
+                ttl: ttlSeconds * 1000,
+                data: data
+            }));
+        } catch (e) {}
+    },
+    get(key) {
+        try {
+            const raw = sessionStorage.getItem('oxford_perf_' + key);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (!parsed || !parsed.data) return null;
+            return parsed.data;
+        } catch (e) {
+            return null;
+        }
+    },
+    isStale(key) {
+        try {
+            const raw = sessionStorage.getItem('oxford_perf_' + key);
+            if (!raw) return true;
+            const parsed = JSON.parse(raw);
+            if (!parsed || !parsed.timestamp) return true;
+            return (Date.now() - parsed.timestamp) > (parsed.ttl || 60000);
+        } catch (e) {
+            return true;
+        }
+    },
+    clear(key) {
+        try {
+            if (key) {
+                sessionStorage.removeItem('oxford_perf_' + key);
+            } else {
+                Object.keys(sessionStorage).forEach(k => {
+                    if (k.startsWith('oxford_perf_')) sessionStorage.removeItem(k);
+                });
+            }
+        } catch (e) {}
+    }
+};
+

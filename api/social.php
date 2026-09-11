@@ -24,7 +24,8 @@ try {
             break;
 
         case 'get_top_champions':
-            echo json_encode($controller->getTop5Champions());
+            $empId = $_GET['employeeId'] ?? ($_GET['employee_id'] ?? null);
+            echo json_encode($controller->getTop5Champions($empId));
             break;
 
         case 'get_badges':

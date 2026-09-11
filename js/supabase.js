@@ -152,6 +152,12 @@ function triggerPerformanceRealtimeSync(sourceTable, empId = null) {
             }
         }
 
+        // Objective Details Modal (if open, instant live sync)
+        const viewGoalModal = document.getElementById('modal-view-goal');
+        if (viewGoalModal && !viewGoalModal.classList.contains('hidden') && typeof refreshObjectiveDetailsModal === 'function') {
+            refreshObjectiveDetailsModal();
+        }
+
         // 9. Silent background parity fetch to guarantee 100% database integrity without skeleton flash
         if (typeof loadAndRenderPlanningGoals === 'function') {
             loadAndRenderPlanningGoals(true).catch(() => {});

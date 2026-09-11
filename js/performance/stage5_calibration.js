@@ -97,9 +97,22 @@ window.checkEmployeeStage5Tasks = checkEmployeeStage5Tasks;
 
         const taskCheck = checkEmployeeStage5Tasks(emp.id);
         const allTasksDone = taskCheck.allTasksDone;
+        const inTraining = typeof isEmployeeInTraining === 'function' ? isEmployeeInTraining(emp.id) : false;
+        const isScored = typeof isEmployeeTrainingScored === 'function' ? isEmployeeTrainingScored(emp.id) : false;
 
         let actionBtnHtml = '';
-        if (isCalibrated) {
+        if (inTraining && !isScored) {
+            actionBtnHtml = `
+                <button onclick="showCalibrationDetail('${emp.id}', true)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition inline-flex items-center space-x-1.5">
+                    <i class="fas fa-eye text-[10px]"></i>
+                    <span>View Record</span>
+                </button>
+                <button disabled title="Associate is currently enrolled in mandatory formal training. Calibration locked until training score is recorded." class="px-3 py-1.5 bg-slate-100 text-slate-400 text-xs font-bold rounded-xl border border-slate-200 cursor-not-allowed inline-flex items-center space-x-1.5">
+                    <i class="fas fa-lock text-[10px]"></i>
+                    <span>In Training (Locked)</span>
+                </button>
+            `;
+        } else if (isCalibrated) {
             actionBtnHtml = `
                 <button onclick="showCalibrationDetail('${emp.id}', true)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition inline-flex items-center space-x-1.5">
                     <i class="fas fa-eye text-[10px]"></i>
@@ -145,11 +158,11 @@ window.checkEmployeeStage5Tasks = checkEmployeeStage5Tasks;
         const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40';
 
         return `
-            <tr class="${rowBg} hover:bg-[#FAF8F7] transition border-b border-slate-100 text-xs">
+            <tr class="${rowBg} hover:bg-brand-canvas transition border-b border-slate-100 text-xs">
                 <td class="px-3 py-4 text-center text-slate-400 font-mono text-[11px]">${idx + 1}</td>
                 <td class="px-5 py-4">
                     <div class="flex items-center space-x-3">
-                        <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0">
                             ${emp.avatar || emp.name.charAt(0)}
                         </div>
                         <div>
@@ -313,7 +326,7 @@ function openCalibrationModal(empId) {
     const taskCheck = checkEmployeeStage5Tasks(emp.id);
     if (!taskCheck.allTasksDone) {
         if (typeof showToast === 'function') {
-            showToast(`⚠️ Cannot calibrate ${emp.name}: Monitoring tasks are still not done (${taskCheck.completedTasks}/${taskCheck.totalTasks} completed). Complete all tasks in Stage 3 Continuous Monitoring first.`, 'warning');
+            showToast(` Cannot calibrate ${emp.name}: Monitoring tasks are still not done (${taskCheck.completedTasks}/${taskCheck.totalTasks} completed). Complete all tasks in Stage 3 Continuous Monitoring first.`, 'warning');
         }
         return;
     }
@@ -531,7 +544,7 @@ async function handleCalibrationSubmit(e) {
                 } catch (e) {}
 
                 if (typeof showToast === 'function') {
-                    showToast(`🎉 1-on-1 Calibration successfully recorded and locked for ${emp ? emp.name : 'Employee'}! (${calibratedScore.toFixed(2)} / 5.0)`, 'success');
+                    showToast(` 1-on-1 Calibration successfully recorded and locked for ${emp ? emp.name : 'Employee'}! (${calibratedScore.toFixed(2)} / 5.0)`, 'success');
                 }
 
                 // Sync Performance Calibration score directly with Competency Management Radar

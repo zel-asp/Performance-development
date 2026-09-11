@@ -630,9 +630,9 @@ function renderIDPRosterTable() {
                     ${startIdx + idx + 1}
                 </td>
                 <td class="px-5 py-4 font-bold text-slate-900">
-                    <span class="max-w-[160px] truncate block" title="${emp.name}">${emp.name}</span>
+                    <span class="max-w-40 truncate block" title="${emp.name}">${emp.name}</span>
                 </td>
-                <td class="px-5 py-4 text-slate-500 max-w-[150px] truncate" title="${emp.position} · ${emp.department}">${emp.position} · ${emp.department}</td>
+                <td class="px-5 py-4 text-slate-500 max-w-37.5 truncate" title="${emp.position} · ${emp.department}">${emp.position} · ${emp.department}</td>
                 <td class="px-5 py-4">
                     <div class="flex items-center justify-between text-[11px] mb-1">
                         <span class="font-bold ${isObj100 ? 'text-emerald-700' : 'text-amber-700'}">${objCheck.progressPct}%</span>
@@ -955,10 +955,10 @@ function showIDPDetail(empId, openModalImmediately = false) {
             strengthsList.innerHTML = strengths.map(s => `
                 <li class="p-2.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/80 flex items-center justify-between transition">
                     <span class="flex items-center space-x-2 min-w-0 pr-2">
-                        <i class="fas fa-circle-check text-emerald-600 text-xs flex-shrink-0"></i>
+                        <i class="fas fa-circle-check text-emerald-600 text-xs shrink-0"></i>
                         <span class="font-medium text-slate-900 truncate">${s.title}</span>
                     </span>
-                    <span class="font-bold text-slate-700 bg-white px-2 py-0.5 rounded-md border border-slate-200 text-[11px] font-mono flex-shrink-0"><i class="fas fa-star text-amber-500 text-[10px] mr-1"></i>${parseFloat(s.rating).toFixed(1)}</span>
+                    <span class="font-bold text-slate-700 bg-white px-2 py-0.5 rounded-md border border-slate-200 text-[11px] font-mono shrink-0"><i class="fas fa-star text-amber-500 text-[10px] mr-1"></i>${parseFloat(s.rating).toFixed(1)}</span>
                 </li>
             `).join('');
         } else {
@@ -971,28 +971,33 @@ function showIDPDetail(empId, openModalImmediately = false) {
             gapsList.innerHTML = gaps.map(g => `
                 <li class="p-2.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/80 flex items-center justify-between gap-2 transition">
                     <div class="flex items-center space-x-2 min-w-0">
-                        <i class="fas fa-circle-exclamation ${g.rating < 3.0 ? 'text-rose-600' : 'text-amber-600'} text-xs flex-shrink-0"></i>
+                        <i class="fas fa-circle-exclamation ${g.rating < 3.0 ? 'text-rose-600' : 'text-amber-600'} text-xs shrink-0"></i>
                         <div class="truncate">
                             <p class="font-semibold text-slate-900 text-xs truncate">${g.title}</p>
                             <p class="text-[10px] text-slate-500">Rating: <i class="fas fa-star text-amber-500 text-[10px] mr-0.5"></i><span class="font-bold text-slate-700">${parseFloat(g.rating).toFixed(1)} / 5.0</span></p>
                         </div>
                     </div>
                     ${!hasPassedBenchmark ? (!isObj100 ? `
-                        <button disabled class="px-2.5 py-1 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg font-bold text-[10px] flex-shrink-0 cursor-not-allowed flex items-center space-x-1" title="Objectives Progress is not 100% (${objCheck.progressPct}%). Only view is allowed.">
+                        <button disabled class="px-2.5 py-1 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg font-bold text-[10px] shrink-0 cursor-not-allowed flex items-center space-x-1" title="Objectives Progress is not 100% (${objCheck.progressPct}%). Only view is allowed.">
                             <i class="fas fa-lock text-[8px]"></i>
                             <span>Locked</span>
                         </button>
+                    ` : (inTraining && !isScored ? `
+                        <button disabled class="px-2.5 py-1 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg font-bold text-[10px] shrink-0 cursor-not-allowed flex items-center space-x-1" title="Associate is currently enrolled in mandatory formal training in Stage 7.">
+                            <i class="fas fa-lock text-[8px]"></i>
+                            <span>In Training</span>
+                        </button>
                     ` : (isTrainingPrescribed ? `
-                        <button onclick="openRemedialBooksModal('${emp.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1 shadow-2xs" title="Training module assigned">
+                        <button onclick="openRemedialBooksModal('${emp.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg font-bold text-[10px] shrink-0 transition flex items-center space-x-1 shadow-2xs" title="Training module assigned">
                             <i class="fas fa-check text-emerald-600 text-[9px]"></i>
                             <span>Prescribed</span>
                         </button>
                     ` : `
-                        <button onclick="openRemedialBooksModal('${emp.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg font-bold text-[10px] flex-shrink-0 transition flex items-center space-x-1 shadow-2xs" title="Assign targeted LMS book">
+                        <button onclick="openRemedialBooksModal('${emp.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg font-bold text-[10px] shrink-0 transition flex items-center space-x-1 shadow-2xs" title="Assign targeted LMS book">
                             <i class="fas fa-plus text-slate-600 text-[9px]"></i>
                             <span>Prescribe</span>
                         </button>
-                    `)) : ''}
+                    `))) : ''}
                 </li>
             `).join('');
         } else {
@@ -1039,7 +1044,7 @@ function showIDPDetail(empId, openModalImmediately = false) {
                 return `
                     <div class="p-3 bg-white/90 rounded-xl border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">
                         <div class="flex items-center space-x-2.5">
-                            <div class="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                            <div class="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-xs shrink-0">
                                 <i class="fas fa-rotate-left"></i>
                             </div>
                             <div>
@@ -1409,7 +1414,7 @@ async function passPIPEmployee(empId) {
         updateDbEvaluationRecord(updated);
 
         if (typeof showToast === 'function') {
-            showToast(`🎉 Outstanding! ${emp.name} passed PIP retry (⭐ 3.50 / 5.0). Opening Kudos recognition...`, 'success');
+            showToast(` Outstanding! ${emp.name} passed PIP retry (⭐ 3.50 / 5.0). Opening Kudos recognition...`, 'success');
         }
 
         triggerSendKudosForEmployee(emp.id);

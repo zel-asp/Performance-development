@@ -129,6 +129,15 @@ function updateRemedialAssociateSync(empKeyOrId) {
 
 function openRemedialBooksModal(empKeyOrId) {
     const emp = resolveRemedialEmployee(empKeyOrId);
+    if (!emp) return;
+
+    if (typeof isEmployeeNeedsTraining === 'function' && isEmployeeNeedsTraining(emp.id)) {
+        if (typeof showToast === 'function') {
+            showToast('Prescription locked: Associate is undergoing mandatory formal training in Stage 7.', 'warning');
+        }
+        return;
+    }
+
     currentRemedialEmpId = emp.id;
     window.selectedEvalEmpId = emp.id;
 

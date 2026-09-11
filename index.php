@@ -44,7 +44,7 @@
             href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
             rel="stylesheet">
         <!-- Compiled Local Tailwind CSS -->
-        <link rel="stylesheet" href="dist/output.css">
+        <link rel="stylesheet" href="dist/output.css?v=<?= time() ?>">
         <!-- Font Awesome Free (Local) -->
         <link rel="stylesheet" href="public/vendor/fontawesome/css/all.min.css">
         <!-- Chart.js (Local) -->
@@ -304,7 +304,7 @@
         </style>
     </head>
 
-    <body class="bg-[#FAF8F7] text-[#211A1A] antialiased h-screen flex flex-col overflow-hidden">
+    <body class="bg-brand-canvas text-brand-text-main antialiased h-screen flex flex-col overflow-hidden">
         <!-- Early Pre-hydration of User Context & Global Navigation Fallbacks -->
         <script>
             (function() {
@@ -389,16 +389,16 @@
         <!-- Core Application Controller (Foundation Routing, Modals & Pillar Switching) -->
         <script src="js/app.js"></script>
         <!-- Performance Management Modular Architecture (Stages 1 through 7) -->
-        <script src="js/performance/api.js"></script>
-        <script src="js/performance/navigation.js"></script>
-        <script src="js/performance/stage1_planning.js"></script>
-        <script src="js/performance/stage2_review.js"></script>
-        <script src="js/performance/stage3_monitoring.js"></script>
-        <script src="js/performance/stage4_appraisal.js"></script>
-        <script src="js/performance/stage5_calibration.js"></script>
-        <script src="js/performance/stage6_development.js"></script>
-        <script src="js/performance/stage7_transition.js"></script>
-        <script src="js/performance/index.js"></script>
+        <script src="js/performance/api.js?v=<?= time() ?>"></script>
+        <script src="js/performance/navigation.js?v=<?= time() ?>"></script>
+        <script src="js/performance/stage1_planning.js?v=<?= time() ?>"></script>
+        <script src="js/performance/stage2_review.js?v=<?= time() ?>"></script>
+        <script src="js/performance/stage3_monitoring.js?v=<?= time() ?>"></script>
+        <script src="js/performance/stage4_appraisal.js?v=<?= time() ?>"></script>
+        <script src="js/performance/stage5_calibration.js?v=<?= time() ?>"></script>
+        <script src="js/performance/stage6_development.js?v=<?= time() ?>"></script>
+        <script src="js/performance/stage7_transition.js?v=<?= time() ?>"></script>
+        <script src="js/performance/index.js?v=<?= time() ?>"></script>
         <script src="js/competencies.js"></script>
         <!-- Learning Management System (LMS) Modular Architecture -->
         <script src="js/lms/library.js"></script>

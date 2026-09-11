@@ -226,25 +226,67 @@
                                     </div>
 
                                     <!-- Table -->
-                                    <div class="overflow-x-auto custom-scrollbar">
-                                        <table class="w-full text-left text-xs border-collapse">
-                                            <thead class="bg-slate-50/80 text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-200/80">
-                                                <tr>
-                                                    <th class="px-4 py-3 w-8 text-center">
+                                    <div class="overflow-x-auto custom-scrollbar relative">
+                                        <!-- Table Loading Effect Overlay -->
+                                        <div id="stage1-table-loading" class="hidden absolute inset-0 bg-white/85 backdrop-blur-2xs flex flex-col items-center justify-center z-40 transition-opacity duration-200 rounded-2xl">
+                                            <div class="flex items-center space-x-2.5 px-5 py-3 rounded-xl bg-white shadow-xl border border-slate-200">
+                                                <i class="fas fa-spinner fa-spin text-primary text-sm"></i>
+                                                <span id="stage1-loading-text" class="text-xs font-bold text-slate-800">Updating Objectives...</span>
+                                            </div>
+                                        </div>
+
+                                        <style>
+                                            /* Bulletproof Opaque Styles for Stage 1 Fixed/Sticky Columns */
+                                            #sub-perf-plan table {
+                                                border-collapse: separate !important;
+                                                border-spacing: 0 !important;
+                                                background-color: #ffffff !important;
+                                            }
+                                            #sub-perf-plan table th.sticky-col-checkbox,
+                                            #sub-perf-plan table th.sticky-col-index,
+                                            #sub-perf-plan table th.sticky-col-employee {
+                                                position: sticky !important;
+                                                background-color: #f8fafc !important;
+                                                background: #f8fafc !important;
+                                                opacity: 1 !important;
+                                                z-index: 35 !important;
+                                            }
+                                            #sub-perf-plan table td.sticky-col-checkbox,
+                                            #sub-perf-plan table td.sticky-col-index,
+                                            #sub-perf-plan table td.sticky-col-employee {
+                                                position: sticky !important;
+                                                background-color: #ffffff !important;
+                                                background: #ffffff !important;
+                                                opacity: 1 !important;
+                                                z-index: 25 !important;
+                                            }
+                                            #sub-perf-plan table tr:hover td.sticky-col-checkbox,
+                                            #sub-perf-plan table tr:hover td.sticky-col-index,
+                                            #sub-perf-plan table tr:hover td.sticky-col-employee {
+                                                background-color: #f1f5f9 !important;
+                                                background: #f1f5f9 !important;
+                                                opacity: 1 !important;
+                                            }
+                                        </style>
+
+                                        <table class="w-full min-w-[1100px] text-left text-xs border-separate border-spacing-0 bg-white">
+                                            <thead class="text-slate-500 font-semibold uppercase text-[10px] tracking-wider">
+                                                <tr class="border-b border-slate-200">
+                                                    <th class="sticky-col-checkbox px-4 py-3.5 w-12 min-w-12 max-w-12 text-center sticky left-0 z-35 bg-slate-50 border-b border-slate-200" style="position: sticky; left: 0px; width: 48px; min-width: 48px; max-width: 48px; z-index: 35; background-color: #f8fafc !important; background: #f8fafc !important; opacity: 1 !important; border-bottom: 1px solid #e2e8f0;">
                                                         <input type="checkbox" id="stage1-select-all" onchange="toggleSelectAllStage1(this.checked)" class="rounded border-slate-300 text-primary focus:ring-primary">
                                                     </th>
-                                                    <th class="px-3 py-3 w-10 text-center font-bold text-slate-400">#</th>
-                                                    <th class="px-5 py-3">Employee</th>
-                                                    <th class="px-5 py-3">Objective &amp; Dept</th>
-                                                    <th class="px-5 py-3">Target Metric / KPI</th>
-                                                    <th class="px-5 py-3">Target Date</th>
-                                                    <th class="px-5 py-3">Weight</th>
-                                                    <th class="px-5 py-3">Progress</th>
-                                                    <th class="px-5 py-3 text-center">Status</th>
-                                                    <th class="px-5 py-3 text-right">Actions</th>
+                                                    <th class="sticky-col-index px-3 py-3.5 w-12 min-w-12 max-w-12 text-center font-bold text-slate-400 sticky left-12 z-35 bg-slate-50 border-b border-slate-200" style="position: sticky; left: 48px; width: 48px; min-width: 48px; max-width: 48px; z-index: 35; background-color: #f8fafc !important; background: #f8fafc !important; opacity: 1 !important; border-bottom: 1px solid #e2e8f0;">#</th>
+                                                    <th class="sticky-col-employee px-5 py-3.5 w-48 min-w-48 max-w-48 sticky left-24 z-35 bg-slate-50 border-b border-slate-200 border-r border-slate-200/80 shadow-[4px_0_10px_-2px_rgba(0,0,0,0.08)]" style="position: sticky; left: 96px; width: 192px; min-width: 192px; max-width: 192px; z-index: 35; background-color: #f8fafc !important; background: #f8fafc !important; opacity: 1 !important; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; box-shadow: 4px 0 10px -2px rgba(0,0,0,0.08);">Employee</th>
+                                                    <th class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 whitespace-nowrap">Objective &amp; Dept</th>
+                                                    <th class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 whitespace-nowrap">Target Metric / KPI</th>
+                                                    <th class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 whitespace-nowrap">Target Date</th>
+                                                    <th class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 whitespace-nowrap">Weight</th>
+                                                    <th class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 whitespace-nowrap">Progress</th>
+                                                    <th class="px-5 py-3.5 text-center bg-slate-50 border-b border-slate-200 whitespace-nowrap">Status</th>
+                                                    <th class="px-5 py-3.5 text-right bg-slate-50 border-b border-slate-200 whitespace-nowrap">Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="goals-table-body" class="divide-y divide-slate-100 text-slate-700">
+                                            <tbody id="goals-table-body" class="text-slate-700 bg-white">
                                                 <!-- Rendered dynamically by js/performance.js -->
                                             </tbody>
                                         </table>
@@ -253,13 +295,13 @@
                                 </div>
 
                                 <!-- Supervisor General Task Checklist Matrix Table -->
-                                <div id="general-tasks-matrix-card" class="card-clean bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
-                                    <!-- Header Section -->
-                                    <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                        <div class="space-y-0.5">
+                                <div id="general-tasks-matrix-card" class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+                                    <!-- Header -->
+                                    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div class="space-y-1">
                                             <div class="flex items-center space-x-2">
-                                                <span class="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary ring-1 ring-inset ring-primary/20 px-2.5 py-0.5 rounded-full">
-                                                    Supervisor Matrix
+                                                <span class="inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-600/10 px-2.5 py-0.5 rounded-full">
+                                                    Standard Operating Procedures
                                                 </span>
                                                 <span class="text-xs text-slate-400 font-medium">•</span>
                                                 <span class="text-xs text-slate-500 font-medium">Baseline Checklists</span>
@@ -343,6 +385,10 @@
                                             <button id="btn-stage2-bulk-delete" onclick="confirmBulkDeleteStage2()" class="hidden px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center space-x-1.5">
                                                 <i class="fas fa-trash-can"></i>
                                                 <span>Delete Selected (<span id="stage2-selected-count">0</span>)</span>
+                                            </button>
+                                            <button onclick="openCreateSpecificTaskModal()" class="btn-primary text-xs font-bold flex items-center space-x-1.5 shadow-xs" title="Add Specific Action Task to an Objective">
+                                                <i class="fas fa-plus text-[11px]"></i>
+                                                <span>Add Specific Task</span>
                                             </button>
                                         </div>
                                     </div>

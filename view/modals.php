@@ -1,5 +1,5 @@
 <!-- Universal Reusable Action Confirmation Modal -->
-<div id="modal-action-confirmation" class="fixed inset-0 modal-overlay z-[999] hidden items-center justify-center p-4">
+<div id="modal-action-confirmation" class="fixed inset-0 modal-overlay z-999 hidden items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-scaleUp relative">
         <button type="button" onclick="closeModal('modal-action-confirmation')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition duration-200 hover:rotate-90 z-10" aria-label="Close">
             <i class="fas fa-times text-xs"></i>
@@ -23,7 +23,7 @@
 </div>
 
 <!-- Phase 7 Kudos Completion Award Prompt Modal -->
-<div id="modal-phase7-kudos-prompt" class="fixed inset-0 modal-overlay z-[999] hidden items-center justify-center p-4">
+<div id="modal-phase7-kudos-prompt" class="fixed inset-0 modal-overlay z-999 hidden items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-scaleUp relative">
         <button type="button" onclick="closeModal('modal-phase7-kudos-prompt')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition duration-200 hover:rotate-90 z-10" aria-label="Close">
             <i class="fas fa-times text-xs"></i>
@@ -63,7 +63,7 @@
 
         <!-- Header -->
         <div
-            class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3.5">
                 <div
                     class="w-11 h-11 rounded-full bg-primary-50 text-primary flex items-center justify-center text-lg shadow-2xs border border-primary-100">
@@ -152,7 +152,7 @@
                     <label class="font-bold text-slate-800 text-[11px]">1. Goal / Objective *</label>
                     <input type="text" id="goal-title-input" required
                         placeholder="e.g., Elevate VIP Guest Check-in Experience & NPS Loyalty Index"
-                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none font-medium bg-slate-50/50 hover:bg-white transition">
+                        class="w-full px-3.5 py-2.5 rounded-xl border input-field-modal text-xs focus:ring-2 focus:ring-primary/30 focus:outline-none font-medium bg-slate-50/50 hover:bg-white transition">
                 </div>
 
                 <!-- Department & Target Date -->
@@ -160,7 +160,7 @@
                     <div class="space-y-1">
                         <label class="font-bold text-slate-800 text-[11px]">2. Department *</label>
                         <select id="goal-cat-input"
-                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
+                            class="w-full px-3.5 py-2.5 rounded-xl border input-field-modal text-xs focus:ring-2 focus:ring-primary/30 font-medium bg-slate-50/50">
                             <option>Front Office & Guest Experience</option>
                             <option>Food & Beverage Service</option>
                             <option>Culinary & Kitchen Brigade</option>
@@ -172,7 +172,7 @@
                     <div class="space-y-1">
                         <label class="font-bold text-slate-800 text-[11px]">3. Target Date *</label>
                         <input type="date" id="goal-date-input" required value="2026-09-30"
-                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
+                            class="w-full px-3.5 py-2.5 rounded-xl border input-field-modal text-xs focus:ring-2 focus:ring-primary/30 font-medium bg-slate-50/50">
                     </div>
                 </div>
 
@@ -186,7 +186,7 @@
                         <span class="text-[10px] text-slate-400">Select standard metric</span>
                     </div>
                     <select id="goal-kpi-input" required
-                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none bg-white transition">
+                        class="w-full px-3.5 py-2.5 rounded-xl border input-field-modal text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-primary/30 focus:outline-none bg-white transition">
                         <option value="NPS >= +92 Score">VIP NPS Lift (Target >= +92 NPS Score)</option>
                         <option value="+18% Beverage Rev/Cover">Wine & Beverage Pairing (+18% Avg Check Revenue)</option>
                         <option value="100% Audit Score (Zero Violations)">HACCP Hygiene & Safety (100% Audit Pass)</option>
@@ -227,7 +227,7 @@
                     <div class="space-y-1">
                         <label class="font-bold text-slate-800 text-[11px]">5. Priority Weight</label>
                         <select id="goal-weight-input"
-                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
+                            class="w-full px-3.5 py-2.5 rounded-xl border input-field-modal text-xs focus:ring-2 focus:ring-primary/30 font-medium bg-slate-50/50">
                             <option>High Priority (35% Weight - Core Role Objective)</option>
                             <option selected>Medium Priority (20% Weight - Standard Operational Goal)</option>
                             <option>Developmental (15% Weight - Learning Goal)</option>
@@ -237,14 +237,14 @@
                         <label class="font-bold text-slate-800 text-[11px]">6. Evidence / Deliverables (Optional)</label>
                         <input type="text" id="goal-evidence-input"
                             placeholder="e.g., Monthly guest feedback reports, PMS logs"
-                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
+                            class="w-full px-3.5 py-2.5 rounded-xl border input-field-modal text-xs focus:ring-2 focus:ring-primary/30 font-medium bg-slate-50/50">
                     </div>
                 </div>
 
                 <!-- Gemini AI Alignment Box -->
                 <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-start space-x-3">
                     <div
-                        class="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center text-xs flex-shrink-0 shadow-2xs">
+                        class="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center text-xs shrink-0 shadow-2xs">
                         <i class="fas fa-sparkles text-[10px]"></i>
                     </div>
                     <div class="text-[11px] text-slate-700 leading-relaxed">
@@ -259,7 +259,7 @@
 
         <!-- Footer -->
         <div
-            class="p-4 sm:px-7 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
+            class="p-4 sm:px-7 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between shrink-0">
             <span class="text-[11px] text-slate-400 font-medium hidden sm:inline"><i
                     class="fas fa-lock text-slate-300 mr-1"></i> Auto-saved draft</span>
             <div class="flex items-center space-x-2.5 ml-auto">
@@ -280,13 +280,19 @@
 <div id="modal-view-goal" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[90vh]">
         <!-- Header -->
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3.5">
                 <div class="w-10 h-10 rounded-full bg-primary-50 text-primary flex items-center justify-center text-base font-bold border border-primary-100 shadow-2xs">
                     <i class="fas fa-bullseye"></i>
                 </div>
                 <div>
-                    <span class="badge-primary">Objective Details</span>
+                    <div class="flex items-center space-x-2">
+                        <span class="badge-primary">Objective Details</span>
+                        <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span>Live Realtime</span>
+                        </span>
+                    </div>
                     <h3 id="view-modal-emp-name" class="font-heading font-bold text-base text-slate-900 mt-0.5">Associate Performance Plan</h3>
                     <p id="view-modal-emp-pos" class="text-[11px] text-slate-500 font-medium">Front Desk Host · Front Office</p>
                 </div>
@@ -298,7 +304,7 @@
         </div>
 
         <!-- Body -->
-        <div class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs bg-white flex-1">
+        <div id="view-modal-scroll-body" class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs bg-white flex-1">
             <div class="grid grid-cols-3 gap-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/70 text-center">
                 <div>
                     <span class="text-[10px] text-slate-400 block font-semibold">Attendance</span>
@@ -333,7 +339,7 @@
 <div id="modal-revise-goal" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-xl w-full overflow-hidden max-h-[92vh] flex flex-col">
         <!-- Header -->
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3.5">
                 <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center text-base font-bold border border-amber-100 shadow-2xs">
                     <i class="fas fa-pen-to-square"></i>
@@ -361,7 +367,7 @@
                 <div class="space-y-1">
                     <label class="font-bold text-slate-800 text-[11px]">1. Goal / Objective Title *</label>
                     <input type="text" id="revise-goal-title" required
-                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none font-medium bg-slate-50/50 hover:bg-white transition">
+                        class="w-full px-3.5 py-2.5 rounded-xl border input-field-modal text-xs focus:ring-2 focus:ring-primary/30 focus:outline-none font-medium bg-slate-50/50 hover:bg-white transition">
                 </div>
 
                 <!-- Department & Target Date -->
@@ -369,7 +375,7 @@
                     <div class="space-y-1">
                         <label class="font-bold text-slate-800 text-[11px]">2. Department</label>
                         <select id="revise-goal-cat"
-                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
+                            class="w-full px-3.5 py-2.5 rounded-xl border input-field-modal text-xs focus:ring-2 focus:ring-primary/30 font-medium bg-slate-50/50">
                             <option>Front Office & Guest Experience</option>
                             <option>Food & Beverage Service</option>
                             <option>Culinary & Kitchen Brigade</option>
@@ -381,7 +387,7 @@
                     <div class="space-y-1">
                         <label class="font-bold text-slate-800 text-[11px]">3. Target Date</label>
                         <input type="date" id="revise-goal-date"
-                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
+                            class="w-full px-3.5 py-2.5 rounded-xl border input-field-modal text-xs focus:ring-2 focus:ring-primary/30 font-medium bg-slate-50/50">
                     </div>
                 </div>
 
@@ -390,14 +396,14 @@
                     <label class="font-bold text-slate-800 text-[11px]">4. Target / Success Metric *</label>
                     <input type="text" id="revise-goal-kpi" required
                         placeholder="e.g., NPS >= +92 Score or Table reset < 3 mins"
-                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none bg-white transition">
+                        class="w-full px-3.5 py-2.5 rounded-xl border input-field-modal text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-primary/30 focus:outline-none bg-white transition">
                 </div>
 
                 <!-- Priority Weight -->
                 <div class="space-y-1">
                     <label class="font-bold text-slate-800 text-[11px]">5. Priority Weight</label>
                     <select id="revise-goal-weight"
-                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
+                        class="w-full px-3.5 py-2.5 rounded-xl border input-field-modal text-xs focus:ring-2 focus:ring-primary/30 font-medium bg-slate-50/50">
                         <option>High Priority (35% Weight - Core Role Objective)</option>
                         <option selected>Medium Priority (20% Weight - Standard Operational Goal)</option>
                         <option>Developmental (15% Weight - Learning Goal)</option>
@@ -409,7 +415,7 @@
                     <label class="font-bold text-slate-800 text-[11px]">6. Evidence & Verification Deliverables</label>
                     <input type="text" id="revise-goal-deliverables"
                         placeholder="e.g., Medallia guest satisfaction monthly reports, PMS shift logs"
-                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-primary/30 focus:border-primary font-medium bg-slate-50/50">
+                        class="w-full px-3.5 py-2.5 rounded-xl border input-field-modal text-xs focus:ring-2 focus:ring-primary/30 font-medium bg-slate-50/50">
                 </div>
 
                 <!-- Supervisor Coaching & Calibration Notes -->
@@ -426,7 +432,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-end space-x-2.5 flex-shrink-0">
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-end space-x-2.5 shrink-0">
             <button type="button" onclick="closeModal('modal-revise-goal')"
                 class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
             <button type="submit" form="form-revise-goal" id="btn-save-goal-revision" onclick="saveGoalRevision(event)"
@@ -443,7 +449,7 @@
     <div class="modal-card max-w-lg w-full overflow-hidden flex flex-col">
 
         <div
-            class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3">
                 <div
                     class="w-11 h-11 rounded-full bg-gold-50 text-gold-dark flex items-center justify-center text-base font-bold border border-gold-100">
@@ -461,7 +467,7 @@
         </div>
 
         <div class="p-6 space-y-4 text-xs bg-white">
-            <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-1.5">
+            <div class="p-4 bg-brand-canvas rounded-2xl border border-brand-border space-y-1.5">
                 <div class="flex justify-between font-bold text-slate-900 text-sm">
                     <span id="review-goal-title">VIP Guest Check-in Experience &amp; NPS Lift</span>
                     <span class="badge-primary">Q3 Priority</span>
@@ -474,7 +480,7 @@
             <div>
                 <label class="block text-xs font-bold text-slate-800 mb-1">Supervisor Coaching Notes &amp; Check-in Intervals</label>
                 <textarea id="supervisor-feedback-notes" rows="3"
-                    class="w-full p-3 rounded-xl border border-[#E8DEDC] text-xs focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-[#FAF8F7]"
+                    class="w-full p-3 rounded-xl border border-brand-border text-xs focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-brand-canvas"
                     placeholder="Add specific coaching notes, check-in intervals or calibration adjustments for this goal..."></textarea>
             </div>
         </div>
@@ -490,11 +496,11 @@
 </div>
 
 <!-- 3. Modal: Gemini AI Coaching Refiner (Conversational Chatbot) -->
-<div id="modal-ai-feedback" class="fixed z-50 hidden flex-col w-[380px] max-w-[calc(100vw-2rem)] h-[600px] max-h-[85vh] bottom-24 right-4 lg:bottom-8 lg:right-24 bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-slate-200/80 animate-scaleUp">
+<div id="modal-ai-feedback" class="fixed z-50 hidden flex-col w-95 max-w-[calc(100vw-2rem)] h-150 max-h-[85vh] bottom-24 right-4 lg:bottom-8 lg:right-24 bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-slate-200/80 animate-scaleUp">
     <div class="flex flex-col h-full overflow-hidden">
 
         <!-- Frosted Liquid Glass Header -->
-        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-amber-500/5 via-rose-500/5 to-purple-500/5 backdrop-blur-xs flex-shrink-0">
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-linear-to-r from-amber-500/5 via-rose-500/5 to-purple-500/5 backdrop-blur-xs shrink-0">
             <div class="flex items-center space-x-3">
                 <img src="assets/images/ai_copilot_avatar.jpg" alt="AI Copilot" class="w-10 h-10 rounded-2xl object-cover shadow-2xs border border-slate-200">
                 <div>
@@ -525,7 +531,7 @@
             
             <!-- AI Welcome Message -->
             <div class="flex items-start space-x-3 w-full max-w-lg">
-                <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500/20 via-primary/20 to-purple-500/20 text-primary flex items-center justify-center flex-shrink-0 shadow-2xs border border-primary/20 mt-1">
+                <div class="w-8 h-8 rounded-xl bg-linear-to-br from-amber-500/20 via-primary/20 to-purple-500/20 text-primary flex items-center justify-center shrink-0 shadow-2xs border border-primary/20 mt-1">
                     <i class="fas fa-sparkles text-[10px]"></i>
                 </div>
                 <div class="flex-1 bg-white p-3.5 rounded-2xl rounded-tl-sm border border-slate-200/60 shadow-2xs text-slate-700 leading-relaxed space-y-2 text-xs">
@@ -543,34 +549,34 @@
             <!-- Quick Prompts (System Knowledge & Coaching) -->
             <div class="flex space-x-2 overflow-x-auto custom-scrollbar pb-1">
                 <button type="button" onclick="AIRefiner.sendChat('How does the 9-Box Grid work and how is succession readiness computed?')"
-                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    class="shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
                     📊 Explain 9-Box Grid
                 </button>
                 <button type="button" onclick="AIRefiner.sendChat('Help me draft an SBI coaching note for a delayed guest check-in.')"
-                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    class="shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
                     💡 Draft SBI Coaching
                 </button>
                 <button type="button" onclick="AIRefiner.sendChat('How does our Social Recognition and XP ledger work?')"
-                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    class="shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
                     🏆 What Awards XP?
                 </button>
                 <button type="button" onclick="AIRefiner.sendChat('Explain the LAST model for resolving guest complaints.')"
-                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    class="shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
                     🛎️ LAST Recovery Model
                 </button>
                 <button type="button" onclick="AIRefiner.sendChat('How do LMS quiz passes and training attendance gates connect to competencies?')"
-                    class="flex-shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
+                    class="shrink-0 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-semibold hover:border-primary hover:text-primary transition">
                     📚 LMS & Training Workflows
                 </button>
             </div>
 
             <div class="flex items-end space-x-2">
                 <textarea id="ai-chat-input" rows="1" oninput="this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 120) + 'px';"
-                    class="w-full p-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-slate-50/50 text-slate-800 text-xs placeholder:text-slate-400 leading-relaxed resize-none transition"
+                    class="w-full p-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-slate-50/50 ai-textarea text-xs leading-relaxed resize-none transition"
                     placeholder="Message AI Coach... (Press Enter to send)"></textarea>
                 
                 <button id="ai-btn-send-chat" onclick="AIRefiner.handleSendClick()"
-                    class="w-10 h-10 rounded-xl bg-primary hover:bg-primary-dark text-white flex items-center justify-center flex-shrink-0 transition shadow-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    class="w-10 h-10 rounded-xl bg-primary hover:bg-primary-dark text-white flex items-center justify-center shrink-0 transition shadow-xs active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                     <i class="fas fa-paper-plane text-xs"></i>
                 </button>
             </div>
@@ -587,7 +593,7 @@
 <div id="modal-submit-self-evaluation" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-lg w-full overflow-hidden flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-100 animate-scaleUp">
         <!-- Header -->
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3.5">
                 <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold border border-slate-200/60 shadow-2xs">
                     <i class="fas fa-user-pen"></i>
@@ -652,7 +658,7 @@
                 </div>
             </div>
 
-            <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
+            <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between shrink-0">
                 <span class="text-[11px] text-slate-500">Recorded directly in calibration record.</span>
                 <div class="flex items-center space-x-2">
                     <button type="button" onclick="closeModal('modal-submit-self-evaluation')"
@@ -674,7 +680,7 @@
     <div class="modal-card max-w-2xl w-full overflow-hidden max-h-[92vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-100">
 
         <!-- Header -->
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3.5">
                 <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold border border-slate-200/60 shadow-2xs">
                     <i class="fas fa-star-half-stroke"></i>
@@ -730,7 +736,7 @@
                 </div>
             </div>
 
-            <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
+            <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between shrink-0">
                 <div class="text-[11px] text-slate-500 font-medium">
                     <span>Appraisal weights will normalize to 100% calibration.</span>
                 </div>
@@ -783,7 +789,7 @@
         class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
 
         <!-- Header -->
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3.5">
                 <div
                     class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold border border-slate-200/60 shadow-2xs">
@@ -856,7 +862,7 @@
                         class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
                     <input id="kudos-search-input" oninput="filterKudosList()" type="text"
                         placeholder="Search employee name, title, or department..."
-                        class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition">
+                        class="w-full pl-9 pr-4 py-2 bg-slate-50 border input-field-modal rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none transition">
                 </div>
 
                 <!-- Department Filter Pills -->
@@ -917,14 +923,14 @@
             <div>
                 <label class="block font-bold text-slate-800 text-[11px] mb-1">Recognition Message / Qualitative Evidence</label>
                 <textarea id="shoutout-message" rows="2"
-                    class="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none custom-scrollbar bg-slate-50/50 text-xs font-medium"
+                    class="w-full p-3 rounded-xl border input-field-modal focus:ring-2 focus:ring-primary/20 focus:outline-none custom-scrollbar bg-slate-50/50 text-xs font-medium"
                     placeholder="e.g., Outstanding teamwork and calm composure during the peak banquet rush!"></textarea>
             </div>
         </div>
 
         <!-- Footer -->
         <div
-            class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
+            class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between shrink-0">
             <span id="kudos-awarded-preview"
                 class="text-xs font-bold text-slate-700 bg-slate-100 border border-slate-200/80 px-2.5 py-1 rounded-lg">+0 XP Total</span>
             <div class="flex items-center space-x-2.5">
@@ -944,7 +950,7 @@
     <div class="modal-card max-w-md w-full overflow-hidden flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-100">
 
         <div
-            class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3">
                 <div
                     class="w-11 h-11 rounded-full bg-sage-50 text-sage-dark flex items-center justify-center text-lg font-bold border border-sage-100">
@@ -987,7 +993,7 @@
 
             <div>
                 <label class="block font-bold text-slate-800 text-[11px] mb-1">Optional Shift Notes / Bottleneck Details</label>
-                <input type="text" id="sentiment-note-input" placeholder="e.g., Heavy luggage rush at front entrance, luggage tags running low" class="w-full p-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none">
+                <input type="text" id="sentiment-note-input" placeholder="e.g., Heavy luggage rush at front entrance, luggage tags running low" class="w-full p-2.5 rounded-xl border input-field-modal text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:outline-none">
             </div>
         </div>
     </div>
@@ -995,8 +1001,8 @@
 
 <!-- Modal: Specific Date / Month Picker for Shift Sentiment -->
 <div id="modal-specific-date-filter" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-    <div class="card-clean max-w-md w-full p-6 space-y-5 bg-white border border-[#E8DEDC] rounded-3xl shadow-2xl relative">
-        <div class="flex items-center justify-between border-b border-[#E8DEDC] pb-3.5">
+    <div class="card-clean max-w-md w-full p-6 space-y-5 bg-white border border-brand-border rounded-3xl shadow-2xl relative">
+        <div class="flex items-center justify-between border-b border-brand-border pb-3.5">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-2xl bg-amber-50 text-primary flex items-center justify-center text-lg font-bold border border-amber-100 shadow-2xs">
                     <i class="fas fa-calendar-alt"></i>
@@ -1013,7 +1019,7 @@
 
         <div class="space-y-4 text-xs">
             <!-- Option 1: Specific Date -->
-            <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2">
+            <div class="p-4 bg-brand-canvas rounded-2xl border border-brand-border space-y-2">
                 <div class="flex items-center justify-between">
                     <label class="font-bold text-slate-800 flex items-center space-x-1.5 text-xs">
                         <i class="fas fa-calendar-day text-primary"></i>
@@ -1021,16 +1027,16 @@
                     </label>
                     <span class="text-[10px] text-slate-400 font-semibold uppercase">Single Day Rush</span>
                 </div>
-                <input type="date" id="modal-climate-date-picker" onchange="const m = document.getElementById('modal-climate-month-picker'); if (m) m.value = '';" class="w-full text-xs px-3 py-2.5 bg-white border border-[#E8DEDC] rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none text-slate-800 font-medium cursor-pointer shadow-2xs">
+                <input type="date" id="modal-climate-date-picker" onchange="const m = document.getElementById('modal-climate-month-picker'); if (m) m.value = '';" class="w-full text-xs px-3 py-2.5 bg-white border input-field-brand rounded-xl focus:ring-2 focus:ring-primary/20 focus:outline-none text-slate-800 font-medium cursor-pointer shadow-2xs">
             </div>
 
             <div class="relative flex items-center justify-center">
-                <div class="border-t border-[#E8DEDC] w-full"></div>
+                <div class="border-t border-brand-border w-full"></div>
                 <span class="bg-white px-3 text-[10px] uppercase font-extrabold text-slate-400 absolute tracking-wider">OR</span>
             </div>
 
             <!-- Option 2: Specific Month -->
-            <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2">
+            <div class="p-4 bg-brand-canvas rounded-2xl border border-brand-border space-y-2">
                 <div class="flex items-center justify-between">
                     <label class="font-bold text-slate-800 flex items-center space-x-1.5 text-xs">
                         <i class="fas fa-calendar text-gold-dark"></i>
@@ -1038,11 +1044,11 @@
                     </label>
                     <span class="text-[10px] text-slate-400 font-semibold uppercase">Monthly Climate</span>
                 </div>
-                <input type="month" id="modal-climate-month-picker" onchange="const d = document.getElementById('modal-climate-date-picker'); if (d) d.value = '';" class="w-full text-xs px-3 py-2.5 bg-white border border-[#E8DEDC] rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none text-slate-800 font-medium cursor-pointer shadow-2xs">
+                <input type="month" id="modal-climate-month-picker" onchange="const d = document.getElementById('modal-climate-date-picker'); if (d) d.value = '';" class="w-full text-xs px-3 py-2.5 bg-white border input-field-brand rounded-xl focus:ring-2 focus:ring-primary/20 focus:outline-none text-slate-800 font-medium cursor-pointer shadow-2xs">
             </div>
         </div>
 
-        <div class="flex items-center justify-between pt-2 border-t border-[#E8DEDC]">
+        <div class="flex items-center justify-between pt-2 border-t border-brand-border">
             <button onclick="clearModalSpecificDate()" type="button" class="btn-secondary px-3.5 py-2 text-xs font-bold text-slate-600">
                 <i class="fas fa-rotate-left mr-1"></i> Reset to Today
             </button>
@@ -1086,7 +1092,7 @@
                 </div>
 
                 <!-- Parameters Box -->
-                <div class="p-4 rounded-2xl bg-[#FAF8F7] border border-[#E8DEDC] space-y-3">
+                <div class="p-4 rounded-2xl bg-brand-canvas border border-brand-border space-y-3">
                     <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
                         <i class="fas fa-clipboard-check text-primary"></i>
                         <span>Quiz Parameters &amp; Ground Rules</span>
@@ -1124,7 +1130,7 @@
                 </div>
 
                 <!-- Existing Saved Attempt Banner (dynamically shown if in progress) -->
-                <div id="quiz-resume-banner" class="hidden p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between text-xs">
+                <div id="quiz-resume-banner" class="hidden p-3 bg-emerald-50 rounded-xl border border-emerald-200 items-center justify-between text-xs">
                     <div class="flex items-center space-x-2 text-emerald-800 font-semibold">
                         <i class="fas fa-rotate-left text-emerald-600"></i>
                         <span>An in-progress attempt is saved in local storage (<span id="quiz-resume-timer" class="font-mono font-bold">--:--</span> remaining).</span>
@@ -1142,7 +1148,7 @@
                     <i class="fas fa-play text-xs"></i>
                     <span>Yes, Start Quiz</span>
                 </button>
-                <button id="btn-quiz-resume-confirm" onclick="resumeQuizFromLocalStorage()" class="hidden btn-primary px-6 py-2.5 text-xs font-bold flex items-center space-x-2 shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white border-0">
+                <button id="btn-quiz-resume-confirm" onclick="resumeQuizFromLocalStorage()" class="hidden btn-primary px-6 py-2.5 text-xs font-bold items-center space-x-2 shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white border-0">
                     <i class="fas fa-rotate-left text-xs"></i>
                     <span>Resume In-Progress Quiz</span>
                 </button>
@@ -1166,9 +1172,9 @@
         <!-- SCREEN 3: ACTIVE QUIZ WORKFLOW -->
         <div id="quiz-screen-active" class="hidden flex-col h-full overflow-hidden">
             <!-- Header with Title & Live Timer -->
-            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
                 <div class="flex items-center space-x-3">
-                    <div class="w-9 h-9 rounded-xl bg-[#FAF8F7] text-primary border border-[#E8DEDC] flex items-center justify-center text-sm font-bold shadow-2xs">
+                    <div class="w-9 h-9 rounded-xl bg-brand-canvas text-primary border border-brand-border flex items-center justify-center text-sm font-bold shadow-2xs">
                         <i class="fas fa-graduation-cap"></i>
                     </div>
                     <div>
@@ -1193,7 +1199,7 @@
             </div>
 
             <!-- Question Navigator Strip: 1 to 10 Palette -->
-            <div class="px-5 py-3 bg-[#FAF8F7] border-b border-[#E8DEDC] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 flex-shrink-0">
+            <div class="px-5 py-3 bg-brand-canvas border-b border-brand-border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
                 <div class="flex items-center space-x-2">
                     <span class="text-[11px] font-bold text-slate-600">Question Navigator:</span>
                     <span id="quiz-progress-counter" class="text-[11px] font-medium text-slate-400">0 of 10 Answered</span>
@@ -1206,7 +1212,7 @@
 
             <!-- Question Card Body (Scrollable) -->
             <div class="p-5 sm:p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 bg-white text-xs">
-                <div class="p-4 sm:p-5 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-3">
+                <div class="p-4 sm:p-5 bg-brand-canvas rounded-2xl border border-brand-border space-y-3">
                     <div class="flex justify-between items-center text-xs">
                         <span id="quiz-q-num-badge" class="font-extrabold text-primary uppercase tracking-wider text-[11px]">Question 1 of 10</span>
                         <span id="quiz-q-status-badge" class="badge-dusty text-[10px]">Unanswered</span>
@@ -1223,7 +1229,7 @@
             </div>
 
             <!-- Footer Navigation Controls -->
-            <div class="p-4 sm:px-6 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-between flex-shrink-0 text-xs">
+            <div class="p-4 sm:px-6 border-t border-brand-border bg-brand-canvas flex items-center justify-between shrink-0 text-xs">
                 <button id="btn-quiz-prev" onclick="prevQuizQuestion()"
                     class="btn-secondary px-4 py-2 text-xs font-semibold flex items-center space-x-1.5 transition disabled:opacity-40 disabled:pointer-events-none">
                     <i class="fas fa-arrow-left text-[10px]"></i>
@@ -1242,7 +1248,7 @@
                         <i class="fas fa-arrow-right text-[10px]"></i>
                     </button>
                     <button id="btn-quiz-submit" onclick="showQuizReviewScreen()"
-                        class="hidden px-5 py-2 text-xs font-bold text-white bg-gold hover:bg-gold-dark rounded-xl shadow-xs flex items-center space-x-1.5 transition">
+                        class="hidden px-5 py-2 text-xs font-bold text-white bg-gold hover:bg-gold-dark rounded-xl shadow-xs items-center space-x-1.5 transition">
                         <i class="fas fa-check-double"></i>
                         <span>Review &amp; Submit</span>
                     </button>
@@ -1252,7 +1258,7 @@
 
         <!-- SCREEN 4: REVIEW & CONFIRM SUBMISSION SCREEN -->
         <div id="quiz-screen-review" class="hidden flex-col h-full overflow-hidden">
-            <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
                 <div class="flex items-center space-x-3">
                     <div class="w-9 h-9 rounded-xl bg-amber-50 text-gold-dark flex items-center justify-center text-sm font-bold border border-amber-200">
                         <i class="fas fa-clipboard-check"></i>
@@ -1281,7 +1287,7 @@
             </div>
 
             <!-- Review Footer -->
-            <div class="p-4 sm:px-6 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-between flex-shrink-0 text-xs">
+            <div class="p-4 sm:px-6 border-t border-brand-border bg-brand-canvas flex items-center justify-between shrink-0 text-xs">
                 <button onclick="backToActiveQuiz()" class="btn-secondary px-4 py-2 font-semibold flex items-center space-x-1.5">
                     <i class="fas fa-arrow-left text-[10px]"></i>
                     <span>Back to Questions</span>
@@ -1296,7 +1302,7 @@
         <!-- SCREEN 5: RESULTS & SCORE BREAKDOWN -->
         <div id="quiz-screen-results" class="hidden flex-col h-full overflow-hidden">
             <!-- Results Header -->
-            <div class="px-6 py-5 border-b border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
+            <div class="px-6 py-5 border-b border-slate-100 bg-white flex items-center justify-between shrink-0">
                 <div class="flex items-center space-x-3">
                     <div id="quiz-result-icon-box" class="w-11 h-11 rounded-2xl flex items-center justify-center text-lg font-bold shadow-2xs">
                         <i id="quiz-result-icon" class="fas fa-trophy"></i>
@@ -1328,7 +1334,7 @@
                     </div>
 
                     <!-- Prescribed Update Badge -->
-                    <div class="p-3 bg-white/90 rounded-2xl border border-slate-200/80 space-y-1 text-center sm:text-right flex-shrink-0">
+                    <div class="p-3 bg-white/90 rounded-2xl border border-slate-200/80 space-y-1 text-center sm:text-right shrink-0">
                         <div class="text-[10px] font-bold uppercase text-slate-400">LMS Audit Action Recorded</div>
                         <div class="text-xs font-extrabold text-slate-800 flex items-center space-x-1 justify-center sm:justify-end">
                             <i class="fas fa-check text-emerald-600"></i>
@@ -1351,7 +1357,7 @@
             </div>
 
             <!-- Results Footer -->
-            <div class="p-4 sm:px-6 border-t border-slate-100 bg-[#FAF8F7] flex items-center justify-between flex-shrink-0 text-xs">
+            <div class="p-4 sm:px-6 border-t border-slate-100 bg-brand-canvas flex items-center justify-between shrink-0 text-xs">
                 <button id="btn-quiz-retake" onclick="restartQuiz()" class="btn-secondary px-4 py-2 font-bold flex items-center space-x-1.5">
                     <i class="fas fa-rotate-right text-xs"></i>
                     <span>Retake Quiz</span>
@@ -1374,7 +1380,7 @@
     <div class="modal-card max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
 
         <!-- Header -->
-        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="w-11 h-11 rounded-2xl bg-sage-50 text-sage-dark flex items-center justify-center text-lg font-bold border border-sage-100 shadow-2xs">
                     <i class="fas fa-file-arrow-up"></i>
@@ -1413,20 +1419,20 @@
                 <div>
                     <label class="block font-bold text-slate-800 text-[11px] mb-1">Document / Book Title *</label>
                     <input id="lms-doc-title" name="title" type="text" required placeholder="e.g., Executive Suite Turndown & Linen Standard Handbook"
-                        class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
+                        class="w-full p-2.5 bg-brand-canvas border border-brand-border rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block font-bold text-slate-800 text-[11px] mb-1">Target Department</label>
-                        <select id="lms-doc-dept" name="department_id" class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
+                        <select id="lms-doc-dept" name="department_id" class="w-full p-2.5 bg-brand-canvas border border-brand-border rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                             <option value="all">Property-Wide (All Associates)</option>
                             <!-- Dynamically populated from Supabase departments -->
                         </select>
                     </div>
                     <div>
                         <label class="block font-bold text-slate-800 text-[11px] mb-1">Document Category *</label>
-                        <select id="lms-doc-category" name="category" class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
+                        <select id="lms-doc-category" name="category" class="w-full p-2.5 bg-brand-canvas border border-brand-border rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                             <option value="SOP Manual">SOP Handbook / Manual</option>
                             <option value="Compliance Standard">Compliance &amp; Hygiene</option>
                             <option value="Masterclass Guide">Masterclass Compendium</option>
@@ -1442,7 +1448,7 @@
                             class="w-4 h-4 text-primary bg-white border-slate-300 rounded focus:ring-primary focus:ring-2 cursor-pointer">
                     </div>
                     <label for="lms-doc-mandatory" class="cursor-pointer select-none">
-                        <span class="block font-bold text-slate-900 text-xs flex items-center space-x-1.5">
+                        <span class="font-bold text-slate-900 text-xs flex items-center space-x-1.5">
                             <i class="fas fa-shield-halved text-amber-600 text-xs"></i>
                             <span>Mark as Mandatory Training Document</span>
                             <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-200/80 text-amber-900 uppercase tracking-wider">Auto-Prescribe</span>
@@ -1457,31 +1463,31 @@
                     <div>
                         <label class="block font-bold text-slate-800 text-[11px] mb-1">Estimated Reading Pages</label>
                         <input id="lms-doc-pages" name="estimated_pages" type="number" min="1" max="500" value="18" placeholder="e.g., 18"
-                            class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
+                            class="w-full p-2.5 bg-brand-canvas border border-brand-border rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                     </div>
                     <div>
                         <label class="block font-bold text-slate-800 text-[11px] mb-1">Associate XP Reward</label>
                         <input id="lms-doc-xp" name="exp_reward" type="number" min="10" max="500" value="100"
-                            class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] text-slate-800 rounded-xl text-xs font-bold focus:ring-2 focus:ring-primary focus:outline-none">
+                            class="w-full p-2.5 bg-brand-canvas border border-brand-border text-slate-800 rounded-xl text-xs font-bold focus:ring-2 focus:ring-primary focus:outline-none">
                     </div>
                 </div>
 
                 <div>
                     <label class="block font-bold text-slate-800 text-[11px] mb-1">Short Description</label>
                     <textarea id="lms-doc-desc" name="description" rows="2" placeholder="Describe essential procedures, compliance benchmarks, and key check points..."
-                        class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar"></textarea>
+                        class="w-full p-2.5 bg-brand-canvas border border-brand-border rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar"></textarea>
                 </div>
 
                 <div>
                     <label class="block font-bold text-slate-800 text-[11px] mb-1">Key Learning Outcomes</label>
                     <textarea id="lms-doc-outcomes" name="learning_outcomes" rows="2" placeholder="List core competencies and standards associates will master after reading..."
-                        class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar"></textarea>
+                        class="w-full p-2.5 bg-brand-canvas border border-brand-border rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar"></textarea>
                 </div>
             </div>
         </form>
 
         <!-- Footer -->
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between shrink-0">
             <span class="text-[11px] text-slate-500 font-semibold hidden sm:inline"><i class="fas fa-shield-halved text-sage-dark mr-1"></i> Bucket: "documents"</span>
             <div class="flex items-center space-x-2 ml-auto">
                 <button type="button" onclick="closeModal('modal-lms-upload')"
@@ -1498,12 +1504,12 @@
 
 <!-- 7c. Modal: Interactive 3D Book & Actual SOP Document Reader -->
 <div id="modal-book-reader" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-    <div class="modal-card max-w-4xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-[#FAF8F7] rounded-3xl shadow-2xl border border-[#E8DEDC]">
+    <div class="modal-card max-w-4xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-brand-canvas rounded-3xl shadow-2xl border border-brand-border">
 
         <!-- Header -->
-        <div class="px-6 py-4 border-b border-[#E8DEDC] flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-4 border-b border-brand-border flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3 min-w-0">
-                <div id="reader-book-icon-badge" class="w-11 h-11 rounded-2xl bg-primary-50 text-primary flex items-center justify-center text-xl font-bold flex-shrink-0 shadow-2xs">
+                <div id="reader-book-icon-badge" class="w-11 h-11 rounded-2xl bg-primary-50 text-primary flex items-center justify-center text-xl font-bold shrink-0 shadow-2xs">
                     <i class="fas fa-book-open"></i>
                 </div>
                 <div class="min-w-0">
@@ -1515,7 +1521,7 @@
                     <p id="reader-book-author" class="text-xs text-slate-500 truncate mt-0.5">Oxford Suites Operations Manual · Standard Edition</p>
                 </div>
             </div>
-            <div class="flex items-center space-x-2 flex-shrink-0">
+            <div class="flex items-center space-x-2 shrink-0">
                 <a id="reader-download-btn" href="#" target="_blank" class="btn-secondary px-3 py-1.5 text-xs font-bold flex items-center space-x-1.5 hover:bg-slate-100 shadow-2xs">
                     <i class="fas fa-arrow-up-right-from-square text-primary text-xs"></i>
                     <span class="hidden sm:inline">Open / Download File</span>
@@ -1528,7 +1534,7 @@
         </div>
 
         <!-- Mode Switcher Tabs (File Viewer vs Structured Procedure Guide) -->
-        <div class="px-6 py-2.5 bg-slate-50 border-b border-[#E8DEDC] flex items-center justify-between gap-3 text-xs flex-shrink-0">
+        <div class="px-6 py-2.5 bg-slate-50 border-b border-brand-border flex items-center justify-between gap-3 text-xs shrink-0">
             <div class="flex items-center space-x-1.5">
                 <button id="tab-btn-reader-viewer" onclick="switchReaderTab('viewer')"
                     class="px-3 py-1.5 rounded-xl font-bold bg-primary text-white shadow-2xs transition text-xs flex items-center space-x-1.5">
@@ -1536,7 +1542,7 @@
                     <span>Document Viewer</span>
                 </button>
                 <button id="tab-btn-reader-details" onclick="switchReaderTab('details')"
-                    class="px-3 py-1.5 rounded-xl font-semibold bg-white text-slate-700 border border-[#E8DEDC] hover:bg-slate-100 transition text-xs flex items-center space-x-1.5">
+                    class="px-3 py-1.5 rounded-xl font-semibold bg-white text-slate-700 border border-brand-border hover:bg-slate-100 transition text-xs flex items-center space-x-1.5">
                     <i class="fas fa-list-check"></i>
                     <span>SOP Specifications &amp; Outcomes</span>
                 </button>
@@ -1545,18 +1551,18 @@
         </div>
 
         <!-- Book Reading Body -->
-        <div class="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1 bg-[#FAF8F7]">
+        <div class="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1 bg-brand-canvas">
             
             <!-- 1. Actual Document Embedded Viewer Panel -->
             <div id="reader-panel-viewer" class="space-y-3">
-                <div id="reader-iframe-container" class="w-full bg-white rounded-2xl border border-[#E8DEDC] p-2 shadow-2xs overflow-hidden min-h-[480px] flex items-center justify-center">
+                <div id="reader-iframe-container" class="w-full bg-white rounded-2xl border border-brand-border p-2 shadow-2xs overflow-hidden min-h-120 flex items-center justify-center">
                     <!-- Dynamic iframe / document object inserted here -->
                 </div>
             </div>
 
             <!-- 2. Structured SOP Procedure Guide & Outcomes Panel -->
             <div id="reader-panel-details" class="space-y-4 hidden">
-                <div class="bg-white rounded-2xl border border-[#E8DEDC] p-6 sm:p-8 space-y-6">
+                <div class="bg-white rounded-2xl border border-brand-border p-6 sm:p-8 space-y-6">
                     <!-- Top Operational Highlight -->
                     <div class="p-4 bg-gold-50/70 rounded-2xl border border-gold-200/80 space-y-1.5">
                         <div class="flex items-center justify-between">
@@ -1571,12 +1577,12 @@
                     <!-- Dual Grid Description & Outcomes -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
                         <!-- Left Page: Overview & Description -->
-                        <div class="space-y-3 md:border-r md:border-[#E8DEDC] md:pr-6">
+                        <div class="space-y-3 md:border-r md:border-brand-border md:pr-6">
                             <div class="border-b border-slate-100 pb-2">
                                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">SECTION 1</span>
                                 <h4 class="font-heading font-bold text-sm text-slate-900 mt-0.5">Operational Overview &amp; Procedures</h4>
                             </div>
-                            <div id="reader-full-description" class="p-3.5 bg-[#FAF8F7] rounded-xl border border-slate-200/70 text-slate-700 leading-relaxed space-y-2">
+                            <div id="reader-full-description" class="p-3.5 bg-brand-canvas rounded-xl border border-slate-200/70 text-slate-700 leading-relaxed space-y-2">
                                 <!-- Dynamic Description -->
                             </div>
                         </div>
@@ -1587,14 +1593,14 @@
                                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">SECTION 2</span>
                                 <h4 class="font-heading font-bold text-sm text-slate-900 mt-0.5">Learning Outcomes &amp; Core Standards</h4>
                             </div>
-                            <div id="reader-full-outcomes" class="p-3.5 bg-[#FAF8F7] rounded-xl border border-slate-200/70 text-slate-700 leading-relaxed space-y-2">
+                            <div id="reader-full-outcomes" class="p-3.5 bg-brand-canvas rounded-xl border border-slate-200/70 text-slate-700 leading-relaxed space-y-2">
                                 <!-- Dynamic Outcomes -->
                             </div>
                         </div>
                     </div>
 
                     <!-- Document Metadata Specification Box -->
-                    <div class="pt-4 border-t border-[#E8DEDC] grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div class="pt-4 border-t border-brand-border grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                         <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
                             <span class="text-[10px] font-bold text-slate-400 uppercase block">Category</span>
                             <span id="reader-spec-category" class="font-bold text-slate-900 text-xs">SOP Manual</span>
@@ -1617,7 +1623,7 @@
         </div>
 
         <!-- Footer Reader Controls -->
-        <div class="p-4 sm:px-6 border-t border-[#E8DEDC] bg-white flex items-center justify-between flex-shrink-0 text-xs">
+        <div class="p-4 sm:px-6 border-t border-brand-border bg-white flex items-center justify-between shrink-0 text-xs">
             <span class="text-slate-500 font-semibold hidden sm:inline"><i class="fas fa-book-bookmark text-gold-dark mr-1.5"></i> Interactive Digital LMS Handbook Reader</span>
             <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
                 <button onclick="closeModal('modal-book-reader')"
@@ -1637,7 +1643,7 @@
     <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
 
         <!-- Header -->
-        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 flex-shrink-0">
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold border border-slate-200 shadow-2xs">
                     <i class="fas fa-book-medical"></i>
@@ -1681,7 +1687,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between flex-shrink-0">
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between shrink-0">
             <span class="text-[11px] text-slate-500 font-semibold"><i class="fas fa-circle-info text-slate-400 mr-1"></i> Prescriptions auto-sync with employee TNA &amp; IDP</span>
             <button onclick="closeModal('modal-remedial-books')"
                 class="btn-primary px-5 py-2 text-xs font-bold">
@@ -1696,7 +1702,7 @@
     <div class="modal-card max-w-3xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
 
         <!-- Header -->
-        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 flex-shrink-0">
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold border border-slate-200 shadow-2xs">
                     <i class="fas fa-graduation-cap"></i>
@@ -1753,7 +1759,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between shrink-0">
             <span class="text-[11px] text-slate-500 font-semibold">
                 <i class="fas fa-database text-rose-600 mr-1"></i> Auto-enrolled in <code>training_needs</code> with <code>target_goal_id</code>
             </span>
@@ -1770,7 +1776,7 @@
     <div class="modal-card max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
 
         <!-- Header -->
-        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="w-11 h-11 rounded-2xl bg-dusty-50 text-dusty-dark flex items-center justify-center text-lg font-bold border border-dusty-100 shadow-2xs">
                     <i class="fas fa-rotate-right"></i>
@@ -1791,7 +1797,7 @@
 
         <!-- Form Body -->
         <div class="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1 text-xs bg-white">
-            <div class="p-3.5 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-1">
+            <div class="p-3.5 bg-brand-canvas rounded-2xl border border-brand-border space-y-1">
                 <p class="text-[11px] text-slate-500 uppercase font-bold tracking-wider">Enrolled Associate &amp; Book</p>
                 <p id="reeval-employee-name" class="text-sm font-bold text-slate-900">Lucas Vargas (Junior Host · Front Office)</p>
                 <p id="reeval-book-title" class="text-xs font-semibold text-primary">Front Desk Standards &amp; VIP Protocols Codex</p>
@@ -1806,14 +1812,14 @@
                 <div>
                     <label class="block font-bold text-slate-800 text-[11px] mb-1">New Re-quiz Score (pts)</label>
                     <input id="reeval-new-score" type="number" min="0" max="100" value="90"
-                        class="w-full p-2.5 bg-[#FAF8F7] border border-sage-dark text-sage-dark rounded-xl text-xs font-extrabold focus:ring-2 focus:ring-sage-dark focus:outline-none">
+                        class="w-full p-2.5 bg-brand-canvas border border-sage-dark text-sage-dark rounded-xl text-xs font-extrabold focus:ring-2 focus:ring-sage-dark focus:outline-none">
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block font-bold text-slate-800 text-[11px] mb-1">Calibrated Competency Score</label>
-                    <select id="reeval-new-rating" class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
+                    <select id="reeval-new-rating" class="w-full p-2.5 bg-brand-canvas border border-brand-border rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                         <option value="4.5">4.5 / 5.0 (Exceeds Expectations)</option>
                         <option value="4.0" selected>4.0 / 5.0 (Proficient Standard)</option>
                         <option value="3.5">3.5 / 5.0 (Developing)</option>
@@ -1822,7 +1828,7 @@
                 </div>
                 <div>
                     <label class="block font-bold text-slate-800 text-[11px] mb-1">Certification Status</label>
-                    <select id="reeval-status" class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
+                    <select id="reeval-status" class="w-full p-2.5 bg-brand-canvas border border-brand-border rounded-xl text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none">
                         <option value="Certified" selected>Passed &amp; Certified</option>
                         <option value="Retake Required">Retake Required</option>
                         <option value="In Progress">In Progress</option>
@@ -1833,12 +1839,12 @@
             <div>
                 <label class="block font-bold text-slate-800 text-[11px] mb-1">Supervisor Re-evaluation Observation Notes</label>
                 <textarea id="reeval-notes" rows="2" placeholder="Associate demonstrated marked improvement in VIP greeting and check-in speed under 2 minutes..."
-                    class="w-full p-2.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar">Demonstrated 100% adherence to standard operating procedures during the practical post-study evaluation. All gap points resolved.</textarea>
+                    class="w-full p-2.5 bg-brand-canvas border border-brand-border rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar">Demonstrated 100% adherence to standard operating procedures during the practical post-study evaluation. All gap points resolved.</textarea>
             </div>
         </div>
 
         <!-- Footer -->
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between shrink-0">
             <span class="text-[11px] text-slate-500 font-semibold"><i class="fas fa-award text-sage-dark mr-1"></i> Auto-updates TNA &amp; Competency Matrix</span>
             <div class="flex items-center space-x-2">
                 <button onclick="closeModal('modal-re-evaluate')"
@@ -1857,7 +1863,7 @@
     <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
 
         <!-- Header -->
-        <div class="px-6 py-5 border-b border-rose-100 bg-gradient-to-r from-rose-50/70 via-white to-amber-50/40 flex items-center justify-between flex-shrink-0">
+        <div class="px-6 py-5 border-b border-rose-100 bg-linear-to-r from-rose-50/70 via-white to-amber-50/40 flex items-center justify-between shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="w-11 h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center text-lg font-bold shadow-2xs">
                     <i class="fas fa-gavel"></i>
@@ -1902,7 +1908,7 @@
 
             <!-- Notice Callout -->
             <div class="p-3.5 bg-amber-50 rounded-xl border border-amber-200 flex items-start space-x-2.5 text-amber-900 text-xs">
-                <i class="fas fa-triangle-exclamation text-amber-600 mt-0.5 text-sm flex-shrink-0"></i>
+                <i class="fas fa-triangle-exclamation text-amber-600 mt-0.5 text-sm shrink-0"></i>
                 <div>
                     <p class="font-bold">Final Evaluation Threshold Notice</p>
                     <p class="text-[11px] text-amber-800 leading-relaxed mt-0.5">
@@ -1937,7 +1943,7 @@
             <!-- Notes & Remarks -->
             <div class="space-y-1.5">
                 <label class="font-bold text-slate-900 block text-xs">Supervisor Final Review Notes &amp; Recommendation *</label>
-                <textarea id="phase7-eval-notes" rows="3" required placeholder="Detail the outcome of the 1-on-1 coaching, practical shifts observed, and justification for this final score..." class="w-full p-3 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 transition"></textarea>
+                <textarea id="phase7-eval-notes" rows="3" required placeholder="Detail the outcome of the 1-on-1 coaching, practical shifts observed, and justification for this final score..." class="w-full p-3 border rounded-xl text-xs text-slate-900 textarea-phase7 focus:outline-none focus:ring-2 focus:ring-rose-500 transition"></textarea>
             </div>
 
             <!-- Footer Action Buttons -->
@@ -1991,12 +1997,74 @@
     </div>
 </div>
 
+<!-- 7h. Modal: Confirm Plan Retry / Remediation Transition -->
+<div id="modal-confirm-plan-retry" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
+    <div class="modal-card max-w-lg w-full overflow-hidden flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 relative">
+        <button type="button" onclick="closeModal('modal-confirm-plan-retry')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition duration-200 hover:rotate-90 z-10" aria-label="Close">
+            <i class="fas fa-times text-xs"></i>
+        </button>
+        <div class="p-6 space-y-4">
+            <!-- Header Icon & Title -->
+            <div class="flex items-center space-x-3.5">
+                <div id="retry-modal-icon-container" class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center text-xl font-bold border border-amber-200 shadow-2xs shrink-0">
+                    <i id="retry-modal-icon" class="fas fa-rotate-right"></i>
+                </div>
+                <div>
+                    <span id="retry-modal-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 uppercase tracking-wide">
+                        Remediation Lifecycle
+                    </span>
+                    <h3 id="retry-modal-title" class="font-heading font-bold text-base text-slate-900 mt-0.5">
+                        Confirm Action Plan Retry
+                    </h3>
+                </div>
+            </div>
+
+            <!-- Employee & Transition Overview -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500 text-[11px] uppercase font-bold">Associate</span>
+                    <span id="retry-modal-emp-name" class="font-bold text-slate-900 text-xs">Associate Name</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500 text-[11px] uppercase font-bold">Current Cycle Attempt</span>
+                    <span id="retry-modal-current-attempt" class="font-bold text-slate-700 font-mono">Attempt 2 (Retry Count: 1)</span>
+                </div>
+                <div class="flex items-center justify-between pt-1 border-t border-slate-200/80">
+                    <span class="text-slate-700 text-[11px] font-extrabold uppercase">Next Cycle Attempt</span>
+                    <span id="retry-modal-next-attempt" class="font-bold text-primary font-mono text-xs">Attempt 3 (Retry Count: 2)</span>
+                </div>
+            </div>
+
+            <!-- Context Notice -->
+            <div id="retry-modal-notice-box" class="p-3.5 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
+                <p id="retry-modal-notice-heading" class="font-bold flex items-center">
+                    <i class="fas fa-circle-info mr-1.5 text-amber-600"></i> Plan Retry Notice:
+                </p>
+                <p id="retry-modal-notice-body" class="text-[11px] text-amber-800 leading-relaxed">
+                    Confirming this retry will increment the database retry count, reset shift monitoring tasks for associate re-execution, and transition the review back to Continuous Monitoring (Stage 3).
+                </p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="pt-2 flex items-center justify-end space-x-3">
+                <button type="button" onclick="closeModal('modal-confirm-plan-retry')" class="btn-secondary px-4 py-2.5 text-xs font-semibold">
+                    Cancel
+                </button>
+                <button type="button" id="btn-confirm-execute-retry" onclick="confirmExecutePlanRetry()" class="btn-primary px-6 py-2.5 text-xs font-bold bg-primary hover:bg-primary-dark text-white shadow-xs flex items-center space-x-1.5">
+                    <i class="fas fa-check text-xs"></i>
+                    <span id="retry-modal-btn-label">Confirm &amp; Proceed</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 8. Modal: Role & Permissions Matrix (Host vs Supervisor vs HR vs Exec) -->
 <div id="modal-role-matrix" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-3xl w-full overflow-hidden max-h-[92vh] flex flex-col">
 
         <div
-            class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+            class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3">
                 <div
                     class="w-11 h-11 rounded-full bg-slate-100 text-slate-800 flex items-center justify-center text-lg font-bold border border-slate-200">
@@ -2109,7 +2177,7 @@
                 </div>
 
                 <!-- 4. General Manager -->
-                <div class="p-4 rounded-2xl border border-[#E8DEDC] bg-[#FAF8F7] space-y-2.5">
+                <div class="p-4 rounded-2xl border border-brand-border bg-brand-canvas space-y-2.5">
                     <div class="flex items-center justify-between">
                         <span class="font-bold text-slate-950 text-sm flex items-center">
                             <span class="w-2 h-2 rounded-full bg-slate-700 mr-2"></span> 4. General Manager (Exec)
@@ -2150,7 +2218,7 @@
 <div id="modal-conduct-assessment" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-xl w-full overflow-hidden max-h-[92vh] flex flex-col">
         <!-- Header -->
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="w-11 h-11 rounded-full bg-primary-50 text-primary flex items-center justify-center text-lg font-bold border border-primary-100">
                     <i class="fas fa-clipboard-check"></i>
@@ -2169,7 +2237,7 @@
         <!-- Body Form -->
         <form id="form-conduct-assessment" onsubmit="handleAssessmentSubmit(event)" class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs bg-white flex-1">
             <input type="hidden" id="assess-modal-emp-id" value="">
-            <div class="p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] text-[11px] text-slate-600">
+            <div class="p-3 bg-brand-canvas rounded-xl border border-brand-border text-[11px] text-slate-600">
                 <i class="fas fa-info-circle text-primary mr-1"></i>
                 Rate each applicable competency dimension based on observable behaviors during the review period (Scale: 1 = Needs Significant Improvement to 5 = Outstanding).
             </div>
@@ -2181,12 +2249,12 @@
 
             <div class="space-y-1 pt-2">
                 <label class="block font-bold text-slate-800 text-[11px]">Calibrated Assessor Notes &amp; Coaching Recommendations</label>
-                <textarea id="assess-modal-notes" rows="2" class="w-full p-3 rounded-xl border border-[#E8DEDC] focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-[#FAF8F7]" placeholder="Detail key developmental strengths and coaching priorities..."></textarea>
+                <textarea id="assess-modal-notes" rows="2" class="w-full p-3 rounded-xl border border-brand-border focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-brand-canvas" placeholder="Detail key developmental strengths and coaching priorities..."></textarea>
             </div>
         </form>
 
         <!-- Footer -->
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between shrink-0">
             <span class="text-[11px] text-slate-400 font-medium hidden sm:inline"><i class="fas fa-shield text-slate-300 mr-1"></i> Official Assessment Record</span>
             <div class="flex items-center space-x-2.5 ml-auto">
                 <button type="button" onclick="closeModal('modal-conduct-assessment')" class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
@@ -2202,7 +2270,7 @@
 <!-- Modal: Add New Competency (Supabase SQL) -->
 <div id="modal-add-competency" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-lg w-full overflow-hidden max-h-[92vh] flex flex-col">
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="w-11 h-11 rounded-full bg-primary-50 text-primary flex items-center justify-center text-lg font-bold border border-primary-100">
                     <i class="fas fa-layer-group"></i>
@@ -2220,17 +2288,17 @@
         <form id="form-add-competency" onsubmit="handleAddCompetencySubmit(event)" class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs bg-white flex-1">
             <div class="space-y-1">
                 <label class="block font-bold text-slate-800 text-[11px]">Competency Name *</label>
-                <input type="text" id="comp-add-name" required class="w-full px-3.5 py-2.5 rounded-xl border border-[#E8DEDC] focus:ring-2 focus:ring-primary focus:outline-none bg-[#FAF8F7]" placeholder="e.g. VIP Protocol, Room Inspection, POS Operation" oninput="autoGenerateCompKey(this.value)">
+                <input type="text" id="comp-add-name" required class="w-full px-3.5 py-2.5 rounded-xl border border-brand-border focus:ring-2 focus:ring-primary focus:outline-none bg-brand-canvas" placeholder="e.g. VIP Protocol, Room Inspection, POS Operation" oninput="autoGenerateCompKey(this.value)">
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div class="space-y-1">
                     <label class="block font-bold text-slate-800 text-[11px]">Key / Identifier</label>
-                    <input type="text" id="comp-add-key" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] font-mono text-slate-700 uppercase bg-[#FAF8F7]" placeholder="AUTO_GENERATED">
+                    <input type="text" id="comp-add-key" class="w-full px-3 py-2 rounded-xl border border-brand-border font-mono text-slate-700 uppercase bg-brand-canvas" placeholder="AUTO_GENERATED">
                 </div>
                 <div class="space-y-1">
                     <label class="block font-bold text-slate-800 text-[11px]">Category *</label>
-                    <select id="comp-add-category" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] font-semibold text-slate-800 bg-[#FAF8F7]">
+                    <select id="comp-add-category" class="w-full px-3 py-2 rounded-xl border border-brand-border font-semibold text-slate-800 bg-brand-canvas">
                         <option value="Core Hospitality">Core Hospitality</option>
                         <option value="Technical Systems">Technical Systems</option>
                         <option value="Compliance & Safety">Compliance &amp; Safety</option>
@@ -2245,14 +2313,14 @@
             <div class="space-y-1">
                 <label class="block font-bold text-slate-800 text-[11px]">Scope *</label>
                 <div class="grid grid-cols-2 gap-2">
-                    <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] cursor-pointer hover:bg-slate-100 transition">
+                    <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-brand-border bg-brand-canvas cursor-pointer hover:bg-slate-100 transition">
                         <input type="radio" name="comp-scope" value="General" checked onchange="handleScopeChange('General')" class="text-primary focus:ring-primary">
                         <div>
                             <span class="font-bold text-slate-900 block text-xs">General</span>
                             <span class="text-[10px] text-slate-500 block">Applies to all departments</span>
                         </div>
                     </label>
-                    <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] cursor-pointer hover:bg-slate-100 transition">
+                    <label class="flex items-center space-x-2 p-2.5 rounded-xl border border-brand-border bg-brand-canvas cursor-pointer hover:bg-slate-100 transition">
                         <input type="radio" name="comp-scope" value="Specific" onchange="handleScopeChange('Specific')" class="text-primary focus:ring-primary">
                         <div>
                             <span class="font-bold text-slate-900 block text-xs">Specific</span>
@@ -2266,13 +2334,13 @@
             <div id="comp-specific-fields" class="space-y-3 p-3 bg-amber-50/50 rounded-xl border border-amber-200/60 hidden">
                 <div class="space-y-1">
                     <label class="block font-bold text-slate-800 text-[11px]">Department *</label>
-                    <select id="comp-add-dept" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] font-semibold text-slate-800 bg-white">
+                    <select id="comp-add-dept" class="w-full px-3 py-2 rounded-xl border border-brand-border font-semibold text-slate-800 bg-white">
                         <!-- Dynamically populated from Supabase departments -->
                     </select>
                 </div>
                 <div class="space-y-1">
                     <label class="block font-bold text-slate-800 text-[11px]">Position / Role (Optional)</label>
-                    <input type="text" id="comp-add-pos" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-white text-xs" placeholder="e.g. Front Desk Host, Room Attendant, Server, Kitchen Staff (leave blank for all dept roles)">
+                    <input type="text" id="comp-add-pos" class="w-full px-3 py-2 rounded-xl border border-brand-border bg-white text-xs" placeholder="e.g. Front Desk Host, Room Attendant, Server, Kitchen Staff (leave blank for all dept roles)">
                     <span class="text-[10px] text-slate-500 italic block">Leave blank if this competency applies to all positions in the selected department.</span>
                 </div>
             </div>
@@ -2280,21 +2348,21 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div class="space-y-1">
                     <label class="block font-bold text-slate-800 text-[11px]">Target Benchmark Rating (1.0 - 5.0)</label>
-                    <input type="number" id="comp-add-benchmark" step="0.1" min="1.0" max="5.0" value="4.5" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] font-bold text-primary bg-[#FAF8F7]">
+                    <input type="number" id="comp-add-benchmark" step="0.1" min="1.0" max="5.0" value="4.5" required class="w-full px-3 py-2 rounded-xl border border-brand-border font-bold text-primary bg-brand-canvas">
                 </div>
                 <div class="space-y-1">
                     <label class="block font-bold text-slate-800 text-[11px]">Maximum Score Scale</label>
-                    <input type="number" id="comp-add-max" step="0.1" min="1.0" max="5.0" value="5.0" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] font-bold text-slate-800 bg-[#FAF8F7]">
+                    <input type="number" id="comp-add-max" step="0.1" min="1.0" max="5.0" value="5.0" required class="w-full px-3 py-2 rounded-xl border border-brand-border font-bold text-slate-800 bg-brand-canvas">
                 </div>
             </div>
 
             <div class="space-y-1">
                 <label class="block font-bold text-slate-800 text-[11px]">Description &amp; Observable Behavioral Rubric</label>
-                <textarea id="comp-add-desc" rows="3" class="w-full p-3 rounded-xl border border-[#E8DEDC] focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-[#FAF8F7]" placeholder="Define observable behavioral expectations and operational standard requirements..."></textarea>
+                <textarea id="comp-add-desc" rows="3" class="w-full p-3 rounded-xl border border-brand-border focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar bg-brand-canvas" placeholder="Define observable behavioral expectations and operational standard requirements..."></textarea>
             </div>
         </form>
 
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-end space-x-2.5 flex-shrink-0">
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-end space-x-2.5 shrink-0">
             <button type="button" onclick="closeModal('modal-add-competency')" class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
             <button type="button" id="btn-submit-add-competency" onclick="document.getElementById('form-add-competency').requestSubmit()" class="btn-primary px-5 py-2 text-xs font-bold shadow-2xs flex items-center space-x-1.5">
                 <i class="fas fa-save text-[10px]"></i>
@@ -2307,7 +2375,7 @@
 <!-- Modal: Create 70-20-10 IDP Milestone -->
 <div id="modal-create-idp" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-lg w-full overflow-hidden max-h-[92vh] flex flex-col">
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="w-11 h-11 rounded-full bg-sage-50 text-sage-dark flex items-center justify-center text-lg font-bold border border-sage-100">
                     <i class="fas fa-route"></i>
@@ -2325,13 +2393,13 @@
         <form id="form-create-idp" onsubmit="handleCreateIdpSubmit(event)" class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs bg-white flex-1">
             <div class="space-y-1">
                 <label class="block font-bold text-slate-800 text-[11px]">Developmental Objective Title *</label>
-                <input type="text" id="idp-form-title" required class="w-full px-3.5 py-2.5 rounded-xl border border-[#E8DEDC] focus:ring-2 focus:ring-primary focus:outline-none bg-[#FAF8F7]" placeholder="e.g. Master High-Occupancy Frontline Crisis Diplomacy">
+                <input type="text" id="idp-form-title" required class="w-full px-3.5 py-2.5 rounded-xl border border-brand-border focus:ring-2 focus:ring-primary focus:outline-none bg-brand-canvas" placeholder="e.g. Master High-Occupancy Frontline Crisis Diplomacy">
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div class="space-y-1">
                     <label class="block font-bold text-slate-800 text-[11px]">70-20-10 Learning Pillar *</label>
-                    <select id="idp-form-category" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] font-semibold text-slate-800 bg-[#FAF8F7]">
+                    <select id="idp-form-category" class="w-full px-3 py-2 rounded-xl border border-brand-border font-semibold text-slate-800 bg-brand-canvas">
                         <option value="70% Experiential">70% Experiential (On-the-job floor project)</option>
                         <option value="20% Social">20% Social (Peer shadow &amp; mentor coaching)</option>
                         <option value="10% Formal">10% Formal (LMS modules &amp; SOP handbook)</option>
@@ -2339,29 +2407,29 @@
                 </div>
                 <div class="space-y-1">
                     <label class="block font-bold text-slate-800 text-[11px]">Target Completion Date *</label>
-                    <input type="date" id="idp-form-date" required value="2026-10-31" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] font-semibold text-slate-800 bg-[#FAF8F7]">
+                    <input type="date" id="idp-form-date" required value="2026-10-31" class="w-full px-3 py-2 rounded-xl border border-brand-border font-semibold text-slate-800 bg-brand-canvas">
                 </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div class="space-y-1">
                     <label class="block font-bold text-slate-800 text-[11px]">Target Competency Dimension *</label>
-                    <input type="text" id="idp-form-comp" required value="Frontline Conflict De-escalation" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7]">
+                    <input type="text" id="idp-form-comp" required value="Frontline Conflict De-escalation" class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas">
                 </div>
                 <div class="space-y-1">
                     <label class="block font-bold text-slate-800 text-[11px]">Assigned Mentor / Supervisor *</label>
-                    <input type="text" id="idp-form-mentor" required value="Elena Vance (HR Lead)" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7]">
+                    <input type="text" id="idp-form-mentor" required value="Elena Vance (HR Lead)" class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas">
                 </div>
             </div>
 
-            <div class="space-y-2 pt-2 border-t border-[#E8DEDC]">
+            <div class="space-y-2 pt-2 border-t border-brand-border">
                 <label class="block font-bold text-slate-800 text-[11px]">Milestone Action Items:</label>
-                <input type="text" id="idp-form-task-1" required value="Complete Crisis Diplomacy simulation training module" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] mb-2" placeholder="Action Task 1">
-                <input type="text" id="idp-form-task-2" required value="Lead 3 live VIP dispute recoveries and log incident resolution notes" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7]" placeholder="Action Task 2">
+                <input type="text" id="idp-form-task-1" required value="Complete Crisis Diplomacy simulation training module" class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas mb-2" placeholder="Action Task 1">
+                <input type="text" id="idp-form-task-2" required value="Lead 3 live VIP dispute recoveries and log incident resolution notes" class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas" placeholder="Action Task 2">
             </div>
         </form>
 
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-end space-x-2.5 flex-shrink-0">
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-end space-x-2.5 shrink-0">
             <button type="button" onclick="closeModal('modal-create-idp')" class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
             <button type="button" onclick="document.getElementById('form-create-idp').requestSubmit()" class="btn-primary px-5 py-2 text-xs font-bold">Create IDP Plan</button>
         </div>
@@ -2371,7 +2439,7 @@
 <!-- Modal: Add / Record New Certificate -->
 <div id="modal-add-certificate" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-lg w-full overflow-hidden max-h-[92vh] flex flex-col">
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="w-11 h-11 rounded-full bg-gold-50 text-gold-dark flex items-center justify-center text-lg font-bold border border-gold-100">
                     <i class="fas fa-award"></i>
@@ -2389,38 +2457,38 @@
         <form id="form-add-certificate" onsubmit="handleAddCertificateSubmit(event)" class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs bg-white flex-1">
             <div class="space-y-1">
                 <label class="block font-bold text-slate-800 text-[11px]">Certificate / License Title *</label>
-                <input type="text" id="cert-form-name" required value="Certified Hospitality Supervisor (CHS)" class="w-full px-3.5 py-2.5 rounded-xl border border-[#E8DEDC] focus:ring-2 focus:ring-primary focus:outline-none bg-[#FAF8F7]">
+                <input type="text" id="cert-form-name" required value="Certified Hospitality Supervisor (CHS)" class="w-full px-3.5 py-2.5 rounded-xl border border-brand-border focus:ring-2 focus:ring-primary focus:outline-none bg-brand-canvas">
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div class="space-y-1">
                     <label class="block font-bold text-slate-800 text-[11px]">Issuing Body / Authority *</label>
-                    <input type="text" id="cert-form-issuer" required value="AHLEI" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7]">
+                    <input type="text" id="cert-form-issuer" required value="AHLEI" class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas">
                 </div>
                 <div class="space-y-1">
                     <label class="block font-bold text-slate-800 text-[11px]">Certificate / Registration No.</label>
-                    <input type="text" id="cert-form-no" value="AHLEI-CHS-88390" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7]">
+                    <input type="text" id="cert-form-no" value="AHLEI-CHS-88390" class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas">
                 </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div class="space-y-1">
                     <label class="block font-bold text-slate-800 text-[11px]">Issue Date *</label>
-                    <input type="date" id="cert-form-issue" required value="2026-08-01" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7]">
+                    <input type="date" id="cert-form-issue" required value="2026-08-01" class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas">
                 </div>
                 <div class="space-y-1">
                     <label class="block font-bold text-slate-800 text-[11px]">Expiration Date *</label>
-                    <input type="date" id="cert-form-expiry" required value="2028-08-01" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7]">
+                    <input type="date" id="cert-form-expiry" required value="2028-08-01" class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas">
                 </div>
             </div>
 
             <div class="space-y-1">
                 <label class="block font-bold text-slate-800 text-[11px]">Linked Competency Dimension</label>
-                <input type="text" id="cert-form-comp" value="Guest Relations & VIP Protocol" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7]">
+                <input type="text" id="cert-form-comp" value="Guest Relations & VIP Protocol" class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas">
             </div>
         </form>
 
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-end space-x-2.5 flex-shrink-0">
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-end space-x-2.5 shrink-0">
             <button type="button" onclick="closeModal('modal-add-certificate')" class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
             <button type="button" onclick="document.getElementById('form-add-certificate').requestSubmit()" class="btn-primary px-5 py-2 text-xs font-bold">Save Credential</button>
         </div>
@@ -2430,7 +2498,7 @@
 <!-- Modal: Edit Role Competency Profile Standard -->
 <div id="modal-edit-competency-profile" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-md w-full overflow-hidden flex flex-col">
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="w-11 h-11 rounded-full bg-primary-50 text-primary flex items-center justify-center text-lg font-bold border border-primary-100">
                     <i class="fas fa-sliders"></i>
@@ -2449,11 +2517,11 @@
             <p class="text-slate-600">Adjust the property benchmark threshold required for promotion qualification in this role:</p>
             <div class="space-y-1">
                 <label class="block font-bold text-slate-800 text-[11px]">Minimum Target Rating (1.0 - 5.0)</label>
-                <input type="number" step="0.1" min="1.0" max="5.0" value="4.5" class="w-full p-2.5 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-bold text-slate-900">
+                <input type="number" step="0.1" min="1.0" max="5.0" value="4.5" class="w-full p-2.5 rounded-xl border border-brand-border bg-brand-canvas font-bold text-slate-900">
             </div>
             <div class="space-y-1">
                 <label class="block font-bold text-slate-800 text-[11px]">Competency Appraisal Weight</label>
-                <select class="w-full p-2.5 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800">
+                <select class="w-full p-2.5 rounded-xl border border-brand-border bg-brand-canvas font-semibold text-slate-800">
                     <option value="40" selected>40% (Standard HR3 Appraisal Weight)</option>
                     <option value="50">50% (High Leadership Weight)</option>
                     <option value="30">30% (Operational Focus)</option>
@@ -2471,7 +2539,7 @@
 <!-- Modal: Batch Team Competency Evaluation -->
 <div id="modal-batch-evaluation" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-3xl w-full overflow-hidden max-h-[92vh] flex flex-col">
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="w-11 h-11 rounded-full bg-primary-50 text-primary flex items-center justify-center text-lg font-bold border border-primary-100">
                     <i class="fas fa-list-check"></i>
@@ -2488,9 +2556,9 @@
         </div>
 
         <form onsubmit="saveBatchEvaluation(event)" class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs bg-white flex-1">
-            <div class="overflow-x-auto border border-[#E8DEDC] rounded-2xl">
+            <div class="overflow-x-auto border border-brand-border rounded-2xl">
                 <table class="w-full text-left text-xs">
-                    <thead class="bg-[#FAF8F7] text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-[#E8DEDC]">
+                    <thead class="bg-brand-canvas text-slate-500 font-semibold uppercase text-[10px] tracking-wider border-b border-brand-border">
                         <tr>
                             <th class="px-4 py-3">Associate</th>
                             <th class="px-4 py-3 text-center">Previous Rating</th>
@@ -2498,14 +2566,14 @@
                             <th class="px-4 py-3 text-center">Status Action</th>
                         </tr>
                     </thead>
-                    <tbody id="batch-eval-table-tbody" class="divide-y divide-[#E8DEDC]">
+                    <tbody id="batch-eval-table-tbody" class="divide-y divide-brand-border">
                         <!-- Populated dynamically by openBatchEvaluationModal() -->
                     </tbody>
                 </table>
             </div>
         </form>
 
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between flex-shrink-0">
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-between shrink-0">
             <span class="text-[11px] text-slate-400 font-medium hidden sm:inline"><i class="fas fa-bolt text-gold mr-1"></i> Synchronizes across entire department</span>
             <div class="flex items-center space-x-2.5 ml-auto">
                 <button type="button" onclick="closeModal('modal-batch-evaluation')" class="btn-secondary px-4 py-2 text-xs font-semibold">Cancel</button>
@@ -2523,7 +2591,7 @@
         <!-- ======================================================== -->
         <div id="modal-create-training-program" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-xl w-full overflow-hidden max-h-[92vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-100">
-                <div class="p-5 border-b border-[#E8DEDC] flex items-center justify-between bg-[#FAF8F7]">
+                <div class="p-5 border-b border-brand-border flex items-center justify-between bg-brand-canvas">
                     <div class="flex items-center space-x-3">
                         <div class="w-10 h-10 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center">
                             <i class="fas fa-book-bookmark text-base"></i>
@@ -2533,7 +2601,7 @@
                             <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">Create Training Program</h3>
                         </div>
                     </div>
-                    <button onclick="closeModal('modal-create-training-program')" class="w-8 h-8 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition shadow-sm border border-[#E8DEDC]">
+                    <button onclick="closeModal('modal-create-training-program')" class="w-8 h-8 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition shadow-sm border border-brand-border">
                         <i class="fas fa-times text-xs"></i>
                     </button>
                 </div>
@@ -2542,13 +2610,13 @@
                     <div>
                         <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Program Title *</label>
                         <input id="prog-modal-title-input" type="text" placeholder="e.g. VIP Concierge Guest Luggage Logistics & Discretion" 
-                            class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            class="w-full px-3.5 py-2 rounded-xl border border-brand-border bg-brand-canvas font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Category *</label>
-                            <select id="prog-modal-category" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            <select id="prog-modal-category" class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                                 <option value="Service Excellence">Service Excellence</option>
                                 <option value="Mandatory Compliance">Mandatory Compliance</option>
                                 <option value="Technical System">Technical System</option>
@@ -2557,7 +2625,7 @@
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Department *</label>
-                            <select id="prog-modal-dept" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            <select id="prog-modal-dept" class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                                 <option value="Front Office">Front Office</option>
                                 <option value="Food & Beverage">Food &amp; Beverage</option>
                                 <option value="Culinary & Kitchen">Culinary &amp; Kitchen</option>
@@ -2570,7 +2638,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Target Competency *</label>
-                            <select id="prog-modal-comp" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            <select id="prog-modal-comp" class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                                 <option value="Frontline Conflict De-escalation">Frontline Conflict De-escalation</option>
                                 <option value="Guest Relations & VIP Protocol">Guest Relations &amp; VIP Protocol</option>
                                 <option value="Opera & PMS Reservation Systems">Opera &amp; PMS Reservation Systems</option>
@@ -2582,23 +2650,23 @@
                         <div>
                             <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Duration &amp; Format</label>
                             <input id="prog-modal-duration" type="text" value="3.5 Hours (Workshop & Roleplay)" 
-                                class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                class="w-full px-3.5 py-2 rounded-xl border border-brand-border bg-brand-canvas font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Program Syllabus / Overview</label>
                         <textarea id="prog-modal-desc" rows="3" placeholder="Describe learning objectives, scenario roleplays, and expected competencies..." 
-                            class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
+                            class="w-full px-3.5 py-2 rounded-xl border border-brand-border bg-brand-canvas font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none"></textarea>
                     </div>
 
-                    <div class="p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] flex items-center justify-between text-slate-600">
+                    <div class="p-3 bg-brand-canvas rounded-xl border border-brand-border flex items-center justify-between text-slate-600">
                         <span class="font-bold"><i class="fas fa-medal text-gold-dark mr-1"></i> Passing Requirement:</span>
                         <span class="font-bold text-primary">&ge; 80% on post-quiz · Awards +150 XP</span>
                     </div>
                 </div>
 
-                <div class="p-4 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-end space-x-2">
+                <div class="p-4 border-t border-brand-border bg-brand-canvas flex items-center justify-end space-x-2">
                     <button type="button" onclick="closeModal('modal-create-training-program')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
                     <button type="button" onclick="saveNewTrainingProgram()" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5">
                         <i class="fas fa-check"></i>
@@ -2613,7 +2681,7 @@
         <!-- ======================================================== -->
         <div id="modal-schedule-training-session" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-xl w-full overflow-hidden max-h-[92vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-100">
-                <div class="p-5 border-b border-[#E8DEDC] flex items-center justify-between bg-[#FAF8F7]">
+                <div class="p-5 border-b border-brand-border flex items-center justify-between bg-brand-canvas">
                     <div class="flex items-center space-x-3">
                         <div class="w-10 h-10 rounded-2xl bg-dusty-500/10 text-dusty-dark border border-dusty-500/20 flex items-center justify-center">
                             <i class="fas fa-calendar-days text-base"></i>
@@ -2623,7 +2691,7 @@
                             <h3 class="font-heading font-bold text-base text-slate-900 mt-0.5">Schedule Training Session</h3>
                         </div>
                     </div>
-                    <button onclick="closeModal('modal-schedule-training-session')" class="w-8 h-8 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition shadow-sm border border-[#E8DEDC]">
+                    <button onclick="closeModal('modal-schedule-training-session')" class="w-8 h-8 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition shadow-sm border border-brand-border">
                         <i class="fas fa-times text-xs"></i>
                     </button>
                 </div>
@@ -2631,7 +2699,7 @@
                 <div class="p-6 overflow-y-auto custom-scrollbar space-y-4 text-xs">
                     <div>
                         <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Select Training Program *</label>
-                        <select id="sched-modal-program-select" class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                        <select id="sched-modal-program-select" class="w-full px-3.5 py-2 rounded-xl border border-brand-border bg-brand-canvas font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                             <!-- Populated dynamically -->
                         </select>
                     </div>
@@ -2640,12 +2708,12 @@
                         <div>
                             <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Assigned Trainer *</label>
                             <input id="sched-modal-trainer" type="text" value="Elena Vance & FOM John Marco" 
-                                class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                class="w-full px-3.5 py-2 rounded-xl border border-brand-border bg-brand-canvas font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Training Venue / Location *</label>
                             <input id="sched-modal-venue" type="text" value="Executive Boardroom & Front Desk Mockup" 
-                                class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                class="w-full px-3.5 py-2 rounded-xl border border-brand-border bg-brand-canvas font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                         </div>
                     </div>
 
@@ -2653,17 +2721,17 @@
                         <div>
                             <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Session Date *</label>
                             <input id="sched-modal-date" type="text" value="Aug 30, 2026" 
-                                class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                class="w-full px-3.5 py-2 rounded-xl border border-brand-border bg-brand-canvas font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Session Time *</label>
                             <input id="sched-modal-time" type="text" value="14:00 - 17:30 (3.5 hrs)" 
-                                class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                class="w-full px-3.5 py-2 rounded-xl border border-brand-border bg-brand-canvas font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                         </div>
                     </div>
 
                     <!-- Participant Registration Roster -->
-                    <div class="p-3.5 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2.5">
+                    <div class="p-3.5 bg-brand-canvas rounded-2xl border border-brand-border space-y-2.5">
                         <div class="flex items-center justify-between">
                             <span class="block text-[11px] font-bold text-slate-700 uppercase">Enrolled Participants (Auto-populated from Need Gaps)</span>
                             <span id="sched-modal-roster-count" class="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">0 Selected</span>
@@ -2674,7 +2742,7 @@
                     </div>
                 </div>
 
-                <div class="p-4 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-end space-x-2">
+                <div class="p-4 border-t border-brand-border bg-brand-canvas flex items-center justify-end space-x-2">
                     <button type="button" onclick="closeModal('modal-schedule-training-session')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
                     <button type="button" onclick="saveScheduledSession()" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5">
                         <i class="fas fa-calendar-check"></i>
@@ -2689,7 +2757,7 @@
         <!-- ======================================================== -->
         <div id="modal-training-evaluation" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-2xl w-full overflow-hidden max-h-[92vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-100">
-                <div class="p-5 border-b border-[#E8DEDC] flex items-center justify-between bg-[#FAF8F7]">
+                <div class="p-5 border-b border-brand-border flex items-center justify-between bg-brand-canvas">
                     <div class="flex items-center space-x-3">
                         <div class="w-10 h-10 rounded-2xl bg-terracotta-500/10 text-terracotta-dark border border-terracotta-500/20 flex items-center justify-center">
                             <i class="fas fa-clipboard-question text-base"></i>
@@ -2700,7 +2768,7 @@
                             <p id="eval-modal-subtitle" class="text-slate-500 text-[11px]">Associate Evaluation</p>
                         </div>
                     </div>
-                    <button onclick="closeModal('modal-training-evaluation')" class="w-8 h-8 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition shadow-sm border border-[#E8DEDC]">
+                    <button onclick="closeModal('modal-training-evaluation')" class="w-8 h-8 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition shadow-sm border border-brand-border">
                         <i class="fas fa-times text-xs"></i>
                     </button>
                 </div>
@@ -2724,14 +2792,14 @@
                     </div>
 
                     <!-- Part B: Kirkpatrick Level 1 Evaluation Feedback -->
-                    <div class="space-y-3 pt-4 border-t border-[#E8DEDC]">
+                    <div class="space-y-3 pt-4 border-t border-brand-border">
                         <h4 class="font-heading font-bold text-sm text-slate-900 flex items-center space-x-1.5">
                             <span class="w-2 h-2 rounded-full bg-gold"></span>
                             <span>Part B: Kirkpatrick Level 1 Participant Feedback</span>
                         </h4>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div class="p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] space-y-2">
+                            <div class="p-3 bg-brand-canvas rounded-xl border border-brand-border space-y-2">
                                 <span class="font-bold text-slate-800 block text-[11px]">Trainer Mastery &amp; Clarity:</span>
                                 <div id="star-trainer-rating" class="flex items-center space-x-1">
                                     <button type="button" onclick="setKirkpatrickRating('trainer', 1)" class="text-amber-400 hover:scale-110 transition text-base"><i class="fas fa-star"></i></button>
@@ -2742,7 +2810,7 @@
                                 </div>
                             </div>
 
-                            <div class="p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] space-y-2">
+                            <div class="p-3 bg-brand-canvas rounded-xl border border-brand-border space-y-2">
                                 <span class="font-bold text-slate-800 block text-[11px]">Practical Relevance to Role:</span>
                                 <div id="star-relevance-rating" class="flex items-center space-x-1">
                                     <button type="button" onclick="setKirkpatrickRating('relevance', 1)" class="text-amber-400 hover:scale-110 transition text-base"><i class="fas fa-star"></i></button>
@@ -2757,13 +2825,13 @@
                         <div>
                             <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Key Takeaway / Action Commitment</label>
                             <input id="eval-modal-comments" type="text" value="Will implement the LAST de-escalation framework and proactive room upgrades." 
-                                class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                                class="w-full px-3.5 py-2 rounded-xl border border-brand-border bg-brand-canvas font-medium text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                         </div>
                     </div>
 
                 </div>
 
-                <div class="p-4 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-between">
+                <div class="p-4 border-t border-brand-border bg-brand-canvas flex items-center justify-between">
                     <span class="text-[11px] text-slate-500 font-medium">Submitting will calculate score &amp; trigger <strong>Stage 6 &amp; 7 Feedback</strong></span>
                     <div class="flex items-center space-x-2">
                         <button type="button" onclick="closeModal('modal-training-evaluation')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
@@ -2781,7 +2849,7 @@
         <!-- ======================================================== -->
         <div id="modal-training-certificate" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-2xl w-full overflow-hidden max-h-[92vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-100">
-                <div class="p-4 border-b border-[#E8DEDC] flex items-center justify-between bg-[#FAF8F7]">
+                <div class="p-4 border-b border-brand-border flex items-center justify-between bg-brand-canvas">
                     <div class="flex items-center space-x-2">
                         <i class="fas fa-certificate text-amber-500"></i>
                         <h4 class="font-heading font-bold text-sm text-slate-900">Oxford Suites Hospitality Official Certificate</h4>
@@ -2791,7 +2859,7 @@
                             <i class="fas fa-print"></i>
                             <span>Print / PDF</span>
                         </button>
-                        <button onclick="closeModal('modal-training-certificate')" class="w-7 h-7 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition border border-[#E8DEDC]">
+                        <button onclick="closeModal('modal-training-certificate')" class="w-7 h-7 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition border border-brand-border">
                             <i class="fas fa-times text-xs"></i>
                         </button>
                     </div>
@@ -2820,7 +2888,7 @@
 
                     <div class="space-y-1 text-xs text-slate-600 max-w-lg mx-auto">
                         <p>has successfully completed the intensive curriculum, practical simulation, and post-training examination for</p>
-                        <h4 id="cert-modal-program-title" class="font-bold text-sm text-slate-900 text-amber-900 pt-1 font-heading">Hospitality Crisis Diplomacy &amp; Guest De-escalation</h4>
+                        <h4 id="cert-modal-program-title" class="font-bold text-sm text-amber-900 pt-1 font-heading">Hospitality Crisis Diplomacy &amp; Guest De-escalation</h4>
                         <p id="cert-modal-score" class="text-xs font-bold text-emerald-700">Score: 96% (Mastery Level Achieved)</p>
                     </div>
 
@@ -2833,7 +2901,7 @@
 
                         <!-- Golden Foil Seal Badge -->
                         <div class="flex flex-col items-center justify-center">
-                            <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-400 via-amber-200 to-amber-500 border-2 border-amber-600 shadow-md flex items-center justify-center text-amber-950">
+                            <div class="w-14 h-14 rounded-full bg-linear-to-tr from-amber-400 via-amber-200 to-amber-500 border-2 border-amber-600 shadow-md flex items-center justify-center text-amber-950">
                                 <i class="fas fa-medal text-xl"></i>
                             </div>
                             <span id="cert-modal-cert-id" class="text-[9px] font-mono text-slate-400 mt-1">OXF-CERT-2026-0889</span>
@@ -2851,7 +2919,7 @@
                     </div>
                 </div>
 
-                <div class="p-4 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-end">
+                <div class="p-4 border-t border-brand-border bg-brand-canvas flex items-center justify-end">
                     <button onclick="closeModal('modal-training-certificate')" class="btn-primary px-5 py-2 text-xs font-bold">Done</button>
                 </div>
             </div>
@@ -2893,7 +2961,7 @@
                         padding: 0 !important;
                     }
                     /* Hide top modal header actions and bottom dismiss footer during print */
-                    #modal-report-print-preview .flex-shrink-0:first-child,
+                    #modal-report-print-preview .shrink-0:first-child,
                     #modal-report-print-preview .p-4.border-t:last-child,
                     #modal-report-print-preview button {
                         display: none !important;
@@ -2906,10 +2974,10 @@
                     }
                 }
             </style>
-            <div class="modal-card max-w-4xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-[#E8DEDC]">
+            <div class="modal-card max-w-4xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-brand-border">
                 
                 <!-- Modal Top Header -->
-                <div class="p-5 border-b border-[#E8DEDC] flex items-center justify-between bg-white flex-shrink-0">
+                <div class="p-5 border-b border-brand-border flex items-center justify-between bg-white shrink-0">
                     <div class="flex items-center space-x-3">
                         <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary flex items-center justify-center text-lg font-bold border border-primary-100">
                             <i class="fas fa-file-pdf"></i>
@@ -2959,7 +3027,7 @@
                     </div>
 
                     <!-- Formal Sign-Off Blocks -->
-                    <div class="pt-6 border-t border-[#E8DEDC] grid grid-cols-2 gap-8 text-[11px] text-slate-600">
+                    <div class="pt-6 border-t border-brand-border grid grid-cols-2 gap-8 text-[11px] text-slate-600">
                         <div class="space-y-1">
                             <p class="text-slate-400 text-[10px] uppercase font-bold">Prepared &amp; Audited By:</p>
                             <p class="font-bold text-slate-900 text-xs">Elena Vance, CHRP</p>
@@ -2974,7 +3042,7 @@
                 </div>
 
                 <!-- Footer -->
-                <div class="p-4 border-t border-[#E8DEDC] bg-[#FAF8F7] flex items-center justify-between text-xs">
+                <div class="p-4 border-t border-brand-border bg-brand-canvas flex items-center justify-between text-xs">
                     <span class="text-slate-400 text-[10px]">Confidential — For Internal Governance and Regulatory Inspections Only</span>
                     <button onclick="closeModal('modal-report-print-preview')" class="btn-secondary px-4 py-1.5 font-bold">Close Preview</button>
                 </div>
@@ -2986,7 +3054,7 @@
             <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
                 
                 <!-- Modal Header -->
-                <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white flex-shrink-0">
+                <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-linear-to-r from-slate-50 to-white shrink-0">
                     <div class="flex items-center space-x-3.5">
                         <div class="w-11 h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-xl font-bold border border-primary/20 shadow-2xs">
                             <i class="fas fa-file-export"></i>
@@ -3083,13 +3151,13 @@
                             <div onclick="setExportSummaryMode('charts')" 
                                  id="export-mode-card-charts"
                                  class="export-mode-card cursor-pointer p-4 rounded-2xl border-2 border-primary bg-primary/5 transition hover:shadow-xs flex items-start space-x-3.5">
-                                <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-lg font-bold flex-shrink-0 mt-0.5">
+                                <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-lg font-bold shrink-0 mt-0.5">
                                     <i class="fas fa-chart-pie"></i>
                                 </div>
                                 <div class="flex-1">
                                     <div class="flex items-center justify-between">
                                         <span class="font-bold text-slate-900 text-sm">With Visual Charts</span>
-                                        <span class="w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center flex-shrink-0">
+                                        <span class="w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center shrink-0">
                                             <span class="w-2 h-2 rounded-full bg-primary export-mode-dot"></span>
                                         </span>
                                     </div>
@@ -3103,13 +3171,13 @@
                             <div onclick="setExportSummaryMode('text')" 
                                  id="export-mode-card-text"
                                  class="export-mode-card cursor-pointer p-4 rounded-2xl border-2 border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-xs flex items-start space-x-3.5">
-                                <div class="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-lg font-bold flex-shrink-0 mt-0.5">
+                                <div class="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-lg font-bold shrink-0 mt-0.5">
                                     <i class="fas fa-file-lines"></i>
                                 </div>
                                 <div class="flex-1">
                                     <div class="flex items-center justify-between">
                                         <span class="font-bold text-slate-900 text-sm">Text &amp; Data Only</span>
-                                        <span class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center flex-shrink-0">
+                                        <span class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center shrink-0">
                                             <span class="w-2 h-2 rounded-full bg-transparent export-mode-dot"></span>
                                         </span>
                                     </div>
@@ -3150,14 +3218,14 @@
 
                     <!-- Live Export Preview Callout -->
                     <div class="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-center space-x-3 text-xs text-amber-900">
-                        <i class="fas fa-circle-info text-amber-600 text-sm flex-shrink-0"></i>
+                        <i class="fas fa-circle-info text-amber-600 text-sm shrink-0"></i>
                         <span id="export-summary-preview-text">Generating <strong>Excel Spreadsheet</strong> with <strong>Visual Charts</strong> for <strong>All Departments</strong>.</span>
                     </div>
 
                 </div>
 
                 <!-- Modal Footer Actions -->
-                <div class="p-5 border-t border-slate-100 bg-slate-50/80 flex items-center justify-between flex-shrink-0">
+                <div class="p-5 border-t border-slate-100 bg-slate-50/80 flex items-center justify-between shrink-0">
                     <button type="button" onclick="closeModal('modal-export-summary')" class="btn-secondary px-4 py-2 text-xs font-semibold">
                         Cancel
                     </button>
@@ -3175,7 +3243,7 @@
         <!-- 17. Modal: Log Performance Milestone & KPI Progress -->
         <div id="modal-log-milestone" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
-                <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
                     <div class="flex items-center space-x-3">
                         <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-lg font-bold border border-emerald-200 shadow-2xs">
                             <i class="fas fa-flag-checkered"></i>
@@ -3278,7 +3346,7 @@
         <!-- 19. Modal: General Tasks Template Matrix (Add/Edit) -->
         <div id="modal-general-task" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
-                <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 flex-shrink-0">
+                <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
                     <div class="flex items-center space-x-3.5">
                         <div class="w-10 h-10 rounded-2xl bg-primary-50 text-primary flex items-center justify-center text-lg shadow-2xs border border-primary-100">
                             <i class="fas fa-list-check"></i>
@@ -3346,7 +3414,7 @@
         <!-- 20. Modal: Create Specific Task for Objective -->
         <div id="modal-specific-task" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
-                <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-primary-50/40 flex-shrink-0">
+                <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-primary-50/40 shrink-0">
                     <div class="flex items-center space-x-3.5">
                         <div class="w-10 h-10 rounded-2xl bg-primary text-white flex items-center justify-center text-lg shadow-2xs">
                             <i class="fas fa-tasks"></i>
@@ -3366,9 +3434,10 @@
                     <input type="hidden" id="specific-task-employee-id" value="">
                     <input type="hidden" id="specific-task-goal-target-date" value="">
 
-                    <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+                    <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Target Objective</p>
                         <p id="specific-task-goal-title-display" class="font-bold text-slate-900 text-xs">Loading Goal...</p>
+                        <select id="specific-task-goal-select" onchange="onSpecificTaskGoalSelect(this.value)" class="hidden w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-primary focus:outline-none"></select>
                         <p class="text-[11px] text-slate-500 flex items-center space-x-2">
                             <span>Target Date: <strong id="specific-task-goal-date-display" class="text-primary font-bold">2026-09-30</strong></span>
                             <span>·</span>
@@ -3414,7 +3483,7 @@
         <!-- 21. Modal: Employee Task Completion with Live Timestamp & Learnings / Feedback -->
         <div id="modal-complete-task" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-emerald-200">
-                <div class="px-6 py-5 border-b border-emerald-100 flex items-center justify-between bg-emerald-50/70 flex-shrink-0">
+                <div class="px-6 py-5 border-b border-emerald-100 flex items-center justify-between bg-emerald-50/70 shrink-0">
                     <div class="flex items-center space-x-3.5">
                         <div class="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-lg shadow-2xs">
                             <i class="fas fa-check-circle"></i>
@@ -3492,7 +3561,7 @@
         <!-- 22. Modal: Supervisor Task Coaching & Accomplishment Feedback -->
         <div id="modal-supervisor-task-feedback" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-amber-200">
-                <div class="px-6 py-5 border-b border-amber-100 flex items-center justify-between bg-amber-50/70 flex-shrink-0">
+                <div class="px-6 py-5 border-b border-amber-100 flex items-center justify-between bg-amber-50/70 shrink-0">
                     <div class="flex items-center space-x-3.5">
                         <div class="w-10 h-10 rounded-2xl bg-amber-600 text-white flex items-center justify-center text-lg shadow-2xs">
                             <i class="fas fa-user-check"></i>
@@ -3547,7 +3616,7 @@
         <!-- MODAL: 1-ON-1 CALIBRATION & FORMAL REVIEW SIGN-OFF       -->
         <!-- ======================================================== -->
         <div id="modal-1on1-calibration" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
-            <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-[#E8DEDC] overflow-hidden transform transition-all animate-scaleUp">
+            <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-brand-border overflow-hidden transform transition-all animate-scaleUp">
                 
                 <!-- Modal Header -->
                 <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
@@ -3587,7 +3656,7 @@
                         <!-- Employee Info Row -->
                         <div class="flex items-center justify-between gap-3 p-3 bg-slate-50/80 rounded-xl border border-slate-200/60">
                             <div class="flex items-center space-x-3">
-                                <div id="calib-emp-avatar" class="w-10 h-10 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-2xs flex-shrink-0">
+                                <div id="calib-emp-avatar" class="w-10 h-10 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-2xs shrink-0">
                                     MS
                                 </div>
                                 <div>
@@ -3601,7 +3670,7 @@
                         <!-- Comparison of Self-Review, Supervisor Appraisal & Recommended Calculation -->
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                             <div class="p-3 bg-slate-50/90 rounded-xl border border-slate-200/70 space-y-1">
-                                <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block flex items-center space-x-1">
+                                <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider flex items-center space-x-1">
                                     <i class="fas fa-user-pen text-slate-400 mr-1"></i>
                                     <span>Self-Review</span>
                                 </span>
@@ -3610,7 +3679,7 @@
                                 </div>
                             </div>
                             <div class="p-3 bg-slate-50/90 rounded-xl border border-slate-200/70 space-y-1">
-                                <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block flex items-center space-x-1">
+                                <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider flex items-center space-x-1">
                                     <i class="fas fa-clipboard-check text-slate-400 mr-1"></i>
                                     <span>Appraisal Rating</span>
                                 </span>
@@ -3620,7 +3689,7 @@
                             </div>
                             <div class="p-3 bg-slate-50/90 rounded-xl border border-slate-200/70 space-y-1">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block flex items-center space-x-1">
+                                    <span class="text-[10px] text-slate-500 font-semibold uppercase tracking-wider flex items-center space-x-1">
                                         <i class="fas fa-wand-magic-sparkles text-slate-400 mr-1"></i>
                                         <span>Recommended</span>
                                     </span>
@@ -3663,7 +3732,7 @@
                         <!-- Tier Classification -->
                         <div class="space-y-1">
                             <label class="font-semibold text-slate-700 text-[11px]">2. Final Performance Tier</label>
-                            <select id="calib-tier-select" onchange="onCalibrationTierSelect(this.value)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:outline-none bg-white shadow-2xs">
+                            <select id="calib-tier-select" onchange="onCalibrationTierSelect(this.value)" class="w-full px-3.5 py-2.5 rounded-xl border input-field-slate text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-slate-900/10 focus:outline-none bg-white shadow-2xs">
                                 <option value="Master Tier">Master Tier (4.50 – 5.00 Exceeds All Expectations)</option>
                                 <option value="Advanced Tier">Advanced Tier (3.50 – 4.49 Highly Proficient)</option>
                                 <option value="Proficient">Proficient Tier (3.00 – 3.49 Meets All Standards)</option>
@@ -3680,7 +3749,7 @@
                                 <span>3. 1-on-1 Discussion Minutes &amp; Agreed Commitments *</span>
                             </label>
                         </div>
-                        <textarea id="calib-discussion-minutes" required rows="3" placeholder="Summarize key dialogue during the 1-on-1 review session, agreed key strengths, and specific areas for capability growth in the upcoming cycle..." class="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 focus:outline-none custom-scrollbar bg-slate-50/50 shadow-2xs"></textarea>
+                        <textarea id="calib-discussion-minutes" required rows="3" placeholder="Summarize key dialogue during the 1-on-1 review session, agreed key strengths, and specific areas for capability growth in the upcoming cycle..." class="w-full p-3 rounded-xl border input-field-slate text-xs font-medium text-slate-800 focus:ring-2 focus:ring-slate-900/10 focus:outline-none custom-scrollbar bg-slate-50/50 shadow-2xs"></textarea>
                     </div>
 
                     <div class="pt-2 flex items-center justify-end space-x-2">
@@ -3721,7 +3790,7 @@
                     <!-- Associate & Score Summary Container -->
                     <div class="p-4.5 bg-white rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                         <div class="flex items-center space-x-3">
-                            <div id="minutes-modal-avatar" class="w-10 h-10 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-2xs flex-shrink-0">
+                            <div id="minutes-modal-avatar" class="w-10 h-10 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-2xs shrink-0">
                                 MS
                             </div>
                             <div>
@@ -3868,7 +3937,7 @@
                         <!-- Associate Card -->
                         <div class="p-3 bg-slate-50/80 rounded-xl border border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="flex items-center space-x-3">
-                                <div id="modal-idp-emp-avatar" class="w-10 h-10 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-2xs flex-shrink-0">
+                                <div id="modal-idp-emp-avatar" class="w-10 h-10 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-2xs shrink-0">
                                     EM
                                 </div>
                                 <div>
@@ -4018,7 +4087,7 @@
                     <!-- Associate Header Card -->
                     <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between gap-3">
                         <div class="flex items-center space-x-3">
-                            <div id="review-tasks-avatar" class="w-10 h-10 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-2xs flex-shrink-0">
+                            <div id="review-tasks-avatar" class="w-10 h-10 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shadow-2xs shrink-0">
                                 EM
                             </div>
                             <div>
@@ -4077,9 +4146,9 @@
         <div id="modal-idp-detail" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-5xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
                 <!-- Header -->
-                <div class="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70 flex-shrink-0">
+                <div class="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70 shrink-0">
                     <div class="flex items-center space-x-3 min-w-0 pr-2">
-                        <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-base font-bold border border-emerald-200/60 shadow-2xs flex-shrink-0">
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-base font-bold border border-emerald-200/60 shadow-2xs shrink-0">
                             <i class="fas fa-seedling"></i>
                         </div>
                         <div class="min-w-0">
@@ -4094,7 +4163,7 @@
                         <div id="idp-header-actions" class="flex items-center flex-wrap gap-1.5">
                             <!-- Dynamic header actions -->
                         </div>
-                        <button onclick="closeModal('modal-idp-detail')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90 flex-shrink-0" title="Close">
+                        <button onclick="closeModal('modal-idp-detail')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition hover:rotate-90 shrink-0" title="Close">
                             <i class="fas fa-times text-xs"></i>
                         </button>
                     </div>
@@ -4167,7 +4236,7 @@
                 </div>
 
                 <!-- Footer -->
-                <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
+                <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between shrink-0">
                     <button onclick="viewEmployeeCompetencyRadar(window.selectedEvalEmpId || 'emp-101')" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition flex items-center space-x-1.5" title="Inspect Associate Competency Radar">
                         <i class="fas fa-chart-radar text-slate-600"></i>
                         <span>Competency Radar</span>
@@ -4183,7 +4252,7 @@
 <div id="modal-cycle-detail" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
         <!-- Header -->
-        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="w-11 h-11 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center text-lg font-bold border border-teal-100 shadow-2xs">
                     <i class="fas fa-rotate"></i>
@@ -4209,7 +4278,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between shrink-0">
             <span class="text-[11px] text-slate-500 font-semibold"><i class="fas fa-infinity text-teal-600 mr-1.5"></i> Continuous Cycle Architecture</span>
             <button type="button" onclick="closeModal('modal-cycle-detail')" class="btn-secondary px-5 py-2 text-xs font-bold">
                 Close
@@ -4222,7 +4291,7 @@
 <div id="modal-monitoring-stream" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-4xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
         <!-- Header -->
-        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center text-lg font-bold border border-indigo-100 shadow-2xs">
                     <i class="fas fa-chart-line"></i>
@@ -4281,7 +4350,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between shrink-0">
             <span class="text-[11px] text-slate-500 font-semibold"><i class="fas fa-clock-rotate-left text-indigo-600 mr-1.5"></i> Live Shift Checklists &amp; Milestone Stream</span>
             <button type="button" onclick="closeModal('modal-monitoring-stream')" class="btn-secondary px-5 py-2 text-xs font-bold">
                 Close Stream
@@ -4294,7 +4363,7 @@
 <div id="modal-view-appraisal" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-4xl w-full overflow-hidden flex flex-col max-h-[92vh] bg-white rounded-3xl shadow-2xl border border-slate-100">
         <!-- Header -->
-        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="w-11 h-11 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center text-lg font-bold border border-purple-100 shadow-2xs">
                     <i class="fas fa-star-half-stroke"></i>
@@ -4321,8 +4390,8 @@
         <!-- Body -->
         <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4 text-xs bg-slate-50/40">
             <!-- Warning Alert Banner if Supervisor Rating Below 3.0 -->
-            <div id="eval-detail-warning-alert" class="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start space-x-3 text-xs text-rose-900 hidden shadow-2xs">
-                <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
+            <div id="eval-detail-warning-alert" class="p-4 bg-rose-50 border border-rose-200 rounded-2xl items-start space-x-3 text-xs text-rose-900 hidden shadow-2xs">
+                <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-sm shrink-0">
                     <i class="fas fa-triangle-exclamation"></i>
                 </div>
                 <div class="space-y-0.5">
@@ -4388,7 +4457,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between shrink-0">
             <div class="flex items-center space-x-2">
                 <button type="button" onclick="closeModal('modal-view-appraisal')" class="btn-secondary px-5 py-2 text-xs font-bold">
                     Close
@@ -4410,7 +4479,7 @@
 <div id="modal-view-calibration" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
     <div class="modal-card max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-200">
         <!-- Header -->
-        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 flex-shrink-0">
+        <div class="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center text-base font-bold border border-slate-200 shadow-2xs">
                     <i class="fas fa-sliders"></i>
@@ -4456,7 +4525,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between flex-shrink-0">
+        <div class="p-4 sm:px-6 border-t border-slate-100 bg-white flex items-center justify-between shrink-0">
             <button type="button" onclick="closeModal('modal-view-calibration')" class="btn-secondary px-5 py-2 text-xs font-bold">
                 Close
             </button>
@@ -4473,12 +4542,12 @@
         <!-- ======================================================== -->
         <div id="modal-calibrate-succession-flag" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-lg w-full bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
-                <div class="p-4 border-b border-[#E8DEDC] flex items-center justify-between bg-[#FAF8F7]">
+                <div class="p-4 border-b border-brand-border flex items-center justify-between bg-brand-canvas">
                     <div class="flex items-center space-x-2">
                         <i class="fas fa-sliders text-primary"></i>
                         <h4 class="font-heading font-bold text-sm text-slate-900">HR Readiness Bench Calibration</h4>
                     </div>
-                    <button type="button" onclick="closeModal('modal-calibrate-succession-flag')" class="w-7 h-7 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition border border-[#E8DEDC]">
+                    <button type="button" onclick="closeModal('modal-calibrate-succession-flag')" class="w-7 h-7 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition border border-brand-border">
                         <i class="fas fa-times text-xs"></i>
                     </button>
                 </div>
@@ -4486,7 +4555,7 @@
                 <form onsubmit="submitHRFlagCalibration(event)" class="p-5 space-y-4 text-xs">
                     <input type="hidden" id="succ-flag-candidate-id" value="">
 
-                    <div class="p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] space-y-1">
+                    <div class="p-3 bg-brand-canvas rounded-xl border border-brand-border space-y-1">
                         <div class="flex justify-between items-center text-[11px]">
                             <span class="text-slate-500 font-semibold">Candidate:</span>
                             <strong id="succ-flag-candidate-name" class="text-slate-900 font-bold">Maria Santos</strong>
@@ -4499,7 +4568,7 @@
 
                     <div class="space-y-1">
                         <label class="font-bold text-slate-800 text-[11px]">Formal HR Readiness Flag *</label>
-                        <select id="succ-flag-readiness-select" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                        <select id="succ-flag-readiness-select" required class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                             <option value="Ready Now">Ready Now (0–6 Months Horizon)</option>
                             <option value="Ready in 1-2 Years">Ready in 1–2 Years (Pipeline Developing)</option>
                             <option value="Not Ready">Not Ready (Skill / Tenure Gap)</option>
@@ -4508,10 +4577,10 @@
 
                     <div class="space-y-1">
                         <label class="font-bold text-slate-800 text-[11px]">HR Calibration Rationale &amp; Audit Notes *</label>
-                        <textarea id="succ-flag-notes" required rows="3" class="w-full p-3 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] text-slate-800 font-medium focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar" placeholder="Enter leadership readiness assessment notes, completed milestones, or remaining development gaps..."></textarea>
+                        <textarea id="succ-flag-notes" required rows="3" class="w-full p-3 rounded-xl border border-brand-border bg-brand-canvas text-slate-800 font-medium focus:ring-2 focus:ring-primary focus:outline-none custom-scrollbar" placeholder="Enter leadership readiness assessment notes, completed milestones, or remaining development gaps..."></textarea>
                     </div>
 
-                    <div class="pt-3 border-t border-[#E8DEDC] flex items-center justify-end space-x-2">
+                    <div class="pt-3 border-t border-brand-border flex items-center justify-end space-x-2">
                         <button type="button" onclick="closeModal('modal-calibrate-succession-flag')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
                         <button type="submit" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-sm">
                             <i class="fas fa-check-circle"></i>
@@ -4527,12 +4596,12 @@
         <!-- ======================================================== -->
         <div id="modal-add-succession-role" class="fixed inset-0 modal-overlay z-50 hidden items-center justify-center p-4">
             <div class="modal-card max-w-lg w-full bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
-                <div class="p-4 border-b border-[#E8DEDC] flex items-center justify-between bg-[#FAF8F7]">
+                <div class="p-4 border-b border-brand-border flex items-center justify-between bg-brand-canvas">
                     <div class="flex items-center space-x-2">
                         <i class="fas fa-sitemap text-primary"></i>
                         <h4 class="font-heading font-bold text-sm text-slate-900">Define Key Leadership Succession Position</h4>
                     </div>
-                    <button type="button" onclick="closeModal('modal-add-succession-role')" class="w-7 h-7 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition border border-[#E8DEDC]">
+                    <button type="button" onclick="closeModal('modal-add-succession-role')" class="w-7 h-7 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition border border-brand-border">
                         <i class="fas fa-times text-xs"></i>
                     </button>
                 </div>
@@ -4540,13 +4609,13 @@
                 <form onsubmit="submitNewSuccessionRole(event)" class="p-5 space-y-4 text-xs">
                     <div class="space-y-1">
                         <label class="font-bold text-slate-800 text-[11px]">Position Title *</label>
-                        <input id="succ-role-title" type="text" required placeholder="e.g., Executive Housekeeper / F&B Director" class="w-full px-3.5 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                        <input id="succ-role-title" type="text" required placeholder="e.g., Executive Housekeeper / F&B Director" class="w-full px-3.5 py-2 rounded-xl border border-brand-border bg-brand-canvas font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
                         <div class="space-y-1">
                             <label class="font-bold text-slate-800 text-[11px]">Department *</label>
-                            <select id="succ-role-dept" onchange="updateSuccessionModalRecommendations()" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            <select id="succ-role-dept" onchange="updateSuccessionModalRecommendations()" required class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                                 <option value="Front Office">Front Office</option>
                                 <option value="Culinary">Culinary</option>
                                 <option value="F&B Service">F&B Service</option>
@@ -4556,7 +4625,7 @@
                         </div>
                         <div class="space-y-1">
                             <label class="font-bold text-slate-800 text-[11px]">Current Incumbent *</label>
-                            <select id="succ-role-incumbent" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            <select id="succ-role-incumbent" required class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                                 <option value="">-- Select Current Incumbent --</option>
                             </select>
                         </div>
@@ -4579,7 +4648,7 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div class="space-y-1">
                             <label class="font-bold text-slate-800 text-[11px]">Planned Transition *</label>
-                            <select id="succ-role-transition" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            <select id="succ-role-transition" required class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                                 <option value="0–6 Months (Immediate)">0–6 Months (Immediate)</option>
                                 <option value="6–12 Months (Near-term)">6–12 Months (Near-term)</option>
                                 <option value="1–2 Years (Mid-term)" selected>1–2 Years (Mid-term)</option>
@@ -4588,7 +4657,7 @@
                         </div>
                         <div class="space-y-1">
                             <label class="font-bold text-slate-800 text-[11px]">Risk of Loss *</label>
-                            <select id="succ-role-risk" required class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            <select id="succ-role-risk" required class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                                 <option value="Low">Low Risk</option>
                                 <option value="Medium">Medium Risk</option>
                                 <option value="High">High Risk</option>
@@ -4599,19 +4668,19 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div class="space-y-1">
                             <label class="font-bold text-slate-800 text-[11px]">Primary Successor</label>
-                            <select id="succ-role-primary-successor" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            <select id="succ-role-primary-successor" class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                                 <option value="">-- Select Primary Successor --</option>
                             </select>
                         </div>
                         <div class="space-y-1">
                             <label class="font-bold text-slate-800 text-[11px]">Emergency Backup</label>
-                            <select id="succ-role-backup-successor" class="w-full px-3 py-2 rounded-xl border border-[#E8DEDC] bg-[#FAF8F7] font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
+                            <select id="succ-role-backup-successor" class="w-full px-3 py-2 rounded-xl border border-brand-border bg-brand-canvas font-semibold text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none">
                                 <option value="">-- Optional Emergency Backup --</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="pt-3 border-t border-[#E8DEDC] flex items-center justify-end space-x-2">
+                    <div class="pt-3 border-t border-brand-border flex items-center justify-end space-x-2">
                         <button type="button" onclick="closeModal('modal-add-succession-role')" class="btn-secondary px-4 py-2 text-xs font-bold">Cancel</button>
                         <button type="submit" class="btn-primary px-5 py-2 text-xs font-bold flex items-center space-x-1.5 shadow-sm">
                             <i class="fas fa-plus"></i>
@@ -4625,7 +4694,7 @@
         <!-- ======================================================== -->
         <!-- FULLSCREEN BLOCKING LOGOUT LOADING OVERLAY                -->
         <!-- ======================================================== -->
-        <div id="logout-loading-overlay" class="fixed inset-0 z-[99999] hidden items-center justify-center bg-slate-950/80 backdrop-blur-md transition-opacity duration-300 pointer-events-auto select-none" style="cursor: wait;">
+        <div id="logout-loading-overlay" class="fixed inset-0 z-99999 hidden items-center justify-center bg-slate-950/80 backdrop-blur-md transition-opacity duration-300 pointer-events-auto select-none" style="cursor: wait;">
             <div class="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl border border-slate-100 text-center space-y-5 animate-scaleUp">
                 <div class="relative w-20 h-20 mx-auto flex items-center justify-center">
                     <!-- Ambient Glow -->
@@ -4642,7 +4711,7 @@
                     <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">Securing your session & returning to login portal...</p>
                 </div>
                 <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                    <div class="h-full bg-gradient-to-r from-primary via-gold to-primary rounded-full animate-pulse w-full"></div>
+                    <div class="h-full bg-linear-to-r from-primary via-gold to-primary rounded-full animate-pulse w-full"></div>
                 </div>
                 <p class="text-[11px] font-mono text-slate-400">Please wait a moment...</p>
             </div>

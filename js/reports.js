@@ -150,10 +150,10 @@ function setReportsCatalogFilter(catKey) {
     document.querySelectorAll('.reports-cat-chip').forEach(btn => {
         if (btn.dataset.cat === catKey) {
             btn.classList.add('bg-primary', 'text-white');
-            btn.classList.remove('bg-[#FAF8F7]', 'text-slate-600');
+            btn.classList.remove('bg-brand-canvas', 'text-slate-600');
         } else {
             btn.classList.remove('bg-primary', 'text-white');
-            btn.classList.add('bg-[#FAF8F7]', 'text-slate-600');
+            btn.classList.add('bg-brand-canvas', 'text-slate-600');
         }
     });
     renderReportsCatalog();
@@ -178,10 +178,10 @@ function renderReportsCatalog() {
     };
 
     container.innerHTML = filtered.map(rep => `
-        <div class="card-clean p-5 hover:shadow-lg transition flex flex-col justify-between space-y-4 border border-[#E8DEDC] bg-white">
+        <div class="card-clean p-5 hover:shadow-lg transition flex flex-col justify-between space-y-4 border border-brand-border bg-white">
             <div class="space-y-3">
                 <div class="flex items-start justify-between gap-3">
-                    <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center text-lg flex-shrink-0">
+                    <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center text-lg shrink-0">
                         <i class="fas ${rep.icon}"></i>
                     </div>
                     <span class="badge-sage text-[10px] font-bold">${rep.status}</span>
@@ -192,13 +192,13 @@ function renderReportsCatalog() {
                     <p class="text-[11px] text-slate-400 font-semibold mt-0.5"><i class="fas fa-calendar-alt mr-1"></i> Period: ${rep.period}</p>
                 </div>
                 <p class="text-xs text-slate-600 leading-relaxed">${rep.description}</p>
-                <div class="p-2.5 rounded-xl bg-[#FAF8F7] border border-[#E8DEDC] flex items-center justify-between text-xs">
+                <div class="p-2.5 rounded-xl bg-brand-canvas border border-brand-border flex items-center justify-between text-xs">
                     <span class="text-slate-500 text-[11px]">Dataset Scope:</span>
                     <span class="font-bold text-slate-800">${recordLabel[rep.id] ?? '—'}</span>
                 </div>
             </div>
             <!-- Export buttons: CSV · Excel · Word · PDF -->
-            <div class="pt-3 border-t border-[#E8DEDC] space-y-2 text-xs">
+            <div class="pt-3 border-t border-brand-border space-y-2 text-xs">
                 <div class="flex items-center gap-1.5 flex-wrap">
                     <button onclick="downloadCSVReport('${rep.id}')" title="Download CSV" class="flex-1 btn-secondary px-2 py-1.5 font-bold flex items-center justify-center space-x-1 text-slate-700 min-w-0">
                         <i class="fas fa-file-csv text-emerald-600"></i>
@@ -246,7 +246,7 @@ function renderCertificationRegister(certs) {
         const cat     = c.category ?? '—';
 
         return `
-            <tr class="hover:bg-[#FAF8F7]/80 transition text-xs">
+            <tr class="hover:bg-brand-canvas/80 transition text-xs">
                 <td class="px-5 py-3 font-mono font-bold text-slate-700">${certNo}</td>
                 <td class="px-5 py-3">
                     <span class="font-bold text-slate-900 block">${name}</span>
@@ -287,7 +287,7 @@ function renderDepartmentPerformanceSummary(depts) {
         const compColor= compRate>= 90 ? 'text-emerald-700' : compRate >= 75 ? 'text-amber-700' : 'text-rose-600';
 
         return `
-        <tr class="hover:bg-[#FAF8F7]/80 transition text-xs">
+        <tr class="hover:bg-brand-canvas/80 transition text-xs">
             <td class="px-5 py-3.5 font-bold text-slate-900">${d.department}</td>
             <td class="px-5 py-3.5 text-slate-600">${d.enrolled ?? '—'} Staff</td>
             <td class="px-5 py-3.5 font-bold ${attColor}">${attRate}%</td>
@@ -536,8 +536,8 @@ function openPrintableReportPDF(reportId) {
                         </div>
                         <span class="badge-sage text-xs font-bold">Audit Grade: A+</span>
                     </div>
-                    <table class="w-full text-left text-xs border border-[#E8DEDC] rounded-xl overflow-hidden">
-                        <thead class="bg-[#FAF8F7] text-slate-600 font-bold uppercase text-[10px] border-b border-[#E8DEDC]">
+                    <table class="w-full text-left text-xs border border-brand-border rounded-xl overflow-hidden">
+                        <thead class="bg-brand-canvas text-slate-600 font-bold uppercase text-[10px] border-b border-brand-border">
                             <tr>
                                 <th class="p-3">Associate</th>
                                 <th class="p-3">Program / Certification</th>
@@ -546,7 +546,7 @@ function openPrintableReportPDF(reportId) {
                                 <th class="p-3">Score</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-[#E8DEDC]">
+                        <tbody class="divide-y divide-brand-border">
                             ${certs.map(c => `
                                 <tr>
                                     <td class="p-3 font-bold text-slate-900">${c.associate_name ?? c.associateName ?? '—'} <span class="text-slate-400 font-normal">(${c.dept ?? ''})</span></td>
@@ -564,21 +564,21 @@ function openPrintableReportPDF(reportId) {
             modalBody.innerHTML = `
                 <div class="space-y-4">
                     <div class="grid grid-cols-3 gap-3 text-xs">
-                        <div class="p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC]">
+                        <div class="p-3 bg-brand-canvas rounded-xl border border-brand-border">
                             <span class="text-slate-400 block text-[10px] uppercase font-bold">Certificates Issued</span>
                             <span class="text-lg font-bold text-emerald-700">${kpi?.totalCertificates ?? '—'}</span>
                         </div>
-                        <div class="p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC]">
+                        <div class="p-3 bg-brand-canvas rounded-xl border border-brand-border">
                             <span class="text-slate-400 block text-[10px] uppercase font-bold">Active Training Needs</span>
                             <span class="text-lg font-bold text-primary">${kpi?.activeNeeds ?? '—'}</span>
                         </div>
-                        <div class="p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC]">
+                        <div class="p-3 bg-brand-canvas rounded-xl border border-brand-border">
                             <span class="text-slate-400 block text-[10px] uppercase font-bold">Resolved Needs</span>
                             <span class="text-lg font-bold text-slate-900">${kpi?.resolvedNeeds ?? '—'}</span>
                         </div>
                     </div>
-                    <table class="w-full text-left text-xs border border-[#E8DEDC] rounded-xl overflow-hidden">
-                        <thead class="bg-[#FAF8F7] text-slate-600 font-bold uppercase text-[10px] border-b border-[#E8DEDC]">
+                    <table class="w-full text-left text-xs border border-brand-border rounded-xl overflow-hidden">
+                        <thead class="bg-brand-canvas text-slate-600 font-bold uppercase text-[10px] border-b border-brand-border">
                             <tr>
                                 <th class="p-3">Department</th>
                                 <th class="p-3">Enrolled</th>
@@ -587,7 +587,7 @@ function openPrintableReportPDF(reportId) {
                                 <th class="p-3">Avg Score</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-[#E8DEDC]">
+                        <tbody class="divide-y divide-brand-border">
                             ${depts.map(d => `
                                 <tr>
                                     <td class="p-3 font-bold text-slate-900">${d.department}</td>
@@ -712,11 +712,11 @@ function updateExportSummaryUI() {
         const dotRing = card.querySelector('.w-4.h-4');
         if (isSel) {
             card.className = 'export-mode-card cursor-pointer p-4 rounded-2xl border-2 border-primary bg-primary/5 transition hover:shadow-xs flex items-start space-x-3.5';
-            if (dotRing) dotRing.className = 'w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center flex-shrink-0';
+            if (dotRing) dotRing.className = 'w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center shrink-0';
             if (dot) dot.className = 'w-2 h-2 rounded-full bg-primary export-mode-dot';
         } else {
             card.className = 'export-mode-card cursor-pointer p-4 rounded-2xl border-2 border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-xs flex items-start space-x-3.5';
-            if (dotRing) dotRing.className = 'w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center flex-shrink-0';
+            if (dotRing) dotRing.className = 'w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center shrink-0';
             if (dot) dot.className = 'w-2 h-2 rounded-full bg-transparent export-mode-dot';
         }
     });
@@ -1244,5 +1244,14 @@ window.renderExportSummaryCharts = renderExportSummaryCharts;
 // BOOT
 // =========================================================================
 document.addEventListener('DOMContentLoaded', () => {
-    initReportsHub();
+    const activePillar = localStorage.getItem('oxford_active_pillar') || 'dashboard';
+    if (activePillar === 'pillar-reports') {
+        initReportsHub();
+    } else {
+        if (window.requestIdleCallback) {
+            window.requestIdleCallback(() => initReportsHub(), { timeout: 3000 });
+        } else {
+            setTimeout(initReportsHub, 800);
+        }
+    }
 });

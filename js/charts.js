@@ -939,8 +939,14 @@ window.fetchAndRenderDepartmentExecutionMatrix = fetchAndRenderDepartmentExecuti
 window.updateOverviewSystemKpis = updateOverviewSystemKpis;
 
 window.addEventListener('DOMContentLoaded', () => {
-    initAllCharts();
-    if (typeof renderLmsBooks === 'function') renderLmsBooks();
-    if (typeof renderTnaEnrollments === 'function') renderTnaEnrollments();
-    if (typeof fetchAndRenderDepartmentExecutionMatrix === 'function') fetchAndRenderDepartmentExecutionMatrix();
+    const deferInit = window.requestIdleCallback 
+        ? (fn) => window.requestIdleCallback(fn, { timeout: 800 }) 
+        : (fn) => setTimeout(fn, 50);
+
+    deferInit(() => {
+        initAllCharts();
+        if (typeof fetchAndRenderDepartmentExecutionMatrix === 'function') {
+            fetchAndRenderDepartmentExecutionMatrix();
+        }
+    });
 });

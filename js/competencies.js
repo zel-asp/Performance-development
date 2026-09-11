@@ -828,11 +828,11 @@ function renderTeamRosterDeck() {
         const avatarUrl = emp.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
 
         return `
-            <div class="p-5 bg-white rounded-2xl border ${isFocus ? 'border-primary ring-2 ring-primary/20' : 'border-[#E8DEDC]'} hover:border-primary/50 transition shadow-2xs space-y-3.5 flex flex-col justify-between">
+            <div class="p-5 bg-white rounded-2xl border ${isFocus ? 'border-primary ring-2 ring-primary/20' : 'border-brand-border'} hover:border-primary/50 transition shadow-2xs space-y-3.5 flex flex-col justify-between">
                 <div>
                     <div class="flex items-start justify-between">
                         <div class="flex items-center space-x-3">
-                            <img src="${avatarUrl}" alt="${emp.full_name}" class="w-10 h-10 rounded-full object-cover border border-[#E8DEDC] shadow-2xs flex-shrink-0">
+                            <img src="${avatarUrl}" alt="${emp.full_name}" class="w-10 h-10 rounded-full object-cover border border-brand-border shadow-2xs shrink-0">
                             <div>
                                 <h4 class="font-heading font-bold text-sm text-slate-900">${emp.full_name}</h4>
                                 <p class="text-[11px] text-slate-500">${emp.title} · ${emp.department}</p>
@@ -841,7 +841,7 @@ function renderTeamRosterDeck() {
                         <span class="${badgeClass} text-[10px]">${badgeText}</span>
                     </div>
 
-                    <div class="mt-3 p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] space-y-2 text-xs">
+                    <div class="mt-3 p-3 bg-brand-canvas rounded-xl border border-brand-border space-y-2 text-xs">
                         <div class="flex justify-between items-center font-semibold">
                             <span class="text-slate-500">Overall Rating:</span>
                             <span class="font-heading font-bold text-sm text-primary">${emp.overall_formatted} / 5.0</span>
@@ -852,8 +852,8 @@ function renderTeamRosterDeck() {
                     </div>
                 </div>
 
-                <div class="pt-2 border-t border-[#E8DEDC] flex items-center justify-between gap-2 flex-wrap">
-                    <button onclick="selectCompetencyAssociate('${emp.id}'); setCompetencyViewMode('single');" class="px-3 py-1.5 rounded-xl border border-[#E8DEDC] hover:bg-slate-50 text-xs font-semibold text-slate-700 transition flex items-center space-x-1">
+                <div class="pt-2 border-t border-brand-border flex items-center justify-between gap-2 flex-wrap">
+                    <button onclick="selectCompetencyAssociate('${emp.id}'); setCompetencyViewMode('single');" class="px-3 py-1.5 rounded-xl border border-brand-border hover:bg-slate-50 text-xs font-semibold text-slate-700 transition flex items-center space-x-1">
                         <i class="fas fa-eye text-primary"></i>
                         <span>Deep-Dive</span>
                     </button>
@@ -877,7 +877,7 @@ function renderMultiEmployeeComparison() {
         selectorContainer.innerHTML = Object.values(associatesCompetencyData).map(emp => {
             const isChecked = comparedEmployeeKeys.includes(emp.empId);
             return `
-                <label class="flex items-center space-x-2 px-3 py-1.5 rounded-xl border ${isChecked ? 'bg-primary-50 border-primary text-primary font-bold' : 'bg-white border-[#E8DEDC] text-slate-700'} text-xs cursor-pointer transition">
+                <label class="flex items-center space-x-2 px-3 py-1.5 rounded-xl border ${isChecked ? 'bg-primary-50 border-primary text-primary font-bold' : 'bg-white border-brand-border text-slate-700'} text-xs cursor-pointer transition">
                     <input type="checkbox" value="${emp.empId}" ${isChecked ? 'checked' : ''} onchange="toggleCompareEmployee('${emp.empId}')" class="accent-[#9E1B20] w-3.5 h-3.5 rounded">
                     <span>${emp.name}</span>
                 </label>
@@ -901,7 +901,7 @@ function renderMultiEmployeeComparison() {
             }).join('');
 
             return `
-                <tr class="hover:bg-[#FAF8F7] transition">
+                <tr class="hover:bg-brand-canvas transition">
                     <td class="px-4 py-3 font-semibold text-slate-900 text-xs">
                         ${c.name}
                         <span class="block text-[10px] text-slate-400 font-normal">Target: ${c.benchmark.toFixed(1)}</span>
@@ -1062,10 +1062,10 @@ function renderRoleCompetencyFramework() {
         if (c.category === 'Core Service' || c.category === 'Quality Assurance') catBadge = 'badge-sage';
 
         return `
-            <div class="p-4 bg-white rounded-2xl border border-[#E8DEDC] hover:border-primary/40 transition shadow-2xs space-y-2.5">
+            <div class="p-4 bg-white rounded-2xl border border-brand-border hover:border-primary/40 transition shadow-2xs space-y-2.5">
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <div class="flex items-center space-x-2">
-                        <span class="w-6 h-6 rounded-full bg-[#FAF8F7] text-slate-800 font-bold text-xs flex items-center justify-center border border-[#E8DEDC]">
+                        <span class="w-6 h-6 rounded-full bg-brand-canvas text-slate-800 font-bold text-xs flex items-center justify-center border border-brand-border">
                             ${idx + 1}
                         </span>
                         <h4 class="font-heading font-bold text-sm text-slate-900">${c.name}</h4>
@@ -1079,7 +1079,7 @@ function renderRoleCompetencyFramework() {
                     </div>
                 </div>
                 <p class="text-xs text-slate-600 leading-relaxed">${c.description}</p>
-                <div class="p-2.5 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] text-[11px] text-slate-700 flex items-start space-x-2">
+                <div class="p-2.5 bg-brand-canvas rounded-xl border border-brand-border text-[11px] text-slate-700 flex items-start space-x-2">
                     <i class="fas fa-eye text-primary mt-0.5"></i>
                     <span><strong>Observable Indicators:</strong> ${c.indicators}</span>
                 </div>
@@ -1104,7 +1104,7 @@ function renderRoleCompetencyFramework() {
                 </button>
             </div>
             <div class="space-y-3">${listHtml}</div>
-            <div class="pt-3 border-t border-[#E8DEDC]">
+            <div class="pt-3 border-t border-brand-border">
                 <h5 class="text-xs font-bold text-slate-800 mb-2">Mandatory Role Certifications:</h5>
                 <div class="flex flex-wrap gap-2">${certsHtml}</div>
             </div>
@@ -1192,7 +1192,7 @@ async function renderSelectedEmployeeRadarView() {
         barsContainer.innerHTML = `
             <div class="space-y-3 animate-pulse">
                 ${[1, 2, 3, 4, 5].map(() => `
-                    <div class="p-3 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC] space-y-2">
+                    <div class="p-3 bg-brand-canvas rounded-xl border border-brand-border space-y-2">
                         <div class="flex justify-between items-center">
                             <div class="h-3.5 w-36 bg-slate-200 rounded"></div>
                             <div class="h-3.5 w-10 bg-slate-200 rounded"></div>
@@ -1360,7 +1360,7 @@ async function renderSelectedEmployeeRadarView() {
                 <div class="space-y-1.5">
                     <div class="flex justify-between items-center text-xs font-semibold text-slate-800">
                         <div class="flex items-center space-x-1.5">
-                            <span class="truncate max-w-[200px]" title="${c.name}">${c.name}</span>
+                            <span class="truncate max-w-50" title="${c.name}">${c.name}</span>
                             <span class="text-[9px] font-bold px-1 rounded bg-slate-100 text-slate-500">${c.scope}</span>
                         </div>
                         <div class="flex items-center space-x-2">
@@ -1696,7 +1696,7 @@ async function renderSkillsGapAnalysis() {
         `;
 
         return `
-            <div class="p-4 bg-white rounded-2xl border border-[#E8DEDC] space-y-3 shadow-2xs hover:border-slate-300 transition ${isGap ? 'ring-1 ring-rose-500/20' : ''}">
+            <div class="p-4 bg-white rounded-2xl border border-brand-border space-y-3 shadow-2xs hover:border-slate-300 transition ${isGap ? 'ring-1 ring-rose-500/20' : ''}">
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <div>
                         <div class="flex items-center space-x-2">
@@ -1728,7 +1728,7 @@ async function renderSkillsGapAnalysis() {
 
     container.innerHTML = `
         <!-- Diagnostic Header Banner -->
-        <div class="p-4 bg-slate-50 border border-[#E8DEDC] rounded-2xl flex items-center justify-between flex-wrap gap-3">
+        <div class="p-4 bg-slate-50 border border-brand-border rounded-2xl flex items-center justify-between flex-wrap gap-3">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center font-bold text-base shadow-xs">
                     <i class="fas fa-chart-pie"></i>
@@ -1753,11 +1753,11 @@ async function renderSkillsGapAnalysis() {
 
         <!-- Summary Stat Row -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div class="p-3.5 bg-[#FAF8F7] rounded-xl border border-[#E8DEDC]">
+            <div class="p-3.5 bg-brand-canvas rounded-xl border border-brand-border">
                 <span class="text-[10px] font-bold text-slate-400 uppercase">Applicable Dimensions</span>
                 <p class="text-base font-heading font-bold text-slate-900">${applicableComps.length} Competencies</p>
             </div>
-            <div class="p-3.5 ${criticalGapsCount > 0 ? 'bg-rose-50 border border-rose-200 text-rose-900' : 'bg-[#FAF8F7] border border-[#E8DEDC]'} rounded-xl">
+            <div class="p-3.5 ${criticalGapsCount > 0 ? 'bg-rose-50 border border-rose-200 text-rose-900' : 'bg-brand-canvas border border-brand-border'} rounded-xl">
                 <span class="text-[10px] font-bold ${criticalGapsCount > 0 ? 'text-rose-500' : 'text-slate-400'} uppercase">Critical Skill Gaps</span>
                 <p class="text-base font-heading font-bold ${criticalGapsCount > 0 ? 'text-rose-700' : 'text-slate-900'}">${criticalGapsCount} Priority Gaps</p>
             </div>
@@ -1993,7 +1993,7 @@ async function renderIDPView(forceRefresh = false) {
         const list = Array.isArray(goalList) ? goalList : [];
         if (list.length === 0) {
             container.innerHTML = `
-                <div class="p-8 text-center bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-3">
+                <div class="p-8 text-center bg-brand-canvas rounded-2xl border border-brand-border space-y-3">
                     <i class="fas fa-bullseye text-3xl text-slate-300"></i>
                     <h4 class="font-heading font-bold text-slate-800 text-sm">No Active Performance Goals on Record for ${emp.name}</h4>
                     <p class="text-xs text-slate-500">Operational performance targets will appear here once approved in Performance Planning.</p>
@@ -2020,7 +2020,7 @@ async function renderIDPView(forceRefresh = false) {
                 : `<span class="text-[10px] text-slate-400 font-medium">Pending Final Calibration</span>`;
 
             return `
-                <div class="p-5 bg-white rounded-2xl border border-[#E8DEDC] space-y-3 shadow-2xs hover:border-slate-300 transition">
+                <div class="p-5 bg-white rounded-2xl border border-brand-border space-y-3 shadow-2xs hover:border-slate-300 transition">
                     <div class="flex items-center justify-between flex-wrap gap-2">
                         <div class="space-y-1">
                             <div class="flex items-center space-x-2 flex-wrap gap-1">
@@ -2100,7 +2100,7 @@ async function renderCertificationsRoster(forceRefresh = false) {
                         <h3 class="font-heading font-bold text-base text-slate-900">${emp.name}'s Verified Qualifications &amp; Licensures</h3>
                         <p class="text-xs text-slate-500">Official registry directly querying <code>public.certificates</code> in database.</p>
                     </div>
-                    <div class="p-8 text-center bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-2">
+                    <div class="p-8 text-center bg-brand-canvas rounded-2xl border border-brand-border space-y-2">
                         <div class="w-12 h-12 rounded-2xl bg-gold-50 text-gold-dark border border-gold-200 flex items-center justify-center text-xl mx-auto shadow-2xs">
                             <i class="fas fa-certificate"></i>
                         </div>
@@ -2124,7 +2124,7 @@ async function renderCertificationsRoster(forceRefresh = false) {
             const dept = c.dept || emp.department || 'Operations';
 
             return `
-                <div class="p-5 bg-white rounded-2xl border border-[#E8DEDC] flex items-center justify-between flex-wrap gap-4 shadow-2xs hover:border-slate-300 transition">
+                <div class="p-5 bg-white rounded-2xl border border-brand-border flex items-center justify-between flex-wrap gap-4 shadow-2xs hover:border-slate-300 transition">
                     <div class="flex items-center space-x-3.5">
                         <div class="w-11 h-11 rounded-2xl bg-gold-50 text-gold-dark border border-gold-200 flex items-center justify-center text-lg font-bold shadow-2xs">
                             <i class="fas fa-certificate"></i>
@@ -2434,7 +2434,7 @@ function renderCompetencyMatrixTable() {
                 <button type="button" 
                     ${currentPage === 1 ? 'disabled' : ''} 
                     onclick="changeMatrixPage(${currentPage - 1})"
-                    class="px-2.5 py-1 rounded-lg border border-[#E8DEDC] bg-white text-slate-700 font-bold text-xs hover:bg-[#FAF8F7] transition disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs">
+                    class="px-2.5 py-1 rounded-lg border border-brand-border bg-white text-slate-700 font-bold text-xs hover:bg-brand-canvas transition disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs">
                     <i class="fas fa-chevron-left text-[9px] mr-1"></i> Prev
                 </button>
             `;
@@ -2445,7 +2445,7 @@ function renderCompetencyMatrixTable() {
                     navHtml += `
                         <button type="button" 
                             onclick="changeMatrixPage(${p})"
-                            class="px-2.5 py-1 rounded-lg border font-bold text-xs transition shadow-2xs ${isActive ? 'bg-primary text-white border-primary' : 'bg-white text-slate-700 border-[#E8DEDC] hover:bg-[#FAF8F7]'}">
+                            class="px-2.5 py-1 rounded-lg border font-bold text-xs transition shadow-2xs ${isActive ? 'bg-primary text-white border-primary' : 'bg-white text-slate-700 border-brand-border hover:bg-brand-canvas'}">
                             ${p}
                         </button>
                     `;
@@ -2458,7 +2458,7 @@ function renderCompetencyMatrixTable() {
                 <button type="button" 
                     ${currentPage === totalPages ? 'disabled' : ''} 
                     onclick="changeMatrixPage(${currentPage + 1})"
-                    class="px-2.5 py-1 rounded-lg border border-[#E8DEDC] bg-white text-slate-700 font-bold text-xs hover:bg-[#FAF8F7] transition disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs">
+                    class="px-2.5 py-1 rounded-lg border border-brand-border bg-white text-slate-700 font-bold text-xs hover:bg-brand-canvas transition disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs">
                     Next <i class="fas fa-chevron-right text-[9px] ml-1"></i>
                 </button>
             `;
@@ -2468,7 +2468,7 @@ function renderCompetencyMatrixTable() {
 
     // 4. DYNAMIC THEAD GENERATION
     const fixedLeftTh = `
-        <th class="px-4 py-3.5 sticky left-0 bg-[#FAF8F7] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] border-r border-[#E8DEDC] min-w-[260px] text-slate-800 font-bold">
+        <th class="px-4 py-3.5 sticky left-0 bg-brand-canvas z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] border-r border-brand-border min-w-65 text-slate-800 font-bold">
             Associate &amp; Role
         </th>
     `;
@@ -2482,14 +2482,14 @@ function renderCompetencyMatrixTable() {
         const maxVal = Number(c.max_score || 5.0).toFixed(1);
 
         return `
-            <th class="px-4 py-3 text-center min-w-[140px] border-r border-[#E8DEDC]/50" title="${c.description || c.name} (Target: ${targetVal} / ${maxVal})">
+            <th class="px-4 py-3 text-center min-w-35 border-r border-brand-border/50" title="${c.description || c.name} (Target: ${targetVal} / ${maxVal})">
                 <div class="flex flex-col items-center space-y-1">
                     <span class="font-bold text-slate-900 text-xs tracking-tight">${c.name}</span>
                     <div class="flex items-center space-x-1">
                         <span class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">${c.category || 'core'}</span>
                         ${scopeBadge}
                     </div>
-                    <span class="text-[9px] font-bold text-slate-600 bg-white border border-[#E8DEDC] px-2 py-0.2 rounded-full shadow-2xs">
+                    <span class="text-[9px] font-bold text-slate-600 bg-white border border-brand-border px-2 py-0.2 rounded-full shadow-2xs">
                         Target: ${targetVal}
                     </span>
                 </div>
@@ -2498,10 +2498,10 @@ function renderCompetencyMatrixTable() {
     }).join('');
 
     const fixedRightThs = `
-        <th class="px-4 py-3.5 text-center min-w-[120px] text-slate-800 font-bold border-r border-[#E8DEDC]/50">
+        <th class="px-4 py-3.5 text-center min-w-30 text-slate-800 font-bold border-r border-brand-border/50">
             Overall Proficiency
         </th>
-        <th class="px-4 py-3.5 text-right min-w-[110px] text-slate-800 font-bold pr-5 sticky right-0 bg-[#FAF8F7] z-20 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.06)] border-l border-[#E8DEDC]">
+        <th class="px-4 py-3.5 text-right min-w-27.5 text-slate-800 font-bold pr-5 sticky right-0 bg-brand-canvas z-20 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.06)] border-l border-brand-border">
             Actions
         </th>
     `;
@@ -2530,9 +2530,9 @@ function renderCompetencyMatrixTable() {
             const scoreData = emp.scores[comp.id];
             if (!scoreData || scoreData.score === null) {
                 if (scoreData && !scoreData.isApplicable) {
-                    return `<td class="px-3.5 py-3 text-center text-slate-300 font-mono text-[10px] border-r border-[#E8DEDC]/40" title="Not applicable to ${emp.title}">N/A</td>`;
+                    return `<td class="px-3.5 py-3 text-center text-slate-300 font-mono text-[10px] border-r border-brand-border/40" title="Not applicable to ${emp.title}">N/A</td>`;
                 }
-                return `<td class="px-3.5 py-3 text-center text-slate-300 font-mono text-xs border-r border-[#E8DEDC]/40">—</td>`;
+                return `<td class="px-3.5 py-3 text-center text-slate-300 font-mono text-xs border-r border-brand-border/40">—</td>`;
             }
 
             const val = scoreData.score;
@@ -2553,7 +2553,7 @@ function renderCompetencyMatrixTable() {
             }
 
             return `
-                <td class="px-3.5 py-3 text-center border-r border-[#E8DEDC]/40">
+                <td class="px-3.5 py-3 text-center border-r border-brand-border/40">
                     <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-xl border text-xs shadow-2xs ${badgeStyle}" title="${comp.name}: Evaluated ${val.toFixed(1)} / Benchmark ${benchmark.toFixed(1)}">
                         <span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>
                         <span>${val.toFixed(1)}</span>
@@ -2597,13 +2597,13 @@ function renderCompetencyMatrixTable() {
         }
 
         return `
-            <tr class="group hover:bg-[#FAF8F7] transition cursor-pointer" onclick="selectCompetencyAssociate('${emp.id}')">
-                <td class="px-4 py-3.5 sticky left-0 bg-white group-hover:bg-[#FAF8F7] z-10 border-r border-[#E8DEDC] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] transition">
+            <tr class="group hover:bg-brand-canvas transition cursor-pointer" onclick="selectCompetencyAssociate('${emp.id}')">
+                <td class="px-4 py-3.5 sticky left-0 bg-white group-hover:bg-brand-canvas z-10 border-r border-brand-border shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] transition">
                     <div class="flex items-center space-x-3">
-                        <img src="${emp.avatar_url}" alt="${emp.full_name}" class="w-9 h-9 rounded-full object-cover border border-[#E8DEDC] shadow-2xs flex-shrink-0">
+                        <img src="${emp.avatar_url}" alt="${emp.full_name}" class="w-9 h-9 rounded-full object-cover border border-brand-border shadow-2xs shrink-0">
                         <div class="min-w-0">
                             <div class="flex items-center space-x-1.5 flex-wrap gap-1">
-                                <p class="font-bold text-slate-900 group-hover:text-primary transition text-xs truncate max-w-[140px]">${emp.full_name}</p>
+                                <p class="font-bold text-slate-900 group-hover:text-primary transition text-xs truncate max-w-35">${emp.full_name}</p>
                                 ${goalBadge}
                             </div>
                             <p class="text-[11px] text-slate-500 truncate mt-0.5">
@@ -2613,10 +2613,10 @@ function renderCompetencyMatrixTable() {
                     </div>
                 </td>
                 ${dynamicCells}
-                <td class="px-4 py-3 text-center border-r border-[#E8DEDC]/40">
+                <td class="px-4 py-3 text-center border-r border-brand-border/40">
                     ${overallBadge}
                 </td>
-                <td class="px-4 py-3 text-right pr-5 sticky right-0 bg-white group-hover:bg-[#FAF8F7] z-10 border-l border-[#E8DEDC] shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.06)] transition" onclick="event.stopPropagation()">
+                <td class="px-4 py-3 text-right pr-5 sticky right-0 bg-white group-hover:bg-brand-canvas z-10 border-l border-brand-border shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.06)] transition" onclick="event.stopPropagation()">
                     <button onclick="launchDynamicEvaluationModal('${emp.id}')" class="btn-primary px-3 py-1.5 text-xs font-bold shadow-2xs hover:bg-primary-dark transition flex items-center space-x-1.5 ml-auto">
                         <i class="fas fa-clipboard-check text-[10px]"></i>
                         <span>Evaluate</span>
@@ -2828,7 +2828,7 @@ async function launchDynamicEvaluationModal(empId) {
             if (gs.needs_training) {
                 goalAlertBanner = `
                     <div class="p-3 bg-rose-50 border border-rose-200 rounded-2xl flex items-start space-x-2.5 text-rose-900 text-xs shadow-2xs mb-1">
-                        <div class="w-7 h-7 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center flex-shrink-0 font-bold">
+                        <div class="w-7 h-7 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 font-bold">
                             <i class="fas fa-triangle-exclamation"></i>
                         </div>
                         <div>
@@ -2845,7 +2845,7 @@ async function launchDynamicEvaluationModal(empId) {
             } else if (gs.in_training) {
                 goalAlertBanner = `
                     <div class="p-3 bg-blue-50 border border-blue-200 rounded-2xl flex items-start space-x-2.5 text-blue-900 text-xs shadow-2xs mb-1">
-                        <div class="w-7 h-7 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0 font-bold">
+                        <div class="w-7 h-7 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 font-bold">
                             <i class="fas fa-chalkboard-user"></i>
                         </div>
                         <div>
@@ -2867,7 +2867,7 @@ async function launchDynamicEvaluationModal(empId) {
                 const max = c.max_score ? parseFloat(c.max_score).toFixed(1) : '5.0';
 
                 return `
-                    <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-3" data-comp-id="${c.id}">
+                    <div class="p-4 bg-brand-canvas rounded-2xl border border-brand-border space-y-3" data-comp-id="${c.id}">
                         <div class="flex justify-between items-start flex-wrap gap-1">
                             <div>
                                 <div class="flex items-center space-x-1.5">
@@ -2921,7 +2921,7 @@ async function launchDynamicEvaluationModal(empId) {
                         </div>
 
                         <div class="pt-1">
-                            <input type="text" id="assess-comp-notes-${c.id}" class="w-full px-3 py-1.5 rounded-xl border border-[#E8DEDC] bg-white text-[11px] placeholder-slate-400" placeholder="Specific behavioral observations or remarks for this competency...">
+                            <input type="text" id="assess-comp-notes-${c.id}" class="w-full px-3 py-1.5 rounded-xl border border-brand-border bg-white text-[11px] placeholder-slate-400" placeholder="Specific behavioral observations or remarks for this competency...">
                         </div>
                     </div>
                 `;
@@ -3151,10 +3151,10 @@ function openBatchEvaluationModal() {
     const employees = window.dynamicCompetencyState.employees || [];
     if (employees.length > 0) {
         tbody.innerHTML = employees.map(emp => `
-            <tr class="hover:bg-[#FAF8F7] transition">
+            <tr class="hover:bg-brand-canvas transition">
                 <td class="px-4 py-3">
                     <div class="flex items-center space-x-2">
-                        <img src="${emp.avatar_url}" class="w-6 h-6 rounded-full object-cover border border-[#E8DEDC]">
+                        <img src="${emp.avatar_url}" class="w-6 h-6 rounded-full object-cover border border-brand-border">
                         <div>
                             <p class="font-bold text-slate-900 text-xs">${emp.full_name}</p>
                             <p class="text-[10px] text-slate-500">${emp.title}</p>
@@ -3163,10 +3163,10 @@ function openBatchEvaluationModal() {
                 </td>
                 <td class="px-4 py-3 text-center font-bold text-xs text-slate-800">${emp.overall_formatted}</td>
                 <td class="px-4 py-3 text-center">
-                    <input type="number" step="0.1" min="1.0" max="5.0" value="${emp.overall_score !== null ? emp.overall_score.toFixed(1) : '4.0'}" id="batch-score-${emp.id}" class="w-16 p-1.5 text-center font-bold rounded-lg border border-[#E8DEDC] bg-white text-xs text-primary focus:ring-1 focus:ring-primary">
+                    <input type="number" step="0.1" min="1.0" max="5.0" value="${emp.overall_score !== null ? emp.overall_score.toFixed(1) : '4.0'}" id="batch-score-${emp.id}" class="w-16 p-1.5 text-center font-bold rounded-lg border border-brand-border bg-white text-xs text-primary focus:ring-1 focus:ring-primary">
                 </td>
                 <td class="px-4 py-3 text-center">
-                    <select id="batch-status-${emp.id}" class="p-1 rounded-lg border border-[#E8DEDC] text-[11px] font-semibold">
+                    <select id="batch-status-${emp.id}" class="p-1 rounded-lg border border-brand-border text-[11px] font-semibold">
                         <option value="Approved" selected>Approve Rating</option>
                         <option value="Needs TNA">Flag for TNA</option>
                         <option value="Promote">Ready for Promotion</option>
@@ -3176,7 +3176,7 @@ function openBatchEvaluationModal() {
         `).join('');
     } else {
         tbody.innerHTML = Object.values(associatesCompetencyData).map(emp => `
-            <tr class="hover:bg-[#FAF8F7] transition">
+            <tr class="hover:bg-brand-canvas transition">
                 <td class="px-4 py-3">
                     <div class="flex items-center space-x-2">
                         <span class="w-6 h-6 rounded-full bg-primary text-white font-bold text-[10px] flex items-center justify-center">${emp.avatar}</span>
@@ -3188,10 +3188,10 @@ function openBatchEvaluationModal() {
                 </td>
                 <td class="px-4 py-3 text-center font-bold text-xs text-slate-800">${emp.overallCompetencyScore.toFixed(2)}</td>
                 <td class="px-4 py-3 text-center">
-                    <input type="number" step="0.1" min="1.0" max="5.0" value="${emp.overallCompetencyScore.toFixed(1)}" id="batch-score-${emp.empId}" class="w-16 p-1.5 text-center font-bold rounded-lg border border-[#E8DEDC] bg-white text-xs text-primary focus:ring-1 focus:ring-primary">
+                    <input type="number" step="0.1" min="1.0" max="5.0" value="${emp.overallCompetencyScore.toFixed(1)}" id="batch-score-${emp.empId}" class="w-16 p-1.5 text-center font-bold rounded-lg border border-brand-border bg-white text-xs text-primary focus:ring-1 focus:ring-primary">
                 </td>
                 <td class="px-4 py-3 text-center">
-                    <select id="batch-status-${emp.empId}" class="p-1 rounded-lg border border-[#E8DEDC] text-[11px] font-semibold">
+                    <select id="batch-status-${emp.empId}" class="p-1 rounded-lg border border-brand-border text-[11px] font-semibold">
                         <option value="Approved" selected>Approve Rating</option>
                         <option value="Needs TNA">Flag for TNA</option>
                         <option value="Promote">Ready for Promotion</option>
@@ -3283,7 +3283,7 @@ function renderCompetencyCardsHTML(list) {
         else if (comp.score >= 4.5) badgeClass = 'bg-amber-100 text-amber-900 border-amber-200';
 
         return `
-            <div class="p-4 rounded-2xl border ${isBelow ? 'border-red-200 bg-red-50/20' : 'border-[#E8DEDC] bg-[#FAF8F7]'} flex flex-col justify-between space-y-3 transition hover:shadow-2xs">
+            <div class="p-4 rounded-2xl border ${isBelow ? 'border-red-200 bg-red-50/20' : 'border-brand-border bg-brand-canvas'} flex flex-col justify-between space-y-3 transition hover:shadow-2xs">
                 <div class="space-y-1.5">
                     <div class="flex items-center justify-between">
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${comp.dept || 'Assigned Competency'}</span>
@@ -3291,7 +3291,7 @@ function renderCompetencyCardsHTML(list) {
                     </div>
                     <h4 class="font-heading font-bold text-slate-900 text-xs leading-snug">${comp.name}</h4>
                 </div>
-                <div class="pt-2 border-t border-[#E8DEDC] space-y-1">
+                <div class="pt-2 border-t border-brand-border space-y-1">
                     <div class="flex items-center justify-between text-xs">
                         <span class="font-extrabold text-slate-800">${comp.score.toFixed(2)} / 5.0</span>
                         <span class="text-[11px] text-slate-400">Target: <strong class="text-slate-600">${comp.target.toFixed(1)}</strong></span>
@@ -3390,7 +3390,7 @@ async function renderEmployeeOverviewCompetencies(empId = 'emp-101', forceRefres
         container.innerHTML = `
             <div class="col-span-1 md:col-span-2 lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-pulse">
                 ${[1, 2, 3, 4].map(() => `
-                    <div class="p-4 bg-[#FAF8F7] rounded-2xl border border-[#E8DEDC] space-y-3">
+                    <div class="p-4 bg-brand-canvas rounded-2xl border border-brand-border space-y-3">
                         <div class="flex justify-between items-center">
                             <div class="h-3.5 w-28 bg-slate-200 rounded"></div>
                             <div class="h-4 w-12 bg-slate-200 rounded-full"></div>
@@ -3483,8 +3483,17 @@ window.exportCompetencyReportCSV = exportCompetencyReportCSV;
 
 // Auto-run on load
 window.addEventListener('DOMContentLoaded', () => {
-    initCompetencyModule();
+    const activePillar = localStorage.getItem('oxford_active_pillar') || 'dashboard';
     renderEmployeeOverviewCompetencies(window.selectedEvalEmpId || 'emp-101');
+    if (activePillar === 'pillar-comp') {
+        initCompetencyModule();
+    } else {
+        if (window.requestIdleCallback) {
+            window.requestIdleCallback(initCompetencyModule, { timeout: 2000 });
+        } else {
+            setTimeout(initCompetencyModule, 450);
+        }
+    }
 });
 
 

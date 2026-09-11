@@ -4,7 +4,7 @@
                             <!-- Top Subnav Pills & Quick Upload Action Bar -->
                             <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
                                 <div
-                                    class="subnav-track flex items-center space-x-1.5 p-1.5 overflow-x-auto custom-scrollbar flex-shrink-0">
+                                    class="subnav-track flex items-center space-x-1.5 p-1.5 overflow-x-auto custom-scrollbar shrink-0">
                                     <button onclick="switchSubTab('lms', 'modules')" class="subnav-pill subnav-lms active"
                                         data-sub="modules">
                                         <i class="fas fa-book-bookmark mr-1.5 text-gold-dark"></i>
@@ -20,7 +20,7 @@
                                 <!-- Action Buttons: Upload Docs (Supervisor/HR only) -->
                                 <div id="lms-upload-action-container" class="flex items-center space-x-2.5">
                                     <button id="btn-lms-upload-doc" onclick="openModal('modal-lms-upload')"
-                                        class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5 flex-shrink-0 shadow-2xs">
+                                        class="btn-primary px-4 py-2 text-xs font-bold flex items-center space-x-1.5 shrink-0 shadow-2xs">
                                         <i class="fas fa-file-arrow-up"></i>
                                         <span>+ Upload Document / SOP</span>
                                     </button>
@@ -37,16 +37,16 @@
                                         <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                                         <input id="lms-search-input" type="text" oninput="filterLmsBooks()"
                                             placeholder="Search handbook, SOP manual, or topic..."
-                                            class="w-full pl-9 pr-4 py-2 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary focus:outline-none transition">
+                                            class="w-full pl-9 pr-4 py-2 bg-brand-canvas border border-brand-border rounded-xl text-xs font-medium focus:ring-2 focus:ring-primary focus:outline-none transition">
                                     </div>
 
                                     <!-- Category Chips -->
                                     <div class="flex items-center space-x-1.5 overflow-x-auto custom-scrollbar w-full sm:w-auto pb-1 sm:pb-0 text-xs">
                                         <button onclick="setLmsDeptFilter('all')" data-dept="all" class="lms-dept-filter-chip active px-3 py-1 rounded-full font-bold bg-primary text-white transition text-[11px] whitespace-nowrap">All Books</button>
-                                        <button onclick="setLmsDeptFilter('front_office')" data-dept="front_office" class="lms-dept-filter-chip px-3 py-1 rounded-full font-semibold bg-[#FAF8F7] text-slate-600 border border-[#E8DEDC] hover:bg-slate-100 transition text-[11px] whitespace-nowrap">Front Office</button>
-                                        <button onclick="setLmsDeptFilter('culinary')" data-dept="culinary" class="lms-dept-filter-chip px-3 py-1 rounded-full font-semibold bg-[#FAF8F7] text-slate-600 border border-[#E8DEDC] hover:bg-slate-100 transition text-[11px] whitespace-nowrap">Culinary</button>
-                                        <button onclick="setLmsDeptFilter('fb_service')" data-dept="fb_service" class="lms-dept-filter-chip px-3 py-1 rounded-full font-semibold bg-[#FAF8F7] text-slate-600 border border-[#E8DEDC] hover:bg-slate-100 transition text-[11px] whitespace-nowrap">F&amp;B Service</button>
-                                        <button onclick="setLmsDeptFilter('housekeeping')" data-dept="housekeeping" class="lms-dept-filter-chip px-3 py-1 rounded-full font-semibold bg-[#FAF8F7] text-slate-600 border border-[#E8DEDC] hover:bg-slate-100 transition text-[11px] whitespace-nowrap">Housekeeping</button>
+                                        <button onclick="setLmsDeptFilter('front_office')" data-dept="front_office" class="lms-dept-filter-chip px-3 py-1 rounded-full font-semibold bg-brand-canvas text-slate-600 border border-brand-border hover:bg-slate-100 transition text-[11px] whitespace-nowrap">Front Office</button>
+                                        <button onclick="setLmsDeptFilter('culinary')" data-dept="culinary" class="lms-dept-filter-chip px-3 py-1 rounded-full font-semibold bg-brand-canvas text-slate-600 border border-brand-border hover:bg-slate-100 transition text-[11px] whitespace-nowrap">Culinary</button>
+                                        <button onclick="setLmsDeptFilter('fb_service')" data-dept="fb_service" class="lms-dept-filter-chip px-3 py-1 rounded-full font-semibold bg-brand-canvas text-slate-600 border border-brand-border hover:bg-slate-100 transition text-[11px] whitespace-nowrap">F&amp;B Service</button>
+                                        <button onclick="setLmsDeptFilter('housekeeping')" data-dept="housekeeping" class="lms-dept-filter-chip px-3 py-1 rounded-full font-semibold bg-brand-canvas text-slate-600 border border-brand-border hover:bg-slate-100 transition text-[11px] whitespace-nowrap">Housekeeping</button>
                                     </div>
                                 </div>
 
@@ -101,7 +101,7 @@
                                             <span id="tna-stat-progress-avg" class="text-2xl font-heading font-bold text-slate-900">0%</span>
                                             <span class="text-[11px] text-slate-400">Average Read</span>
                                         </div>
-                                        <div class="w-full bg-[#FAF8F7] h-1.5 rounded-full overflow-hidden border border-[#E8DEDC]/50 mt-2">
+                                        <div class="w-full bg-brand-canvas h-1.5 rounded-full overflow-hidden border border-brand-border/50 mt-2">
                                             <div id="tna-stat-progress-bar" class="bg-primary h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
                                         </div>
                                     </div>
@@ -110,7 +110,7 @@
                                     <div class="card-clean p-4 border-l-4 border-l-dusty flex flex-col justify-between">
                                         <div class="flex items-center justify-between">
                                             <span class="text-slate-500 font-semibold">Average Quiz Score</span>
-                                            <i class="fas fa-award text-dusty-dark text-sm"></i>
+                                             <i class="fas fa-award text-dusty-dark text-sm"></i>
                                         </div>
                                         <div class="mt-2 flex items-baseline space-x-2">
                                             <span id="tna-stat-score-avg" class="text-2xl font-heading font-bold text-slate-900">0%</span>
@@ -125,7 +125,7 @@
 
                                 <!-- Training Needs & Book Enrollment Progress Matrix -->
                                 <div class="card-clean p-6 space-y-5">
-                                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#E8DEDC] pb-4">
+                                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-brand-border pb-4">
                                         <div>
                                             <div class="flex items-center space-x-2">
                                                 <h3 class="font-heading font-bold text-base text-slate-900">LMS Handbook Enrollments &amp; Associate Progress</h3>
@@ -136,7 +136,7 @@
                                         <div class="flex flex-wrap items-center gap-2">
                                             <!-- Book Filter -->
                                             <select id="tna-book-filter" onchange="filterTnaEnrollments()"
-                                                class="px-3 py-1.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold text-slate-700 focus:outline-none">
+                                                class="px-3 py-1.5 bg-brand-canvas border border-brand-border rounded-xl text-xs font-semibold text-slate-700 focus:outline-none">
                                                 <option value="all">All Enrolled Books</option>
                                                 <option value="book_frontdesk">Front Desk Standards Codex</option>
                                                 <option value="book_haccp">HACCP Hygiene Manual</option>
@@ -150,7 +150,7 @@
                                             <div class="relative">
                                                 <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
                                                 <input id="tna-search-input" oninput="filterTnaEnrollments()" type="text" placeholder="Search associate..."
-                                                    class="pl-8 pr-3 py-1.5 bg-[#FAF8F7] border border-[#E8DEDC] rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary w-36 sm:w-44">
+                                                    class="pl-8 pr-3 py-1.5 bg-brand-canvas border border-brand-border rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary w-36 sm:w-44">
                                             </div>
                                         </div>
                                     </div>
@@ -159,7 +159,7 @@
                                     <div class="overflow-x-auto custom-scrollbar">
                                         <table class="w-full text-left text-xs border-collapse">
                                             <thead>
-                                                <tr class="border-b border-[#E8DEDC] text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-[#FAF8F7]/50">
+                                                <tr class="border-b border-brand-border text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-brand-canvas/50">
                                                     <th class="py-3 px-3 w-10 text-center rounded-l-xl">#</th>
                                                     <th class="py-3 px-3">Enrolled Associate</th>
                                                     <th class="py-3 px-3">Handbook Title &amp; Department</th>
@@ -169,7 +169,7 @@
                                                     <th class="py-3 px-3 text-right rounded-r-xl">Audit Action</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="tna-enrollments-table-body" class="divide-y divide-[#E8DEDC]">
+                                            <tbody id="tna-enrollments-table-body" class="divide-y divide-brand-border">
                                                 <!-- Dynamic Rows rendered via JS -->
                                             </tbody>
                                         </table>
